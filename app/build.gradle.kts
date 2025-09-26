@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.android.sample"
+    namespace = "com.NepTune"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.android.sample"
+        applicationId = "com.NepTune"
         minSdk = 28
         targetSdk = 34
         versionCode = 1
