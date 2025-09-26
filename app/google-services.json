@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "547712313279",
+    "project_id": "neptune-d4c0e",
+    "storage_bucket": "neptune-d4c0e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:547712313279:android:c8d135c3061bbcdf0ca30a",
+        "android_client_info": {
+          "package_name": "com.android.sample"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANlyUbHAhQlLCEeBQcg65iMLYt3D7OgXQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
