@@ -23,7 +23,6 @@ import com.android.sample.ui.theme.SampleAppTheme
 
 @Composable
 fun ProfileScreen(
-    viewModel: ProfileViewModel,
     uiState: ProfileUiState,
     onEditClick: () -> Unit = {},
     onSaveClick: (name: String, username: String, bio: String) -> Unit = { _, _, _ -> },
@@ -32,10 +31,8 @@ fun ProfileScreen(
     onBioChange: (String) -> Unit = {},
     onGoBack: () -> Unit = {},
 ) {
-    val uiState = viewModel.uiState.collectAsState().value
-
+    // TODO: add profile picture, follower/following count and back button
     Column(modifier = Modifier.padding(16.dp)) {
-        Header()
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedTextField(
             value = uiState.name,
@@ -100,6 +97,17 @@ fun ProfileScreenPreview() {
 }
 
 @Composable
-fun Header() {
+fun ProfileRoute() {
+    val viewModel: ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val state = viewModel.uiState.collectAsState().value
 
+    ProfileScreen(
+        uiState = state,
+        onEditClick = viewModel::onEditClick,
+        onSaveClick = { _, _, _ -> viewModel.onSaveClick() }, // VM reads from state
+        onNameChange = viewModel::onNameChange,
+        onUsernameChange = viewModel::onUsernameChange,
+        onBioChange = viewModel::onBioChange,
+        onGoBack = viewModel::onCancelEdit
+    )
 }
