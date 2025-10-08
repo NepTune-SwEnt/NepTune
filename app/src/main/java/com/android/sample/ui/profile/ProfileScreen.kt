@@ -73,7 +73,8 @@ private fun ProfileViewContent(
 
         Text(
             text = state.name,
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineMedium,
+            textAlign = TextAlign.Center
         )
 
         Text(
@@ -84,7 +85,7 @@ private fun ProfileViewContent(
         Spacer(Modifier.height(100.dp))
 
         Text(
-            text = "“ ${state.bio} ”",
+            text = if (state.bio != "") "“ ${state.bio} ”" else "",
             style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center
         )
@@ -117,34 +118,84 @@ private fun ProfileEditContent(
         verticalArrangement = Arrangement.Center
     ) {
         Spacer(modifier = Modifier.height(40.dp))
+
         OutlinedTextField(
             value = uiState.name,
             onValueChange = onNameChange,
             label = { Text("Name") },
-            enabled = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = uiState.nameError != null,
+            supportingText = {
+                val err = uiState.nameError
+                if (err != null) {
+                    Text(
+                        text = err,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                } else {
+                    Text(
+                        text = "${uiState.name.trim().length}/30",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
         )
+
         Spacer(modifier = Modifier.height(40.dp))
+
         OutlinedTextField(
             value = uiState.username,
             onValueChange = onUsernameChange,
             label = { Text("Username") },
-            enabled = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = uiState.usernameError != null,
+            supportingText = {
+                val err = uiState.usernameError
+                if (err != null) {
+                    Text(
+                        text = err,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                } else {
+                    Text(
+                        text = "${uiState.username.trim().length}/15",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
         )
+
         Spacer(modifier = Modifier.height(40.dp))
         OutlinedTextField(
             value = uiState.bio,
             onValueChange = onBioChange,
             label = { Text("Bio") },
-            enabled = true,
             modifier = Modifier.fillMaxWidth(),
-            minLines = 3
+            minLines = 3,
+            isError = uiState.bioError != null,
+            supportingText = {
+                val err = uiState.bioError
+                if (err != null) {
+                    Text(
+                        text = err,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                } else {
+                    Text(
+                        text = "${uiState.bio.length}/160",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
         )
+
         Spacer(modifier = Modifier.height(40.dp))
         Button(
             onClick = onSave,
-            enabled = !uiState.isSaving
+            enabled = !uiState.isSaving && uiState.isValid
         ) {
             Icon(imageVector = Icons.Default.Check, contentDescription = "Save")
             Spacer(Modifier.width(8.dp))
