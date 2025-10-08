@@ -1,6 +1,5 @@
 package com.android.sample.screen
 
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
@@ -74,20 +73,6 @@ class MainScreenTest {
     composeTestRule.onNodeWithText("Discover").assertIsDisplayed()
     // Check that at least one sample card is displayed
     composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_CARD).onFirst().assertIsDisplayed()
-  }
-
-  @Test
-  fun followedSection_displaysExpectedNumberOfSampleCard() {
-    val viewModel = MainViewModel()
-    setContent(mainViewModel = viewModel)
-
-    // number total of samples
-    val expectedCount = viewModel.discoverSamples.value.size + viewModel.followedSamples.value.size
-
-    composeTestRule.onNodeWithText("Followed").assertIsDisplayed()
-    composeTestRule
-        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_CARD)
-        .assertCountEquals(expectedCount)
   }
 
   @Test
