@@ -15,4 +15,11 @@ data class ProfileUiState(
     val mode: ProfileMode = ProfileMode.VIEW,
     val isSaving: Boolean = false,
     val error: String? = null,
-)
+
+    val nameError: String? = null,
+    val usernameError: String? = null,
+    val bioError: String? = null
+) {
+    val isValid: Boolean
+        get() = nameError == null && usernameError == null && bioError == null
+}

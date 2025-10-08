@@ -29,38 +29,37 @@ class ProfileViewModel: ViewModel() {
             name = savedProfile.name,
             username = savedProfile.username,
             bio = savedProfile.bio
-        )
+        ).validated()
     }
 
     fun onNameChange(newName: String) {
         if (_uiState.value.mode != ProfileMode.EDIT) return
-        _uiState.value = _uiState.value.copy(name = newName)
+        _uiState.value = _uiState.value.copy(name = newName).validated()
     }
 
     fun onUsernameChange(newUsername: String) {
         if (_uiState.value.mode != ProfileMode.EDIT) return
-        _uiState.value = _uiState.value.copy(username = newUsername)
+        _uiState.value = _uiState.value.copy(username = newUsername).validated()
     }
 
     fun onBioChange(newBio: String) {
         if (_uiState.value.mode != ProfileMode.EDIT) return
-        _uiState.value = _uiState.value.copy(bio = newBio)
+        _uiState.value = _uiState.value.copy(bio = newBio).validated()
     }
 
     fun onSaveClick() {
         if (_uiState.value.mode != ProfileMode.EDIT || _uiState.value.isSaving) return
 
         val current = _uiState.value
-        val validationError = validate(current)
-        if (validationError != null) {
-            _uiState.value = current.copy(error = validationError)
-            return
-        }
+        val validated = current.validated()
+        _uiState.value = validated
+        if (!validated.isValid) return
 
         // Simulate a save (repository call)
         viewModelScope.launch {
-            _uiState.value = current.copy(isSaving = true, error = null)
+            _uiState.value = validated.copy(isSaving = true, error = null)
 
+            // Simulate repo call
             savedProfile = savedProfile.copy(
                 name = current.name.trim(),
                 username = current.username.trim(),
@@ -69,30 +68,44 @@ class ProfileViewModel: ViewModel() {
             // FIXME: should be real repo call
 
             // Exit edit mode with fresh snapshot
-            _uiState.value = savedProfile.copy(mode = ProfileMode.VIEW, isSaving = false, error = null)
+            _uiState.value = savedProfile.copy(
+                mode = ProfileMode.VIEW,
+                isSaving = false,
+                error = null,
+                nameError = null,
+                usernameError = null,
+                bioError = null)
         }
     }
 
-    private fun validate(state: ProfileUiState): String? {
-        // Name: 2..50 non-blank
-        val name = state.name.trim()
-        if (name.length !in 2..50) return "Name must be between 2 and 50 characters."
+    private fun ProfileUiState.validated(): ProfileUiState {
+        val nameErr = validateName(name)
+        val userErr = validateUsername(username)
+        val bioErr  = validateBio(bio)
+        return copy(
+            nameError = nameErr,
+            usernameError = userErr,
+            bioError = bioErr
+        )
+    }
 
-        // Username: 3..15, starts with letter, lowercase letters/numbers/underscore
-        val username = state.username.trim()
+    private fun validateName(name: String): String? {
+        return when {
+            name.trim().length !in 2..30 -> "Name must be between 2 and 30 characters."
+            else -> null
+        }
+    }
 
+    private fun validateUsername(username: String): String? {
+        // TODO: check username availability via repo.
         val usernameRegex = Regex("^[a-z][a-z0-9_]{2,14}$")
-        val usernameOk = usernameRegex.matches(username)
-        if (!usernameOk) return "Username must be 3–15 chars, start with a letter, and contain only lowercase letters, numbers, or underscores."
+        return if (!usernameRegex.matches( username.trim())) {
+            "Username must be 3–15 chars, start with a letter, and contain only lowercase letters, numbers, or underscores."
+        } else null
+    }
 
-        // Bio: <= 160 chars (adjust as needed)
-        if (state.bio.length > 160) return "Bio is too long (max 160 characters)."
-
-        // TODO:
-        //  * check username availability via repo.
-        //  * handle error messages in red in the UI (with supportingText parameter of OutlinedTextField)
-
-        return null
+    private fun validateBio(bio: String): String? {
+        return if (bio.length > 160) "Bio is too long (max 160 characters)." else null
     }
 
 }
