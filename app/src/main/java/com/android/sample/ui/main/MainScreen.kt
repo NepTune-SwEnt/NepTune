@@ -53,7 +53,6 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -90,6 +89,9 @@ object MainScreenTestTags {
   const val SAMPLE_LIKES = "sampleLikes"
   const val SAMPLE_COMMENTS = "sampleComments"
   const val SAMPLE_DOWNLOADS = "sampleDownloads"
+
+  // Lazy column
+  const val LAZY_COLUMN_SAMPLE_LIST = "sampleList"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -222,15 +224,19 @@ fun MainScreen(mainViewModel: MainViewModel = viewModel()) {
           // Bottom border of the topAppBar
           HorizontalDivider(
               modifier = Modifier.fillMaxWidth(), thickness = 0.75.dp, color = LightTurquoise)
-          LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 30.dp)) {
-            // ----------------Découvrir Section-----------------
-            item { SectionHeader(title = "Découvrir") }
-            items(discoverSamples.chunked(2)) { samples -> SampleCardRow(samples) }
+          LazyColumn(
+              modifier =
+                  Modifier.fillMaxSize()
+                      .padding(horizontal = 30.dp)
+                      .testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
+                // ----------------Discover Section-----------------
+                item { SectionHeader(title = "Discover") }
+                items(discoverSamples.chunked(2)) { samples -> SampleCardRow(samples) }
 
-            // ----------------Suivis Section-----------------
-            item { SectionHeader(title = "Suivis") }
-            items(followedSamples.chunked(2)) { samples -> SampleCardRow(samples) }
-          }
+                // ----------------Followed Section-----------------
+                item { SectionHeader(title = "Followed") }
+                items(followedSamples.chunked(2)) { samples -> SampleCardRow(samples) }
+              }
         }
       }
 }
@@ -327,8 +333,11 @@ fun SampleCard(sample: Sample) {
                             fontSize = 10.sp,
                             fontFamily = FontFamily(Font(R.font.markazi_text)),
                             fontWeight = FontWeight(400)))
+                val minutes = sample.durationSeconds / 60
+                val seconds = sample.durationSeconds % 60
+                val durationText = "%02d:%02d".format(minutes, seconds)
                 Text(
-                    sample.duration,
+                    durationText,
                     color = LightTurquoise,
                     modifier =
                         Modifier.padding(end = 8.dp).testTag(MainScreenTestTags.SAMPLE_DURATION),
@@ -348,7 +357,7 @@ fun SampleCard(sample: Sample) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween) {
                       Text(
-                          sample.tags,
+                          sample.tags.joinToString(", "),
                           color = DarkBlue1,
                           modifier = Modifier.testTag(MainScreenTestTags.SAMPLE_TAGS),
                           style =
@@ -357,7 +366,7 @@ fun SampleCard(sample: Sample) {
                                   fontFamily = FontFamily(Font(R.font.markazi_text)),
                                   fontWeight = FontWeight(400)))
                       Text(
-                          text = "voir plus....",
+                          text = "see more…",
                           color = DarkBlue1,
                           style =
                               TextStyle(
@@ -428,8 +437,9 @@ fun IconWithTextPainter(
   }
 }
 
+/*
 @Preview
 @Composable
 fun MainScreenPreview() {
   MainScreen()
-}
+}*/
