@@ -17,7 +17,6 @@ class ProfileViewModel: ViewModel() {
         bio = "I make sounds and share samples on NepTune.",
         followers = 1234,
         following = 56,
-        isInEditMode = false
     )
 
     private val _uiState = MutableStateFlow(savedProfile)
@@ -25,7 +24,7 @@ class ProfileViewModel: ViewModel() {
 
     fun onEditClick() {
         _uiState.value = _uiState.value.copy(
-            isInEditMode = true,
+            mode = ProfileMode.EDIT,
             error = null,
             name = savedProfile.name,
             username = savedProfile.username,
@@ -33,31 +32,23 @@ class ProfileViewModel: ViewModel() {
         )
     }
 
-    fun onCancelEdit() {
-        _uiState.value = savedProfile.copy(isInEditMode = false, isSaving = false, error = null)
-    }
-
     fun onNameChange(newName: String) {
-        if (!_uiState.value.isInEditMode) return
+        if (_uiState.value.mode != ProfileMode.EDIT) return
         _uiState.value = _uiState.value.copy(name = newName)
     }
 
     fun onUsernameChange(newUsername: String) {
-        if (!_uiState.value.isInEditMode) return
+        if (_uiState.value.mode != ProfileMode.EDIT) return
         _uiState.value = _uiState.value.copy(username = newUsername)
     }
 
     fun onBioChange(newBio: String) {
-        if (!_uiState.value.isInEditMode) return
+        if (_uiState.value.mode != ProfileMode.EDIT) return
         _uiState.value = _uiState.value.copy(bio = newBio)
     }
 
-    fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
-    }
-
     fun onSaveClick() {
-        if (!_uiState.value.isInEditMode || _uiState.value.isSaving) return
+        if (_uiState.value.mode != ProfileMode.EDIT || _uiState.value.isSaving) return
 
         val current = _uiState.value
         val validationError = validate(current)
@@ -78,7 +69,7 @@ class ProfileViewModel: ViewModel() {
             // FIXME: should be real repo call
 
             // Exit edit mode with fresh snapshot
-            _uiState.value = savedProfile.copy(isInEditMode = false, isSaving = false, error = null)
+            _uiState.value = savedProfile.copy(mode = ProfileMode.VIEW, isSaving = false, error = null)
         }
     }
 
@@ -99,7 +90,7 @@ class ProfileViewModel: ViewModel() {
 
         // TODO:
         //  * check username availability via repo.
-        //  * handle error messages in red in the UI
+        //  * handle error messages in red in the UI (with supportingText parameter of OutlinedTextField)
 
         return null
     }

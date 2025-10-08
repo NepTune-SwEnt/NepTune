@@ -1,5 +1,10 @@
 package com.android.sample.ui.profile
 
+enum class ProfileMode {
+    VIEW,
+    EDIT
+}
+
 data class ProfileUiState(
     val name: String = "",
     val username: String = "",
@@ -7,7 +12,7 @@ data class ProfileUiState(
     val avatarUrl: String? = null,
     val followers: Int = 0,
     val following: Int = 0,
-    val isInEditMode: Boolean = false,
+    val mode: ProfileMode = ProfileMode.VIEW,
     val isSaving: Boolean = false,
     val error: String? = null,
 )
