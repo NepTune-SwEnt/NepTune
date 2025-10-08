@@ -9,8 +9,7 @@ import kotlinx.coroutines.launch
 
 class ProfileViewModel: ViewModel() {
 
-    // FIXME: added a fake "persisted" snapshot to support Cancel and change detection,
-    //  should be changed to real repo call
+    // FIXME: should be changed to real repo call
     private var savedProfile: ProfileUiState = ProfileUiState(
         name = "John Doe",
         username = "johndoe",
