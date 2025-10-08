@@ -1,11 +1,10 @@
-package com.android.sample
+package com.neptune.neptune
 
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.sample.screen.MainScreen
 import com.kaspersky.kaspresso.testcases.api.testcase.TestCase
+import com.neptune.neptune.screen.MainScreen
 import io.github.kakaocup.compose.node.element.ComposeScreen
-import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
