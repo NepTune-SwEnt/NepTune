@@ -1,5 +1,6 @@
 package com.android.sample.ui.profile
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,15 +9,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.android.sample.ui.theme.SampleAppTheme
@@ -29,71 +35,163 @@ fun ProfileScreen(
     onNameChange: (String) -> Unit = {},
     onUsernameChange: (String) -> Unit = {},
     onBioChange: (String) -> Unit = {},
-    onGoBack: () -> Unit = {},
 ) {
     // TODO: add profile picture, follower/following count and back button
     Column(modifier = Modifier.padding(16.dp)) {
-        Spacer(modifier = Modifier.height(16.dp))
+
+        when (uiState.mode) {
+            ProfileMode.VIEW -> {
+                ProfileViewContent(
+                    state = uiState,
+                    onEdit = onEditClick,
+                )
+            }
+            ProfileMode.EDIT -> {
+                ProfileEditContent(
+                    uiState = uiState,
+                    onSave = { onSaveClick(uiState.name, uiState.username, uiState.bio) },
+                    onNameChange = onNameChange,
+                    onUsernameChange = onUsernameChange,
+                    onBioChange = onBioChange
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileViewContent(
+    state: ProfileUiState,
+    onEdit: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Spacer(Modifier.height(20.dp))
+
+        Text(
+            text = state.name,
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        Text(
+            text = "@${state.username}",
+            style = MaterialTheme.typography.bodyMedium
+        )
+
+        Spacer(Modifier.height(100.dp))
+
+        Text(
+            text = "“ ${state.bio} ”",
+            style = MaterialTheme.typography.titleLarge,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(200.dp))
+        Row(Modifier.fillMaxWidth()) {
+            StatBlock("Followers", state.followers, Modifier.weight(1f))
+            StatBlock("Following", state.following, Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(80.dp))
+
+        Button(onClick = onEdit) {
+            Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
+            Spacer(Modifier.width(8.dp))
+            Text("Edit")
+        }
+    }
+}
+
+@Composable
+private fun ProfileEditContent(
+    uiState: ProfileUiState,
+    onSave: () -> Unit,
+    onNameChange: (String) -> Unit,
+    onUsernameChange: (String) -> Unit,
+    onBioChange: (String) -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Spacer(modifier = Modifier.height(40.dp))
         OutlinedTextField(
             value = uiState.name,
             onValueChange = onNameChange,
             label = { Text("Name") },
-            enabled = uiState.isInEditMode,
+            enabled = true,
             modifier = Modifier.fillMaxWidth()
         )
+        Spacer(modifier = Modifier.height(40.dp))
         OutlinedTextField(
             value = uiState.username,
             onValueChange = onUsernameChange,
             label = { Text("Username") },
-            enabled = uiState.isInEditMode,
+            enabled = true,
             modifier = Modifier.fillMaxWidth()
         )
+        Spacer(modifier = Modifier.height(40.dp))
         OutlinedTextField(
             value = uiState.bio,
             onValueChange = onBioChange,
             label = { Text("Bio") },
-            enabled = uiState.isInEditMode,
-            modifier = Modifier.fillMaxWidth()
+            enabled = true,
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 3
         )
-        Spacer(modifier = Modifier.height(16.dp))
-        Row {
-            Button(onClick = onGoBack) {
-                Text("Back")
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            if (uiState.isInEditMode) {
-                Button(onClick = { onSaveClick(uiState.name, uiState.username, uiState.bio) }) {
-                    Text("Save")
-                }
-            } else {
-                Button(onClick = onEditClick) {
-                    Text("Edit")
-                }
-            }
+        Spacer(modifier = Modifier.height(40.dp))
+        Button(
+            onClick = onSave,
+            enabled = !uiState.isSaving
+        ) {
+            Icon(imageVector = Icons.Default.Check, contentDescription = "Save")
+            Spacer(Modifier.width(8.dp))
+            Text("Save")
         }
     }
-
 }
 
-@Preview
 @Composable
-fun ProfileScreenPreview() {
+private fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(8.dp))
+        Text("$value", style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+    }
+}
+
+
+
+@Composable
+fun ProfileScreenPreview(mode: ProfileMode) {
     SampleAppTheme {
         Surface(
-            modifier = Modifier.fillMaxSize().semantics {  },
+            modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background) {
             ProfileScreen(
                 uiState = ProfileUiState(
                     name = "John Doe",
                     username = "johndoe",
                     bio = "I'm awesome",
-                    isInEditMode = false
+                    mode = mode
                 )
             )
         }
-
-
     }
+}
+
+@Preview
+@Composable
+fun ProfileScreenViewModePreview() {
+    ProfileScreenPreview(ProfileMode.VIEW)
+}
+
+@Preview
+@Composable
+fun ProfileScreenEditModePreview() {
+    ProfileScreenPreview(ProfileMode.EDIT)
 }
 
 @Composable
@@ -108,6 +206,5 @@ fun ProfileRoute() {
         onNameChange = viewModel::onNameChange,
         onUsernameChange = viewModel::onUsernameChange,
         onBioChange = viewModel::onBioChange,
-        onGoBack = viewModel::onCancelEdit
     )
 }
