@@ -1,7 +1,7 @@
 package com.neptune.neptune.screen
 
 import androidx.compose.ui.test.SemanticsNodeInteractionsProvider
-import com.android.neptune.resources.C
+import com.neptune.neptune.resources.C
 import io.github.kakaocup.compose.node.element.ComposeScreen
 import io.github.kakaocup.compose.node.element.KNode
 

@@ -2,8 +2,8 @@ package com.neptune.neptune
 
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.neptune.screen.SecondScreen
 import com.kaspersky.kaspresso.testcases.api.testcase.TestCase
+import com.neptune.neptune.screen.SecondScreen
 import io.github.kakaocup.compose.node.element.ComposeScreen
 import org.junit.Rule
 import org.junit.Test
