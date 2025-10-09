@@ -15,8 +15,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -45,14 +43,21 @@ class SignInViewModel : ViewModel() {
   private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
 
   private val _signInStatus = MutableStateFlow<SignInStatus>(SignInStatus.BEFORE_INITIALIZATION)
-  private val signInStatus: StateFlow<SignInStatus> = _signInStatus.asStateFlow()
 
   private val _currentUser = MutableStateFlow<FirebaseUser?>(null)
-  var navigateMain: () -> Unit = {}
+  private var navigateMain: () -> Unit = {}
 
   /**
-   * Should be called from the View to initialize the CredentialManager and the initial state of the
-   * ViewModel.
+   * Initializes the ViewModel.
+   *
+   * This must be called from the View to provide necessary dependencies and set the initial state.
+   * It sets up the [CredentialManager], checks if a user is already signed into Firebase, and
+   * triggers immediate navigation if a session exists.
+   *
+   * @param credential The system-provided [CredentialManager], obtained via
+   *   `CredentialManager.create(context)`.
+   * @param navigate The lambda function to be executed for navigating to the main screen after a
+   *   successful sign-in.
    */
   fun initialize(credential: CredentialManager, navigate: () -> Unit) {
     credentialManager = credential
@@ -74,7 +79,7 @@ class SignInViewModel : ViewModel() {
    * This function constructs a [GetCredentialRequest] configured for Google Sign-In. It then
    * launches a coroutine to call [CredentialManager.getCredential], which displays the system's
    * account selection UI. On success, the resulting credential is used to authenticate with
-   * Firebase. If authentication is successful, it triggers the navigation to the overview screen.
+   * Firebase. On user cancellation, the state is reset.
    *
    * @param activity The activity context required to launch the sign-in UI.
    */
@@ -97,8 +102,11 @@ class SignInViewModel : ViewModel() {
                 request = request,
             )
         handleSignIn(result.credential)
+
+        // This exception is most often thrown when the user cancels the sign-in flow.
+        // This is not a fatal error, so we reset the state to allow the user to try again.
       } catch (_: GetCredentialException) {
-        _signInStatus.value = SignInStatus.ERROR
+        _signInStatus.value = SignInStatus.SIGNED_OUT
       } catch (_: Exception) {
         _signInStatus.value = SignInStatus.ERROR
       }

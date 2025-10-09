@@ -42,16 +42,23 @@ object SignInScreenTags {
   const val LOGIN_BUTTON = "loginButton"
 }
 
+/**
+ * A composable function that displays the sign-in screen for the application.
+ *
+ * This screen presents a welcome message and a "Sign in with Google" button. It delegates the
+ * sign-in logic to the [SignInViewModel] and handles the UI state based on the authentication flow.
+ *
+ * @param context The Android [Context], used to get the current [Activity] for the sign-in process.
+ *   Defaults to `LocalContext.current`.
+ * @param credentialManager An instance of [CredentialManager] used to initiate the sign-in request.
+ *   Defaults to a new instance created with the current context.
+ * @param navigateMain A lambda function to be called to navigate to the main part of the
+ *   application after a successful sign-in.
+ * @param signInViewModel The [SignInViewModel] instance that manages the authentication logic and
+ *   state. Defaults to a new ViewModel instance provided by `viewModel()`.
+ */
 @Composable
 fun SignInScreen(
-    /**
-     * You can add parameters with default values here, e.g., onClick: () -> Unit = {}, modifier:
-     * Modifier = Modifier, credentialManager: CredentialManager =
-     * CredentialManager.create(LocalContext.current)
-     *
-     * Note: Parameters with default values do not mean that you should use the default value in
-     * your implementation. They ensure that we can still use your code in our tests.
-     */
     context: Context = LocalContext.current,
     credentialManager: CredentialManager = CredentialManager.create(context),
     navigateMain: () -> Unit = {},
