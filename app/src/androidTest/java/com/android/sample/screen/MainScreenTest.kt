@@ -76,6 +76,18 @@ class MainScreenTest {
   }
 
   @Test
+  fun followedSection_isDisplayed() {
+    setContent()
+    composeTestRule.onNodeWithText("Followed").assertIsDisplayed()
+
+    val sampleCards =
+        composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_CARD).fetchSemanticsNodes()
+    assert(sampleCards.isNotEmpty()) {
+      "At least one sample card should be in the Followed section"
+    }
+  }
+
+  @Test
   fun sampleCard_displaysDetails() {
     setContent()
 
