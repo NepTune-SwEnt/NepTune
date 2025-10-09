@@ -37,6 +37,16 @@ import androidx.compose.ui.unit.dp
 import com.android.sample.ui.theme.SampleAppTheme
 import com.android.sample.R
 
+/**
+ * Displays the main Profile screen, switching between view and edit modes.
+ *
+ * @param uiState The current [ProfileUiState] containing user data and screen mode.
+ * @param onEditClick Callback invoked when the Edit button is pressed.
+ * @param onSaveClick Callback invoked when the Save button is pressed.
+ * @param onNameChange Called whenever the user edits their name field.
+ * @param onUsernameChange Called whenever the user edits their username field.
+ * @param onBioChange Called whenever the user edits their bio field.
+ */
 @Composable
 fun ProfileScreen(
     uiState: ProfileUiState,
@@ -69,6 +79,15 @@ fun ProfileScreen(
     }
 }
 
+/**
+ * Displays the profile screen in view-only mode.
+ *
+ * Shows the user's avatar, name, username, bio, and stats (followers/following),
+ * along with an Edit button to enter edit mode.
+ *
+ * @param state The [ProfileUiState] containing the displayed user information.
+ * @param onEdit Callback triggered when the Edit button is clicked.
+ */
 @Composable
 private fun ProfileViewContent(
     state: ProfileUiState,
@@ -118,6 +137,18 @@ private fun ProfileViewContent(
     }
 }
 
+/**
+ * Displays the editable profile form.
+ *
+ * Provides text fields for editing the user's name, username, and bio.
+ * Includes validation messages and a Save button.
+ *
+ * @param uiState The current [ProfileUiState].
+ * @param onSave Called when the user presses the Save button.
+ * @param onNameChange Called on text change in the name field.
+ * @param onUsernameChange Called on text change in the username field.
+ * @param onBioChange Called on text change in the bio field.
+ */
 @Composable
 private fun ProfileEditContent(
     uiState: ProfileUiState,
@@ -223,6 +254,13 @@ private fun ProfileEditContent(
     }
 }
 
+/**
+ * Displays a small statistics block for a given label and value (e.g. followers count).
+ *
+ * @param label The label text, e.g. "Followers".
+ * @param value The numeric value to display.
+ * @param modifier Optional [Modifier] for layout customization.
+ */
 @Composable
 private fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
@@ -232,6 +270,16 @@ private fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier) 
     }
 }
 
+/**
+ * Displays a circular avatar with an optional edit button overlay.
+ *
+ * When [showEditPencil] is true, a small floating action button appears in the corner.
+ *
+ * @param modifier Layout modifier for sizing and positioning.
+ * @param sizeDp The diameter of the avatar circle, in dp.
+ * @param showEditPencil Whether to show the edit pencil button.
+ * @param onEditClick Callback triggered when the pencil button is clicked.
+ */
 @Composable
 fun Avatar(
     modifier: Modifier = Modifier,
@@ -267,8 +315,11 @@ fun Avatar(
     }
 }
 
-
-
+/**
+ * Previews the [ProfileScreen] in either view or edit mode.
+ *
+ * @param mode The [ProfileMode] to preview.
+ */
 @Composable
 fun ProfileScreenPreview(mode: ProfileMode) {
     SampleAppTheme {
@@ -287,18 +338,26 @@ fun ProfileScreenPreview(mode: ProfileMode) {
     }
 }
 
+/** Preview of the profile screen in view-only mode. */
 @Preview
 @Composable
 fun ProfileScreenViewModePreview() {
     ProfileScreenPreview(ProfileMode.VIEW)
 }
 
+/** Preview of the profile screen in editable mode. */
 @Preview
 @Composable
 fun ProfileScreenEditModePreview() {
     ProfileScreenPreview(ProfileMode.EDIT)
 }
 
+/**
+ * Composable route for the Profile feature.
+ *
+ * Connects the [ProfileViewModel] to the [ProfileScreen] and handles state collection.
+ * This function is typically used as the entry point for navigation to the profile screen.
+ */
 @Composable
 fun ProfileRoute() {
     val viewModel: ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
