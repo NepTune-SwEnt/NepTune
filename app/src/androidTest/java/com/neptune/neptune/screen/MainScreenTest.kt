@@ -1,5 +1,8 @@
 package com.neptune.neptune.screen
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
@@ -12,6 +15,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import com.neptune.neptune.R
+import com.neptune.neptune.ui.main.IconWithText
+import com.neptune.neptune.ui.main.IconWithTextPainter
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
@@ -137,5 +143,20 @@ class MainScreenTest {
 
     // When scrolling the last card should be visible
     composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_CARD).onLast().assertIsDisplayed()
+  }
+
+  @Test
+  fun iconWithText_defaultModifier() {
+    composeTestRule.setContent {
+      IconWithText(Icons.Default.FavoriteBorder, "Like", "0") // uses default Modifier
+    }
+  }
+
+  @Test
+  fun iconWithTextPainter_defaultModifier() {
+    composeTestRule.setContent {
+      IconWithTextPainter(
+          icon = painterResource(R.drawable.download), "Downloads", "0") // uses default Modifier
+    }
   }
 }
