@@ -1,0 +1,13 @@
+rules_version = '2';
+
+// Read rules can be divided into get and list rules
+// Write rules can be divided into create, update, and delete rules
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{collection}/{uid} {
+      allow read, update, delete: if request.auth.uid == resource.data.ownerId;
+      allow create: if request.auth.uid == request.resource.data.ownerId;
+    }
+  }
+}

@@ -3,9 +3,9 @@ plugins {
     alias(libs.plugins.jetbrainsKotlinAndroid)
     alias(libs.plugins.ktfmt)
     alias(libs.plugins.sonar)
+    alias(libs.plugins.gms)
 
     id("jacoco")
-    id("com.google.gms.google-services")
 }
 
 android {
@@ -119,7 +119,6 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(platform(libs.compose.bom))
     testImplementation(libs.junit)
     globalTestImplementation(libs.androidx.junit)
     globalTestImplementation(libs.androidx.espresso.core)
@@ -151,8 +150,14 @@ dependencies {
     // ----------       Robolectric     ------------
     testImplementation(libs.robolectric)
 
-    // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
+    // ----------        Firebase       ------------
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+
+    // ---------- Credential Manager ------------
+    implementation(libs.credentials)
+    implementation(libs.credentials.play.services.auth)
+    implementation(libs.googleid)
 }
 
 tasks.withType<Test> {
