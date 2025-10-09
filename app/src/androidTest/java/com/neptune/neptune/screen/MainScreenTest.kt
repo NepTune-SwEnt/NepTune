@@ -3,6 +3,7 @@ package com.neptune.neptune.screen
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
@@ -78,6 +79,10 @@ class MainScreenTest {
   @Test
   fun followedSection_isDisplayed() {
     setContent()
+    val lazyColumn = composeTestRule.onNodeWithTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)
+
+    // Scroll to the Followed Section
+    lazyColumn.performScrollToNode(hasText("Followed"))
     composeTestRule.onNodeWithText("Followed").assertIsDisplayed()
 
     val sampleCards =
