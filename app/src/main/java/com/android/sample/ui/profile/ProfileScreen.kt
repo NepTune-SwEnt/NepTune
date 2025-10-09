@@ -30,12 +30,54 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.android.sample.ui.theme.SampleAppTheme
 import com.android.sample.R
+
+/**
+ * Centralized constants defining all `testTag` identifiers used in [ProfileScreen] UI tests.
+ *
+ * These tags are applied to key composable elements (e.g., buttons, fields, avatar)
+ * to make them accessible and distinguishable within instrumented Compose UI tests.
+ *
+ * Naming follows the pattern: `"profile/<element>"`, ensuring uniqueness and consistency.
+ *
+ * Example usage in tests:
+ * ```
+ * composeTestRule.onNodeWithTag(ProfileScreenTestTags.EDIT_BUTTON).assertIsDisplayed()
+ * ```
+ *
+ * @see androidx.compose.ui.platform.testTag
+ * @see ProfileScreenTest
+ */
+object ProfileScreenTestTags {
+    const val ROOT = "profile/root"
+
+    const val VIEW_CONTENT = "profile/view"
+    const val EDIT_CONTENT = "profile/edit"
+
+    const val AVATAR = "profile/avatar"
+    const val NAME = "profile/name"
+    const val USERNAME = "profile/username"
+    const val BIO = "profile/bio"
+
+    const val FOLLOWERS_BLOCK = "profile/stat/followers"
+    const val FOLLOWING_BLOCK = "profile/stat/following"
+
+    const val EDIT_BUTTON = "profile/btn/edit"
+    const val SAVE_BUTTON = "profile/btn/save"
+
+    const val FIELD_NAME = "profile/field/name"
+    const val FIELD_USERNAME = "profile/field/username"
+    const val FIELD_BIO = "profile/field/bio"
+
+    fun statBlockTag(label: String) = "profile/stat/$label"
+}
+
 
 /**
  * Displays the main Profile screen, switching between view and edit modes.
@@ -57,7 +99,7 @@ fun ProfileScreen(
     onBioChange: (String) -> Unit = {},
 ) {
     // TODO: add profile picture, follower/following count and back button
-    Column(modifier = Modifier.padding(16.dp)) {
+    Column(modifier = Modifier.padding(16.dp).testTag(ProfileScreenTestTags.ROOT)) {
 
         when (uiState.mode) {
             ProfileMode.VIEW -> {
@@ -94,12 +136,13 @@ private fun ProfileViewContent(
     onEdit: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().testTag(ProfileScreenTestTags.VIEW_CONTENT),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Spacer(Modifier.height(20.dp))
         Avatar(
+            modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
             showEditPencil = false
         )
         Spacer(Modifier.height(40.dp))
@@ -107,12 +150,14 @@ private fun ProfileViewContent(
         Text(
             text = state.name,
             style = MaterialTheme.typography.headlineMedium,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            modifier = Modifier.testTag(ProfileScreenTestTags.NAME)
         )
 
         Text(
             text = "@${state.username}",
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME)
         )
 
         Spacer(Modifier.height(100.dp))
@@ -120,16 +165,30 @@ private fun ProfileViewContent(
         Text(
             text = if (state.bio != "") "“ ${state.bio} ”" else "",
             style = MaterialTheme.typography.titleLarge,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            modifier = Modifier.testTag(ProfileScreenTestTags.BIO)
         )
         Spacer(Modifier.height(200.dp))
         Row(Modifier.fillMaxWidth()) {
-            StatBlock("Followers", state.followers, Modifier.weight(1f))
-            StatBlock("Following", state.following, Modifier.weight(1f))
+            StatBlock(
+                label = "Followers",
+                value = state.followers,
+                modifier = Modifier.weight(1f),
+                testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK
+            )
+            StatBlock(
+                label = "Following",
+                value = state.following,
+                modifier = Modifier.weight(1f),
+                testTag = ProfileScreenTestTags.FOLLOWING_BLOCK
+            )
         }
         Spacer(Modifier.height(80.dp))
 
-        Button(onClick = onEdit) {
+        Button(
+            onClick = onEdit,
+            modifier = Modifier.testTag(ProfileScreenTestTags.EDIT_BUTTON)
+        ) {
             Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
             Spacer(Modifier.width(8.dp))
             Text("Edit")
@@ -158,13 +217,14 @@ private fun ProfileEditContent(
     onBioChange: (String) -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().testTag(ProfileScreenTestTags.EDIT_CONTENT),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Spacer(modifier = Modifier.height(40.dp))
 
         Avatar(
+            modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
             showEditPencil = true,
             onEditClick = { /* TODO: will open photo picker later */ }
         )
@@ -173,7 +233,7 @@ private fun ProfileEditContent(
             value = uiState.name,
             onValueChange = onNameChange,
             label = { Text("Name") },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_NAME),
             isError = uiState.nameError != null,
             supportingText = {
                 val err = uiState.nameError
@@ -198,7 +258,7 @@ private fun ProfileEditContent(
             value = uiState.username,
             onValueChange = onUsernameChange,
             label = { Text("Username") },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_USERNAME),
             isError = uiState.usernameError != null,
             supportingText = {
                 val err = uiState.usernameError
@@ -222,7 +282,7 @@ private fun ProfileEditContent(
             value = uiState.bio,
             onValueChange = onBioChange,
             label = { Text("Bio") },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_BIO),
             minLines = 3,
             isError = uiState.bioError != null,
             supportingText = {
@@ -245,7 +305,8 @@ private fun ProfileEditContent(
         Spacer(modifier = Modifier.height(40.dp))
         Button(
             onClick = onSave,
-            enabled = !uiState.isSaving && uiState.isValid
+            enabled = !uiState.isSaving && uiState.isValid,
+            modifier = Modifier.testTag(ProfileScreenTestTags.SAVE_BUTTON)
         ) {
             Icon(imageVector = Icons.Default.Check, contentDescription = "Save")
             Spacer(Modifier.width(8.dp))
@@ -262,11 +323,16 @@ private fun ProfileEditContent(
  * @param modifier Optional [Modifier] for layout customization.
  */
 @Composable
-private fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier) {
+private fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, testTag: String) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+        Text(text = label, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
         Spacer(Modifier.height(8.dp))
-        Text("$value", style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+        Text(
+            text = "$value",
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.testTag(testTag)
+        )
     }
 }
 
