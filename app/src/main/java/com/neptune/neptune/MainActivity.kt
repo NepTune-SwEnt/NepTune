@@ -1,4 +1,4 @@
-package com.android.sample
+package com.neptune.neptune
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,9 +9,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
-import com.android.sample.resources.C
-import com.android.sample.ui.main.MainScreen
-import com.android.sample.ui.theme.SampleAppTheme
+import com.neptune.neptune.resources.C
+import com.neptune.neptune.ui.main.MainScreen
+import com.neptune.neptune.ui.theme.SampleAppTheme
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {

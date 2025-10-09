@@ -1,7 +1,7 @@
-package com.android.sample.screen
+package com.neptune.neptune.screen
 
 import androidx.compose.ui.test.SemanticsNodeInteractionsProvider
-import com.android.sample.resources.C
+import com.neptune.neptune.resources.C
 import io.github.kakaocup.compose.node.element.ComposeScreen
 
 class MainScreen(semanticsProvider: SemanticsNodeInteractionsProvider) :

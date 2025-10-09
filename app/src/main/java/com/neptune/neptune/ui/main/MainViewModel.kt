@@ -1,7 +1,7 @@
-package com.android.sample.ui.main
+package com.neptune.neptune.ui.main
 
 import androidx.lifecycle.ViewModel
-import com.android.sample.Sample
+import com.neptune.neptune.Sample
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainViewModel() : ViewModel() {

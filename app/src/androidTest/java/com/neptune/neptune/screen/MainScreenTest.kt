@@ -1,4 +1,4 @@
-package com.android.sample.screen
+package com.neptune.neptune.screen
 
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
@@ -11,9 +11,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
-import com.android.sample.ui.main.MainScreen
-import com.android.sample.ui.main.MainScreenTestTags
-import com.android.sample.ui.main.MainViewModel
+import com.neptune.neptune.ui.main.MainScreen
+import com.neptune.neptune.ui.main.MainScreenTestTags
+import com.neptune.neptune.ui.main.MainViewModel
 import org.junit.Rule
 import org.junit.Test
 

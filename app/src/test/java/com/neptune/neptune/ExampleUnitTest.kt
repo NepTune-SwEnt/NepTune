@@ -1,4 +1,4 @@
-package com.android.sample
+package com.neptune.neptune
 
 import org.junit.Assert.*
 import org.junit.Test

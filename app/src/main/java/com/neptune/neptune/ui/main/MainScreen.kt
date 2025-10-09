@@ -1,4 +1,4 @@
-package com.android.sample.ui.main
+package com.neptune.neptune.ui.main
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -56,13 +56,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.sample.R
-import com.android.sample.Sample
-import com.android.sample.ui.theme.DarkBlue1
-import com.android.sample.ui.theme.DarkBlue2
-import com.android.sample.ui.theme.DarkBlueGray
-import com.android.sample.ui.theme.LightPurpleBlue
-import com.android.sample.ui.theme.LightTurquoise
+import com.neptune.neptune.R
+import com.neptune.neptune.Sample
+import com.neptune.neptune.ui.theme.DarkBlue1
+import com.neptune.neptune.ui.theme.DarkBlue2
+import com.neptune.neptune.ui.theme.DarkBlueGray
+import com.neptune.neptune.ui.theme.LightPurpleBlue
+import com.neptune.neptune.ui.theme.LightTurquoise
 
 object MainScreenTestTags {
   // General
