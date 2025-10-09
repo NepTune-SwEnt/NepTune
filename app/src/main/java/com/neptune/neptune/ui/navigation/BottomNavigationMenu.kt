@@ -36,20 +36,24 @@ fun getTabForRoute(route: String?): Tab? {
 @Composable
 fun BottomNavigationMenu(
     modifier: Modifier = Modifier,
-    selectedTab: Tab? = Tab.Main,
+    screen: Screen = Screen.Main,
     navigationActions: NavigationActions? = null,
 ) {
   // TODO: Add condition for showing/hiding bottom nav bar on certain screens
   // TODO: Change background color when Neptune theme is available
-  NavigationBar {
+  if (!screen.showBottomBar) {
+    return
+  }
+  NavigationBar(modifier = modifier.testTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU)) {
     tabs.forEach { tab ->
       NavigationBarItem(
           icon = {
             Icon(androidx.compose.ui.res.painterResource(id = tab.icon), contentDescription = null)
           },
           label = { Text(tab.name) },
-          selected = tab == selectedTab,
+          selected = tab == getTabForRoute(screen.route),
           onClick = { navigationActions?.navigateTo(tab.destination) },
+          enabled = navigationActions != null,
           modifier = Modifier.clip(RoundedCornerShape(50.dp)).testTag(tab.testTag))
     }
   }

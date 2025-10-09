@@ -9,41 +9,44 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.testTag
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview
 @Composable
 fun TopBar(
-    modifier: Modifier = Modifier,
-    currentScreen: Screen? = Screen.Main,
-    navigationActions: NavigationActions? = null,
-    canNavigateBack: Boolean = true
+    modifier: Modifier,
+    currentScreen: Screen?,
+    navigationActions: NavigationActions?,
+    canNavigateBack: Boolean,
 ) {
   // TODO: Change background color when Neptune theme is available
   TopAppBar(
-      title = { Text(currentScreen?.name ?: "") },
+      modifier = modifier.testTag(NavigationTestTags.TOP_BAR),
+      title = {
+        Text(
+            text = currentScreen?.name ?: "",
+            modifier = modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
+      },
       navigationIcon = {
         if (canNavigateBack && navigationActions != null) {
           Icon(
               androidx.compose.ui.res.painterResource(id = android.R.drawable.ic_menu_revert),
               contentDescription = null,
               modifier =
-                  Modifier.clip(RoundedCornerShape(50)).clickable {
-                    navigationActions.goBack()
-                  })
+                  Modifier.clip(RoundedCornerShape(50))
+                      .clickable { navigationActions.goBack() }
+                      .testTag(NavigationTestTags.GO_BACK_BUTTON))
         }
       },
       actions = {
-          if (!canNavigateBack && navigationActions != null) {
-              Icon(
-                  androidx.compose.ui.res.painterResource(id = android.R.drawable.ic_menu_myplaces),
-                  contentDescription = null,
-                  modifier =
-                      Modifier.clip(RoundedCornerShape(50)).clickable {
-                          navigationActions.navigateTo(Screen.Profile)
-                      })
-          }
-      }
-  )
+        if (!canNavigateBack && navigationActions != null) {
+          Icon(
+              androidx.compose.ui.res.painterResource(id = android.R.drawable.ic_menu_myplaces),
+              contentDescription = null,
+              modifier =
+                  Modifier.clip(RoundedCornerShape(50))
+                      .clickable { navigationActions.navigateTo(Screen.Profile) }
+                      .testTag(NavigationTestTags.PROFILE_BUTTON))
+        }
+      })
 }

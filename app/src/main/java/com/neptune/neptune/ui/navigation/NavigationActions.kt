@@ -5,22 +5,24 @@ import androidx.navigation.NavHostController
 sealed class Screen(
     val route: String,
     val name: String,
-    val showBottomBar: Boolean = true,
-    val showBackButton: Boolean = false,
+    val showBottomBar: Boolean,
+    val showBackButton: Boolean,
 ) {
 
-  object Main : Screen(route = "main", name = "Neptune", showBottomBar = true, showBackButton = false)
+  object Main :
+      Screen(route = "main", name = "Neptune", showBottomBar = true, showBackButton = false)
 
   object Edit : Screen(route = "edit", name = "Edit", showBottomBar = true, showBackButton = false)
 
-  object Profile : Screen(route = "profile", name = "My Profile", showBottomBar = false, showBackButton = true)
+  object Profile :
+      Screen(route = "profile", name = "My Profile", showBottomBar = false, showBackButton = true)
 }
 
 open class NavigationActions(
     private val navController: NavHostController,
 ) {
 
-  val currentScreen : Screen
+  val currentScreen: Screen
     get() {
       return when (currentRoute()) {
         Screen.Main.route -> Screen.Main
