@@ -27,7 +27,6 @@ import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
 import com.neptune.neptune.ui.navigation.Screen
 import com.neptune.neptune.ui.navigation.TopBar
-import com.neptune.neptune.ui.navigation.getTabForRoute
 import com.neptune.neptune.ui.theme.SampleAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -47,6 +46,7 @@ class MainActivity : ComponentActivity() {
 }
 
 private val startDestination = Screen.Main.route
+private var currentRoute: String? = startDestination
 
 @Preview
 @Composable
@@ -56,21 +56,27 @@ fun NeptuneApp(
 ) {
   val navigationActions = NavigationActions(navController)
   val navBackStackEntry by navController.currentBackStackEntryAsState()
-  val currentRoute = navBackStackEntry?.destination?.route
-  val selectedTab = getTabForRoute(currentRoute)
+  currentRoute = navBackStackEntry?.destination?.route
+  val currentScreen = navigationActions.currentScreen
   Scaffold(
       modifier = modifier,
       bottomBar = {
         BottomNavigationMenu(
-            modifier = modifier, navigationActions = navigationActions, selectedTab = selectedTab)
+            modifier = modifier, navigationActions = navigationActions, screen = currentScreen)
       },
-      topBar = { TopBar(modifier = modifier, currentScreen = navigationActions.currentScreen, navigationActions = navigationActions, canNavigateBack = navigationActions.currentScreen.showBackButton) },
+      topBar = {
+        TopBar(
+            modifier = modifier,
+            currentScreen = currentScreen,
+            navigationActions = navigationActions,
+            canNavigateBack = currentScreen.showBackButton)
+      },
       content = { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = startDestination,
             modifier = Modifier.padding(innerPadding)) {
-            // TODO: Replace mock screens with actual app screens
+              // TODO: Replace mock screens with actual app screens
               composable(Screen.Main.route) { MockMainScreen() }
               composable(Screen.Profile.route) { MockProfileScreen() }
               composable(Screen.Edit.route) { MockEditScreen() }
