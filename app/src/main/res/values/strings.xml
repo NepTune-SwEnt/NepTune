@@ -2,4 +2,5 @@
     <string name="app_name">SampleApp</string>
     <string name="title_activity_main">MainActivity</string>
     <string name="title_activity_second">SecondActivity</string>
+    <string name="oauth_client_id" translatable="false">854532932499-43svmeqbqdc7pfp2nbu7eqq2o3ahjtg9.apps.googleusercontent.com</string>
 </resources>

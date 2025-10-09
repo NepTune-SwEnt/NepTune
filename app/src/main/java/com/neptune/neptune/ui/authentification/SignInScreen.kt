@@ -64,7 +64,12 @@ fun SignInScreen(
     navigateMain: () -> Unit = {},
     signInViewModel: SignInViewModel = viewModel(),
 ) {
-  LaunchedEffect(credentialManager) { signInViewModel.initialize(credentialManager, navigateMain) }
+  LaunchedEffect(credentialManager) {
+    signInViewModel.initialize(
+        credentialManager,
+        navigateMain,
+        context.getString(com.neptune.neptune.R.string.oauth_client_id))
+  }
   val googleId = com.neptune.neptune.R.drawable.google_logo
 
   Surface(modifier = Modifier.fillMaxSize(), color = DarkBlue1) {

@@ -15,18 +15,46 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-private const val OAUTH_CLIENT_ID =
-    "854532932499-43svmeqbqdc7pfp2nbu7eqq2o3ahjtg9.apps.googleusercontent.com"
+/**
+ * Represents the various states of the user authentication process.
+ *
+ * This enum is used to track the user's journey from not being signed in to a successful
+ * authentication, including intermediate steps and error conditions.
+ */
+enum class SignInStatus {
 
-private enum class SignInStatus {
+  // The initial state before the ViewModel has been initialized.
   BEFORE_INITIALIZATION,
+  // The state when the user is known to be signed out, or after a sign-out action.
   SIGNED_OUT,
+
+  /**
+   * The state when the user has initiated the sign-in flow and the Credential Manager UI is
+   * expected to be visible.
+   */
   SIGN_IN_REQUESTED,
+
+  /**
+   * The state after a credential has been successfully retrieved from the Credential Manager and
+   * the app is now authenticating with Firebase.
+   */
   IN_PROGRESS_FIREBASE_AUTH,
+
+  /**
+   * The final state indicating that the user has been successfully authenticated with Firebase and
+   * their session is active.
+   */
   SUCCESS,
+
+  /**
+   * A terminal state indicating that an unrecoverable error occurred during the sign-in process,
+   * such as a network issue or an invalid token during Firebase authentication.
+   */
   ERROR
 }
 
@@ -44,8 +72,15 @@ class SignInViewModel : ViewModel() {
 
   private val _signInStatus = MutableStateFlow<SignInStatus>(SignInStatus.BEFORE_INITIALIZATION)
 
+  /** Exposes the currently authenticated [SignInStatus] as a read-only [StateFlow]. */
+  val signInStatus: StateFlow<SignInStatus> = _signInStatus.asStateFlow()
+
   private val _currentUser = MutableStateFlow<FirebaseUser?>(null)
+
+  /** Exposes the currently authenticated [FirebaseUser] as a read-only [StateFlow]. */
+  val currentUser: StateFlow<FirebaseUser?> = _currentUser.asStateFlow()
   private var navigateMain: () -> Unit = {}
+  private lateinit var clientId: String
 
   /**
    * Initializes the ViewModel.
@@ -59,9 +94,10 @@ class SignInViewModel : ViewModel() {
    * @param navigate The lambda function to be executed for navigating to the main screen after a
    *   successful sign-in.
    */
-  fun initialize(credential: CredentialManager, navigate: () -> Unit) {
+  fun initialize(credential: CredentialManager, navigate: () -> Unit, serverClientId: String) {
     credentialManager = credential
     navigateMain = navigate
+    clientId = serverClientId
 
     val initialUser = firebaseAuth.currentUser
     _currentUser.value = initialUser
@@ -89,7 +125,7 @@ class SignInViewModel : ViewModel() {
     val googleIdOption: GetGoogleIdOption =
         GetGoogleIdOption.Builder()
             .setFilterByAuthorizedAccounts(false)
-            .setServerClientId(OAUTH_CLIENT_ID)
+            .setServerClientId(clientId)
             .build()
 
     val request = GetCredentialRequest.Builder().addCredentialOption(googleIdOption).build()
