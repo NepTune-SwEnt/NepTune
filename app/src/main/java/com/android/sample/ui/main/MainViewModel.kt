@@ -16,7 +16,7 @@ class MainViewModel() : ViewModel() {
     loadData()
   }
 
-  // Fake load data for now
+  // Todo: Replace with actual data from the repository
   private fun loadData() {
     _discoverSamples.value =
         listOf(
