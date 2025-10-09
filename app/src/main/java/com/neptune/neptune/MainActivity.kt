@@ -13,7 +13,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -27,6 +26,7 @@ import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
 import com.neptune.neptune.ui.navigation.Screen
 import com.neptune.neptune.ui.navigation.TopBar
+import com.neptune.neptune.ui.theme.DarkBlue1
 import com.neptune.neptune.ui.theme.SampleAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -58,8 +58,7 @@ fun NeptuneApp(
   val currentScreen = navigationActions.currentScreen
   Scaffold(
       bottomBar = {
-        BottomNavigationMenu(
-            navigationActions = navigationActions, screen = currentScreen)
+        BottomNavigationMenu(navigationActions = navigationActions, screen = currentScreen)
       },
       topBar = {
         TopBar(
@@ -67,6 +66,7 @@ fun NeptuneApp(
             navigationActions = navigationActions,
             canNavigateBack = currentScreen.showBackButton)
       },
+      containerColor = DarkBlue1,
       content = { innerPadding ->
         NavHost(
             navController = navController,
