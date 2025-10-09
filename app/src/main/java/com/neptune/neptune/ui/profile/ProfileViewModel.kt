@@ -1,4 +1,4 @@
-package com.android.sample.ui.profile
+package com.neptune.neptune.ui.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

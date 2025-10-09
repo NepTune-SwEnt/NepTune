@@ -1,4 +1,4 @@
-package com.android.sample.screen.profile
+package com.neptune.neptune.screen
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assert
@@ -9,17 +9,18 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
-import com.android.sample.ui.profile.ProfileMode
-import com.android.sample.ui.profile.ProfileScreen
-import com.android.sample.ui.profile.ProfileScreenTestTags
-import com.android.sample.ui.profile.ProfileUiState
-import com.android.sample.ui.theme.SampleAppTheme
+import com.neptune.neptune.ui.profile.ProfileMode
+import com.neptune.neptune.ui.profile.ProfileScreen
+import com.neptune.neptune.ui.profile.ProfileScreenTestTags
+import com.neptune.neptune.ui.profile.ProfileUiState
+import com.neptune.neptune.ui.theme.SampleAppTheme
 import org.junit.Rule
 import org.junit.Test
 
 class ProfileScreenTest {
 
-    @get:Rule val composeTestRule = createComposeRule()
+    @get:Rule
+    val composeTestRule = createComposeRule()
 
     private fun setContentViewMode(
         state: ProfileUiState = ProfileUiState(
