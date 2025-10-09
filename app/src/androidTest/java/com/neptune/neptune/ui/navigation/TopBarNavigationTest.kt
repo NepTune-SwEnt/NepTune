@@ -18,7 +18,6 @@ class TopBarNavigationTest {
   fun topBar_showsTitle() {
     composeTestRule.setContent {
       TopBar(
-          modifier = Modifier,
           currentScreen = testScreen,
           navigationActions = null,
           canNavigateBack = false)
@@ -34,7 +33,6 @@ class TopBarNavigationTest {
     composeTestRule.setContent {
       val navController = rememberNavController()
       TopBar(
-          modifier = Modifier,
           currentScreen = testScreen,
           navigationActions =
               object : NavigationActions(navController) {
@@ -52,7 +50,6 @@ class TopBarNavigationTest {
     composeTestRule.setContent {
       val navController = rememberNavController()
       TopBar(
-          modifier = Modifier,
           currentScreen = testScreen,
           navigationActions =
               object : NavigationActions(navController) {
