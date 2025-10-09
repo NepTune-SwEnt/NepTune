@@ -150,9 +150,11 @@ dependencies {
 
     // ----------       Robolectric     ------------
     testImplementation(libs.robolectric)
+    testImplementation(kotlin("test"))
 
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
+
 }
 
 tasks.withType<Test> {
@@ -191,4 +193,8 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
         include("outputs/code_coverage/debugAndroidTest/connected/*/coverage.ec")
     })
+}
+tasks.register("testDebugUnitTestCoverage") {
+    dependsOn("testDebugUnitTest")
+    finalizedBy("jacocoTestReport")
 }
