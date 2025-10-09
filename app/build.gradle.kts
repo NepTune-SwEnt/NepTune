@@ -12,6 +12,12 @@ android {
     namespace = "com.neptune.neptune"
     compileSdk = 34
 
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1,LICENSE.md,LICENSE-notice.md}"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.neptune.neptune"
         minSdk = 28
@@ -155,6 +161,11 @@ dependencies {
     implementation(libs.credentials)
     implementation(libs.credentials.play.services.auth)
     implementation(libs.googleid)
+
+    androidTestImplementation("io.mockk:mockk-android:1.13.10")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("io.mockk:mockk:1.13.10")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
 }
 
 tasks.withType<Test> {
