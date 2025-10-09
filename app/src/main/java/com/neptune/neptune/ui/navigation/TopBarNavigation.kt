@@ -14,18 +14,17 @@ import androidx.compose.ui.platform.testTag
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar(
-    modifier: Modifier,
     currentScreen: Screen?,
     navigationActions: NavigationActions?,
     canNavigateBack: Boolean,
 ) {
   // TODO: Change background color when Neptune theme is available
   TopAppBar(
-      modifier = modifier.testTag(NavigationTestTags.TOP_BAR),
+      modifier = Modifier.testTag(NavigationTestTags.TOP_BAR),
       title = {
         Text(
             text = currentScreen?.name ?: "",
-            modifier = modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
+            modifier = Modifier.testTag(NavigationTestTags.TOP_BAR_TITLE))
       },
       navigationIcon = {
         if (canNavigateBack && navigationActions != null) {

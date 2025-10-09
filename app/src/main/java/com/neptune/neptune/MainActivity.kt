@@ -48,10 +48,8 @@ class MainActivity : ComponentActivity() {
 private val startDestination = Screen.Main.route
 private var currentRoute: String? = startDestination
 
-@Preview
 @Composable
 fun NeptuneApp(
-    modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
 ) {
   val navigationActions = NavigationActions(navController)
@@ -59,14 +57,12 @@ fun NeptuneApp(
   currentRoute = navBackStackEntry?.destination?.route
   val currentScreen = navigationActions.currentScreen
   Scaffold(
-      modifier = modifier,
       bottomBar = {
         BottomNavigationMenu(
-            modifier = modifier, navigationActions = navigationActions, screen = currentScreen)
+            navigationActions = navigationActions, screen = currentScreen)
       },
       topBar = {
         TopBar(
-            modifier = modifier,
             currentScreen = currentScreen,
             navigationActions = navigationActions,
             canNavigateBack = currentScreen.showBackButton)

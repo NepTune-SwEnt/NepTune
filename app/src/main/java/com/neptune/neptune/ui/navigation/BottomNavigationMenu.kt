@@ -35,7 +35,6 @@ fun getTabForRoute(route: String?): Tab? {
 @Preview
 @Composable
 fun BottomNavigationMenu(
-    modifier: Modifier = Modifier,
     screen: Screen = Screen.Main,
     navigationActions: NavigationActions? = null,
 ) {
@@ -44,7 +43,7 @@ fun BottomNavigationMenu(
   if (!screen.showBottomBar) {
     return
   }
-  NavigationBar(modifier = modifier.testTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU)) {
+  NavigationBar(modifier = Modifier.testTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU)) {
     tabs.forEach { tab ->
       NavigationBarItem(
           icon = {
