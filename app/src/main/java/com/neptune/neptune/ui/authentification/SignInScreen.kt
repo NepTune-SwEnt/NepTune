@@ -15,13 +15,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -90,7 +90,10 @@ fun SignInScreen(
               colors =
                   ButtonDefaults.buttonColors(
                       containerColor = LightTurquoise,
-                      contentColor = MaterialTheme.colorScheme.onBackground),
+                      // Hardcoded to Black because the default text color becomes white in dark
+                      // mode,
+                      // which is unreadable against the light turquoise button background.
+                      contentColor = Color.Black),
               shape = RoundedCornerShape(12.dp),
               modifier = Modifier.testTag(SignInScreenTags.LOGIN_BUTTON)) {
                 Row {
