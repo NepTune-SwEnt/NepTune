@@ -125,7 +125,7 @@ fun MainScreen(mainViewModel: MainViewModel = viewModel()) {
             // Profile icon
             actions = {
               IconButton(
-                  onClick = { /*Does nothing for now*/},
+                  onClick = { /*Does nothing for now, Todo: Add an action with the click*/},
                   modifier =
                       Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
                           .size(57.dp)
@@ -256,7 +256,7 @@ fun SectionHeader(title: String) {
                     fontSize = 37.sp,
                     fontFamily = FontFamily(Font(R.font.markazi_text)),
                     fontWeight = FontWeight(400)))
-        IconButton(onClick = { /*Does nothing for now*/}) {
+        IconButton(onClick = { /*Does nothing for now, Todo: Add an action with the click*/}) {
           Icon(
               imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
               contentDescription = "See More",
@@ -296,6 +296,7 @@ fun SampleCard(sample: Sample) {
                     modifier = Modifier.size(22.dp).testTag(MainScreenTestTags.SAMPLE_PROFILE_ICON))
                 Spacer(Modifier.width(6.dp))
                 Text(
+                    /*Todo: Replace the hardCoded "Name" with the one provided by the Profile ViewModel*/
                     text = "Name",
                     color = LightTurquoise,
                     modifier = Modifier.testTag(MainScreenTestTags.SAMPLE_USERNAME),
