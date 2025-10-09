@@ -54,6 +54,9 @@ android {
         compose = true
     }
 
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.4.2"
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -122,6 +125,7 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(platform(libs.compose.bom))
     testImplementation(libs.junit)
     globalTestImplementation(libs.androidx.junit)
     globalTestImplementation(libs.androidx.espresso.core)
