@@ -122,6 +122,7 @@ dependencies {
     testImplementation(libs.junit)
     globalTestImplementation(libs.androidx.junit)
     globalTestImplementation(libs.androidx.espresso.core)
+    implementation(libs.androidx.navigation.compose)
 
     // ------------- Jetpack Compose ------------------
     val composeBom = platform(libs.compose.bom)
