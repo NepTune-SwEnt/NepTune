@@ -1,4 +1,4 @@
-package com.android.sample.resources
+package com.neptune.neptune.resources
 
 // Like R, but C
 object C {
