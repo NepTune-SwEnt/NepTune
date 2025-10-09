@@ -1,7 +1,6 @@
 // Fichier : app/src/test/java/com/neptune/neptune/ui/navigation/TopBarNavigationTest.kt
 package com.neptune.neptune.ui.navigation
 
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.navigation.compose.rememberNavController
@@ -17,10 +16,7 @@ class TopBarNavigationTest {
   @Test
   fun topBar_showsTitle() {
     composeTestRule.setContent {
-      TopBar(
-          currentScreen = testScreen,
-          navigationActions = null,
-          canNavigateBack = false)
+      TopBar(currentScreen = testScreen, navigationActions = null, canNavigateBack = false)
     }
     composeTestRule
         .onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE)
