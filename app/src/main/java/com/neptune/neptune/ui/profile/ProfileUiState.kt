@@ -1,4 +1,4 @@
-package com.android.sample.ui.profile
+package com.neptune.neptune.ui.profile
 
 /** Represents the current interaction mode of the profile screen. */
 enum class ProfileMode {

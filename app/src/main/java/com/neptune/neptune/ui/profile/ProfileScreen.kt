@@ -1,4 +1,4 @@
-package com.android.sample.ui.profile
+package com.neptune.neptune.ui.profile
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -35,8 +35,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.android.sample.ui.theme.SampleAppTheme
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.android.sample.R
+import com.neptune.neptune.ui.theme.SampleAppTheme
 
 /**
  * Centralized constants defining all `testTag` identifiers used in [ProfileScreen] UI tests.
@@ -51,7 +52,7 @@ import com.android.sample.R
  * composeTestRule.onNodeWithTag(ProfileScreenTestTags.EDIT_BUTTON).assertIsDisplayed()
  * ```
  *
- * @see androidx.compose.ui.platform.testTag
+ * @see testTag
  * @see ProfileScreenTest
  */
 object ProfileScreenTestTags {
@@ -426,7 +427,7 @@ fun ProfileScreenEditModePreview() {
  */
 @Composable
 fun ProfileRoute() {
-    val viewModel: ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val viewModel: ProfileViewModel = viewModel()
     val state = viewModel.uiState.collectAsState().value
 
     ProfileScreen(
