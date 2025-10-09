@@ -156,6 +156,7 @@ dependencies {
 
     // ----------       Robolectric     ------------
     testImplementation(libs.robolectric)
+    testImplementation(kotlin("test"))
 
     // ----------        Firebase       ------------
     implementation(platform(libs.firebase.bom))
