@@ -64,7 +64,7 @@ fun TopBar(
         }
       },
       actions = {
-        if (!canNavigateBack && navigationActions != null) {
+        if (currentScreen?.showProfile == true && navigationActions != null) {
           IconButton(
               onClick = { navigationActions.navigateTo(Screen.Profile) },
               modifier =

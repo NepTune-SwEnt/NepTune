@@ -19,7 +19,7 @@ class NavigationTest {
 
   @Test
   fun testTagsAreCorrect() {
-    composeTestRule.setContent { NeptuneApp() }
+    composeTestRule.setContent { NeptuneApp(testing = true) }
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).assertIsDisplayed()
@@ -31,21 +31,21 @@ class NavigationTest {
 
   @Test
   fun navigationToEditTabShowsEditScreen() {
-    composeTestRule.setContent { NeptuneApp() }
+    composeTestRule.setContent { NeptuneApp(testing = true) }
     composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Edit")
   }
 
   @Test
   fun navigationToMainTabShowsMainScreen() {
-    composeTestRule.setContent { NeptuneApp() }
+    composeTestRule.setContent { NeptuneApp(testing = true) }
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Neptune")
   }
 
   @Test
   fun profileButtonNavigatesToProfileScreen() {
-    composeTestRule.setContent { NeptuneApp() }
+    composeTestRule.setContent { NeptuneApp(testing = true) }
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("My Profile")
@@ -54,7 +54,7 @@ class NavigationTest {
 
   @Test
   fun goBackFromProfileToMain() {
-    composeTestRule.setContent { NeptuneApp() }
+    composeTestRule.setContent { NeptuneApp(testing = true) }
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
@@ -63,7 +63,7 @@ class NavigationTest {
 
   @Test
   fun goBackFromProfileToEdit() {
-    composeTestRule.setContent { NeptuneApp() }
+    composeTestRule.setContent { NeptuneApp(testing = true) }
     composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
@@ -72,7 +72,7 @@ class NavigationTest {
 
   @Test
   fun bottomBarIsHiddenOnProfileScreen() {
-    composeTestRule.setContent { NeptuneApp() }
+    composeTestRule.setContent { NeptuneApp(testing = true) }
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsNotDisplayed()
@@ -80,14 +80,14 @@ class NavigationTest {
 
   @Test
   fun mainTabIsSelectedByDefault() {
-    composeTestRule.setContent { NeptuneApp() }
+    composeTestRule.setContent { NeptuneApp(testing = true) }
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
     composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).assertIsNotSelected()
   }
 
   @Test
   fun editTabIsSelectedAfterClick() {
-    composeTestRule.setContent { NeptuneApp() }
+    composeTestRule.setContent { NeptuneApp(testing = true) }
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
     composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).assertIsSelected()
@@ -96,7 +96,7 @@ class NavigationTest {
 
   @Test
   fun mainTabIsSelectedAfterNavigatingBackFromEdit() {
-    composeTestRule.setContent { NeptuneApp() }
+    composeTestRule.setContent { NeptuneApp(testing = true) }
     composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).assertIsSelected()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
@@ -106,21 +106,21 @@ class NavigationTest {
 
   @Test
   fun navigationToPostTabShowsPostScreen() {
-    composeTestRule.setContent { NeptuneApp() }
+    composeTestRule.setContent { NeptuneApp(testing = true) }
     composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Post")
   }
 
   @Test
   fun navigationToSearchTabShowsSearchScreen() {
-    composeTestRule.setContent { NeptuneApp() }
+    composeTestRule.setContent { NeptuneApp(testing = true) }
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Search")
   }
 
   @Test
   fun postTabIsSelectedAfterClick() {
-    composeTestRule.setContent { NeptuneApp() }
+    composeTestRule.setContent { NeptuneApp(testing = true) }
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
     composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).assertIsSelected()
@@ -129,7 +129,7 @@ class NavigationTest {
 
   @Test
   fun searchTabIsSelectedAfterClick() {
-    composeTestRule.setContent { NeptuneApp() }
+    composeTestRule.setContent { NeptuneApp(testing = true) }
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsSelected()
@@ -138,7 +138,7 @@ class NavigationTest {
 
   @Test
   fun goBackFromProfileToPost() {
-    composeTestRule.setContent { NeptuneApp() }
+    composeTestRule.setContent { NeptuneApp(testing = true) }
     composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
@@ -147,7 +147,7 @@ class NavigationTest {
 
   @Test
   fun goBackFromProfileToSearch() {
-    composeTestRule.setContent { NeptuneApp(navController = rememberNavController()) }
+    composeTestRule.setContent { NeptuneApp(navController = rememberNavController(),testing = true) }
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()

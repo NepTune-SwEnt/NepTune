@@ -15,10 +15,10 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
-import com.neptune.neptune.NeptuneApp
 import com.neptune.neptune.R
 import com.neptune.neptune.ui.main.IconWithText
 import com.neptune.neptune.ui.main.IconWithTextPainter
+import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.navigation.NavigationTestTags
@@ -30,7 +30,7 @@ class MainScreenTest {
   @get:Rule val composeTestRule = createComposeRule()
 
   private fun setContent(mainViewModel: MainViewModel = MainViewModel()) {
-    composeTestRule.setContent { NeptuneApp() }
+    composeTestRule.setContent { MainScreen(mainViewModel) }
   }
 
   @Test

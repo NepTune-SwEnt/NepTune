@@ -2,42 +2,52 @@ package com.neptune.neptune.ui.navigation
 
 import androidx.navigation.NavHostController
 
+/**
+ * Screens used in the app. Each screen is a destination in the navigation graph.
+ *
+ * @param route The route of the screen
+ * @param name The name of the screen
+ * @param showBottomBar Whether to show the bottom navigation bar
+ * @param showBackButton Whether to show the back button in the top app bar
+ * @param showProfile Whether to show the profile icon in the top app bar
+ */
 sealed class Screen(
     val route: String,
     val name: String,
-    val showBottomBar: Boolean,
-    val showBackButton: Boolean,
+    val showBottomBar: Boolean = true,
+    val showProfile: Boolean = true,
+    val showBackButton: Boolean = false,
 ) {
+  object Main : Screen(route = "main", name = "Neptune")
 
-  object Main :
-      Screen(route = "main", name = "Neptune", showBottomBar = true, showBackButton = false)
+  object Edit : Screen(route = "edit", name = "Edit")
 
-  object Edit : Screen(route = "edit", name = "Edit", showBottomBar = true, showBackButton = false)
+  object Search : Screen(route = "search", name = "Search")
 
-  object Search :
-      Screen(route = "search", name = "Search", showBottomBar = true, showBackButton = false)
-
-  object Post : Screen(route = "post", name = "Post", showBottomBar = true, showBackButton = false)
+  object Post : Screen(route = "post", name = "Post")
 
   object Profile :
-      Screen(route = "profile", name = "My Profile", showBottomBar = false, showBackButton = true)
+      Screen(route = "profile", name = "My Profile", showBackButton = true, showBottomBar = false)
+
+  object SignIn :
+      Screen(route = "sign_in", name = "Neptune", showBottomBar = false, showProfile = false)
 }
 
 open class NavigationActions(
     private val navController: NavHostController,
 ) {
 
-  val currentScreen: Screen
-    get() {
-      return when (currentRoute()) {
-        Screen.Main.route -> Screen.Main
-        Screen.Edit.route -> Screen.Edit
-        Screen.Profile.route -> Screen.Profile
-        Screen.Search.route -> Screen.Search
-        Screen.Post.route -> Screen.Post
-        else -> Screen.Main
-      }
+  fun currentScreen(route: String?): Screen {
+    return when (route) {
+      Screen.Main.route -> Screen.Main
+      Screen.Edit.route -> Screen.Edit
+      Screen.Profile.route -> Screen.Profile
+      Screen.Search.route -> Screen.Search
+      Screen.Post.route -> Screen.Post
+      Screen.SignIn.route -> Screen.SignIn
+      else -> Screen.SignIn
     }
+  }
   /**
    * Navigate to the specified screen.
    *
