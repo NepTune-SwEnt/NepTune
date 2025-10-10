@@ -176,12 +176,20 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
     }
 
     val fileFilter = listOf(
+        // Android/generated
         "**/R.class",
         "**/R$*.class",
         "**/BuildConfig.*",
         "**/Manifest*.*",
         "**/*Test*.*",
         "android/**/*.*",
+
+        // I want to add those lines
+        "androidx/compose/**",
+        "**/ComposableSingletons*",
+        "**/*\$composable*",
+        "**/*\$ui*",
+        // To here
     )
 
     val debugTree = fileTree("${project.layout.buildDirectory.get()}/tmp/kotlin-classes/debug") {

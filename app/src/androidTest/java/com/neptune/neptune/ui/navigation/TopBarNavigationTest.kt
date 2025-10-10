@@ -57,20 +57,22 @@ class TopBarNavigationTest {
     }
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).assertIsDisplayed()
   }
-    @Test
-    fun topBar_showsTitle_andProfileButton_whenCannotNavigateBack() {
-        composeTestRule.setContent {
-            val navController = rememberNavController()
-            TopBar(
-                currentScreen = Screen.Profile,
-                navigationActions = object : NavigationActions(navController) {
-                    override fun goBack() {}
-                    override fun navigateTo(screen: Screen) {}
-                },
-                canNavigateBack = false
-            )
-        }
-        composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertIsDisplayed()
-        composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).assertIsDisplayed()
+
+  @Test
+  fun topBar_showsTitle_andProfileButton_whenCannotNavigateBack() {
+    composeTestRule.setContent {
+      val navController = rememberNavController()
+      TopBar(
+          currentScreen = Screen.Profile,
+          navigationActions =
+              object : NavigationActions(navController) {
+                override fun goBack() {}
+
+                override fun navigateTo(screen: Screen) {}
+              },
+          canNavigateBack = false)
     }
+    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).assertIsDisplayed()
+  }
 }
