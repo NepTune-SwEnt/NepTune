@@ -21,6 +21,9 @@ sealed class Screen(
 
   object Profile :
       Screen(route = "profile", name = "My Profile", showBottomBar = false, showBackButton = true)
+
+  object SignIn :
+      Screen(route = "signIn", name = "Neptune", showBottomBar = false, showBackButton = false)
 }
 
 open class NavigationActions(

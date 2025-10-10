@@ -9,16 +9,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.neptune.neptune.resources.C
+import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.mock.MockEditScreen
 import com.neptune.neptune.ui.mock.MockPostScreen
@@ -47,16 +46,13 @@ class MainActivity : ComponentActivity() {
   }
 }
 
-private val startDestination = Screen.Main.route
-private var currentRoute: String? = startDestination
+private val startDestination = Screen.SignIn.route
 
 @Composable
 fun NeptuneApp(
     navController: NavHostController = rememberNavController(),
 ) {
   val navigationActions = NavigationActions(navController)
-  val navBackStackEntry by navController.currentBackStackEntryAsState()
-  currentRoute = navBackStackEntry?.destination?.route
   val currentScreen = navigationActions.currentScreen
   Scaffold(
       bottomBar = {
@@ -80,6 +76,9 @@ fun NeptuneApp(
               composable(Screen.Edit.route) { MockEditScreen() }
               composable(Screen.Search.route) { MockSearchScreen() }
               composable(Screen.Post.route) { MockPostScreen() }
+              composable(Screen.SignIn.route) {
+                SignInScreen(navigateMain = { navigationActions.navigateTo(Screen.Main) })
+              }
             }
       })
 }
