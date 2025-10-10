@@ -98,4 +98,48 @@ class NavigationTest {
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
     composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).assertIsNotSelected()
   }
+
+  @Test
+  fun navigationToPostTabShowsPostScreen() {
+    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Post")
+  }
+
+  @Test
+  fun navigationToSearchTabShowsSearchScreen() {
+    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Search")
+  }
+
+  @Test
+  fun postTabIsSelectedAfterClick() {
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).assertIsSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
+  }
+
+  @Test
+  fun searchTabIsSelectedAfterClick() {
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
+  }
+
+  @Test
+  fun goBackFromProfileToPost() {
+    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Post")
+  }
+
+  @Test
+  fun goBackFromProfileToSearch() {
+    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Search")
+  }
 }

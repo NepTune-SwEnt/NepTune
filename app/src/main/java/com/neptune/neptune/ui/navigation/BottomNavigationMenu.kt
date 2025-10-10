@@ -1,6 +1,9 @@
 package com.neptune.neptune.ui.navigation
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -22,12 +25,24 @@ sealed class Tab(val name: String, val icon: Int, val destination: Screen, val t
   object Main : Tab("Home", R.drawable.home_planet, Screen.Main, NavigationTestTags.MAIN_TAB)
 
   object Edit : Tab("Sampler", R.drawable.music_note, Screen.Edit, NavigationTestTags.EDIT_TAB)
+
+  object Search :
+      Tab(
+          "Search",
+          android.R.drawable.ic_menu_search,
+          Screen.Search,
+          NavigationTestTags.SEARCH_TAB)
+
+  object Post :
+      Tab("Post", android.R.drawable.ic_menu_add, Screen.Post, NavigationTestTags.POST_TAB)
 }
 
 private val tabs =
     listOf(
         Tab.Main,
+        Tab.Search,
         Tab.Edit,
+        Tab.Post,
     )
 
 fun getTabForRoute(route: String?): Tab? {
@@ -42,29 +57,34 @@ fun BottomNavigationMenu(
   if (!screen.showBottomBar) {
     return
   }
-  NavigationBar(
-      modifier = Modifier.testTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU),
-      containerColor = DarkBlue1) {
-        tabs.forEach { tab ->
-          NavigationBarItem(
-              icon = {
-                Icon(
-                    painter = painterResource(id = tab.icon),
-                    contentDescription = tab.name,
-                    modifier = Modifier.size(33.dp))
-              },
-              alwaysShowLabel = false,
-              label = { Text(tab.name) },
-              selected = tab == getTabForRoute(screen.route),
-              onClick = { navigationActions?.navigateTo(tab.destination) },
-              enabled = navigationActions != null,
-              modifier = Modifier.testTag(tab.testTag),
-              colors =
-                  NavigationBarItemDefaults.colors(
-                      selectedTextColor = LightPurpleBlue,
-                      selectedIconColor = LightPurpleBlue,
-                      unselectedIconColor = LightTurquoise,
-                      indicatorColor = DarkBlue2))
+  Column {
+    HorizontalDivider(
+        modifier = Modifier.fillMaxWidth(), thickness = 0.75.dp, color = LightTurquoise)
+    NavigationBar(
+        modifier = Modifier.testTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU),
+        containerColor = DarkBlue1) {
+          tabs.forEach { tab ->
+            NavigationBarItem(
+                icon = {
+                  Icon(
+                      painter = painterResource(id = tab.icon),
+                      contentDescription = tab.name,
+                      modifier = Modifier.size(33.dp),
+                      tint = LightTurquoise)
+                },
+                alwaysShowLabel = false,
+                label = { Text(tab.name) },
+                selected = tab == getTabForRoute(screen.route),
+                onClick = { navigationActions?.navigateTo(tab.destination) },
+                enabled = navigationActions != null,
+                modifier = Modifier.testTag(tab.testTag),
+                colors =
+                    NavigationBarItemDefaults.colors(
+                        selectedTextColor = LightPurpleBlue,
+                        selectedIconColor = LightPurpleBlue,
+                        unselectedIconColor = LightTurquoise,
+                        indicatorColor = DarkBlue2))
+          }
         }
-      }
+  }
 }

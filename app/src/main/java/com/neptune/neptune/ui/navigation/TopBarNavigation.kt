@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -71,9 +72,9 @@ fun TopBar(
                       .size(57.dp)
                       .testTag(NavigationTestTags.PROFILE_BUTTON)) {
                 Icon(
-                    painter = painterResource(id = android.R.drawable.ic_menu_myplaces),
+                    painter = painterResource(id = R.drawable.profile),
                     contentDescription = "Profile",
-                    tint = LightTurquoise)
+                    tint = Color.Unspecified)
               }
         }
       },

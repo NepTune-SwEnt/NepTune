@@ -14,6 +14,11 @@ sealed class Screen(
 
   object Edit : Screen(route = "edit", name = "Edit", showBottomBar = true, showBackButton = false)
 
+  object Search :
+      Screen(route = "search", name = "Search", showBottomBar = true, showBackButton = false)
+
+  object Post : Screen(route = "post", name = "Post", showBottomBar = true, showBackButton = false)
+
   object Profile :
       Screen(route = "profile", name = "My Profile", showBottomBar = false, showBackButton = true)
 }
@@ -28,6 +33,8 @@ open class NavigationActions(
         Screen.Main.route -> Screen.Main
         Screen.Edit.route -> Screen.Edit
         Screen.Profile.route -> Screen.Profile
+        Screen.Search.route -> Screen.Search
+        Screen.Post.route -> Screen.Post
         else -> Screen.Main
       }
     }

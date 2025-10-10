@@ -19,9 +19,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.neptune.neptune.resources.C
+import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.mock.MockEditScreen
-import com.neptune.neptune.ui.mock.MockMainScreen
+import com.neptune.neptune.ui.mock.MockPostScreen
 import com.neptune.neptune.ui.mock.MockProfileScreen
+import com.neptune.neptune.ui.mock.MockSearchScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
 import com.neptune.neptune.ui.navigation.Screen
@@ -73,9 +75,11 @@ fun NeptuneApp(
             startDestination = startDestination,
             modifier = Modifier.padding(innerPadding)) {
               // TODO: Replace mock screens with actual app screens
-              composable(Screen.Main.route) { MockMainScreen() }
+              composable(Screen.Main.route) { MainScreen() }
               composable(Screen.Profile.route) { MockProfileScreen() }
               composable(Screen.Edit.route) { MockEditScreen() }
+              composable(Screen.Search.route) { MockSearchScreen() }
+              composable(Screen.Post.route) { MockPostScreen() }
             }
       })
 }
