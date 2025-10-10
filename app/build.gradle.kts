@@ -3,14 +3,20 @@ plugins {
     alias(libs.plugins.jetbrainsKotlinAndroid)
     alias(libs.plugins.ktfmt)
     alias(libs.plugins.sonar)
-
+    alias(libs.plugins.gms)
+    alias(libs.plugins.composeCompiler)
     id("jacoco")
-    id("com.google.gms.google-services")
 }
 
 android {
     namespace = "com.neptune.neptune"
     compileSdk = 34
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1,LICENSE.md,LICENSE-notice.md}"
+        }
+    }
 
     defaultConfig {
         applicationId = "com.neptune.neptune"
@@ -53,12 +59,12 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
 
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "11"
     }
 
     packaging {
@@ -120,6 +126,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(platform(libs.compose.bom))
+    implementation(libs.firebase.firestore)
     testImplementation(libs.junit)
     globalTestImplementation(libs.androidx.junit)
     globalTestImplementation(libs.androidx.espresso.core)
@@ -152,9 +159,20 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(kotlin("test"))
 
-    // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
+    // ----------        Firebase       ------------
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
 
+    // ---------- Credential Manager ------------
+    implementation(libs.credentials)
+    implementation(libs.credentials.play.services.auth)
+    implementation(libs.googleid)
+
+    androidTestImplementation("io.mockk:mockk-android:1.13.10")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("io.mockk:mockk:1.13.10")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
 }
 
 tasks.withType<Test> {
@@ -193,8 +211,4 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
         include("outputs/code_coverage/debugAndroidTest/connected/*/coverage.ec")
     })
-}
-tasks.register("testDebugUnitTestCoverage") {
-    dependsOn("testDebugUnitTest")
-    finalizedBy("jacocoTestReport")
 }
