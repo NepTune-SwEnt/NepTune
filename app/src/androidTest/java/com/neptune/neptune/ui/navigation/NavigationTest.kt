@@ -11,13 +11,11 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.navigation.compose.rememberNavController
 import com.neptune.neptune.NeptuneApp
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
 class NavigationTest {
   @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
-
 
   @Test
   fun testTagsAreCorrect() {
