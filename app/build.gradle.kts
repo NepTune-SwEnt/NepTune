@@ -120,9 +120,11 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(platform(libs.compose.bom))
+    implementation(libs.androidx.room.external.antlr)
     testImplementation(libs.junit)
     globalTestImplementation(libs.androidx.junit)
     globalTestImplementation(libs.androidx.espresso.core)
+    implementation(libs.androidx.navigation.compose)
 
     // ------------- Jetpack Compose ------------------
     val composeBom = platform(libs.compose.bom)
@@ -174,12 +176,20 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
     }
 
     val fileFilter = listOf(
+        // Android/generated
         "**/R.class",
         "**/R$*.class",
         "**/BuildConfig.*",
         "**/Manifest*.*",
         "**/*Test*.*",
         "android/**/*.*",
+
+        // I want to add those lines
+        "androidx/compose/**",
+        "**/ComposableSingletons*",
+        "**/*\$composable*",
+        "**/*\$ui*",
+        // To here
     )
 
     val debugTree = fileTree("${project.layout.buildDirectory.get()}/tmp/kotlin-classes/debug") {
