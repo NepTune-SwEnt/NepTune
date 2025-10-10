@@ -147,7 +147,9 @@ class NavigationTest {
 
   @Test
   fun goBackFromProfileToSearch() {
-    composeTestRule.setContent { NeptuneApp(navController = rememberNavController(),testing = true) }
+    composeTestRule.setContent {
+      NeptuneApp(navController = rememberNavController(), testing = true)
+    }
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()

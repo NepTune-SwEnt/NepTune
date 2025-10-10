@@ -80,10 +80,12 @@ fun NeptuneApp(
               composable(Screen.Edit.route) { MockEditScreen() }
               composable(Screen.Search.route) { MockSearchScreen() }
               composable(Screen.Post.route) { MockPostScreen() }
-            if (!testing) {
+              if (!testing) {
                 // Add SignIn screen here
-                composable(Screen.SignIn.route) { MockProfileScreen()/* SignInScreen(navigationActions) */ }
-            }
+                composable(Screen.SignIn.route) {
+                  MockProfileScreen() /* SignInScreen(navigationActions) */
+                }
+              }
             }
       })
 }
