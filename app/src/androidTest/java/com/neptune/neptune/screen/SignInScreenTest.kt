@@ -18,26 +18,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
 import org.junit.Test
 
-/**
- * UI Tests for the [SignInScreen] composable that match the actual implementation.
- */
+/** UI Tests for the [SignInScreen] composable that match the actual implementation. */
 class LoginScreenTest {
 
-  @get:Rule
-  val composeTestRule = createComposeRule()
+  @get:Rule val composeTestRule = createComposeRule()
 
-  /**
-   * Helper function to set up the Composable with a mocked ViewModel.
-   */
+  /** Helper function to set up the Composable with a mocked ViewModel. */
   private fun setContent(signInViewModel: SignInViewModel, navigateMain: () -> Unit = {}) {
     composeTestRule.setContent {
       SignInScreen(signInViewModel = signInViewModel, navigateMain = navigateMain)
     }
   }
 
-  /**
-   * Tests that the initial UI displays all elements and the button is enabled by default.
-   */
+  /** Tests that the initial UI displays all elements and the button is enabled by default. */
   @Test
   fun signInScreen_displaysCoreElements_andButtonIsEnabled_whenSignedOut() {
     // GIVEN: The ViewModel is in the SIGNED_OUT state (default)
@@ -55,9 +48,7 @@ class LoginScreenTest {
     composeTestRule.onNodeWithTag(SignInScreenTags.LOGIN_BUTTON).assertIsEnabled()
   }
 
-  /**
-   * Tests that clicking the enabled login button triggers the ViewModel.
-   */
+  /** Tests that clicking the enabled login button triggers the ViewModel. */
   @Test
   fun clickingLoginButton_triggersViewModel_whenEnabled() {
     // GIVEN: The button is enabled
@@ -72,9 +63,7 @@ class LoginScreenTest {
     verify(exactly = 1) { mockViewModel.beginSignIn(any()) }
   }
 
-  /**
-   * Tests that the login button is correctly disabled when sign-in is requested.
-   */
+  /** Tests that the login button is correctly disabled when sign-in is requested. */
   @Test
   fun loginButton_isDisabled_whenSignInIsRequested() {
     // GIVEN: The ViewModel is in the SIGN_IN_REQUESTED state
@@ -89,14 +78,13 @@ class LoginScreenTest {
     composeTestRule.onNodeWithTag(SignInScreenTags.LOGIN_BUTTON).assertIsNotEnabled()
   }
 
-  /**
-   * Tests that the login button is also disabled during Firebase authentication.
-   */
+  /** Tests that the login button is also disabled during Firebase authentication. */
   @Test
   fun loginButton_isDisabled_whenInProgressFirebaseAuth() {
     // GIVEN: The ViewModel is authenticating with Firebase
     val mockViewModel = mockk<SignInViewModel>(relaxed = true)
-    every { mockViewModel.signInStatus } returns MutableStateFlow(SignInStatus.IN_PROGRESS_FIREBASE_AUTH)
+    every { mockViewModel.signInStatus } returns
+        MutableStateFlow(SignInStatus.IN_PROGRESS_FIREBASE_AUTH)
 
     // WHEN: The UI is rendered
     setContent(signInViewModel = mockViewModel)
@@ -106,9 +94,7 @@ class LoginScreenTest {
     composeTestRule.onNodeWithTag(SignInScreenTags.LOGIN_BUTTON).assertIsNotEnabled()
   }
 
-  /**
-   * Tests that the button becomes enabled again after an error, allowing the user to retry.
-   */
+  /** Tests that the button becomes enabled again after an error, allowing the user to retry. */
   @Test
   fun loginButton_isEnabled_afterError() {
     // GIVEN: The ViewModel is in the ERROR state
@@ -122,9 +108,7 @@ class LoginScreenTest {
     composeTestRule.onNodeWithTag(SignInScreenTags.LOGIN_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SignInScreenTags.LOGIN_BUTTON).assertIsEnabled()
   }
-  /**
-   * Ensures that a click is ignored when the button is disabled.
-   */
+  /** Ensures that a click is ignored when the button is disabled. */
   @Test
   fun clickingDisabledLoginButton_doesNotTriggerViewModel() {
     // GIVEN: The ViewModel is in a state where the button is disabled
@@ -140,18 +124,19 @@ class LoginScreenTest {
   }
 
   /**
-   * Verifies the navigation lambda passed to the Composable is correctly wired
-   * to the ViewModel's initialization process.
+   * Verifies the navigation lambda passed to the Composable is correctly wired to the ViewModel's
+   * initialization process.
    */
   @Test
   fun successfulNavigationIsCalled_fromViewModelInteraction() {
     val navigateLambdaSlot = slot<() -> Unit>()
 
-    val mockViewModel = mockk<SignInViewModel> {
-      every { initialize(any(), capture(navigateLambdaSlot), any()) } returns Unit
+    val mockViewModel =
+        mockk<SignInViewModel> {
+          every { initialize(any(), capture(navigateLambdaSlot), any()) } returns Unit
 
-      every { signInStatus } returns MutableStateFlow(SignInStatus.SIGNED_OUT)
-    }
+          every { signInStatus } returns MutableStateFlow(SignInStatus.SIGNED_OUT)
+        }
 
     val mockNavigateMain: () -> Unit = mockk(relaxed = true)
 

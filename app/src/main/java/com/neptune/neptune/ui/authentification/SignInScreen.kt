@@ -67,7 +67,7 @@ fun SignInScreen(
     signInViewModel: SignInViewModel = viewModel(),
 ) {
 
-    val signInStatus by signInViewModel.signInStatus.collectAsState()
+  val signInStatus by signInViewModel.signInStatus.collectAsState()
 
   LaunchedEffect(credentialManager) {
     signInViewModel.initialize(
@@ -97,7 +97,8 @@ fun SignInScreen(
 
           ElevatedButton(
               onClick = { signInViewModel.beginSignIn(context as Activity) },
-              enabled = signInStatus != SignInStatus.SIGN_IN_REQUESTED &&
+              enabled =
+                  signInStatus != SignInStatus.SIGN_IN_REQUESTED &&
                       signInStatus != SignInStatus.IN_PROGRESS_FIREBASE_AUTH,
               colors =
                   ButtonDefaults.buttonColors(
