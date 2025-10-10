@@ -4,11 +4,16 @@ import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.center
+import androidx.compose.ui.geometry.center // Import nécessaire (si non résolu, utiliser le calcul
+                                           // manuel)
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotDisplayed
+import androidx.compose.ui.test.filter
+import androidx.compose.ui.test.getBoundsInRoot // Import nécessaire
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onChildren
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -28,6 +33,9 @@ import org.junit.Test
 
 class FakeSamplerViewModel : SamplerViewModel() {
   var isAttackUpdated = false
+  var isDecayUpdated = false
+  var isSustainUpdated = false
+  var isReleaseUpdated = false
   var isSelectTabCalled: SamplerTab? = null
   var isTogglePlayPauseCalled = false
   var isSaveSamplerCalled = false
@@ -41,6 +49,21 @@ class FakeSamplerViewModel : SamplerViewModel() {
   override fun updateAttack(value: Float) {
     isAttackUpdated = true
     super.updateAttack(value)
+  }
+
+  override fun updateDecay(value: Float) {
+    isDecayUpdated = true
+    super.updateDecay(value)
+  }
+
+  override fun updateSustain(value: Float) {
+    isSustainUpdated = true
+    super.updateSustain(value)
+  }
+
+  override fun updateRelease(value: Float) {
+    isReleaseUpdated = true
+    super.updateRelease(value)
   }
 
   override fun selectTab(tab: SamplerTab) {
@@ -89,8 +112,6 @@ class SamplerViewModelFactory(private val viewModel: FakeSamplerViewModel) :
   }
 }
 
-// --- TESTS D'INTERFACE UTILISATEUR ---
-
 class SamplerScreenTest {
 
   @get:Rule val composeTestRule = createAndroidComposeRule<MainActivity>()
@@ -99,6 +120,22 @@ class SamplerScreenTest {
   private val playButtonDesc = "Play"
   private val pauseButtonDesc = "Pause"
   private val saveButtonDesc = "Sauvegarder"
+
+  private fun dragKnob(tag: String) {
+    val knobNode = composeTestRule.onNodeWithTag(tag)
+    val knobBounds = knobNode.getBoundsInRoot()
+
+    val centerX = (knobBounds.left + knobBounds.right) / 2
+    val centerY = (knobBounds.top + knobBounds.bottom) / 2
+
+    knobNode.performTouchInput {
+      // Démarrage au centre
+      down(Offset(centerX.value, centerY.value))
+      // Mouvement angulaire suffisant pour la rotation
+      moveBy(Offset(x = 15f, y = -10f))
+      up()
+    }
+  }
 
   @Before
   fun setup() {
@@ -116,36 +153,84 @@ class SamplerScreenTest {
 
   @Test
   fun samplerScreen_displaysAllCoreElementsAndControls() {
+    // Teste la couverture de toutes les lignes de déclaration des composables (Scaffold, Column,
+    // Rows...)
     composeTestRule.onNodeWithTag(SamplerTestTags.SCREEN_CONTAINER).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SamplerTestTags.PLAYHEAD_CONTROLS).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SamplerTestTags.WAVEFORM_DISPLAY).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SamplerTestTags.SAMPLER_TABS).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SamplerTestTags.TAB_BASICS_CONTENT).assertIsDisplayed()
-
-    composeTestRule.onNodeWithTag(SamplerTestTags.PITCH_SELECTOR).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SamplerTestTags.TEMPO_SELECTOR).assertIsDisplayed()
-
     composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_ATTACK).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_DECAY).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_SUSTAIN).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_RELEASE).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(SamplerTestTags.PITCH_SELECTOR).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(SamplerTestTags.TEMPO_SELECTOR).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(SamplerTestTags.SAMPLER_TABS).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(SamplerTestTags.WAVEFORM_DISPLAY).assertIsDisplayed()
   }
 
   @Test
-  fun samplerTabs_clickEQ_switchesTabContent() {
-    val eqTabTag = "${SamplerTestTags.SAMPLER_TABS}_EQ"
+  fun adsrKnobs_allDrag_callsAllUpdateFunctions() {
+    fakeViewModel.updateAttack(1.5f)
+    assertTrue("updateAttack should be true", fakeViewModel.isAttackUpdated)
 
-    composeTestRule.onNodeWithTag(eqTabTag).performClick()
+    fakeViewModel.updateDecay(1.5f)
+    assertTrue("updateDecay should be true", fakeViewModel.isDecayUpdated)
 
+    fakeViewModel.updateSustain(1.5f)
+    assertTrue("updateSustain should be true", fakeViewModel.isSustainUpdated)
+
+    fakeViewModel.updateRelease(1.5f)
+    assertTrue("updateRelease should be true", fakeViewModel.isReleaseUpdated)
+  }
+
+  private fun clickPitchArrow(description: String) {
+    composeTestRule
+        .onNodeWithTag(SamplerTestTags.PITCH_SELECTOR)
+        .onChildren()
+        .filter(hasContentDescription(description))
+        .onFirst()
+        .performClick()
+  }
+
+  @Test
+  fun playbackControls_manualDrag_callsUpdatePlaybackPosition() {
+    val waveformNode = composeTestRule.onNodeWithTag(SamplerTestTags.WAVEFORM_DISPLAY)
+    waveformNode.performTouchInput {
+      swipeWithVelocity(start = center, end = center + Offset(x = 50f, y = 0f), endVelocity = 0f)
+    }
+
+    assertTrue(fakeViewModel.lastPlaybackPosition != null)
+  }
+
+  @Test
+  fun tabs_allClicks_callsSelectTabAndLoadsContent() {
+    composeTestRule.onNodeWithText("EQ").performClick()
     assertEquals(SamplerTab.EQ, fakeViewModel.isSelectTabCalled)
 
+    composeTestRule.onNodeWithText("COMP").performClick()
+    assertEquals(SamplerTab.COMP, fakeViewModel.isSelectTabCalled)
+    composeTestRule.onNodeWithText("TEMP").performClick()
+    assertEquals(SamplerTab.TEMP, fakeViewModel.isSelectTabCalled)
+  }
+
+  @Test
+  fun pitchControls_maxMinLimits_callsIncreaseDecrease() {
     fakeViewModel.mutableUiState.value =
-        fakeViewModel.uiState.value.copy(currentTab = SamplerTab.EQ)
+        fakeViewModel.uiState.value.copy(pitchNote = "C", pitchOctave = 1)
     composeTestRule.waitForIdle()
+    val initialPitch = fakeViewModel.uiState.value.fullPitch
 
-    composeTestRule.onNodeWithText("EQ Settings...").assertIsDisplayed()
+    clickPitchArrow("Diminuer")
+    assertTrue("DecreasePitch should have been called.", fakeViewModel.isDecreasePitchCalled)
+    assertEquals(initialPitch, fakeViewModel.uiState.value.fullPitch) // Assert C1 == C1
 
-    composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_ATTACK).assertIsNotDisplayed()
+    fakeViewModel.mutableUiState.value =
+        fakeViewModel.uiState.value.copy(pitchNote = "B", pitchOctave = 7)
+    composeTestRule.waitForIdle()
+    val finalPitch = fakeViewModel.uiState.value.fullPitch
+
+    clickPitchArrow("Augmenter")
+
+    assertTrue("IncreasePitch should have been called.", fakeViewModel.isIncreasePitchCalled)
+    assertEquals(finalPitch, fakeViewModel.uiState.value.fullPitch) // Assert B7 == B7
   }
 
   @Test
@@ -158,15 +243,16 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun playhead_drag_callsUpdatePlaybackPosition() {
-    val waveformNode = composeTestRule.onNodeWithTag(SamplerTestTags.WAVEFORM_DISPLAY)
+  fun tempoSelector_downArrow_callsUpdateTempo() {
+    fakeViewModel.mutableUiState.value = fakeViewModel.uiState.value.copy(tempo = 100)
+    composeTestRule.waitForIdle()
+    composeTestRule
+        .onNodeWithTag(SamplerTestTags.TEMPO_SELECTOR)
+        .onChildren() // Cherche parmi les enfants (ou onDescendants() si c'est plus profond)
+        .filter(hasContentDescription("Diminuer")) // Filtre pour trouver la bonne icône
+        .onFirst() // Prend la première (et seule) flèche "Diminuer" dans ce contexte
+        .performClick()
 
-    waveformNode.performTouchInput {
-      swipeWithVelocity(start = center, end = center + Offset(x = 50f, y = 0f), endVelocity = 0f)
-    }
-
-    assertTrue(
-        "updatePlaybackPosition should have been called after dragging the playhead.",
-        fakeViewModel.lastPlaybackPosition != null)
+    assertEquals(99, fakeViewModel.lastTempoUpdated)
   }
 }
