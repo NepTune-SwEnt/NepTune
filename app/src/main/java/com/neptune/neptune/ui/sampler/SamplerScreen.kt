@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.sampler
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -9,8 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.* // Importe toutes les icônes 'filled'
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.* import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,32 +21,50 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlin.math.PI
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
-import androidx.compose.animation.core.*
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import kotlin.math.roundToInt
-import com.neptune.neptune.R
-import com.neptune.neptune.Sample
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.theme.DarkBlue1
 import com.neptune.neptune.ui.theme.DarkBlue2
-import com.neptune.neptune.ui.theme.DarkBlueGray
 import com.neptune.neptune.ui.theme.LightPurpleBlue
 import com.neptune.neptune.ui.theme.LightTurquoise
-import androidx.compose.ui.text.font.Font
-import com.neptune.neptune.ui.main.MainScreenTestTags
+import kotlin.math.PI
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.roundToInt
+import kotlin.math.sin
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+
+
+object SamplerTestTags {
+    const val SCREEN_CONTAINER = "samplerScreenContainer"
+    const val PLAYHEAD_CONTROLS = "playheadControls"
+    const val WAVEFORM_DISPLAY = "waveformDisplay"
+    const val SAMPLER_TABS = "samplerTabs"
+    const val TAB_BASICS_CONTENT = "tabBasicsContent"
+
+    // Knobs
+    const val KNOB_ATTACK = "knobAttack"
+    const val KNOB_DECAY = "knobDecay"
+    const val KNOB_SUSTAIN = "knobSustain"
+    const val KNOB_RELEASE = "knobRelease"
+
+    // Pitch/Tempo
+    const val PITCH_SELECTOR = "pitchSelector"
+    const val TEMPO_SELECTOR = "tempoSelector"
+}
 
 
 val DarkBackground = Color(0xFF1E1D3F)
@@ -68,86 +86,8 @@ fun SamplerScreen(
     var selectedItem by remember { mutableIntStateOf(2) }
 
     Scaffold(
-        containerColor = DarkBackground,
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "NepTune",
-                        style = TextStyle(
-                            fontSize = 45.sp,
-                            fontFamily = FontFamily(Font(R.font.lily_script_one)),
-                            fontWeight = FontWeight(149),
-                            color = LightTurquoise,
-                        ),
-                        modifier =
-                            Modifier.padding(vertical = 25.dp).testTag(MainScreenTestTags.APP_TITLE),
-                        textAlign = TextAlign.Center
-                    )
-                },
-                actions = {
-                    IconButton(
-                        onClick = { /*Does nothing for now, Todo: Add an action with the click*/ },
-                        modifier =
-                            Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
-                                .size(57.dp)
-                                .testTag(MainScreenTestTags.PROFILE_BUTTON)
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.profile),
-                            contentDescription = "Profile",
-                            tint = Color.Unspecified
-                        )
-                    }
-                },
-                colors =
-                    TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = DarkBlue1
-                    ),
-                modifier =
-                    Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_APP_BAR)
-            )
-        },
-        bottomBar = {
-            Column(modifier = Modifier.testTag(MainScreenTestTags.BOTTOM_NAVIGATION_BAR)) {
-                HorizontalDivider(
-                    modifier = Modifier.fillMaxWidth(), thickness = 0.75.dp, color = LightTurquoise)
-                NavigationBar(containerColor = DarkBlue1) {
-                    // Item 0: Home
-                    NavigationBarItem(
-                        icon = { Icon(painter = painterResource(R.drawable.home_planet), contentDescription = "Home", modifier = Modifier.size(33.dp)) },
-                        selected = selectedItem == 0,
-                        onClick = { selectedItem = 0 },
-                        modifier = Modifier.testTag(MainScreenTestTags.NAV_HOME),
-                        alwaysShowLabel = false,
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = LightPurpleBlue, unselectedIconColor = LightTurquoise, indicatorColor = DarkBlue2))
-                    // Item 1: Search
-                    NavigationBarItem(
-                        icon = { Icon(Icons.Default.Search, contentDescription = "Search", modifier = Modifier.size(33.dp)) },
-                        selected = selectedItem == 1,
-                        onClick = { selectedItem = 1 },
-                        modifier = Modifier.testTag(MainScreenTestTags.NAV_SEARCH),
-                        alwaysShowLabel = false,
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = LightPurpleBlue, unselectedIconColor = LightTurquoise, indicatorColor = DarkBlue2))
-                    // Item 2: Sampler
-                    NavigationBarItem(
-                        icon = { Icon(painter = painterResource(R.drawable.music_note), contentDescription = "Sampler", modifier = Modifier.size(33.dp)) },
-                        selected = selectedItem == 2,
-                        onClick = { selectedItem = 2 },
-                        modifier = Modifier.testTag(MainScreenTestTags.NAV_SAMPLER),
-                        alwaysShowLabel = false,
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = LightPurpleBlue, unselectedIconColor = LightTurquoise, indicatorColor = DarkBlue2))
-                    // Item 3: New Post
-                    NavigationBarItem(
-                        icon = { Icon(Icons.Default.Add, contentDescription = "New Post", modifier = Modifier.size(33.dp)) },
-                        selected = selectedItem == 3,
-                        onClick = { selectedItem = 3 },
-                        modifier = Modifier.testTag(MainScreenTestTags.NAV_NEW_POST),
-                        alwaysShowLabel = false,
-                        colors = NavigationBarItemDefaults.colors(selectedIconColor = LightPurpleBlue, unselectedIconColor = LightTurquoise, indicatorColor = DarkBlue2))
-                }
-            }
-        }
+        modifier = Modifier.testTag(SamplerTestTags.SCREEN_CONTAINER),
+
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -187,32 +127,6 @@ fun SamplerScreen(
 
 
 @Composable
-fun SamplerTopBar(onBack: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp, bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-            contentDescription = "Retour",
-            tint = LightText,
-            modifier = Modifier
-                .size(32.dp)
-                .clickable(onClick = onBack)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = "Sampler",
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Bold,
-            color = LightText
-        )
-    }
-}
-
-@Composable
 fun PlaybackAndWaveformControls(
     isPlaying: Boolean,
     onTogglePlayPause: () -> Unit,
@@ -232,6 +146,7 @@ fun PlaybackAndWaveformControls(
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.small)
             .background(DarkBackground)
+            .testTag(SamplerTestTags.PLAYHEAD_CONTROLS)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -259,9 +174,11 @@ fun PlaybackAndWaveformControls(
             PitchTempoSelector(
                 label = "Pitch",
                 value = pitch,
-                onIncrease = onIncreasePitch,   // <-- utilise le callback passé
-                onDecrease = onDecreasePitch,   // <-- utilise le callback passé
-                modifier = Modifier.border(2.dp, FrameBorderColor, MaterialTheme.shapes.small)
+                onIncrease = onIncreasePitch,
+                onDecrease = onDecreasePitch,
+                modifier = Modifier
+                    .border(2.dp, FrameBorderColor, MaterialTheme.shapes.small)
+                    .testTag(SamplerTestTags.PITCH_SELECTOR)
             )
             Spacer(modifier = Modifier.width(8.dp))
 
@@ -270,7 +187,9 @@ fun PlaybackAndWaveformControls(
                 value = "",
                 onIncrease = { onTempoChange(tempo + 1) },
                 onDecrease = { onTempoChange(tempo - 1) },
-                modifier = Modifier.border(2.dp, FrameBorderColor, MaterialTheme.shapes.small)
+                modifier = Modifier
+                    .border(2.dp, FrameBorderColor, MaterialTheme.shapes.small)
+                    .testTag(SamplerTestTags.TEMPO_SELECTOR)
             )
         }
 
@@ -280,7 +199,8 @@ fun PlaybackAndWaveformControls(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(120.dp)
-                .border(2.dp, FrameBorderColor, MaterialTheme.shapes.small),
+                .border(2.dp, FrameBorderColor, MaterialTheme.shapes.small)
+                .testTag(SamplerTestTags.WAVEFORM_DISPLAY),
             isPlaying = isPlaying,
             playbackPosition = playbackPosition,
             onPositionChange = onPositionChange
@@ -446,7 +366,9 @@ fun SamplerTabs(
     onTabSelected: (SamplerTab) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(SamplerTestTags.SAMPLER_TABS)
     ) {
         SamplerTab.values().forEach { tab ->
             val isSelected = tab == currentTab
@@ -462,6 +384,7 @@ fun SamplerTabs(
                     .background(if (isSelected) LightText.copy(alpha = 0.1f) else Color.Transparent)
                     .padding(vertical = 8.dp, horizontal = 4.dp)
                     .wrapContentWidth(Alignment.CenterHorizontally)
+                    .testTag("${SamplerTestTags.SAMPLER_TABS}_${tab.name.uppercase()}")
             )
         }
     }
@@ -475,7 +398,8 @@ fun TabContent(
 ) {
     Box(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
+            .wrapContentHeight()
             .padding(top = 8.dp)
             .border(2.dp, FrameBorderColor)
     ) {
@@ -494,17 +418,20 @@ fun BasicsTabContent(
     viewModel: SamplerViewModel
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .padding(vertical = 8.dp)
+            .testTag(SamplerTestTags.TAB_BASICS_CONTENT),
         horizontalArrangement = Arrangement.SpaceAround
     ) {
-
         ADSRKnob(
             label = "Attack",
             value = uiState.attack,
             onValueChange = viewModel::updateAttack,
             minValue = 0.0f,
             maxValue = 5.0f,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f).testTag(SamplerTestTags.KNOB_ATTACK)
         )
         ADSRKnob(
             label = "Decay",
@@ -512,7 +439,7 @@ fun BasicsTabContent(
             onValueChange = viewModel::updateDecay,
             minValue = 0.0f,
             maxValue = 5.0f,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f).testTag(SamplerTestTags.KNOB_DECAY)
         )
         ADSRKnob(
             label = "Sustain",
@@ -520,7 +447,7 @@ fun BasicsTabContent(
             onValueChange = viewModel::updateSustain,
             minValue = 0.0f,
             maxValue = 5.0f,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f).testTag(SamplerTestTags.KNOB_SUSTAIN)
         )
         ADSRKnob(
             label = "Release",
@@ -528,14 +455,11 @@ fun BasicsTabContent(
             onValueChange = viewModel::updateRelease,
             minValue = 0.0f,
             maxValue = 5.0f,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f).testTag(SamplerTestTags.KNOB_RELEASE)
         )
     }
 }
 
-/**
- * Composant de bouton rotatif (Knob) interactif avec glissement vertical et rendu optimisé.
- */
 @Composable
 fun ADSRKnob(
     label: String,

@@ -33,18 +33,18 @@ data class SamplerUiState(
         get() = "$pitchNote$pitchOctave"
 }
 
-class SamplerViewModel : ViewModel() {
+open class SamplerViewModel : ViewModel() {
 
-    private val _uiState = MutableStateFlow(SamplerUiState())
+    val _uiState = MutableStateFlow(SamplerUiState())
     val uiState: StateFlow<SamplerUiState> = _uiState
 
 
-    fun selectTab(tab: SamplerTab) {
+    open fun selectTab(tab: SamplerTab) {
         _uiState.update { it.copy(currentTab = tab) }
     }
 
 
-    fun togglePlayPause() {
+    open fun togglePlayPause() {
         _uiState.update { currentState ->
             val newIsPlaying = !currentState.isPlaying
             val newPosition = if (newIsPlaying && currentState.playbackPosition >= 1.0f) {
@@ -61,38 +61,38 @@ class SamplerViewModel : ViewModel() {
     }
 
 
-    fun updateAttack(value: Float) {
+    open fun updateAttack(value: Float) {
         _uiState.update { it.copy(attack = value) }
     }
 
 
-    fun updateDecay(value: Float) {
+    open fun updateDecay(value: Float) {
         _uiState.update { it.copy(decay = value) }
     }
 
 
-    fun updateSustain(value: Float) {
+    open fun updateSustain(value: Float) {
         _uiState.update { it.copy(sustain = value) }
     }
 
-    fun updateRelease(value: Float) {
+    open fun updateRelease(value: Float) {
         _uiState.update { it.copy(release = value) }
     }
 
-    fun updatePitch(newPitch: String) {
+    open fun updatePitch(newPitch: String) {
         _uiState.update { it.copy(pitch = newPitch) }
     }
 
 
-    fun updateTempo(newTempo: Int) {
+    open fun updateTempo(newTempo: Int) {
         _uiState.update { it.copy(tempo = newTempo) }
     }
 
 
-    fun saveSampler() {
+    open fun saveSampler() {
     }
 
-    fun increasePitch() {
+    open fun increasePitch() {
         _uiState.update { currentState ->
             val currentIndex = NOTE_ORDER.indexOf(currentState.pitchNote)
             var newIndex = currentIndex + 1
@@ -120,7 +120,7 @@ class SamplerViewModel : ViewModel() {
         }
     }
 
-    fun decreasePitch() {
+    open fun decreasePitch() {
         _uiState.update { currentState ->
             val currentIndex = NOTE_ORDER.indexOf(currentState.pitchNote)
             var newIndex = currentIndex - 1
@@ -147,7 +147,7 @@ class SamplerViewModel : ViewModel() {
         }
     }
 
-    fun updatePlaybackPosition(position: Float) {
+    open fun updatePlaybackPosition(position: Float) {
         _uiState.update {
             if (position >= 1.0f && it.isPlaying) {
                 it.copy(

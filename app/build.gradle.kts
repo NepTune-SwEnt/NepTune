@@ -139,6 +139,7 @@ dependencies {
     implementation(libs.compose.viewmodel)
     // Android Studio Preview support
     implementation(libs.compose.preview)
+    implementation("androidx.compose.material:material-icons-extended:1.6.7")
     debugImplementation(libs.compose.tooling)
     // UI Tests
     globalTestImplementation(libs.compose.test.junit)
