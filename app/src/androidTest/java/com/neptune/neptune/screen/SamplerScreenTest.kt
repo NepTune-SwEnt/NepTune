@@ -1,11 +1,10 @@
-package com.neptune.neptune.ui.sampler
+package com.neptune.neptune.screen
 
 // manuel)
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.center // Import nécessaire (si non résolu, utiliser le calcul
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.filter
@@ -21,9 +20,15 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
 import androidx.compose.ui.test.swipeWithVelocity
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.MainActivity
+import com.neptune.neptune.ui.sampler.SamplerScreen
+import com.neptune.neptune.ui.sampler.SamplerTab
+import com.neptune.neptune.ui.sampler.SamplerTestTags
+import com.neptune.neptune.ui.sampler.SamplerUiState
+import com.neptune.neptune.ui.sampler.SamplerViewModel
 import com.neptune.neptune.ui.theme.SampleAppTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
@@ -105,7 +110,7 @@ class FakeSamplerViewModel : SamplerViewModel() {
 class SamplerViewModelFactory(private val viewModel: FakeSamplerViewModel) :
     ViewModelProvider.Factory {
   @Suppress("UNCHECKED_CAST")
-  override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+  override fun <T : ViewModel> create(modelClass: Class<T>): T {
     if (modelClass.isAssignableFrom(SamplerViewModel::class.java)) {
       return viewModel as T
     }
@@ -130,9 +135,7 @@ class SamplerScreenTest {
     val centerY = (knobBounds.top + knobBounds.bottom) / 2
 
     knobNode.performTouchInput {
-      // Démarrage au centre
       down(Offset(centerX.value, centerY.value))
-      // Mouvement angulaire suffisant pour la rotation
       moveBy(Offset(x = 15f, y = -10f))
       up()
     }
@@ -154,8 +157,6 @@ class SamplerScreenTest {
 
   @Test
   fun samplerScreen_displaysAllCoreElementsAndControls() {
-    // Teste la couverture de toutes les lignes de déclaration des composables (Scaffold, Column,
-    // Rows...)
     composeTestRule.onNodeWithTag(SamplerTestTags.SCREEN_CONTAINER).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_ATTACK).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_DECAY).assertIsDisplayed()
@@ -249,9 +250,9 @@ class SamplerScreenTest {
     composeTestRule.waitForIdle()
     composeTestRule
         .onNodeWithTag(SamplerTestTags.TEMPO_SELECTOR)
-        .onChildren() // Cherche parmi les enfants (ou onDescendants() si c'est plus profond)
-        .filter(hasContentDescription("Diminuer")) // Filtre pour trouver la bonne icône
-        .onFirst() // Prend la première (et seule) flèche "Diminuer" dans ce contexte
+        .onChildren()
+        .filter(hasContentDescription("Diminuer"))
+        .onFirst()
         .performClick()
 
     assertEquals(99, fakeViewModel.lastTempoUpdated)
