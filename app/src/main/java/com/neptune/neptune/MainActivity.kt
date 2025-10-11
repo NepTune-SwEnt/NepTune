@@ -50,9 +50,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun NeptuneApp(
     navController: NavHostController = rememberNavController(),
-    testing: Boolean = false,
+    startDestination: String = Screen.SignIn.route,
 ) {
-  val startDestination = if (testing) Screen.Main.route else Screen.SignIn.route
   val navigationActions = NavigationActions(navController)
   val navBackStackEntry by navController.currentBackStackEntryAsState()
   val currentRoute = navBackStackEntry?.destination?.route
@@ -80,11 +79,8 @@ fun NeptuneApp(
               composable(Screen.Edit.route) { MockEditScreen() }
               composable(Screen.Search.route) { MockSearchScreen() }
               composable(Screen.Post.route) { MockPostScreen() }
-              if (!testing) {
-                // Add SignIn screen here
-                composable(Screen.SignIn.route) {
-                  MockProfileScreen() /* SignInScreen(navigationActions) */
-                }
+              composable(Screen.SignIn.route) {
+                MockProfileScreen() /* SignInScreen(navigationActions) */
               }
             }
       })
