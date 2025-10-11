@@ -66,6 +66,7 @@ fun SamplerScreen(viewModel: SamplerViewModel = viewModel(), onBack: () -> Unit 
   var selectedItem by remember { mutableIntStateOf(2) }
 
   Scaffold(
+      containerColor = DarkBackground,
       modifier = Modifier.testTag(SamplerTestTags.SCREEN_CONTAINER),
   ) { paddingValues ->
     Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp)) {

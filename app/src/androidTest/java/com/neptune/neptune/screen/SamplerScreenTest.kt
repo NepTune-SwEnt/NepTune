@@ -1,11 +1,11 @@
 package com.neptune.neptune.ui.sampler
 
+// manuel)
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.center // Import nécessaire (si non résolu, utiliser le calcul
-                                           // manuel)
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.filter
@@ -19,9 +19,12 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.compose.ui.test.swipeWithVelocity
+import androidx.compose.ui.unit.width
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.test.espresso.action.ViewActions.swipeUp
 import com.neptune.neptune.MainActivity
 import com.neptune.neptune.ui.theme.SampleAppTheme
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -167,7 +170,7 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun adsrKnobs_allDrag_callsAllUpdateFunctions() {
+  fun adsrKnobs_callsAllUpdateFunctions() {
     fakeViewModel.updateAttack(1.5f)
     assertTrue("updateAttack should be true", fakeViewModel.isAttackUpdated)
 
@@ -255,4 +258,40 @@ class SamplerScreenTest {
 
     assertEquals(99, fakeViewModel.lastTempoUpdated)
   }
+
+  @Test
+  fun playbackControls_playPauseLogic_coversAnimationBranches() {
+    composeTestRule.onNodeWithContentDescription(playButtonDesc).performClick()
+    fakeViewModel.mutableUiState.value = fakeViewModel.uiState.value.copy(isPlaying = true)
+    composeTestRule.waitForIdle()
+    fakeViewModel.updatePlaybackPosition(1.0f)
+    assertTrue(!fakeViewModel.uiState.value.isPlaying)
+  }
+
+  @Test
+  fun adsrKnobs_allDrag_callsAllUpdateFunctions() {
+    fakeViewModel.mutableUiState.value = fakeViewModel.uiState.value.copy(currentTab = SamplerTab.BASICS)
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_ATTACK).performTouchInput {
+      swipe(start = center, end = center + Offset(x = 0f, y = -100f), durationMillis = 50)
+    }
+    assertTrue("updateAttack should be true", fakeViewModel.isAttackUpdated)
+
+    composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_DECAY).performTouchInput {
+      swipe(start = center, end = center + Offset(x = 0f, y = -100f), durationMillis = 50)
+    }
+    assertTrue("updateDecay should be true", fakeViewModel.isDecayUpdated)
+
+    composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_SUSTAIN).performTouchInput {
+      swipe(start = center, end = center + Offset(x = 0f, y = -100f), durationMillis = 50)
+    }
+    assertTrue("updateSustain should be true", fakeViewModel.isSustainUpdated)
+
+    composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_RELEASE).performTouchInput {
+      swipe(start = center, end = center + Offset(x = 0f, y = -100f), durationMillis = 50)
+    }
+    assertTrue("updateRelease should be true", fakeViewModel.isReleaseUpdated)
+  }
+
 }
