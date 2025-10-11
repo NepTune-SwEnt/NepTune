@@ -21,10 +21,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
 import androidx.compose.ui.test.swipeWithVelocity
-import androidx.compose.ui.unit.width
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.test.espresso.action.ViewActions.swipeUp
 import com.neptune.neptune.MainActivity
 import com.neptune.neptune.ui.theme.SampleAppTheme
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -270,7 +268,8 @@ class SamplerScreenTest {
 
   @Test
   fun adsrKnobs_allDrag_callsAllUpdateFunctions() {
-    fakeViewModel.mutableUiState.value = fakeViewModel.uiState.value.copy(currentTab = SamplerTab.BASICS)
+    fakeViewModel.mutableUiState.value =
+        fakeViewModel.uiState.value.copy(currentTab = SamplerTab.BASICS)
     composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_ATTACK).performTouchInput {
@@ -293,5 +292,4 @@ class SamplerScreenTest {
     }
     assertTrue("updateRelease should be true", fakeViewModel.isReleaseUpdated)
   }
-
 }
