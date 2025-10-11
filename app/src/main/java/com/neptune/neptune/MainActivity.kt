@@ -47,17 +47,16 @@ class MainActivity : ComponentActivity() {
   }
 }
 
-private val startDestination = Screen.Main.route
-private var currentRoute: String? = startDestination
-
 @Composable
 fun NeptuneApp(
     navController: NavHostController = rememberNavController(),
+    startDestination: String = Screen.SignIn.route,
 ) {
   val navigationActions = NavigationActions(navController)
   val navBackStackEntry by navController.currentBackStackEntryAsState()
-  currentRoute = navBackStackEntry?.destination?.route
-  val currentScreen = navigationActions.currentScreen
+  val currentRoute = navBackStackEntry?.destination?.route
+
+  val currentScreen = navigationActions.currentScreen(currentRoute ?: startDestination)
   Scaffold(
       bottomBar = {
         BottomNavigationMenu(navigationActions = navigationActions, screen = currentScreen)
@@ -80,6 +79,9 @@ fun NeptuneApp(
               composable(Screen.Edit.route) { MockEditScreen() }
               composable(Screen.Search.route) { MockSearchScreen() }
               composable(Screen.Post.route) { MockPostScreen() }
+              composable(Screen.SignIn.route) {
+                MockProfileScreen() /* SignInScreen(navigationActions) */
+              }
             }
       })
 }
