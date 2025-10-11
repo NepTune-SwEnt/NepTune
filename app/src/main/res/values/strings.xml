@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SampleApp</string>
-    <string name="title_activity_main">MainActivity</string>
-    <string name="title_activity_second">SecondActivity</string>
+    <string name="app_name">NepTune_app_name</string>
+    <string name="title_activity_main">NepTune</string>
+    <string name="title_activity_second">NepTune_second_activity</string>
 </resources>
