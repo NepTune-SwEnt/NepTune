@@ -20,6 +20,14 @@ import com.neptune.neptune.ui.theme.DarkBlue2
 import com.neptune.neptune.ui.theme.LightPurpleBlue
 import com.neptune.neptune.ui.theme.LightTurquoise
 
+/**
+ * Tabs used in the bottom navigation bar.
+ *
+ * @param name The name of the tab
+ * @param icon The icon of the tab
+ * @param destination The destination screen of the tab
+ * @param testTag The test tag of the tab
+ */
 sealed class Tab(val name: String, val icon: Int, val destination: Screen, val testTag: String) {
 
   object Main : Tab("Home", R.drawable.home_planet, Screen.Main, NavigationTestTags.MAIN_TAB)
@@ -45,6 +53,12 @@ private val tabs =
         Tab.Post,
     )
 
+/**
+ * Get the tab for the given route.
+ *
+ * @param route The route of the screen
+ * @return The tab corresponding to the route, or null if no tab matches
+ */
 fun getTabForRoute(route: String?): Tab? {
   return tabs.firstOrNull { it.destination.route == route }
 }

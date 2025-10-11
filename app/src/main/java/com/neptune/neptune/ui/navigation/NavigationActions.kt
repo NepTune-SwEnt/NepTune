@@ -3,7 +3,8 @@ package com.neptune.neptune.ui.navigation
 import androidx.navigation.NavHostController
 
 /**
- * Screens used in the app. Each screen is a destination in the navigation graph.
+ * Screens used in the app. Each screen is a destination in the navigation graph. Bottom bar and
+ * profile icon are shown by default, back button is hidden by default.
  *
  * @param route The route of the screen
  * @param name The name of the screen
@@ -33,10 +34,21 @@ sealed class Screen(
       Screen(route = "sign_in", name = "Neptune", showBottomBar = false, showProfile = false)
 }
 
+/**
+ * Class that handles navigation actions in the app.
+ *
+ * @param navController The NavHostController used for navigation
+ */
 open class NavigationActions(
     private val navController: NavHostController,
 ) {
 
+  /**
+   * Get the current screen based on the route.
+   *
+   * @param route The current route
+   * @return The current screen
+   */
   fun currentScreen(route: String?): Screen {
     return when (route) {
       Screen.Main.route -> Screen.Main
@@ -49,7 +61,7 @@ open class NavigationActions(
     }
   }
   /**
-   * Navigate to the specified screen.
+   * Navigate to a specific screen.
    *
    * @param screen The screen to navigate to
    */
@@ -61,13 +73,13 @@ open class NavigationActions(
     navController.navigate(screen.route) { restoreState = true }
   }
 
-  /** Navigate back to the previous screen. */
+  /** Navigate back to the previous screen in the back stack. */
   open fun goBack() {
     navController.popBackStack()
   }
 
   /**
-   * Get the current route of the navigation controller.
+   * Get the current route.
    *
    * @return The current route
    */
