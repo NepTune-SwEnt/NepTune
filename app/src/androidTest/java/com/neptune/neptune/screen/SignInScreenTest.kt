@@ -19,7 +19,7 @@ import org.junit.Rule
 import org.junit.Test
 
 /** UI Tests for the [SignInScreen] composable that match the actual implementation. */
-class LoginScreenTest {
+class SignInScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()
 
