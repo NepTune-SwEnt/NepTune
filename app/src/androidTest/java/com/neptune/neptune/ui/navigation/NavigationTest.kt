@@ -21,6 +21,7 @@ class NavigationTest {
   private fun setContent(mainViewModel: MainViewModel = MainViewModel()) {
     composeTestRule.setContent { NeptuneApp(startDestination = Screen.Main.route) }
   }
+
   @Test
   fun testTagsAreCorrect() {
     setContent()
