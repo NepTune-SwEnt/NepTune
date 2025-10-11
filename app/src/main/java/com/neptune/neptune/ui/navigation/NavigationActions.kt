@@ -2,22 +2,30 @@ package com.neptune.neptune.ui.navigation
 
 import androidx.navigation.NavHostController
 
+/**
+ * Screens used in the app. Each screen is a destination in the navigation graph. Bottom bar and
+ * profile icon are shown by default, back button is hidden by default.
+ *
+ * @param route The route of the screen
+ * @param name The name of the screen
+ * @param showBottomBar Whether to show the bottom navigation bar
+ * @param showBackButton Whether to show the back button in the top app bar
+ * @param showProfile Whether to show the profile icon in the top app bar
+ */
 sealed class Screen(
     val route: String,
     val name: String,
-    val showBottomBar: Boolean,
-    val showBackButton: Boolean,
+    val showBottomBar: Boolean = true,
+    val showProfile: Boolean = true,
+    val showBackButton: Boolean = false,
 ) {
+  object Main : Screen(route = "main", name = "Neptune")
 
-  object Main :
-      Screen(route = "main", name = "Neptune", showBottomBar = true, showBackButton = false)
+  object Edit : Screen(route = "edit", name = "Edit")
 
-  object Edit : Screen(route = "edit", name = "Edit", showBottomBar = true, showBackButton = false)
+  object Search : Screen(route = "search", name = "Search")
 
-  object Search :
-      Screen(route = "search", name = "Search", showBottomBar = true, showBackButton = false)
-
-  object Post : Screen(route = "post", name = "Post", showBottomBar = true, showBackButton = false)
+  object Post : Screen(route = "post", name = "Post")
 
   object Profile :
       Screen(route = "profile", name = "My Profile", showBottomBar = false, showBackButton = true)
@@ -26,23 +34,34 @@ sealed class Screen(
       Screen(route = "signIn", name = "Neptune", showBottomBar = false, showBackButton = false)
 }
 
+/**
+ * Class that handles navigation actions in the app.
+ *
+ * @param navController The NavHostController used for navigation
+ */
 open class NavigationActions(
     private val navController: NavHostController,
 ) {
 
-  val currentScreen: Screen
-    get() {
-      return when (currentRoute()) {
-        Screen.Main.route -> Screen.Main
-        Screen.Edit.route -> Screen.Edit
-        Screen.Profile.route -> Screen.Profile
-        Screen.Search.route -> Screen.Search
-        Screen.Post.route -> Screen.Post
-        else -> Screen.Main
-      }
-    }
   /**
-   * Navigate to the specified screen.
+   * Get the current screen based on the route.
+   *
+   * @param route The current route
+   * @return The current screen
+   */
+  fun currentScreen(route: String?): Screen {
+    return when (route) {
+      Screen.Main.route -> Screen.Main
+      Screen.Edit.route -> Screen.Edit
+      Screen.Profile.route -> Screen.Profile
+      Screen.Search.route -> Screen.Search
+      Screen.Post.route -> Screen.Post
+      Screen.SignIn.route -> Screen.SignIn
+      else -> Screen.SignIn
+    }
+  }
+  /**
+   * Navigate to a specific screen.
    *
    * @param screen The screen to navigate to
    */
@@ -54,13 +73,13 @@ open class NavigationActions(
     navController.navigate(screen.route) { restoreState = true }
   }
 
-  /** Navigate back to the previous screen. */
+  /** Navigate back to the previous screen in the back stack. */
   open fun goBack() {
     navController.popBackStack()
   }
 
   /**
-   * Get the current route of the navigation controller.
+   * Get the current route.
    *
    * @return The current route
    */

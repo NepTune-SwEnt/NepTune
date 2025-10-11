@@ -51,9 +51,13 @@ private val startDestination = Screen.SignIn.route
 @Composable
 fun NeptuneApp(
     navController: NavHostController = rememberNavController(),
+    startDestination: String = Screen.SignIn.route,
 ) {
   val navigationActions = NavigationActions(navController)
-  val currentScreen = navigationActions.currentScreen
+  val navBackStackEntry by navController.currentBackStackEntryAsState()
+  val currentRoute = navBackStackEntry?.destination?.route
+
+  val currentScreen = navigationActions.currentScreen(currentRoute ?: startDestination)
   Scaffold(
       bottomBar = {
         BottomNavigationMenu(navigationActions = navigationActions, screen = currentScreen)
