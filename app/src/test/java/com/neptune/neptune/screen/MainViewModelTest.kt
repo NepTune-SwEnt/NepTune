@@ -1,6 +1,7 @@
-package com.android.sample.ui.main
+package com.neptune.neptune.screen
 
-import org.junit.Assert.*
+import com.neptune.neptune.ui.main.MainViewModel
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 
@@ -15,14 +16,14 @@ class MainViewModelTest {
   @Test
   fun `discoverSamples loads correctly`() {
     val discover = viewModel.discoverSamples.value
-    assertEquals(4, discover.size)
-    assertEquals("Sample 1", discover[0].name)
+    Assert.assertEquals(4, discover.size)
+    Assert.assertEquals("Sample 1", discover[0].name)
   }
 
   @Test
   fun `followedSamples loads correctly`() {
     val followed = viewModel.followedSamples.value
-    assertEquals(2, followed.size)
-    assertEquals("Sample 5", followed[0].name)
+    Assert.assertEquals(2, followed.size)
+    Assert.assertEquals("Sample 5", followed[0].name)
   }
 }

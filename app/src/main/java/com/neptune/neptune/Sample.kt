@@ -1,4 +1,4 @@
-package com.android.sample
+package com.neptune.neptune
 
 data class Sample(
     val id: Int,

@@ -3,16 +3,17 @@ plugins {
     alias(libs.plugins.jetbrainsKotlinAndroid)
     alias(libs.plugins.ktfmt)
     alias(libs.plugins.sonar)
-    
+
     id("jacoco")
+    id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "com.android.sample"
+    namespace = "com.neptune.neptune"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.android.sample"
+        applicationId = "com.neptune.neptune"
         minSdk = 28
         targetSdk = 34
         versionCode = 1
@@ -119,9 +120,11 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(platform(libs.compose.bom))
+    implementation(libs.androidx.room.external.antlr)
     testImplementation(libs.junit)
     globalTestImplementation(libs.androidx.junit)
     globalTestImplementation(libs.androidx.espresso.core)
+    implementation(libs.androidx.navigation.compose)
 
     // ------------- Jetpack Compose ------------------
     val composeBom = platform(libs.compose.bom)
@@ -149,6 +152,11 @@ dependencies {
 
     // ----------       Robolectric     ------------
     testImplementation(libs.robolectric)
+    testImplementation(kotlin("test"))
+
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
+
 }
 
 tasks.withType<Test> {
@@ -168,12 +176,20 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
     }
 
     val fileFilter = listOf(
+        // Android/generated
         "**/R.class",
         "**/R$*.class",
         "**/BuildConfig.*",
         "**/Manifest*.*",
         "**/*Test*.*",
         "android/**/*.*",
+
+        // I want to add those lines
+        "androidx/compose/**",
+        "**/ComposableSingletons*",
+        "**/*\$composable*",
+        "**/*\$ui*",
+        // To here
     )
 
     val debugTree = fileTree("${project.layout.buildDirectory.get()}/tmp/kotlin-classes/debug") {
@@ -187,4 +203,8 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
         include("outputs/code_coverage/debugAndroidTest/connected/*/coverage.ec")
     })
+}
+tasks.register("testDebugUnitTestCoverage") {
+    dependsOn("testDebugUnitTest")
+    finalizedBy("jacocoTestReport")
 }

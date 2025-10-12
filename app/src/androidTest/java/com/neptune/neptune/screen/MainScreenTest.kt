@@ -1,5 +1,8 @@
-package com.android.sample.screen
+package com.neptune.neptune.screen
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
@@ -12,9 +15,13 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
-import com.android.sample.ui.main.MainScreen
-import com.android.sample.ui.main.MainScreenTestTags
-import com.android.sample.ui.main.MainViewModel
+import com.neptune.neptune.NeptuneApp
+import com.neptune.neptune.R
+import com.neptune.neptune.ui.main.IconWithText
+import com.neptune.neptune.ui.main.IconWithTextPainter
+import com.neptune.neptune.ui.main.MainScreenTestTags
+import com.neptune.neptune.ui.main.MainViewModel
+import com.neptune.neptune.ui.navigation.NavigationTestTags
 import org.junit.Rule
 import org.junit.Test
 
@@ -23,7 +30,7 @@ class MainScreenTest {
   @get:Rule val composeTestRule = createComposeRule()
 
   private fun setContent(mainViewModel: MainViewModel = MainViewModel()) {
-    composeTestRule.setContent { MainScreen(mainViewModel = mainViewModel) }
+    composeTestRule.setContent { NeptuneApp() }
   }
 
   @Test
@@ -31,30 +38,30 @@ class MainScreenTest {
     setContent()
 
     composeTestRule.onNodeWithTag(MainScreenTestTags.MAIN_SCREEN).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(MainScreenTestTags.TOP_APP_BAR).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(MainScreenTestTags.APP_TITLE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(MainScreenTestTags.PROFILE_BUTTON).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(MainScreenTestTags.BOTTOM_NAVIGATION_BAR).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
   }
 
   @Test
   fun mainScreen_bottomNavigationBar_hasAllButton() {
     setContent()
 
-    composeTestRule.onNodeWithTag(MainScreenTestTags.NAV_SAMPLER).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(MainScreenTestTags.NAV_HOME).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(MainScreenTestTags.NAV_SEARCH).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(MainScreenTestTags.NAV_NEW_POST).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).assertIsDisplayed()
   }
 
   @Test
   fun mainScreen_bottomNavigationBar_canClickAllButtons() {
     setContent()
     listOf(
-            MainScreenTestTags.NAV_HOME,
-            MainScreenTestTags.NAV_SEARCH,
-            MainScreenTestTags.NAV_SAMPLER,
-            MainScreenTestTags.NAV_NEW_POST)
+            NavigationTestTags.MAIN_TAB,
+            NavigationTestTags.SEARCH_TAB,
+            NavigationTestTags.EDIT_TAB,
+            NavigationTestTags.POST_TAB)
         .forEach { tag -> composeTestRule.onNodeWithTag(tag).assertHasClickAction().performClick() }
   }
 
@@ -62,7 +69,7 @@ class MainScreenTest {
   fun mainScreen_topAppNavBar_canClickOnProfile() {
     setContent()
     composeTestRule
-        .onNodeWithTag(MainScreenTestTags.PROFILE_BUTTON)
+        .onNodeWithTag(NavigationTestTags.PROFILE_BUTTON)
         .assertHasClickAction()
         .performClick()
   }
@@ -137,5 +144,20 @@ class MainScreenTest {
 
     // When scrolling the last card should be visible
     composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_CARD).onLast().assertIsDisplayed()
+  }
+
+  @Test
+  fun iconWithText_defaultModifier() {
+    composeTestRule.setContent {
+      IconWithText(Icons.Default.FavoriteBorder, "Like", "0") // uses default Modifier
+    }
+  }
+
+  @Test
+  fun iconWithTextPainter_defaultModifier() {
+    composeTestRule.setContent {
+      IconWithTextPainter(
+          icon = painterResource(R.drawable.download), "Downloads", "0") // uses default Modifier
+    }
   }
 }
