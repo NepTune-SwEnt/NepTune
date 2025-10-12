@@ -24,10 +24,13 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.neptune.neptune.ui.theme.DarkBlue1
+import com.neptune.neptune.ui.theme.LightPurpleBlue
+import com.neptune.neptune.ui.theme.LightSkyBlue
+import com.neptune.neptune.ui.theme.White
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -40,25 +43,19 @@ object SamplerTestTags {
   const val WAVEFORM_DISPLAY = "waveformDisplay"
   const val SAMPLER_TABS = "samplerTabs"
   const val TAB_BASICS_CONTENT = "tabBasicsContent"
-
-  // Knobs
   const val KNOB_ATTACK = "knobAttack"
   const val KNOB_DECAY = "knobDecay"
   const val KNOB_SUSTAIN = "knobSustain"
   const val KNOB_RELEASE = "knobRelease"
 
-  // Pitch/Tempo
   const val PITCH_SELECTOR = "pitchSelector"
   const val TEMPO_SELECTOR = "tempoSelector"
 }
 
-val DarkBackground = Color(0xFF1E1D3F)
-val LightText = Color(0xFFE8E7FF)
-val AccentColor = Color(0xFF8B88FF)
-val WaveformColor = Color(0xFFC7C5FF)
-val FrameBorderColor = AccentColor
+val FrameBorderColor = LightPurpleBlue
 
-/** Composant principal de l'écran du Sampler. */
+const val SampleDurationMillis = 4000
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SamplerScreen(viewModel: SamplerViewModel = viewModel(), onBack: () -> Unit = {}) {
@@ -66,7 +63,7 @@ fun SamplerScreen(viewModel: SamplerViewModel = viewModel(), onBack: () -> Unit 
   var selectedItem by remember { mutableIntStateOf(2) }
 
   Scaffold(
-      containerColor = DarkBackground,
+      containerColor = DarkBlue1,
       modifier = Modifier.testTag(SamplerTestTags.SCREEN_CONTAINER),
   ) { paddingValues ->
     Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp)) {
@@ -111,7 +108,7 @@ fun PlaybackAndWaveformControls(
       modifier =
           Modifier.fillMaxWidth()
               .clip(MaterialTheme.shapes.small)
-              .background(DarkBackground)
+              .background(DarkBlue1)
               .testTag(SamplerTestTags.PLAYHEAD_CONTROLS)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -121,14 +118,14 @@ fun PlaybackAndWaveformControls(
                 Icon(
                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                     contentDescription = if (isPlaying) "Pause" else "Play",
-                    tint = AccentColor,
+                    tint = LightPurpleBlue,
                     modifier = Modifier.size(32.dp))
               }
               IconButton(onClick = onSave) {
                 Icon(
                     imageVector = Icons.Default.Save,
-                    contentDescription = "Sauvegarder",
-                    tint = AccentColor,
+                    contentDescription = "Save",
+                    tint = LightPurpleBlue,
                     modifier = Modifier.size(32.dp))
               }
               Spacer(modifier = Modifier.weight(1f))
@@ -178,11 +175,11 @@ fun PitchTempoSelector(
   Row(
       verticalAlignment = Alignment.CenterVertically,
       modifier = modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
-        Text(text = label, color = LightText, fontSize = 16.sp)
+        Text(text = label, color = White, fontSize = 16.sp)
         if (value.isNotEmpty()) {
           Text(
               text = value,
-              color = LightText,
+              color = White,
               fontSize = 16.sp,
               modifier = Modifier.padding(start = 4.dp))
         }
@@ -190,13 +187,13 @@ fun PitchTempoSelector(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
           Icon(
               imageVector = Icons.Default.KeyboardArrowUp,
-              contentDescription = "Augmenter",
-              tint = AccentColor,
+              contentDescription = "Increase",
+              tint = LightPurpleBlue,
               modifier = Modifier.size(24.dp).clickable(onClick = onIncrease))
           Icon(
               imageVector = Icons.Default.KeyboardArrowDown,
-              contentDescription = "Diminuer",
-              tint = AccentColor,
+              contentDescription = "Decrease",
+              tint = LightPurpleBlue,
               modifier = Modifier.size(24.dp).clickable(onClick = onDecrease))
         }
       }
@@ -223,14 +220,14 @@ fun WaveformDisplay(
   LaunchedEffect(isPlaying) {
     if (isPlaying) {
       if (playbackPositionAnimatable.value < 1.0f) {
-        val durationMillis = 4000
 
         playbackPositionAnimatable.animateTo(
             targetValue = 1.0f,
             animationSpec =
                 tween(
                     durationMillis =
-                        (durationMillis * (1.0f - playbackPositionAnimatable.value)).roundToInt(),
+                        (SampleDurationMillis * (1.0f - playbackPositionAnimatable.value))
+                            .roundToInt(),
                     easing = LinearEasing))
 
         latestOnPositionChange.value(1.0f)
@@ -288,7 +285,7 @@ fun WaveformDisplay(
           val endY = centerY + barHeight / 2
 
           drawLine(
-              color = WaveformColor,
+              color = LightSkyBlue,
               start = Offset(startX, startY),
               end = Offset(startX, endY),
               strokeWidth = barWidth)
@@ -311,14 +308,14 @@ fun SamplerTabs(currentTab: SamplerTab, onTabSelected: (SamplerTab) -> Unit) {
       val isSelected = tab == currentTab
       Text(
           text = tab.name.uppercase(),
-          color = if (isSelected) AccentColor else LightText.copy(alpha = 0.6f),
+          color = if (isSelected) LightPurpleBlue else White.copy(alpha = 0.6f),
           fontSize = 18.sp,
           fontWeight = FontWeight.SemiBold,
           modifier =
               Modifier.weight(1f)
                   .clip(MaterialTheme.shapes.small)
                   .clickable { onTabSelected(tab) }
-                  .background(if (isSelected) LightText.copy(alpha = 0.1f) else Color.Transparent)
+                  .background(if (isSelected) White.copy(alpha = 0.1f) else Color.Transparent)
                   .padding(vertical = 8.dp, horizontal = 4.dp)
                   .wrapContentWidth(Alignment.CenterHorizontally)
                   .testTag("${SamplerTestTags.SAMPLER_TABS}_${tab.name.uppercase()}"))
@@ -337,16 +334,16 @@ fun TabContent(currentTab: SamplerTab, uiState: SamplerUiState, viewModel: Sampl
         when (currentTab) {
           SamplerTab.BASICS -> BasicsTabContent(uiState, viewModel)
           SamplerTab.EQ ->
-              Text("EQ Settings...", color = LightText, modifier = Modifier.align(Alignment.Center))
+              Text("EQ Settings...", color = White, modifier = Modifier.align(Alignment.Center))
           SamplerTab.COMP ->
               Text(
                   "Compressor Settings...",
-                  color = LightText,
+                  color = White,
                   modifier = Modifier.align(Alignment.Center))
           SamplerTab.TEMP ->
               Text(
                   "Tempo/Time Settings...",
-                  color = LightText,
+                  color = White,
                   modifier = Modifier.align(Alignment.Center))
         }
       }
@@ -402,7 +399,7 @@ fun ADSRKnob(
     modifier: Modifier = Modifier
 ) {
   Column(modifier = modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-    Text(text = "${String.format("%.2f", value)}s", color = AccentColor, fontSize = 14.sp)
+    Text(text = "${String.format("%.2f", value)}s", color = LightPurpleBlue, fontSize = 14.sp)
 
     Spacer(modifier = Modifier.height(4.dp))
 
@@ -411,7 +408,7 @@ fun ADSRKnob(
             Modifier.size(70.dp)
                 .clip(CircleShape)
                 .background(Color.Black)
-                .border(2.dp, AccentColor, CircleShape)
+                .border(2.dp, LightPurpleBlue, CircleShape)
                 .pointerInput(Unit) {
                   detectDragGestures(
                       onDrag = { change, _ ->
@@ -453,12 +450,12 @@ fun ADSRKnob(
             val adjustedAngleRad = Math.toRadians(finalAngle.toDouble())
 
             drawCircle(
-                color = AccentColor.copy(alpha = 0.3f),
+                color = LightPurpleBlue.copy(alpha = 0.3f),
                 radius = radius,
                 style = Stroke(width = 1.5.dp.toPx()))
 
             drawArc(
-                color = AccentColor,
+                color = LightPurpleBlue,
                 startAngle = 135f,
                 sweepAngle = sweepAngle,
                 useCenter = false,
@@ -468,23 +465,24 @@ fun ADSRKnob(
             val indicatorY = center.y + radius * sin(adjustedAngleRad).toFloat()
 
             drawLine(
-                color = LightText,
+                color = White,
                 start = center,
                 end = Offset(indicatorX, indicatorY),
                 strokeWidth = 1.5.dp.toPx())
-            drawCircle(
-                color = LightText, radius = 3.dp.toPx(), center = Offset(indicatorX, indicatorY))
+            drawCircle(color = White, radius = 3.dp.toPx(), center = Offset(indicatorX, indicatorY))
           }
         }
 
     Spacer(modifier = Modifier.height(8.dp))
 
-    Text(text = label, color = LightText, fontSize = 16.sp)
+    Text(text = label, color = White, fontSize = 16.sp)
   }
 }
 
+/*
 @Preview(showBackground = true)
 @Composable
 fun PreviewSamplerScreen() {
   MaterialTheme { SamplerScreen(viewModel = SamplerViewModel()) }
 }
+*/

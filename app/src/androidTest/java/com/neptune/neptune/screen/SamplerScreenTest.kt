@@ -7,7 +7,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.filter
-import androidx.compose.ui.test.getBoundsInRoot // Import nécessaire
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onChildren
@@ -122,22 +121,7 @@ class SamplerScreenTest {
   @get:Rule val composeTestRule = createAndroidComposeRule<MainActivity>()
   private lateinit var fakeViewModel: FakeSamplerViewModel
   private val playButtonDesc = "Play"
-  private val pauseButtonDesc = "Pause"
-  private val saveButtonDesc = "Sauvegarder"
-
-  private fun dragKnob(tag: String) {
-    val knobNode = composeTestRule.onNodeWithTag(tag)
-    val knobBounds = knobNode.getBoundsInRoot()
-
-    val centerX = (knobBounds.left + knobBounds.right) / 2
-    val centerY = (knobBounds.top + knobBounds.bottom) / 2
-
-    knobNode.performTouchInput {
-      down(Offset(centerX.value, centerY.value))
-      moveBy(Offset(x = 15f, y = -10f))
-      up()
-    }
-  }
+  private val saveButtonDesc = "Save"
 
   @Before
   fun setup() {
@@ -218,19 +202,19 @@ class SamplerScreenTest {
     composeTestRule.waitForIdle()
     val initialPitch = fakeViewModel.uiState.value.fullPitch
 
-    clickPitchArrow("Diminuer")
+    clickPitchArrow("Decrease")
     assertTrue("DecreasePitch should have been called.", fakeViewModel.isDecreasePitchCalled)
-    assertEquals(initialPitch, fakeViewModel.uiState.value.fullPitch) // Assert C1 == C1
+    assertEquals(initialPitch, fakeViewModel.uiState.value.fullPitch)
 
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(pitchNote = "B", pitchOctave = 7)
     composeTestRule.waitForIdle()
     val finalPitch = fakeViewModel.uiState.value.fullPitch
 
-    clickPitchArrow("Augmenter")
+    clickPitchArrow("Increase")
 
     assertTrue("IncreasePitch should have been called.", fakeViewModel.isIncreasePitchCalled)
-    assertEquals(finalPitch, fakeViewModel.uiState.value.fullPitch) // Assert B7 == B7
+    assertEquals(finalPitch, fakeViewModel.uiState.value.fullPitch)
   }
 
   @Test
@@ -249,7 +233,7 @@ class SamplerScreenTest {
     composeTestRule
         .onNodeWithTag(SamplerTestTags.TEMPO_SELECTOR)
         .onChildren()
-        .filter(hasContentDescription("Diminuer"))
+        .filter(hasContentDescription("Decrease"))
         .onFirst()
         .performClick()
 

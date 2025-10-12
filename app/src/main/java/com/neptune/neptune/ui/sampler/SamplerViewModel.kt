@@ -5,7 +5,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 
-/** Représente les onglets disponibles dans l'écran du Sampler. */
 enum class SamplerTab {
   BASICS,
   EQ,
@@ -14,7 +13,7 @@ enum class SamplerTab {
 }
 
 private val NOTE_ORDER = listOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
-/** État de l'écran du Sampler. */
+
 data class SamplerUiState(
     val isPlaying: Boolean = false,
     val currentTab: SamplerTab = SamplerTab.BASICS,
@@ -36,6 +35,10 @@ open class SamplerViewModel : ViewModel() {
 
   val _uiState = MutableStateFlow(SamplerUiState())
   val uiState: StateFlow<SamplerUiState> = _uiState
+
+  val maxOctave = 7
+
+  val minOctave = 1
 
   open fun selectTab(tab: SamplerTab) {
     _uiState.update { it.copy(currentTab = tab) }
@@ -87,7 +90,7 @@ open class SamplerViewModel : ViewModel() {
       var newIndex = currentIndex + 1
       var newOctave = currentState.pitchOctave
 
-      if (currentState.pitchNote == "B" && currentState.pitchOctave == 7) {
+      if (currentState.pitchNote == "B" && currentState.pitchOctave == maxOctave) {
         return@update currentState
       }
 
@@ -105,7 +108,7 @@ open class SamplerViewModel : ViewModel() {
       var newIndex = currentIndex - 1
       var newOctave = currentState.pitchOctave
 
-      if (currentState.pitchNote == "C" && currentState.pitchOctave == 1) {
+      if (currentState.pitchNote == "C" && currentState.pitchOctave == minOctave) {
         return@update currentState
       }
 
