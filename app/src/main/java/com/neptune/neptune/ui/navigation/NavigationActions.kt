@@ -28,10 +28,10 @@ sealed class Screen(
   object Post : Screen(route = "post", name = "Post")
 
   object Profile :
-      Screen(route = "profile", name = "My Profile", showBackButton = true, showBottomBar = false)
+      Screen(route = "profile", name = "My Profile", showBottomBar = false, showBackButton = true)
 
   object SignIn :
-      Screen(route = "sign_in", name = "Neptune", showBottomBar = false, showProfile = false)
+      Screen(route = "signIn", name = "Neptune", showBottomBar = false, showBackButton = false)
 }
 
 /**
