@@ -18,12 +18,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
@@ -36,8 +39,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.android.sample.R
+import com.neptune.neptune.R
+import com.neptune.neptune.ui.theme.LightTurquoise
 import com.neptune.neptune.ui.theme.SampleAppTheme
+import org.w3c.dom.Text
 
 /**
  * Centralized constants defining all `testTag` identifiers used in [ProfileScreen] UI tests.
@@ -136,50 +141,73 @@ private fun ProfileViewContent(
   Column(
       modifier = Modifier.fillMaxSize().testTag(ProfileScreenTestTags.VIEW_CONTENT),
       horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.Center) {
-        Spacer(Modifier.height(20.dp))
-        Avatar(modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR), showEditPencil = false)
-        Spacer(Modifier.height(40.dp))
+      // verticalArrangement = Arrangement.Center
+  ) {
+    Spacer(Modifier.height(15.dp))
+    Avatar(modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR), showEditPencil = false)
+    Spacer(Modifier.height(15.dp))
 
-        Text(
-            text = state.name,
-            style = MaterialTheme.typography.headlineMedium,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
+    Text(
+        text = state.name,
+        color = LightTurquoise,
+        style = MaterialTheme.typography.headlineMedium,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
 
-        Text(
-            text = "@${state.username}",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
+    Text(
+        text = "@${state.username}",
+        color = LightTurquoise,
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
 
-        Spacer(Modifier.height(100.dp))
+    Spacer(Modifier.height(100.dp))
 
-        Text(
-            text = if (state.bio != "") "“ ${state.bio} ”" else "",
-            style = MaterialTheme.typography.titleLarge,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
-        Spacer(Modifier.height(200.dp))
-        Row(Modifier.fillMaxWidth()) {
-          StatBlock(
-              label = "Followers",
-              value = state.followers,
-              modifier = Modifier.weight(1f),
-              testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
-          StatBlock(
-              label = "Following",
-              value = state.following,
-              modifier = Modifier.weight(1f),
-              testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
-        }
-        Spacer(Modifier.height(80.dp))
+    Text(
+        text = if (state.bio != "") "“ ${state.bio} ”" else "",
+        color = LightTurquoise,
+        style = MaterialTheme.typography.titleLarge,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
+    Spacer(Modifier.height(150.dp))
+    Row(Modifier.fillMaxWidth()) {
+      StatBlock(
+          label = "Followers",
+          value = state.followers,
+          modifier = Modifier.weight(1f),
+          testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
+      StatBlock(
+          label = "Following",
+          value = state.following,
+          modifier = Modifier.weight(1f),
+          testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
+    }
+    Spacer(Modifier.height(80.dp))
 
-        Button(onClick = onEdit, modifier = Modifier.testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
-          Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
+    Button(
+        onClick = onEdit,
+        enabled = true,
+        modifier = Modifier.testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
+          Icon(imageVector = Icons.Default.Check, contentDescription = "Edit")
           Spacer(Modifier.width(8.dp))
           Text("Edit")
         }
-      }
+  }
+}
+
+/** Colors for all OutlinedTextField components. */
+@OptIn(ExperimentalMaterial3Api::class)
+val TextFieldColors: @Composable () -> TextFieldColors = {
+  TextFieldDefaults.outlinedTextFieldColors(
+      unfocusedBorderColor = LightTurquoise,
+      focusedBorderColor = LightTurquoise,
+      disabledBorderColor = LightTurquoise,
+      cursorColor = LightTurquoise,
+      focusedLabelColor = LightTurquoise,
+      unfocusedLabelColor = LightTurquoise,
+      focusedTextColor = LightTurquoise,
+      unfocusedTextColor = LightTurquoise,
+      disabledTextColor = LightTurquoise,
+  )
 }
 
 /**
@@ -194,6 +222,7 @@ private fun ProfileViewContent(
  * @param onUsernameChange Called on text change in the username field.
  * @param onBioChange Called on text change in the bio field.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileEditContent(
     uiState: ProfileUiState,
@@ -213,10 +242,12 @@ private fun ProfileEditContent(
             showEditPencil = true,
             onEditClick = { /* TODO: will open photo picker later */})
         Spacer(modifier = Modifier.height(40.dp))
+
         OutlinedTextField(
             value = uiState.name,
             onValueChange = onNameChange,
             label = { Text("Name") },
+            colors = TextFieldColors(),
             modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_NAME),
             isError = uiState.nameError != null,
             supportingText = {
@@ -229,6 +260,7 @@ private fun ProfileEditContent(
               } else {
                 Text(
                     text = "${uiState.name.trim().length}/30",
+                    color = LightTurquoise,
                     style = MaterialTheme.typography.bodySmall)
               }
             })
@@ -239,6 +271,7 @@ private fun ProfileEditContent(
             value = uiState.username,
             onValueChange = onUsernameChange,
             label = { Text("Username") },
+            colors = TextFieldColors(),
             modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_USERNAME),
             isError = uiState.usernameError != null,
             supportingText = {
@@ -250,6 +283,7 @@ private fun ProfileEditContent(
                     style = MaterialTheme.typography.bodySmall)
               } else {
                 Text(
+                    color = LightTurquoise,
                     text = "${uiState.username.trim().length}/15",
                     style = MaterialTheme.typography.bodySmall)
               }
@@ -260,6 +294,7 @@ private fun ProfileEditContent(
             value = uiState.bio,
             onValueChange = onBioChange,
             label = { Text("Bio") },
+            colors = TextFieldColors(),
             modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_BIO),
             minLines = 3,
             isError = uiState.bioError != null,
@@ -271,7 +306,10 @@ private fun ProfileEditContent(
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall)
               } else {
-                Text(text = "${uiState.bio.length}/160", style = MaterialTheme.typography.bodySmall)
+                Text(
+                    text = "${uiState.bio.length}/160",
+                    color = LightTurquoise,
+                    style = MaterialTheme.typography.bodySmall)
               }
             })
 
@@ -297,10 +335,15 @@ private fun ProfileEditContent(
 @Composable
 private fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, testTag: String) {
   Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-    Text(text = label, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+    Text(
+        text = label,
+        color = LightTurquoise,
+        style = MaterialTheme.typography.bodySmall,
+        textAlign = TextAlign.Center)
     Spacer(Modifier.height(8.dp))
     Text(
         text = "$value",
+        color = LightTurquoise,
         style = MaterialTheme.typography.bodyLarge,
         textAlign = TextAlign.Center,
         modifier = Modifier.testTag(testTag))
