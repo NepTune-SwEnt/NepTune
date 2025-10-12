@@ -22,12 +22,12 @@ import com.neptune.neptune.resources.C
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.mock.MockEditScreen
 import com.neptune.neptune.ui.mock.MockPostScreen
-import com.neptune.neptune.ui.mock.MockProfileScreen
 import com.neptune.neptune.ui.mock.MockSearchScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
 import com.neptune.neptune.ui.navigation.Screen
 import com.neptune.neptune.ui.navigation.TopBar
+import com.neptune.neptune.ui.profile.ProfileRoute
 import com.neptune.neptune.ui.theme.DarkBlue1
 import com.neptune.neptune.ui.theme.SampleAppTheme
 
@@ -75,7 +75,7 @@ fun NeptuneApp(
             modifier = Modifier.padding(innerPadding)) {
               // TODO: Replace mock screens with actual app screens
               composable(Screen.Main.route) { MainScreen() }
-              composable(Screen.Profile.route) { MockProfileScreen() }
+              composable(Screen.Profile.route) { ProfileRoute() }
               composable(Screen.Edit.route) { MockEditScreen() }
               composable(Screen.Search.route) { MockSearchScreen() }
               composable(Screen.Post.route) { MockPostScreen() }

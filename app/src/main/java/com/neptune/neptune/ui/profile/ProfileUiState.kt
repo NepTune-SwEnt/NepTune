@@ -2,8 +2,8 @@ package com.neptune.neptune.ui.profile
 
 /** Represents the current interaction mode of the profile screen. */
 enum class ProfileMode {
-    VIEW,
-    EDIT
+  VIEW,
+  EDIT
 }
 
 /**
@@ -21,7 +21,6 @@ enum class ProfileMode {
  * @property nameError Validation error message for the name field.
  * @property usernameError Validation error message for the username field.
  * @property bioError Validation error message for the bio field.
- *
  * @property isValid True if all field validations pass (no errors).
  */
 data class ProfileUiState(
@@ -34,11 +33,10 @@ data class ProfileUiState(
     val mode: ProfileMode = ProfileMode.VIEW,
     val isSaving: Boolean = false,
     val error: String? = null,
-
     val nameError: String? = null,
     val usernameError: String? = null,
     val bioError: String? = null
 ) {
-    val isValid: Boolean
-        get() = nameError == null && usernameError == null && bioError == null
+  val isValid: Boolean
+    get() = nameError == null && usernameError == null && bioError == null
 }
