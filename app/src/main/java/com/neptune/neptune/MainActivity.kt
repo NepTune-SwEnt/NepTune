@@ -28,6 +28,7 @@ import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
 import com.neptune.neptune.ui.navigation.Screen
 import com.neptune.neptune.ui.navigation.TopBar
+import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.theme.DarkBlue1
 import com.neptune.neptune.ui.theme.SampleAppTheme
 
@@ -76,7 +77,7 @@ fun NeptuneApp(
               // TODO: Replace mock screens with actual app screens
               composable(Screen.Main.route) { MainScreen() }
               composable(Screen.Profile.route) { MockProfileScreen() }
-              composable(Screen.Edit.route) { MockEditScreen() }
+              composable(Screen.Edit.route) { SamplerScreen() }
               composable(Screen.Search.route) { MockSearchScreen() }
               composable(Screen.Post.route) { MockPostScreen() }
               composable(Screen.SignIn.route) {
