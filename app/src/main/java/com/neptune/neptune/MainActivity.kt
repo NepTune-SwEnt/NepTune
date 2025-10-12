@@ -20,7 +20,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.neptune.neptune.resources.C
 import com.neptune.neptune.ui.main.MainScreen
-import com.neptune.neptune.ui.mock.MockEditScreen
 import com.neptune.neptune.ui.mock.MockPostScreen
 import com.neptune.neptune.ui.mock.MockProfileScreen
 import com.neptune.neptune.ui.mock.MockSearchScreen
