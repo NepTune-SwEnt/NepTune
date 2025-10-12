@@ -13,7 +13,6 @@ enum class SamplerTab {
   TEMP
 }
 
-// Définition des notes
 private val NOTE_ORDER = listOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
 /** État de l'écran du Sampler. */
 data class SamplerUiState(
@@ -96,12 +95,6 @@ open class SamplerViewModel : ViewModel() {
         newIndex = 0
         newOctave++
       }
-
-      if (newOctave > 7) {
-        newOctave = 7
-        newIndex = NOTE_ORDER.indexOf("B")
-      }
-
       currentState.copy(pitchNote = NOTE_ORDER[newIndex], pitchOctave = newOctave)
     }
   }
@@ -119,11 +112,6 @@ open class SamplerViewModel : ViewModel() {
       if (newIndex < 0) {
         newIndex = NOTE_ORDER.size - 1
         newOctave--
-      }
-
-      if (newOctave < 1) {
-        newOctave = 1
-        newIndex = NOTE_ORDER.indexOf("C")
       }
 
       currentState.copy(pitchNote = NOTE_ORDER[newIndex], pitchOctave = newOctave)

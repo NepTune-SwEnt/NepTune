@@ -1,6 +1,5 @@
 package com.neptune.neptune.screen
 
-// manuel)
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -121,7 +120,6 @@ class SamplerViewModelFactory(private val viewModel: FakeSamplerViewModel) :
 class SamplerScreenTest {
 
   @get:Rule val composeTestRule = createAndroidComposeRule<MainActivity>()
-
   private lateinit var fakeViewModel: FakeSamplerViewModel
   private val playButtonDesc = "Play"
   private val pauseButtonDesc = "Pause"
