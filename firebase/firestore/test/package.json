@@ -13,7 +13,7 @@
     "vitest": "^3.2.4"
   },
   "type": "module",
-  "name": "bootcamp-firestore-rules-test",
+  "name": "neptune-firestore-rules-test",
   "version": "1.0.0",
   "author": "",
   "license": "ISC",

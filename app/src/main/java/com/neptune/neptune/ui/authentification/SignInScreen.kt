@@ -23,7 +23,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -36,8 +35,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.neptune.neptune.R
 import com.neptune.neptune.ui.theme.DarkBlue1
 import com.neptune.neptune.ui.theme.LightTurquoise
+import com.neptune.neptune.ui.theme.TextColorDarkMode
 
 object SignInScreenTags {
   const val LOGIN_TITLE = "loginTitle"
@@ -71,11 +72,9 @@ fun SignInScreen(
 
   LaunchedEffect(credentialManager) {
     signInViewModel.initialize(
-        credentialManager,
-        navigateMain,
-        context.getString(com.neptune.neptune.R.string.oauth_client_id))
+        credentialManager, navigateMain, context.getString(R.string.oauth_client_id))
   }
-  val googleId = com.neptune.neptune.R.drawable.google_logo
+  val googleId = R.drawable.google_logo
 
   Surface(modifier = Modifier.fillMaxSize(), color = DarkBlue1) {
     Column(
@@ -88,7 +87,7 @@ fun SignInScreen(
               style =
                   TextStyle(
                       fontSize = 80.sp,
-                      fontFamily = FontFamily(Font(com.neptune.neptune.R.font.markazi_text)),
+                      fontFamily = FontFamily(Font(R.font.markazi_text)),
                       fontWeight = FontWeight(400)),
               color = LightTurquoise,
               modifier = Modifier.testTag(SignInScreenTags.LOGIN_TITLE))
@@ -102,11 +101,7 @@ fun SignInScreen(
                       signInStatus != SignInStatus.IN_PROGRESS_FIREBASE_AUTH,
               colors =
                   ButtonDefaults.buttonColors(
-                      containerColor = LightTurquoise,
-                      // Hardcoded to Black because the default text color becomes white in dark
-                      // mode,
-                      // which is unreadable against the light turquoise button background.
-                      contentColor = Color.Black),
+                      containerColor = LightTurquoise, contentColor = TextColorDarkMode),
               shape = RoundedCornerShape(12.dp),
               modifier = Modifier.testTag(SignInScreenTags.LOGIN_BUTTON)) {
                 Row {
@@ -120,8 +115,7 @@ fun SignInScreen(
                       style =
                           TextStyle(
                               fontSize = 30.sp,
-                              fontFamily =
-                                  FontFamily(Font(com.neptune.neptune.R.font.markazi_text)),
+                              fontFamily = FontFamily(Font(R.font.markazi_text)),
                               fontWeight = FontWeight(400)),
                   )
                   Spacer(modifier = Modifier.width(24.dp))

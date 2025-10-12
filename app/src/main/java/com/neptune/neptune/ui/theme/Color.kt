@@ -20,3 +20,5 @@ val PurpleBlue = Color(0xFF404AA4)
 
 val LightPurpleBlue = Color(0xFF7A84E1)
 val LightTurquoise = Color(0xFFC9F7F4)
+
+val TextColorDarkMode = Color.Black

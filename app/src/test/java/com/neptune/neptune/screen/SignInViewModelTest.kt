@@ -32,7 +32,7 @@ import org.junit.Test
 
 /**
  * Unit tests for the [SignInViewModel]. This class tests the business logic of the sign-in flow
- * without relying on the Android UI.
+ * without relying on the Android UI. The tests were done using AI.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class SignInViewModelTest {
@@ -62,12 +62,12 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun initial_status_is_before_initialization() {
+  fun initialStatusIsBeforeInitialization() {
     assertEquals(SignInStatus.BEFORE_INITIALIZATION, viewModel.signInStatus.value)
   }
 
   @Test
-  fun initialize_when_user_is_signed_in_navigates() = runTest {
+  fun initializeWhenUserIsSignedInNavigates() = runTest {
     val mockUser: FirebaseUser = mockk()
     every { mockFirebaseAuth.currentUser } returns mockUser
     var hasNavigated = false
@@ -77,7 +77,7 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun initialize_when_no_user_is_signed_in_does_not_navigate() = runTest {
+  fun initializeWhenNoUserIsSignedInDoesNotNavigate() = runTest {
     every { mockFirebaseAuth.currentUser } returns null
     var hasNavigated = false
     viewModel.initialize(mockCredentialManager, { hasNavigated = true }, fakeOauthClientId)
@@ -86,14 +86,14 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun beginSignIn_changes_status_to_requested() = runTest {
+  fun beginSignInChangesStatusToRequested() = runTest {
     viewModel.initialize(mockk(), {}, fakeOauthClientId)
     viewModel.beginSignIn(mockActivity)
     assertEquals(SignInStatus.SIGN_IN_REQUESTED, viewModel.signInStatus.value)
   }
 
   @Test
-  fun beginSignIn_when_user_cancels_changes_status_to_signed_out() = runTest {
+  fun beginSignInWhenUserCancelsChangesStatusToSignedOut() = runTest {
     viewModel.initialize(mockCredentialManager, {}, fakeOauthClientId)
     coEvery { mockCredentialManager.getCredential(context = any(), request = any()) } throws
         GetCredentialCancellationException("User cancelled")
@@ -103,7 +103,7 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun beginSignIn_when_generic_error_changes_status_to_error() = runTest {
+  fun beginSignInWhenGenericErrorChangesStatusToError() = runTest {
     viewModel.initialize(mockCredentialManager, {}, fakeOauthClientId)
     coEvery { mockCredentialManager.getCredential(context = any(), request = any()) } throws
         RuntimeException("Network error")
@@ -113,7 +113,7 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun handleSignIn_with_non_google_credential_does_nothing() = runTest {
+  fun handleSignInWithNonGoogleCredentialDoesNothing() = runTest {
     viewModel.initialize(mockCredentialManager, {}, fakeOauthClientId)
     val mockCredentialResponse = mockk<GetCredentialResponse>()
     val mockCustomCredential = mockk<CustomCredential>()
@@ -130,7 +130,7 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun signOut_clears_user_and_sets_status() = runTest {
+  fun signOutClearsUserAndSetsStatus() = runTest {
     val mockUser: FirebaseUser = mockk()
     every { mockFirebaseAuth.currentUser } returns mockUser
     viewModel.initialize(mockCredentialManager, {}, fakeOauthClientId)
@@ -142,7 +142,7 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun beginSignIn_when_already_signed_in_starts_new_flow() = runTest {
+  fun beginSignInWhenAlreadySignedInStartsNewFlow() = runTest {
     val mockUser: FirebaseUser = mockk()
     every { mockFirebaseAuth.currentUser } returns mockUser
     viewModel.initialize(mockCredentialManager, {}, fakeOauthClientId)
@@ -151,7 +151,7 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun signOut_when_already_signed_out_is_safe() = runTest {
+  fun signOutWhenAlreadySignedOutIsSafe() = runTest {
     every { mockFirebaseAuth.currentUser } returns null
     viewModel.initialize(mockCredentialManager, {}, fakeOauthClientId)
     viewModel.signOut()
@@ -161,7 +161,7 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun handleSignIn_with_non_custom_credential_does_nothing() = runTest {
+  fun handleSignInWithNonCustomCredentialDoesNothing() = runTest {
     viewModel.initialize(mockCredentialManager, {}, fakeOauthClientId)
     val mockCredentialResponse = mockk<GetCredentialResponse>()
     val mockPasswordCredential = mockk<PasswordCredential>()
