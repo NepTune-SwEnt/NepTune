@@ -42,8 +42,8 @@ import com.neptune.neptune.ui.theme.SampleAppTheme
 /**
  * Centralized constants defining all `testTag` identifiers used in [ProfileScreen] UI tests.
  *
- * These tags are applied to key composable elements (e.g., buttons, fields, avatar)
- * to make them accessible and distinguishable within instrumented Compose UI tests.
+ * These tags are applied to key composable elements (e.g., buttons, fields, avatar) to make them
+ * accessible and distinguishable within instrumented Compose UI tests.
  *
  * Naming follows the pattern: `"profile/<element>"`, ensuring uniqueness and consistency.
  *
@@ -56,29 +56,28 @@ import com.neptune.neptune.ui.theme.SampleAppTheme
  * @see ProfileScreenTest
  */
 object ProfileScreenTestTags {
-    const val ROOT = "profile/root"
+  const val ROOT = "profile/root"
 
-    const val VIEW_CONTENT = "profile/view"
-    const val EDIT_CONTENT = "profile/edit"
+  const val VIEW_CONTENT = "profile/view"
+  const val EDIT_CONTENT = "profile/edit"
 
-    const val AVATAR = "profile/avatar"
-    const val NAME = "profile/name"
-    const val USERNAME = "profile/username"
-    const val BIO = "profile/bio"
+  const val AVATAR = "profile/avatar"
+  const val NAME = "profile/name"
+  const val USERNAME = "profile/username"
+  const val BIO = "profile/bio"
 
-    const val FOLLOWERS_BLOCK = "profile/stat/followers"
-    const val FOLLOWING_BLOCK = "profile/stat/following"
+  const val FOLLOWERS_BLOCK = "profile/stat/followers"
+  const val FOLLOWING_BLOCK = "profile/stat/following"
 
-    const val EDIT_BUTTON = "profile/btn/edit"
-    const val SAVE_BUTTON = "profile/btn/save"
+  const val EDIT_BUTTON = "profile/btn/edit"
+  const val SAVE_BUTTON = "profile/btn/save"
 
-    const val FIELD_NAME = "profile/field/name"
-    const val FIELD_USERNAME = "profile/field/username"
-    const val FIELD_BIO = "profile/field/bio"
+  const val FIELD_NAME = "profile/field/name"
+  const val FIELD_USERNAME = "profile/field/username"
+  const val FIELD_BIO = "profile/field/bio"
 
-    fun statBlockTag(label: String) = "profile/stat/$label"
+  fun statBlockTag(label: String) = "profile/stat/$label"
 }
-
 
 /**
  * Displays the main Profile screen, switching between view and edit modes.
@@ -99,34 +98,32 @@ fun ProfileScreen(
     onUsernameChange: (String) -> Unit = {},
     onBioChange: (String) -> Unit = {},
 ) {
-    // TODO: add profile picture, follower/following count and back button
-    Column(modifier = Modifier.padding(16.dp).testTag(ProfileScreenTestTags.ROOT)) {
-
-        when (uiState.mode) {
-            ProfileMode.VIEW -> {
-                ProfileViewContent(
-                    state = uiState,
-                    onEdit = onEditClick,
-                )
-            }
-            ProfileMode.EDIT -> {
-                ProfileEditContent(
-                    uiState = uiState,
-                    onSave = { onSaveClick(uiState.name, uiState.username, uiState.bio) },
-                    onNameChange = onNameChange,
-                    onUsernameChange = onUsernameChange,
-                    onBioChange = onBioChange
-                )
-            }
-        }
+  // TODO: add profile picture, follower/following count and back button
+  Column(modifier = Modifier.padding(16.dp).testTag(ProfileScreenTestTags.ROOT)) {
+    when (uiState.mode) {
+      ProfileMode.VIEW -> {
+        ProfileViewContent(
+            state = uiState,
+            onEdit = onEditClick,
+        )
+      }
+      ProfileMode.EDIT -> {
+        ProfileEditContent(
+            uiState = uiState,
+            onSave = { onSaveClick(uiState.name, uiState.username, uiState.bio) },
+            onNameChange = onNameChange,
+            onUsernameChange = onUsernameChange,
+            onBioChange = onBioChange)
+      }
     }
+  }
 }
 
 /**
  * Displays the profile screen in view-only mode.
  *
- * Shows the user's avatar, name, username, bio, and stats (followers/following),
- * along with an Edit button to enter edit mode.
+ * Shows the user's avatar, name, username, bio, and stats (followers/following), along with an Edit
+ * button to enter edit mode.
  *
  * @param state The [ProfileUiState] containing the displayed user information.
  * @param onEdit Callback triggered when the Edit button is clicked.
@@ -136,30 +133,24 @@ private fun ProfileViewContent(
     state: ProfileUiState,
     onEdit: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize().testTag(ProfileScreenTestTags.VIEW_CONTENT),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
+  Column(
+      modifier = Modifier.fillMaxSize().testTag(ProfileScreenTestTags.VIEW_CONTENT),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center) {
         Spacer(Modifier.height(20.dp))
-        Avatar(
-            modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
-            showEditPencil = false
-        )
+        Avatar(modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR), showEditPencil = false)
         Spacer(Modifier.height(40.dp))
 
         Text(
             text = state.name,
             style = MaterialTheme.typography.headlineMedium,
             textAlign = TextAlign.Center,
-            modifier = Modifier.testTag(ProfileScreenTestTags.NAME)
-        )
+            modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
 
         Text(
             text = "@${state.username}",
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME)
-        )
+            modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
 
         Spacer(Modifier.height(100.dp))
 
@@ -167,41 +158,35 @@ private fun ProfileViewContent(
             text = if (state.bio != "") "“ ${state.bio} ”" else "",
             style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center,
-            modifier = Modifier.testTag(ProfileScreenTestTags.BIO)
-        )
+            modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
         Spacer(Modifier.height(200.dp))
         Row(Modifier.fillMaxWidth()) {
-            StatBlock(
-                label = "Followers",
-                value = state.followers,
-                modifier = Modifier.weight(1f),
-                testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK
-            )
-            StatBlock(
-                label = "Following",
-                value = state.following,
-                modifier = Modifier.weight(1f),
-                testTag = ProfileScreenTestTags.FOLLOWING_BLOCK
-            )
+          StatBlock(
+              label = "Followers",
+              value = state.followers,
+              modifier = Modifier.weight(1f),
+              testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
+          StatBlock(
+              label = "Following",
+              value = state.following,
+              modifier = Modifier.weight(1f),
+              testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
         }
         Spacer(Modifier.height(80.dp))
 
-        Button(
-            onClick = onEdit,
-            modifier = Modifier.testTag(ProfileScreenTestTags.EDIT_BUTTON)
-        ) {
-            Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
-            Spacer(Modifier.width(8.dp))
-            Text("Edit")
+        Button(onClick = onEdit, modifier = Modifier.testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
+          Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
+          Spacer(Modifier.width(8.dp))
+          Text("Edit")
         }
-    }
+      }
 }
 
 /**
  * Displays the editable profile form.
  *
- * Provides text fields for editing the user's name, username, and bio.
- * Includes validation messages and a Save button.
+ * Provides text fields for editing the user's name, username, and bio. Includes validation messages
+ * and a Save button.
  *
  * @param uiState The current [ProfileUiState].
  * @param onSave Called when the user presses the Save button.
@@ -217,18 +202,16 @@ private fun ProfileEditContent(
     onUsernameChange: (String) -> Unit,
     onBioChange: (String) -> Unit,
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize().testTag(ProfileScreenTestTags.EDIT_CONTENT),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
+  Column(
+      modifier = Modifier.fillMaxSize().testTag(ProfileScreenTestTags.EDIT_CONTENT),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center) {
         Spacer(modifier = Modifier.height(40.dp))
 
         Avatar(
             modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
             showEditPencil = true,
-            onEditClick = { /* TODO: will open photo picker later */ }
-        )
+            onEditClick = { /* TODO: will open photo picker later */})
         Spacer(modifier = Modifier.height(40.dp))
         OutlinedTextField(
             value = uiState.name,
@@ -237,21 +220,18 @@ private fun ProfileEditContent(
             modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_NAME),
             isError = uiState.nameError != null,
             supportingText = {
-                val err = uiState.nameError
-                if (err != null) {
-                    Text(
-                        text = err,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                } else {
-                    Text(
-                        text = "${uiState.name.trim().length}/30",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
-        )
+              val err = uiState.nameError
+              if (err != null) {
+                Text(
+                    text = err,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall)
+              } else {
+                Text(
+                    text = "${uiState.name.trim().length}/30",
+                    style = MaterialTheme.typography.bodySmall)
+              }
+            })
 
         Spacer(modifier = Modifier.height(40.dp))
 
@@ -262,21 +242,18 @@ private fun ProfileEditContent(
             modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_USERNAME),
             isError = uiState.usernameError != null,
             supportingText = {
-                val err = uiState.usernameError
-                if (err != null) {
-                    Text(
-                        text = err,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                } else {
-                    Text(
-                        text = "${uiState.username.trim().length}/15",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
-        )
+              val err = uiState.usernameError
+              if (err != null) {
+                Text(
+                    text = err,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall)
+              } else {
+                Text(
+                    text = "${uiState.username.trim().length}/15",
+                    style = MaterialTheme.typography.bodySmall)
+              }
+            })
 
         Spacer(modifier = Modifier.height(40.dp))
         OutlinedTextField(
@@ -287,33 +264,27 @@ private fun ProfileEditContent(
             minLines = 3,
             isError = uiState.bioError != null,
             supportingText = {
-                val err = uiState.bioError
-                if (err != null) {
-                    Text(
-                        text = err,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                } else {
-                    Text(
-                        text = "${uiState.bio.length}/160",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
-        )
+              val err = uiState.bioError
+              if (err != null) {
+                Text(
+                    text = err,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall)
+              } else {
+                Text(text = "${uiState.bio.length}/160", style = MaterialTheme.typography.bodySmall)
+              }
+            })
 
         Spacer(modifier = Modifier.height(40.dp))
         Button(
             onClick = onSave,
             enabled = !uiState.isSaving && uiState.isValid,
-            modifier = Modifier.testTag(ProfileScreenTestTags.SAVE_BUTTON)
-        ) {
-            Icon(imageVector = Icons.Default.Check, contentDescription = "Save")
-            Spacer(Modifier.width(8.dp))
-            Text("Save")
-        }
-    }
+            modifier = Modifier.testTag(ProfileScreenTestTags.SAVE_BUTTON)) {
+              Icon(imageVector = Icons.Default.Check, contentDescription = "Save")
+              Spacer(Modifier.width(8.dp))
+              Text("Save")
+            }
+      }
 }
 
 /**
@@ -325,16 +296,15 @@ private fun ProfileEditContent(
  */
 @Composable
 private fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, testTag: String) {
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = label, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "$value",
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.testTag(testTag)
-        )
-    }
+  Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+    Text(text = label, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+    Spacer(Modifier.height(8.dp))
+    Text(
+        text = "$value",
+        style = MaterialTheme.typography.bodyLarge,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.testTag(testTag))
+  }
 }
 
 /**
@@ -354,32 +324,27 @@ fun Avatar(
     showEditPencil: Boolean,
     onEditClick: () -> Unit = {} // currently NO-OP
 ) {
-    Box(
-        modifier = modifier.size(sizeDp.dp),
-        contentAlignment = Alignment.BottomEnd
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.ic_avatar_placeholder),
-            contentDescription = "Profile picture",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .matchParentSize()
+  Box(modifier = modifier.size(sizeDp.dp), contentAlignment = Alignment.BottomEnd) {
+    Image(
+        painter = painterResource(id = R.drawable.ic_avatar_placeholder),
+        contentDescription = "Profile picture",
+        contentScale = ContentScale.Crop,
+        modifier =
+            Modifier.matchParentSize()
                 .clip(CircleShape)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
-        )
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape))
 
-        if (showEditPencil) {
-            SmallFloatingActionButton(
-                onClick = onEditClick, // no-op for now
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                shape = CircleShape,
-                modifier = Modifier.align(Alignment.BottomEnd)
-            ) {
-                Icon(Icons.Default.Edit, contentDescription = "Edit avatar")
-            }
-        }
+    if (showEditPencil) {
+      SmallFloatingActionButton(
+          onClick = onEditClick, // no-op for now
+          containerColor = MaterialTheme.colorScheme.primaryContainer,
+          contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+          shape = CircleShape,
+          modifier = Modifier.align(Alignment.BottomEnd)) {
+            Icon(Icons.Default.Edit, contentDescription = "Edit avatar")
+          }
     }
+  }
 }
 
 /**
@@ -389,53 +354,47 @@ fun Avatar(
  */
 @Composable
 fun ProfileScreenPreview(mode: ProfileMode) {
-    SampleAppTheme {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background) {
-            ProfileScreen(
-                uiState = ProfileUiState(
-                    name = "John Doe",
-                    username = "johndoe",
-                    bio = "I'm awesome",
-                    mode = mode
-                )
-            )
-        }
+  SampleAppTheme {
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+      ProfileScreen(
+          uiState =
+              ProfileUiState(
+                  name = "John Doe", username = "johndoe", bio = "I'm awesome", mode = mode))
     }
+  }
 }
 
 /** Preview of the profile screen in view-only mode. */
 @Preview
 @Composable
 fun ProfileScreenViewModePreview() {
-    ProfileScreenPreview(ProfileMode.VIEW)
+  ProfileScreenPreview(ProfileMode.VIEW)
 }
 
 /** Preview of the profile screen in editable mode. */
 @Preview
 @Composable
 fun ProfileScreenEditModePreview() {
-    ProfileScreenPreview(ProfileMode.EDIT)
+  ProfileScreenPreview(ProfileMode.EDIT)
 }
 
 /**
  * Composable route for the Profile feature.
  *
- * Connects the [ProfileViewModel] to the [ProfileScreen] and handles state collection.
- * This function is typically used as the entry point for navigation to the profile screen.
+ * Connects the [ProfileViewModel] to the [ProfileScreen] and handles state collection. This
+ * function is typically used as the entry point for navigation to the profile screen.
  */
 @Composable
 fun ProfileRoute() {
-    val viewModel: ProfileViewModel = viewModel()
-    val state = viewModel.uiState.collectAsState().value
+  val viewModel: ProfileViewModel = viewModel()
+  val state = viewModel.uiState.collectAsState().value
 
-    ProfileScreen(
-        uiState = state,
-        onEditClick = viewModel::onEditClick,
-        onSaveClick = { _, _, _ -> viewModel.onSaveClick() }, // VM reads from state
-        onNameChange = viewModel::onNameChange,
-        onUsernameChange = viewModel::onUsernameChange,
-        onBioChange = viewModel::onBioChange,
-    )
+  ProfileScreen(
+      uiState = state,
+      onEditClick = viewModel::onEditClick,
+      onSaveClick = { _, _, _ -> viewModel.onSaveClick() }, // VM reads from state
+      onNameChange = viewModel::onNameChange,
+      onUsernameChange = viewModel::onUsernameChange,
+      onBioChange = viewModel::onBioChange,
+  )
 }
