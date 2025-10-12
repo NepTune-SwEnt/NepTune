@@ -141,6 +141,7 @@ dependencies {
     implementation(libs.compose.viewmodel)
     // Android Studio Preview support
     implementation(libs.compose.preview)
+    implementation("androidx.compose.material:material-icons-extended:1.6.7")
     debugImplementation(libs.compose.tooling)
     // UI Tests
     globalTestImplementation(libs.compose.test.junit)
@@ -185,10 +186,13 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         "android/**/*.*",
 
         // I want to add those lines
+        "**/*\$Lambda*",
+        "**/*\$ExternalSynthetic*",
         "androidx/compose/**",
         "**/ComposableSingletons*",
         "**/*\$composable*",
         "**/*\$ui*",
+        "**/*_Factory*",
         // To here
     )
 
@@ -203,6 +207,12 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
         include("outputs/code_coverage/debugAndroidTest/connected/*/coverage.ec")
     })
+
+    doLast {
+        val reportFile = reports.xml.outputLocation.asFile.get()
+        val newContent = reportFile.readText().replace("<line[^>]+nr=\"65535\"[^>]*>".toRegex(), "")
+        reportFile.writeText(newContent)
+    }
 }
 tasks.register("testDebugUnitTestCoverage") {
     dependsOn("testDebugUnitTest")
