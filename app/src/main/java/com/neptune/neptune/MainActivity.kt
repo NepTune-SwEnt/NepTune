@@ -20,7 +20,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.neptune.neptune.resources.C
 import com.neptune.neptune.ui.authentification.SignInScreen
-import com.neptune.neptune.ui.file.ProjectListScreen
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.mock.MockPostScreen
 import com.neptune.neptune.ui.mock.MockProfileScreen
@@ -29,6 +28,7 @@ import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
 import com.neptune.neptune.ui.navigation.Screen
 import com.neptune.neptune.ui.navigation.TopBar
+import com.neptune.neptune.ui.project.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.theme.DarkBlue1
 import com.neptune.neptune.ui.theme.SampleAppTheme
@@ -85,7 +85,9 @@ fun NeptuneApp(
                 SignInScreen(navigateMain = { navigationActions.navigateTo(Screen.Main) })
               }
               composable(Screen.ProjectList.route) {
-                ProjectListScreen(onBack = { navigationActions.goBack() })
+                ProjectListScreen(
+                    onBack = { navigationActions.goBack() },
+                    onNavigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
               }
             }
       })

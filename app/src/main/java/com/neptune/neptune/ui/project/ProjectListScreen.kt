@@ -1,4 +1,4 @@
-package com.neptune.neptune.ui.file
+package com.neptune.neptune.ui.project
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -64,7 +64,8 @@ object FileAccessScreenTestTags {
 fun ProjectListScreen(
     viewModel: ProjectListViewModel = viewModel(),
     onBack: () -> Unit = {},
-    onFileSelected: (String) -> Unit = {} // Return URI if needed
+    onFileSelected: (String) -> Unit = {}, // Return URI if needed
+    onNavigateToSampler: () -> Unit = {}
 ) {
   val projects by viewModel.projects.collectAsState()
   val selectedProjects by viewModel.projectsSelected.collectAsState()
@@ -86,6 +87,8 @@ fun ProjectListScreen(
                     viewModel.selectProject(project)
                     if (project.uriString.isNotEmpty()) {
                       onFileSelected(project.uriString) // returns the URI
+                      /*TODO: connect the URI (actually it's just a placeholder) */
+                      onNavigateToSampler() // Navigate to the SamplerScreen
                     }
                   })
             }

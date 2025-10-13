@@ -1,4 +1,4 @@
-package com.neptune.neptune.ui.file
+package com.neptune.neptune.ui.project
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -34,9 +34,18 @@ class ProjectListViewModel : ViewModel() {
                   listOf("#nature"),
                   21,
                   21,
-                  21),
+                  21,
+                  "content://com.neptune.provider/sample/sample1.wav"),
               Sample(
-                  2, "Sample 2", "This is a sample description 2", 42, listOf("#sea"), 42, 42, 42),
+                  2,
+                  "Sample 2",
+                  "This is a sample description 2",
+                  42,
+                  listOf("#sea"),
+                  42,
+                  42,
+                  42,
+                  "content://com.neptune.provider/sample/sample2.wav"),
               Sample(
                   3,
                   "Sample 3",
@@ -45,7 +54,8 @@ class ProjectListViewModel : ViewModel() {
                   listOf("#relax"),
                   12,
                   12,
-                  12),
+                  12,
+                  "content://com.neptune.provider/sample/sample3.wave"),
               Sample(
                   4,
                   "Sample 4",
@@ -54,7 +64,8 @@ class ProjectListViewModel : ViewModel() {
                   listOf("#takeItEasy"),
                   1,
                   2,
-                  1),
+                  1,
+                  "content://com.neptune.provider/sample/sample4.wave"),
           )
     }
   }
