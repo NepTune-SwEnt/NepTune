@@ -20,6 +20,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.neptune.neptune.resources.C
 import com.neptune.neptune.ui.authentification.SignInScreen
+import com.neptune.neptune.ui.file.ProjectListScreen
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.mock.MockPostScreen
 import com.neptune.neptune.ui.mock.MockProfileScreen
@@ -82,6 +83,9 @@ fun NeptuneApp(
               composable(Screen.Post.route) { MockPostScreen() }
               composable(Screen.SignIn.route) {
                 SignInScreen(navigateMain = { navigationActions.navigateTo(Screen.Main) })
+              }
+              composable(Screen.ProjectList.route) {
+                ProjectListScreen(onBack = { navigationActions.goBack() })
               }
             }
       })
