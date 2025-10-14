@@ -42,7 +42,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
 import com.neptune.neptune.ui.theme.LightTurquoise
 import com.neptune.neptune.ui.theme.SampleAppTheme
-import org.w3c.dom.Text
 
 /**
  * Centralized constants defining all `testTag` identifiers used in [ProfileScreen] UI tests.
@@ -390,6 +389,7 @@ fun Avatar(
   }
 }
 
+/*
 /**
  * Previews the [ProfileScreen] in either view or edit mode.
  *
@@ -420,6 +420,7 @@ fun ProfileScreenViewModePreview() {
 fun ProfileScreenEditModePreview() {
   ProfileScreenPreview(ProfileMode.EDIT)
 }
+*/
 
 /**
  * Composable route for the Profile feature.
