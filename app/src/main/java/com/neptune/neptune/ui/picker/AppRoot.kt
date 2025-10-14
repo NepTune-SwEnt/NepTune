@@ -25,95 +25,86 @@ import com.neptune.neptune.domain.model.MediaItem
 import com.neptune.neptune.domain.usecase.GetLibraryUseCase
 import com.neptune.neptune.domain.usecase.ImportMediaUseCase
 
+// partially written with ChatGPT
 @Composable
 fun AppRoot() {
-    val context = LocalContext.current
+  val context = LocalContext.current
 
-    // --- infra singletons in composition ---
-    val db = remember { provideDb(context) }
-    val repo = remember { MediaRepositoryImpl(db.mediaDao()) }
-    val paths = remember { StoragePaths(context) }
-    val importer = remember { FileImporterImpl(context, context.contentResolver, paths) }
-    val packager = remember { NeptunePackager(paths) }
-    val importUC = remember { ImportMediaUseCase(importer, repo, packager) }
-    val libraryUC = remember { GetLibraryUseCase(repo) }
+  // --- infra singletons in composition ---
+  val db = remember { provideDb(context) }
+  val repo = remember { MediaRepositoryImpl(db.mediaDao()) }
+  val paths = remember { StoragePaths(context) }
+  val importer = remember { FileImporterImpl(context, context.contentResolver, paths) }
+  val packager = remember { NeptunePackager(paths) }
+  val importUC = remember { ImportMediaUseCase(importer, repo, packager) }
+  val libraryUC = remember { GetLibraryUseCase(repo) }
 
-    // Lifecycle-aware VM
-    val vm: ImportViewModel = viewModel(factory = ImportVMFactory(importUC, libraryUC))
+  val vm: ImportViewModel = viewModel(factory = ImportVMFactory(importUC, libraryUC))
 
-    // ---- Temporary placeholder UI (no ImportScreen required) ----
-    PlaceholderImportHost(vm)
+  // ---- Temporary placeholder UI (no ImportScreen required) ----
+  PlaceholderImportHost(vm)
 }
 
+// TODO replace with real ImportScreen when ready
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PlaceholderImportHost(vm: ImportViewModel) {
-    val items by vm.library.collectAsState(initial = emptyList())
+  val items by vm.library.collectAsState(initial = emptyList())
 
-    val pickAudio = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
+  val pickAudio =
+      rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { vm.importFromSaf(it.toString()) }
-    }
+      }
 
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("Neptune • placeholder") }) },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { pickAudio.launch(arrayOf("audio/*")) }
-            ) { Text("Import audio") }
+  Scaffold(
+      topBar = { TopAppBar(title = { Text("Neptune • placeholder") }) },
+      floatingActionButton = {
+        ExtendedFloatingActionButton(onClick = { pickAudio.launch(arrayOf("audio/*")) }) {
+          Text("Import audio")
         }
-    ) { padding ->
+      }) { padding ->
         if (items.isEmpty()) {
-            Column(
-                Modifier
-                    .padding(padding)
-                    .fillMaxSize()
-                    .padding(24.dp)
-            ) {
-                Text("No projects yet.", style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(8.dp))
-                Text("Tap “Import audio” to create a .neptune project (zip with config.json + audio).")
-            }
+          Column(Modifier.padding(padding).fillMaxSize().padding(24.dp)) {
+            Text("No projects yet.", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            Text("Tap “Import audio” to create a .neptune project (zip with config.json + audio).")
+          }
         } else {
-            ProjectList(items, Modifier.padding(padding))
+          ProjectList(items, Modifier.padding(padding))
         }
-    }
+      }
 }
 
 @Composable
 private fun ProjectList(items: List<MediaItem>, modifier: Modifier = Modifier) {
-    LazyColumn(modifier = modifier.fillMaxSize()) {
-        items(items) { item ->
-            val fileName = remember(item.projectUri) {
-                item.projectUri.substringAfterLast('/')
-            }
-            ListItem(
-                headlineContent = {
-                    Text(fileName, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                },
-                supportingContent = { Text(item.projectUri, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-            )
-            Divider()
-        }
+  LazyColumn(modifier = modifier.fillMaxSize()) {
+    items(items) { item ->
+      val fileName = remember(item.projectUri) { item.projectUri.substringAfterLast('/') }
+      ListItem(
+          headlineContent = { Text(fileName, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+          supportingContent = {
+            Text(item.projectUri, maxLines = 1, overflow = TextOverflow.Ellipsis)
+          })
+      Divider()
     }
+  }
 }
 
 private fun provideDb(context: Context): MediaDb =
     Room.databaseBuilder(context.applicationContext, MediaDb::class.java, "media.db")
-        .fallbackToDestructiveMigration() // fine in dev: .neptune files are the real source of truth
+        .fallbackToDestructiveMigration()
         .build()
 
-/** ViewModel factory */
+/** ViewModel factory Crafts a ImportViewModel with required use cases */
 private class ImportVMFactory(
     private val importUC: ImportMediaUseCase,
     private val libraryUC: GetLibraryUseCase
 ) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(ImportViewModel::class.java)) {
-            return ImportViewModel(importUC, libraryUC) as T
-        }
-        error("Unknown ViewModel class")
+  @Suppress("UNCHECKED_CAST")
+  override fun <T : ViewModel> create(modelClass: Class<T>): T {
+    if (modelClass.isAssignableFrom(ImportViewModel::class.java)) {
+      return ImportViewModel(importUC, libraryUC) as T
     }
+    error("Unknown ViewModel class")
+  }
 }

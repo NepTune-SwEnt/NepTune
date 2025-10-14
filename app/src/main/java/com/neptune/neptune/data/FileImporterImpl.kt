@@ -5,6 +5,7 @@ import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.util.Log
 import android.webkit.MimeTypeMap
 import com.neptune.neptune.domain.port.FileImporter
 import java.io.File
@@ -31,12 +32,13 @@ class FileImporterImpl(
 
     // Single audio workspace
     val dir = paths.audioWorkspace()
+    // Create unique file in workspace
     val target = uniqueFile(dir, "$base.$ext")
 
     cr.openInputStream(safUri)!!.use { input ->
       FileOutputStream(target).use { output -> input.copyTo(output) }
     }
-
+    // Try to get duration (may fail for some formats/encodings)
     val duration =
         runCatching {
               MediaMetadataRetriever().use { mmr ->
@@ -45,7 +47,7 @@ class FileImporterImpl(
               }
             }
             .getOrNull()
-
+      Log.v("FileImporter", "imported ${target.name} (${target.length()} bytes, $duration ms)")
     return FileImporter.ImportedFile(
         displayName = target.name,
         mimeType = mime,
@@ -55,7 +57,7 @@ class FileImporterImpl(
         durationMs = duration)
   }
 
-  //Ensures the file is MP3 or WAV by MIME and/or extension; derives a sane name.
+  // Ensures the file is MP3 or WAV by MIME and/or extension; derives a sane name.
   private fun resolveAndValidateAudio(uri: android.net.Uri): Triple<String?, String, String> {
     val display =
         cr.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
@@ -114,6 +116,7 @@ class FileImporterImpl(
         .getOrNull()
   }
 
+  // If file exists, appends (2), (3) etc. to base name to make it unique
   private fun uniqueFile(dir: File, candidate: String): File {
     var f = File(dir, candidate)
     if (!f.exists()) return f

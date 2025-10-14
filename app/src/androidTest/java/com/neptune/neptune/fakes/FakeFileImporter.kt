@@ -7,8 +7,8 @@ import java.io.FileOutputStream
 import java.net.URI
 
 /**
- * Test importer: writes a small dummy audio file locally and returns it
- * as if it was imported via SAF. Skips ContentResolver/SAP entirely.
+ * Test importer: writes a small dummy audio file locally and returns it as if it was imported via
+ * SAF. Skips ContentResolver/SAP entirely.
  */
 class FakeFileImporter(
     private val context: Context,
@@ -16,17 +16,17 @@ class FakeFileImporter(
     private val bytes: ByteArray = ByteArray(2048) { 0x42 } // dummy data
 ) : FileImporter {
 
-    override suspend fun importFile(sourceUri: URI): FileImporter.ImportedFile {
-        val out = File(context.cacheDir, fileName)
-        FileOutputStream(out).use { it.write(bytes) }
+  override suspend fun importFile(sourceUri: URI): FileImporter.ImportedFile {
+    val out = File(context.cacheDir, fileName)
+    FileOutputStream(out).use { it.write(bytes) }
 
-        return FileImporter.ImportedFile(
-            displayName = out.name,
-            mimeType = "audio/wav",
-            sourceUri = sourceUri,
-            localUri = out.toURI(),
-            sizeBytes = out.length(),
-            durationMs = 1200L // 1.2s fake duration
+    return FileImporter.ImportedFile(
+        displayName = out.name,
+        mimeType = "audio/wav",
+        sourceUri = sourceUri,
+        localUri = out.toURI(),
+        sizeBytes = out.length(),
+        durationMs = 1200L // 1.2s fake duration
         )
-    }
+  }
 }
