@@ -19,27 +19,18 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,16 +43,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
 import com.neptune.neptune.Sample
 import com.neptune.neptune.ui.theme.DarkBlue1
-import com.neptune.neptune.ui.theme.DarkBlue2
 import com.neptune.neptune.ui.theme.DarkBlueGray
-import com.neptune.neptune.ui.theme.LightPurpleBlue
 import com.neptune.neptune.ui.theme.LightTurquoise
 
 object MainScreenTestTags {
@@ -100,126 +88,9 @@ object MainScreenTestTags {
 fun MainScreen(mainViewModel: MainViewModel = viewModel()) {
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
-
-  var selectedItem by remember { mutableStateOf(0) }
-
   Scaffold(
-      modifier = Modifier.testTag(MainScreenTestTags.MAIN_SCREEN),
-      topBar = {
-        CenterAlignedTopAppBar(
-            // App title
-            title = {
-              Text(
-                  text = "NepTune",
-                  style =
-                      TextStyle(
-                          fontSize = 45.sp,
-                          fontFamily = FontFamily(Font(R.font.lily_script_one)),
-                          fontWeight = FontWeight(149),
-                          color = LightTurquoise,
-                      ),
-                  modifier =
-                      Modifier.padding(vertical = 25.dp).testTag(MainScreenTestTags.APP_TITLE),
-                  textAlign = TextAlign.Center)
-            },
-            // Profile icon
-            actions = {
-              IconButton(
-                  onClick = { /*Does nothing for now, Todo: Add an action with the click*/},
-                  modifier =
-                      Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
-                          .size(57.dp)
-                          .testTag(MainScreenTestTags.PROFILE_BUTTON)) {
-                    Icon(
-                        painter = painterResource(R.drawable.profile),
-                        contentDescription = "Profile",
-                        tint = Color.Unspecified // Keep the original icon color
-                        )
-                  }
-            },
-            colors =
-                TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = DarkBlue1 // sets TopAppBar background
-                    ),
-            modifier =
-                Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_APP_BAR))
-      },
-      bottomBar = {
-        Column(modifier = Modifier.testTag(MainScreenTestTags.BOTTOM_NAVIGATION_BAR)) {
-          HorizontalDivider(
-              modifier = Modifier.fillMaxWidth(), thickness = 0.75.dp, color = LightTurquoise)
-          NavigationBar(containerColor = DarkBlue1) {
-            NavigationBarItem(
-                icon = {
-                  Icon(
-                      painter = painterResource(R.drawable.home_planet),
-                      contentDescription = "Home",
-                      modifier = Modifier.size(33.dp))
-                },
-                selected = selectedItem == 0,
-                onClick = { selectedItem = 0 },
-                modifier = Modifier.testTag(MainScreenTestTags.NAV_HOME),
-                alwaysShowLabel = false,
-                colors =
-                    NavigationBarItemDefaults.colors(
-                        selectedIconColor = LightPurpleBlue,
-                        unselectedIconColor = LightTurquoise,
-                        indicatorColor = DarkBlue2))
-
-            NavigationBarItem(
-                icon = {
-                  Icon(
-                      Icons.Default.Search,
-                      contentDescription = "Search",
-                      modifier = Modifier.size(33.dp))
-                },
-                selected = selectedItem == 1,
-                onClick = { selectedItem = 1 },
-                modifier = Modifier.testTag(MainScreenTestTags.NAV_SEARCH),
-                alwaysShowLabel = false,
-                colors =
-                    NavigationBarItemDefaults.colors(
-                        selectedIconColor = LightPurpleBlue,
-                        unselectedIconColor = LightTurquoise,
-                        indicatorColor = DarkBlue2))
-
-            NavigationBarItem(
-                icon = {
-                  Icon(
-                      painter = painterResource(R.drawable.music_note),
-                      contentDescription = "Sampler",
-                      modifier = Modifier.size(33.dp))
-                },
-                selected = selectedItem == 2,
-                onClick = { selectedItem = 2 },
-                modifier = Modifier.testTag(MainScreenTestTags.NAV_SAMPLER),
-                alwaysShowLabel = false,
-                colors =
-                    NavigationBarItemDefaults.colors(
-                        selectedIconColor = LightPurpleBlue,
-                        unselectedIconColor = LightTurquoise,
-                        indicatorColor = DarkBlue2))
-
-            NavigationBarItem(
-                icon = {
-                  Icon(
-                      Icons.Default.Add,
-                      contentDescription = "New Post",
-                      modifier = Modifier.size(33.dp))
-                },
-                selected = selectedItem == 3,
-                onClick = { selectedItem = 3 },
-                modifier = Modifier.testTag(MainScreenTestTags.NAV_NEW_POST),
-                alwaysShowLabel = false,
-                colors =
-                    NavigationBarItemDefaults.colors(
-                        selectedIconColor = LightPurpleBlue,
-                        unselectedIconColor = LightTurquoise,
-                        indicatorColor = DarkBlue2))
-          }
-        }
-      },
-      containerColor = DarkBlue1) { innerPadding ->
+      modifier = Modifier.testTag(MainScreenTestTags.MAIN_SCREEN), containerColor = DarkBlue1) {
+          innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
           // Bottom border of the topAppBar
           HorizontalDivider(
