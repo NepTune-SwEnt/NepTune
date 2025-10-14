@@ -303,4 +303,39 @@ class ProfileScreenTest {
         .onNodeWithTag(ProfileScreenTestTags.FIELD_BIO, useUnmergedTree = true)
         .assertExists()
   }
+
+  @Test
+  fun bioCounter_showsLengthWhenNoError() {
+    val state =
+        ProfileUiState(
+            name = "Ok",
+            username = "ok_user",
+            bio = "Hello", // length = 5
+            mode = ProfileMode.EDIT,
+            bioError = null)
+    setContentEditMode(state = state)
+
+    // Bring field into view and assert the counter "5/160" exists.
+    composeTestRule.bringIntoView(ProfileScreenTestTags.FIELD_BIO)
+    composeTestRule.scrollAnyScrollableTo(hasText("5/160"))
+    composeTestRule.onNode(hasText("5/160"), useUnmergedTree = true).assertExists()
+  }
+
+  @Test
+  fun bioError_showsErrorSupportingText() {
+    val errorMsg = "Bio is too long"
+    val state =
+        ProfileUiState(
+            name = "Ok",
+            username = "ok_user",
+            bio = "X".repeat(200),
+            mode = ProfileMode.EDIT,
+            bioError = errorMsg // <- triggers the 'err != null' branch
+            )
+    setContentEditMode(state = state)
+
+    // Scroll to the error text and assert it exists.
+    composeTestRule.scrollAnyScrollableTo(hasText(errorMsg))
+    composeTestRule.onNode(hasText(errorMsg), useUnmergedTree = true).assertExists()
+  }
 }
