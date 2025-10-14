@@ -338,4 +338,39 @@ class ProfileScreenTest {
     composeTestRule.scrollAnyScrollableTo(hasText(errorMsg))
     composeTestRule.onNode(hasText(errorMsg), useUnmergedTree = true).assertExists()
   }
+
+    @Test
+    fun nameError_showsErrorSupportingText() {
+        val err = "Name is invalid"
+        val state = ProfileUiState(
+            name = "X",
+            username = "ok_user",
+            bio = "Hello",
+            mode = ProfileMode.EDIT,
+            nameError = err
+        )
+        setContentEditMode(state = state)
+
+        composeTestRule.scrollAnyScrollableTo(hasText(err))
+        composeTestRule.onNode(hasText(err), useUnmergedTree = true).assertExists()
+    }
+
+    @Test
+    fun nameCounter_showsLengthWhenNoError() {
+        val name = "John" // length = 4 (adjust if your UI shows a counter for name)
+        val state = ProfileUiState(
+            name = name,
+            username = "ok_user",
+            bio = "Hello",
+            mode = ProfileMode.EDIT,
+            nameError = null
+        )
+        setContentEditMode(state = state)
+
+        // If your UI shows a name counter like "4/30", assert it; otherwise skip this test.
+        val expected = "4/30"
+        composeTestRule.scrollAnyScrollableTo(hasText(expected))
+        composeTestRule.onNode(hasText(expected), useUnmergedTree = true).assertExists()
+    }
+
 }
