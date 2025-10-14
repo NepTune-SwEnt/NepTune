@@ -9,8 +9,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.navigation.NavHostController
@@ -18,6 +21,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.neptune.neptune.media.LocalMediaPlayer
+import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.resources.C
 import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.main.MainScreen
@@ -53,36 +58,42 @@ fun NeptuneApp(
     navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.SignIn.route,
 ) {
+  // Navigation values
   val navigationActions = NavigationActions(navController)
   val navBackStackEntry by navController.currentBackStackEntryAsState()
   val currentRoute = navBackStackEntry?.destination?.route
-
   val currentScreen = navigationActions.currentScreen(currentRoute ?: startDestination)
-  Scaffold(
-      bottomBar = {
-        BottomNavigationMenu(navigationActions = navigationActions, screen = currentScreen)
-      },
-      topBar = {
-        TopBar(
-            currentScreen = currentScreen,
-            navigationActions = navigationActions,
-            canNavigateBack = currentScreen.showBackButton)
-      },
-      containerColor = DarkBlue1,
-      content = { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = startDestination,
-            modifier = Modifier.padding(innerPadding)) {
-              // TODO: Replace mock screens with actual app screens
-              composable(Screen.Main.route) { MainScreen() }
-              composable(Screen.Profile.route) { MockProfileScreen() }
-              composable(Screen.Edit.route) { SamplerScreen() }
-              composable(Screen.Search.route) { MockSearchScreen() }
-              composable(Screen.Post.route) { MockPostScreen() }
-              composable(Screen.SignIn.route) {
-                SignInScreen(navigateMain = { navigationActions.navigateTo(Screen.Main) })
+  // Media Player values
+  val context = LocalContext.current.applicationContext
+  val mediaPlayer = remember { NeptuneMediaPlayer(context) }
+  // Give the whole app access to the MediaPlayer
+  CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
+    Scaffold(
+        bottomBar = {
+          BottomNavigationMenu(navigationActions = navigationActions, screen = currentScreen)
+        },
+        topBar = {
+          TopBar(
+              currentScreen = currentScreen,
+              navigationActions = navigationActions,
+              canNavigateBack = currentScreen.showBackButton)
+        },
+        containerColor = DarkBlue1,
+        content = { innerPadding ->
+          NavHost(
+              navController = navController,
+              startDestination = startDestination,
+              modifier = Modifier.padding(innerPadding)) {
+                // TODO: Replace mock screens with actual app screens
+                composable(Screen.Main.route) { MainScreen() }
+                composable(Screen.Profile.route) { MockProfileScreen() }
+                composable(Screen.Edit.route) { SamplerScreen() }
+                composable(Screen.Search.route) { MockSearchScreen() }
+                composable(Screen.Post.route) { MockPostScreen() }
+                composable(Screen.SignIn.route) {
+                  SignInScreen(navigateMain = { navigationActions.navigateTo(Screen.Main) })
+                }
               }
-            }
-      })
+        })
+  }
 }
