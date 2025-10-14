@@ -183,7 +183,7 @@ private fun ProfileViewContent(
         onClick = onEdit,
         enabled = true,
         modifier = Modifier.testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
-          Icon(imageVector = Icons.Default.Check, contentDescription = "Edit")
+          Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
           Spacer(Modifier.width(8.dp))
           Text("Edit")
         }
