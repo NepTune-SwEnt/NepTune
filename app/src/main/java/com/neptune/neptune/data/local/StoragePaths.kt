@@ -11,5 +11,5 @@ class StoragePaths(private val context: Context) {
   // Directory for Neptune project files (.neptune)
     fun projectsWorkspace(): File = File(context.getExternalFilesDir(null), "projects").also { it.mkdirs() }
  //
-  fun projectFile(baseName: String): File = File(projectsWorkspace(), "$baseName.neptune")
+  fun projectFile(baseName: String): File = File(projectsWorkspace(), "$baseName.zip")
 }

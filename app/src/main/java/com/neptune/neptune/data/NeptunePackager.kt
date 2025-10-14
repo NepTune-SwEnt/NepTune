@@ -5,7 +5,9 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipOutputStream
 import kotlin.math.round
-
+/*
+    * Creates a Neptune project zip file containing the audio file and a config.json
+ */
 class NeptunePackager(private val paths: StoragePaths) {
     fun createProjectZip(audioFile: File, durationMs: Long?, volume: Int =100, startSeconds: Double = 0.0): File  {
         val base = audioFile.nameWithoutExtension
