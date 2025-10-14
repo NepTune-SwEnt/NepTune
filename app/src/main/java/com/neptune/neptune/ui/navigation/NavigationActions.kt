@@ -31,7 +31,12 @@ sealed class Screen(
       Screen(route = "profile", name = "My Profile", showBottomBar = false, showBackButton = true)
 
   object SignIn :
-      Screen(route = "signIn", name = "Neptune", showBottomBar = false, showBackButton = false)
+      Screen(
+          route = "signIn",
+          name = "Neptune",
+          showBottomBar = false,
+          showBackButton = false,
+          showProfile = false)
 }
 
 /**
