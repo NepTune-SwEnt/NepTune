@@ -111,6 +111,7 @@ fun ProjectSample(sample: Sample) {
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+          // Project Icon
           Icon(
               painterResource(R.drawable.file),
               contentDescription = "Project",
@@ -119,6 +120,7 @@ fun ProjectSample(sample: Sample) {
 
           Spacer(modifier = Modifier.width(8.dp))
 
+          // Sample Name Text
           Text(
               text = sample.name,
               maxLines = 1,
@@ -134,6 +136,7 @@ fun ProjectSample(sample: Sample) {
         val seconds = sample.durationSeconds % 60
         val durationText = "%02d:%02d".format(minutes, seconds)
 
+        // Duration Text
         Text(
             durationText,
             color = LightTurquoise,
@@ -198,6 +201,8 @@ fun TopSearch(onBack: () -> Unit) {
                     disabledIndicatorColor = Color.Transparent,
                     focusedTextColor = LightTurquoise,
                     unfocusedTextColor = LightTurquoise),
+
+            // Search Icon
             leadingIcon = {
               Icon(
                   imageVector = Icons.Default.Search,
@@ -209,7 +214,7 @@ fun TopSearch(onBack: () -> Unit) {
       }
 }
 
-// ----------------Sample File Card-----------------
+// ----------------Sample Project Card-----------------
 @Composable
 fun ProjectSampleCard(sample: Sample, isSelected: Boolean, onClick: () -> Unit) {
 
