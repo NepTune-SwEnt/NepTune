@@ -18,7 +18,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-private class FakeRepo : MediaRepository {
+private class FakeRepo2 : MediaRepository {
   private val flow = MutableStateFlow<List<MediaItem>>(emptyList())
 
   override fun observeAll(): Flow<List<MediaItem>> = flow
@@ -51,7 +51,7 @@ class ImportMediaUseCaseTest {
     val ctx: Context = ApplicationProvider.getApplicationContext()
     val paths = StoragePaths(ctx)
     val packager = NeptunePackager(paths)
-    val repo = FakeRepo()
+    val repo = FakeRepo2()
     val importer = FakeImporter(ctx.cacheDir)
     val uc = ImportMediaUseCase(importer, repo, packager)
 

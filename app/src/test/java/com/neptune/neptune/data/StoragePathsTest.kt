@@ -1,22 +1,40 @@
+// app/src/test/java/com/neptune/neptune/data/StoragePathsTest.kt
 package com.neptune.neptune.data
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import org.junit.Assert.*
+import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
 class StoragePathsTest {
+
   @Test
-  fun creates_projects_workspace_and_zip_name() {
-    val ctx = ApplicationProvider.getApplicationContext<Context>()
+  fun project_workspace_and_file_are_under_app_externalFilesDir() {
+    val ctx: Context = ApplicationProvider.getApplicationContext()
     val paths = StoragePaths(ctx)
-    val dir = paths.projectsWorkspace()
-    assertTrue(dir.exists() || dir.mkdirs())
-    val f = paths.projectFile("demo")
-    assertEquals("zip", f.extension)
-    assertTrue(f.parentFile!!.absolutePath.startsWith(dir.absolutePath))
+
+    // This is the base directory Android gives you for app-specific "external" storage:
+    // Real device:  /storage/emulated/0/Android/data/<pkg>/files
+    // Robolectric:  /tmp/.../external-files
+    val expectedBase = requireNotNull(ctx.getExternalFilesDir(null)).absolutePath
+
+    val ws = paths.projectsWorkspace()
+    assertThat(ws.exists() || ws.mkdirs()).isTrue()
+
+    // workspace sits directly under externalFilesDir, named "projects"
+    assertThat(ws.parentFile!!.absolutePath).isEqualTo(expectedBase)
+    assertThat(ws.name).isEqualTo("projects")
+
+    val f = paths.projectFile("unit-test-zip")
+    assertThat(f.parentFile!!.absolutePath).isEqualTo(ws.absolutePath)
+    assertThat(f.extension).isEqualTo("zip")
+
+    // write something to ensure directory is writable
+    File(f.parentFile, "touch.tmp").writeText("ok")
+    assertThat(File(f.parentFile, "touch.tmp").exists()).isTrue()
   }
 }

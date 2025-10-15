@@ -18,14 +18,18 @@ class ImportMediaUseCase(
     val probe = importer.importFile(URI(sourceUriString))
     val localAudio = File(URI(probe.localUri.toString()))
 
-    // 2) Create .neptune (zip) with config.json + audio
-    val projectZip =
+    // 2) Create .zip with config.json + audio
+    val projectZip = try {
         packager.createProjectZip(audioFile = localAudio, durationMs = probe.durationMs)
-
-    // 3) (Optional) remove the copied audio; project now owns the bytes
+    } catch (e: Exception) {
+        // ensure we don't leak the copied audio if packaging fails
+        runCatching { localAudio.delete() }
+        throw e
+    }
+    // remove the copied audio; project now owns the bytes
     runCatching { localAudio.delete() }
 
-    // 4) Persist only the project file path
+    //Persist only the project file path
     val item =
         MediaItem(id = UUID.randomUUID().toString(), projectUri = projectZip.toURI().toString())
     repo.upsert(item)

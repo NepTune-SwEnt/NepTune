@@ -1,25 +1,27 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
     alias(libs.plugins.ktfmt)
     alias(libs.plugins.sonar)
+    alias(libs.plugins.gms)
+    alias(libs.plugins.composeCompiler)
     alias(libs.plugins.ksp)
     id("jacoco")
-}
-
-tasks.withType<KotlinCompile>().configureEach {
-            kotlinOptions.jvmTarget = "11"
 }
 
 android {
     namespace = "com.neptune.neptune"
     compileSdk = 34
 
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1,LICENSE.md,LICENSE-notice.md}"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.neptune.neptune"
-        minSdk = 29
+        minSdk = 28
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -54,7 +56,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
+        kotlinCompilerExtensionVersion = "1.4.2"
     }
 
     compileOptions {
@@ -125,12 +127,11 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(platform(libs.compose.bom))
+    implementation(libs.androidx.room.external.antlr)
     testImplementation(libs.junit)
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
-    ksp(libs.room.compiler)
     globalTestImplementation(libs.androidx.junit)
     globalTestImplementation(libs.androidx.espresso.core)
+    implementation(libs.androidx.navigation.compose)
 
     // ------------- Jetpack Compose ------------------
     val composeBom = platform(libs.compose.bom)
@@ -147,21 +148,41 @@ dependencies {
     implementation(libs.compose.viewmodel)
     // Android Studio Preview support
     implementation(libs.compose.preview)
+    implementation("androidx.compose.material:material-icons-extended:1.6.7")
     debugImplementation(libs.compose.tooling)
     // UI Tests
     globalTestImplementation(libs.compose.test.junit)
     debugImplementation(libs.compose.test.manifest)
 
-    //
-    testImplementation("io.mockk:mockk:1.13.10")
-    testImplementation("com.google.truth:truth:1.4.4")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
     // --------- Kaspresso test framework ----------
     globalTestImplementation(libs.kaspresso)
     globalTestImplementation(libs.kaspresso.compose)
 
     // ----------       Robolectric     ------------
     testImplementation(libs.robolectric)
+    testImplementation(kotlin("test"))
+
+    // ----------        Firebase       ------------
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+
+    // ---------- Credential Manager ------------
+    implementation(libs.credentials)
+    implementation(libs.credentials.play.services.auth)
+    implementation(libs.googleid)
+
+    // ----------       Room Database    ------------
+    implementation(libs.room)
+    implementation(libs.room.runtime)
+    annotationProcessor(libs.room.compiler)
+    ksp(libs.room.compiler)
+
+    androidTestImplementation("io.mockk:mockk-android:1.13.10")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("com.google.truth:truth:1.4.4")
+    testImplementation("io.mockk:mockk:1.13.10")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
 }
 
 tasks.withType<Test> {
@@ -181,12 +202,23 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
     }
 
     val fileFilter = listOf(
+        // Android/generated
         "**/R.class",
         "**/R$*.class",
         "**/BuildConfig.*",
         "**/Manifest*.*",
         "**/*Test*.*",
         "android/**/*.*",
+
+        // I want to add those lines
+        "**/*\$Lambda*",
+        "**/*\$ExternalSynthetic*",
+        "androidx/compose/**",
+        "**/ComposableSingletons*",
+        "**/*\$composable*",
+        "**/*\$ui*",
+        "**/*_Factory*",
+        // To here
     )
 
     val debugTree = fileTree("${project.layout.buildDirectory.get()}/tmp/kotlin-classes/debug") {
@@ -200,4 +232,10 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
         include("outputs/code_coverage/debugAndroidTest/connected/*/coverage.ec")
     })
+
+    doLast {
+        val reportFile = reports.xml.outputLocation.asFile.get()
+        val newContent = reportFile.readText().replace("<line[^>]+nr=\"65535\"[^>]*>".toRegex(), "")
+        reportFile.writeText(newContent)
+    }
 }

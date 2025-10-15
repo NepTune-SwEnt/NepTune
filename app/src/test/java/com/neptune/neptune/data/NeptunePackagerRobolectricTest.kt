@@ -3,13 +3,13 @@ package com.neptune.neptune.data
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import java.io.File
-import java.io.FileOutputStream
-import java.util.zip.ZipFile
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.io.File
+import java.util.zip.ZipFile
+import org.json.JSONObject
 
 @RunWith(RobolectricTestRunner::class)
 class NeptunePackagerRobolectricTest {
@@ -20,26 +20,47 @@ class NeptunePackagerRobolectricTest {
     val paths = StoragePaths(context)
     val packager = NeptunePackager(paths)
 
-    // Create a tiny “audio” file inside the real app external files dir
-    val audioDir = paths.audioWorkspace()
-    val audio =
-        File(audioDir, "clip.wav").apply {
-          outputStream().use { FileOutputStream(this).write(ByteArray(256) { 0x23 }) }
-        }
+    // Create a tiny "audio" file in your imports/audio (or whatever your method is)
+    val audioDir: File = paths.audioWorkspace()   // if your API is importsAudioDir(), use that
+    audioDir.mkdirs()
+    val audio = File(audioDir, "clip.wav").apply {
+      // simpler write
+      writeBytes(ByteArray(256) { 0x23 })
+    }
 
-    val zip = packager.createProjectZip(audio, durationMs = 3456L, volume = 80, startSeconds = 0.5)
+    val zip = packager.createProjectZip(
+      audioFile = audio,
+      durationMs = 3456L,  // 3.456s -> rounded to 3.5
+      volume = 80,
+      startSeconds = 0.5
+    )
+
     assertTrue(zip.exists())
     assertEquals("zip", zip.extension)
 
-    val names = ZipFile(zip).use { zf -> zf.entries().toList().map { it.name }.toSet() }
-    assertTrue("config.json missing", "config.json" in names)
-    assertTrue("clip.wav missing", "clip.wav" in names)
+    ZipFile(zip).use { zf ->
+      // Collect entry names (Enumeration -> set)
+      val names = mutableSetOf<String>()
+      val en = zf.entries()
+      while (en.hasMoreElements()) {
+        names += en.nextElement().name
+      }
 
-    val config =
-        ZipFile(zip).use { zf -> zf.getInputStream(zf.getEntry("config.json")).reader().readText() }
-    assertTrue(config.contains("\"filename\": \"clip.wav\""))
-    assertTrue(config.contains("\"volume\": 80"))
-    assertTrue(config.contains("\"start\": 0.5"))
-    assertTrue(config.contains("\"duration\": 3.5"))
+      assertTrue("config.json missing", "config.json" in names)
+      assertTrue("clip.wav missing", "clip.wav" in names)
+
+      // Read and parse JSON (ignore whitespace & formatting)
+      val cfg = zf.getInputStream(zf.getEntry("config.json"))
+        .bufferedReader().readText()
+
+      val root = JSONObject(cfg)
+      val files = root.getJSONArray("files")
+      val first = files.getJSONObject(0)
+
+      assertEquals("clip.wav", first.getString("filename"))
+      assertEquals(80, first.getInt("volume"))
+      assertEquals(0.5, first.getDouble("start"), 1e-9)
+      assertEquals(3.5, first.getDouble("duration"), 1e-9)
+    }
   }
 }
