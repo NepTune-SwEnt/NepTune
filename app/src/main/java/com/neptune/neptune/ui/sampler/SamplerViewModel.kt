@@ -14,6 +14,11 @@ enum class SamplerTab {
 
 private val NOTE_ORDER = listOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
 
+private val EQ_FREQUENCIES = listOf(60, 120, 250, 500, 1000, 2500, 5000, 10000)
+const val EQ_GAIN_DEFAULT = 0.0f
+private const val EQ_GAIN_MIN = -20.0f
+private const val EQ_GAIN_MAX = 20.0f
+
 data class SamplerUiState(
     val isPlaying: Boolean = false,
     val currentTab: SamplerTab = SamplerTab.BASICS,
@@ -25,7 +30,8 @@ data class SamplerUiState(
     val decay: Float = 0.0f,
     val sustain: Float = 0.0f,
     val release: Float = 0.0f,
-    val playbackPosition: Float = 0.0f
+    val playbackPosition: Float = 0.0f,
+    val eqBands: List<Float> = List(EQ_FREQUENCIES.size) { EQ_GAIN_DEFAULT }
 ) {
   val fullPitch: String
     get() = "$pitchNote$pitchOctave"
@@ -128,6 +134,16 @@ open class SamplerViewModel : ViewModel() {
       } else {
         it.copy(playbackPosition = position.coerceIn(0f, 1f))
       }
+    }
+  }
+
+  open fun updateEqBand(index: Int, newGain: Float) {
+    _uiState.update { currentState ->
+      val newBands = currentState.eqBands.toMutableList()
+      if (index in newBands.indices) {
+        newBands[index] = newGain.coerceIn(EQ_GAIN_MIN, EQ_GAIN_MAX)
+      }
+      currentState.copy(eqBands = newBands)
     }
   }
 }
