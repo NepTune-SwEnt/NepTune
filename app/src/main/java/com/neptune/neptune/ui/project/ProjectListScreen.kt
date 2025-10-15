@@ -54,9 +54,14 @@ import com.neptune.neptune.ui.theme.DarkBlueGray
 import com.neptune.neptune.ui.theme.FadedDarkBlue
 import com.neptune.neptune.ui.theme.LightTurquoise
 
-object FileAccessScreenTestTags {
-  // General
-  const val FILE_ACCESS_SCREEN = "fileAccessScreen"
+object ProjectListScreenTestTags {
+  const val PROJECT_LIST_SCREEN = "ProjectListScreen"
+  const val PROJECT_LIST = "projectList"
+  const val PROJECT_CARD = "projectCard"
+  const val SEARCH_BAR = "searchBar"
+  const val BACK_BUTTON = "backButton"
+
+  const val SEARCH_TEXT_FIELD = "searchTextField"
 }
 
 @Composable
@@ -71,35 +76,36 @@ fun ProjectListScreen(
   val selectedProjects by viewModel.projectsSelected.collectAsState()
 
   Scaffold(
-      modifier = Modifier.testTag(FileAccessScreenTestTags.FILE_ACCESS_SCREEN),
+      modifier = Modifier.testTag(ProjectListScreenTestTags.PROJECT_LIST_SCREEN),
       containerColor = DarkBlue1) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
 
           // Top Search Bar with a back arrow
           TopSearch(onBack)
           // Columns of samples projects
-          LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(projects) { project ->
-              SampleFileCard(
-                  project,
-                  project.id == selectedProjects?.id,
-                  onClick = {
-                    viewModel.selectProject(project)
-                    if (project.uriString.isNotEmpty()) {
-                      onFileSelected(project.uriString) // returns the URI
-                      /*TODO: connect the URI (actually it's just a placeholder) */
-                      onNavigateToSampler() // Navigate to the SamplerScreen
-                    }
-                  })
-            }
-          }
+          LazyColumn(
+              modifier = Modifier.fillMaxSize().testTag(ProjectListScreenTestTags.PROJECT_LIST)) {
+                items(projects) { project ->
+                  ProjectSampleCard(
+                      project,
+                      project.id == selectedProjects?.id,
+                      onClick = {
+                        viewModel.selectProject(project)
+                        if (project.uriString.isNotEmpty()) {
+                          onFileSelected(project.uriString) // returns the URI
+                          /*TODO: connect the URI (actually it's just a placeholder) */
+                          onNavigateToSampler() // Navigate to the SamplerScreen
+                        }
+                      })
+                }
+              }
         }
       }
 }
 
 // ----------------Displays the Text and the Icon-----------------
 @Composable
-fun SampleFile(sample: Sample) {
+fun ProjectSample(sample: Sample) {
   Row(
       modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
       horizontalArrangement = Arrangement.SpaceBetween,
@@ -107,7 +113,7 @@ fun SampleFile(sample: Sample) {
         Row(verticalAlignment = Alignment.CenterVertically) {
           Icon(
               painterResource(R.drawable.file),
-              contentDescription = "File",
+              contentDescription = "Project",
               tint = LightTurquoise,
               modifier = Modifier.size(26.dp))
 
@@ -145,73 +151,80 @@ fun SampleFile(sample: Sample) {
 fun TopSearch(onBack: () -> Unit) {
   var searchText by remember { mutableStateOf("") }
 
-  Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-    // Back Icon
-    IconButton(onClick = onBack) {
-      Icon(
-          imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-          contentDescription = "Back",
-          tint = LightTurquoise,
-          modifier = Modifier.size(40.dp))
-    }
+  Row(
+      verticalAlignment = Alignment.CenterVertically,
+      modifier = Modifier.fillMaxWidth().testTag(ProjectListScreenTestTags.SEARCH_BAR)) {
+        // Back Icon
+        IconButton(
+            onClick = onBack, modifier = Modifier.testTag(ProjectListScreenTestTags.BACK_BUTTON)) {
+              Icon(
+                  imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                  contentDescription = "Back",
+                  tint = LightTurquoise,
+                  modifier = Modifier.size(40.dp))
+            }
 
-    Spacer(modifier = Modifier.width(6.dp))
+        Spacer(modifier = Modifier.width(6.dp))
 
-    // Search Field
-    TextField(
-        value = searchText,
-        onValueChange = { searchText = it },
-        placeholder = {
-          Text(
-              text = "Search for a Project",
-              color = FadedDarkBlue,
-              style =
-                  TextStyle(
-                      fontSize = 21.sp,
-                      fontFamily = FontFamily(Font(R.font.markazi_text)),
-                      fontWeight = FontWeight(100)))
-        },
-        modifier =
-            Modifier.height(70.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(DarkBlue1, RoundedCornerShape(8.dp))
-                .padding(top = 9.dp, bottom = 9.dp),
-        singleLine = true,
-        colors =
-            TextFieldDefaults.colors(
-                focusedContainerColor = DarkBlueGray,
-                unfocusedContainerColor = DarkBlueGray,
-                disabledContainerColor = DarkBlueGray,
-                cursorColor = LightTurquoise,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
-                focusedTextColor = LightTurquoise,
-                unfocusedTextColor = LightTurquoise),
-        leadingIcon = {
-          Icon(
-              imageVector = Icons.Default.Search,
-              contentDescription = "Search Icon",
-              tint = FadedDarkBlue,
-              modifier = Modifier.size(30.dp))
-        },
-    )
-  }
+        // Search Field
+        TextField(
+            value = searchText,
+            onValueChange = { searchText = it },
+            placeholder = {
+              Text(
+                  text = "Search for a Project",
+                  color = FadedDarkBlue,
+                  style =
+                      TextStyle(
+                          fontSize = 21.sp,
+                          fontFamily = FontFamily(Font(R.font.markazi_text)),
+                          fontWeight = FontWeight(100)))
+            },
+            modifier =
+                Modifier.height(70.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(DarkBlue1, RoundedCornerShape(8.dp))
+                    .padding(top = 9.dp, bottom = 9.dp)
+                    .testTag(ProjectListScreenTestTags.SEARCH_TEXT_FIELD),
+            singleLine = true,
+            colors =
+                TextFieldDefaults.colors(
+                    focusedContainerColor = DarkBlueGray,
+                    unfocusedContainerColor = DarkBlueGray,
+                    disabledContainerColor = DarkBlueGray,
+                    cursorColor = LightTurquoise,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
+                    focusedTextColor = LightTurquoise,
+                    unfocusedTextColor = LightTurquoise),
+            leadingIcon = {
+              Icon(
+                  imageVector = Icons.Default.Search,
+                  contentDescription = "Search Icon",
+                  tint = FadedDarkBlue,
+                  modifier = Modifier.size(30.dp))
+            },
+        )
+      }
 }
 
 // ----------------Sample File Card-----------------
 @Composable
-fun SampleFileCard(sample: Sample, isSelected: Boolean, onClick: () -> Unit) {
+fun ProjectSampleCard(sample: Sample, isSelected: Boolean, onClick: () -> Unit) {
 
   val backGroundColor = if (isSelected) DarkBlueGray else DarkBlue1
 
   Card(
-      modifier = Modifier.fillMaxWidth().clickable { onClick() },
+      modifier =
+          Modifier.fillMaxWidth()
+              .clickable { onClick() }
+              .testTag(ProjectListScreenTestTags.PROJECT_CARD),
       elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
       colors = CardDefaults.cardColors(backGroundColor),
       border = BorderStroke(1.dp, FadedDarkBlue),
       shape = RoundedCornerShape(0.dp)) {
-        SampleFile(sample)
+        ProjectSample(sample)
       }
 }
 
