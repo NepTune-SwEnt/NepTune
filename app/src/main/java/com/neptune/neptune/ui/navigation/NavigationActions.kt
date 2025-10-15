@@ -67,10 +67,15 @@ open class NavigationActions(
    */
   open fun navigateTo(screen: Screen) {
     // If the user is already on the destination, do nothing
-    if (currentRoute() == screen.route) {
-      return
+    if (currentRoute() != screen.route) {
+      navController.navigate(screen.route) {
+        if (screen.route == Screen.Main.route || screen.route == Screen.SignIn.route) {
+          popUpTo(navController.graph.startDestinationId) { inclusive = true }
+        }
+        restoreState = true
+        launchSingleTop = true
+      }
     }
-    navController.navigate(screen.route) { restoreState = true }
   }
 
   /** Navigate back to the previous screen in the back stack. */
