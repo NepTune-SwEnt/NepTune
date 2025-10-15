@@ -38,7 +38,7 @@ class NavigationTest {
   fun navigationToEditTabShowsEditScreen() {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Edit")
+    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Project List")
   }
 
   @Test
@@ -64,15 +64,6 @@ class NavigationTest {
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Neptune")
-  }
-
-  @Test
-  fun goBackFromProfileToEdit() {
-    setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Edit")
   }
 
   @Test

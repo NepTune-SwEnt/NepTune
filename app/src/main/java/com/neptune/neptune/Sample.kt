@@ -8,5 +8,6 @@ data class Sample(
     val tags: List<String>,
     val likes: Int,
     val comments: Int,
-    val downloads: Int
+    val downloads: Int,
+    val uriString: String = ""
 )

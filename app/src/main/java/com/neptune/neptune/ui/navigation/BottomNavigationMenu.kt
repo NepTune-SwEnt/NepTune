@@ -32,7 +32,8 @@ sealed class Tab(val name: String, val icon: Int, val destination: Screen, val t
 
   object Main : Tab("Home", R.drawable.home_planet, Screen.Main, NavigationTestTags.MAIN_TAB)
 
-  object Edit : Tab("Sampler", R.drawable.music_note, Screen.Edit, NavigationTestTags.EDIT_TAB)
+  object Edit :
+      Tab("Select Project", R.drawable.music_note, Screen.ProjectList, NavigationTestTags.EDIT_TAB)
 
   object Search :
       Tab(

@@ -27,6 +27,8 @@ sealed class Screen(
 
   object Post : Screen(route = "post", name = "Post")
 
+  object ProjectList : Screen(route = "project_list", name = "Project List", showProfile = false)
+
   object Profile :
       Screen(route = "profile", name = "My Profile", showBottomBar = false, showBackButton = true)
 
@@ -57,6 +59,7 @@ open class NavigationActions(
       Screen.Search.route -> Screen.Search
       Screen.Post.route -> Screen.Post
       Screen.SignIn.route -> Screen.SignIn
+      Screen.ProjectList.route -> Screen.ProjectList
       else -> Screen.SignIn
     }
   }
