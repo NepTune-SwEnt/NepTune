@@ -4,8 +4,13 @@ interface ProfileRepository {
 
     /** Returns the current user's profile.
      * @param uid Firebase uid associated to user
-     * @return snapshot of the current user's profile**/
+     * @return snapshot of the current user's profile **/
     suspend fun getProfile(uid: String): Profile?
+
+    /** Observes the profile of the given uid. Ensures real-time updates.
+     * @param uid Firebase uid associated to user
+     * @return a flow emitting the profile, or null if missing **/
+    fun observeProfile(uid: String): kotlinx.coroutines.flow.Flow<Profile?>
 
     /** Creates profiles/{uid} if missing on first sign-in. Returns the created/loaded profile.
      * @param uid Firebase uid associated to user
