@@ -427,8 +427,16 @@ fun ProfileScreenEditModePreview() {
  */
 @Composable
 fun ProfileRoute() {
-  val viewModel: ProfileViewModel = viewModel()
-  val state = viewModel.uiState.collectAsState().value
+
+  val viewModel: ProfileViewModel = viewModel(
+    key = "profile_vm",
+    initializer = { ProfileViewModel(com.neptune.neptune.model.Repositories.profile)
+  })
+    val state = viewModel.uiState.collectAsState().value
+
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        viewModel.loadOrEnsure()
+    }
 
   ProfileScreen(
       uiState = state,
