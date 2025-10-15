@@ -86,7 +86,6 @@ fun NeptuneApp(
               }
               composable(Screen.ProjectList.route) {
                 ProjectListScreen(
-                    onBack = { navigationActions.goBack() },
                     onNavigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
               }
             }

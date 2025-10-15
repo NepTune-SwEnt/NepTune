@@ -17,12 +17,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -59,8 +57,6 @@ object ProjectListScreenTestTags {
   const val PROJECT_LIST = "projectList"
   const val PROJECT_CARD = "projectCard"
   const val SEARCH_BAR = "searchBar"
-  const val BACK_BUTTON = "backButton"
-
   const val SEARCH_TEXT_FIELD = "searchTextField"
 }
 
@@ -68,7 +64,6 @@ object ProjectListScreenTestTags {
 // Implementation of the file access screen
 fun ProjectListScreen(
     viewModel: ProjectListViewModel = viewModel(),
-    onBack: () -> Unit = {},
     onFileSelected: (String) -> Unit = {}, // Return URI if needed
     onNavigateToSampler: () -> Unit = {}
 ) {
@@ -79,8 +74,8 @@ fun ProjectListScreen(
       modifier = Modifier.testTag(ProjectListScreenTestTags.PROJECT_LIST_SCREEN),
       containerColor = DarkBlue1,
       topBar = {
-        // Top Search Bar with a back arrow
-        TopSearch(onBack)
+        // Top Search Bar
+        TopSearch()
       }) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
           // Columns of samples projects
@@ -152,24 +147,13 @@ fun ProjectSample(sample: Sample) {
 
 // ----------------Top Bar Search--------------
 @Composable
-fun TopSearch(onBack: () -> Unit) {
+fun TopSearch() {
   var searchText by remember { mutableStateOf("") }
 
   Row(
+      horizontalArrangement = Arrangement.Center,
       verticalAlignment = Alignment.CenterVertically,
       modifier = Modifier.fillMaxWidth().testTag(ProjectListScreenTestTags.SEARCH_BAR)) {
-        // Back Icon
-        IconButton(
-            onClick = onBack, modifier = Modifier.testTag(ProjectListScreenTestTags.BACK_BUTTON)) {
-              Icon(
-                  imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                  contentDescription = "Back",
-                  tint = LightTurquoise,
-                  modifier = Modifier.size(40.dp))
-            }
-
-        Spacer(modifier = Modifier.width(6.dp))
-
         // Search Field
         TextField(
             value = searchText,
@@ -185,8 +169,10 @@ fun TopSearch(onBack: () -> Unit) {
                           fontWeight = FontWeight(100)))
             },
             modifier =
-                Modifier.height(70.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                Modifier.fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .height(70.dp)
+                    .clip(RoundedCornerShape(15.dp))
                     .background(DarkBlue1, RoundedCornerShape(8.dp))
                     .padding(top = 9.dp, bottom = 9.dp)
                     .testTag(ProjectListScreenTestTags.SEARCH_TEXT_FIELD),

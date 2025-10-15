@@ -36,7 +36,6 @@ class ProjectListScreenTest {
         .onFirst()
         .assertIsDisplayed()
     composeTestRule.onNodeWithTag(ProjectListScreenTestTags.PROJECT_LIST).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(ProjectListScreenTestTags.BACK_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(ProjectListScreenTestTags.SEARCH_BAR).assertIsDisplayed()
     composeTestRule.onNodeWithTag(ProjectListScreenTestTags.SEARCH_TEXT_FIELD).assertIsDisplayed()
   }
@@ -80,18 +79,5 @@ class ProjectListScreenTest {
     composeTestRule.onNodeWithContentDescription("Search Icon").assertExists()
 
     composeTestRule.onNode(hasText("Search for a Project")).assertIsDisplayed()
-  }
-
-  /** Tests that you can click on the back button */
-  @Test
-  fun backButton_isDisplayedAndClickable() {
-    setContent()
-
-    // Assert that the back icon exist
-    val backButton =
-        composeTestRule.onNodeWithTag(ProjectListScreenTestTags.BACK_BUTTON).assertIsDisplayed()
-
-    backButton.assertHasClickAction()
-    backButton.performClick()
   }
 }
