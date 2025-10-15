@@ -77,11 +77,12 @@ fun ProjectListScreen(
 
   Scaffold(
       modifier = Modifier.testTag(ProjectListScreenTestTags.PROJECT_LIST_SCREEN),
-      containerColor = DarkBlue1) { innerPadding ->
+      containerColor = DarkBlue1,
+      topBar = {
+        // Top Search Bar with a back arrow
+        TopSearch(onBack)
+      }) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-
-          // Top Search Bar with a back arrow
-          TopSearch(onBack)
           // Columns of samples projects
           LazyColumn(
               modifier = Modifier.fillMaxSize().testTag(ProjectListScreenTestTags.PROJECT_LIST)) {
