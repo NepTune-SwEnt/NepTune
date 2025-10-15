@@ -163,8 +163,14 @@ dependencies {
     testImplementation(kotlin("test"))
 
     // ----------        Firebase       ------------
-    implementation(platform(libs.firebase.bom))
+    implementation(enforcedPlatform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.storage)
+    // TEMP ONLY for diagnosis:
+    //implementation("com.google.firebase:firebase-firestore-ktx:25.1.1") // example version compatible with BoM 34.x
+
+
 
     // ---------- Credential Manager ------------
     implementation(libs.credentials)
