@@ -6,7 +6,7 @@ import androidx.room.RoomDatabase
 /*
  * Room database class for storing media items
  */
-@Database(entities = [MediaItemEntity::class], version = 2, exportSchema = true)
+@Database(entities = [MediaItemEntity::class], version = 2, exportSchema = false)
 abstract class MediaDb : RoomDatabase() {
   abstract fun mediaDao(): MediaDao
 }

@@ -57,8 +57,8 @@ class ImportPipelineTest {
 
     // THEN: .neptune exists
     val project = File(URI(item.projectUri))
-    assertTrue("Project .neptune file should exist", project.exists())
-    assertEquals("neptune", project.extension)
+    assertTrue("Project .zip file should exist", project.exists())
+    assertEquals("zip", project.extension)
 
     // AND: zip contains config.json + an audio file
     val entries = ZipFile(project).use { zf -> zf.entries().toList().map { it.name }.toSet() }

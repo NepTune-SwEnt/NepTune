@@ -47,7 +47,7 @@ class FileImporterImpl(
               }
             }
             .getOrNull()
-      Log.v("FileImporter", "imported ${target.name} (${target.length()} bytes, $duration ms)")
+    Log.v("FileImporter", "imported ${target.name} (${target.length()} bytes, $duration ms)")
     return FileImporter.ImportedFile(
         displayName = target.name,
         mimeType = mime,

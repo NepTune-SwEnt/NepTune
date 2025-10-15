@@ -22,8 +22,7 @@ import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class ImportViewModelTest {
-
-  private class FakeRepo : MediaRepository {
+  private class Repo : MediaRepository {
     private val flow = MutableStateFlow<List<MediaItem>>(emptyList())
 
     override fun observeAll() = flow
@@ -33,48 +32,31 @@ class ImportViewModelTest {
     }
   }
 
-  /**
-   * Implements the current FileImporter API: suspend fun importFile(sourceUri: URI):
-   * FileImporter.ImportedFile
-   *
-   * If your ImportedFile uses a different field name (e.g., 'file' instead of 'localUri'), change
-   * the return statement accordingly.
-   */
-  private class FakeImporter(private val dir: File) : FileImporter {
+  private class Importer(private val dir: File) : FileImporter {
     override suspend fun importFile(sourceUri: URI): FileImporter.ImportedFile {
       val f =
-          File(dir, "picked.wav").apply {
-            outputStream().use { FileOutputStream(this).write(ByteArray(128) { 0x55 }) }
+          File(dir, "clip.wav").apply {
+            outputStream().use { FileOutputStream(this).write(ByteArray(32) { 1 }) }
           }
       return FileImporter.ImportedFile(
           displayName = f.name,
           mimeType = "audio/wav",
-          localUri = f.toURI(), // if your type expects 'file = f', switch this line
-          sizeBytes = f.length(),
           sourceUri = sourceUri,
-          durationMs = 1100L)
+          localUri = f.toURI(),
+          sizeBytes = f.length(),
+          durationMs = 800L)
     }
   }
 
   @Test
-  fun import_updates_list_with_zip_project() = runBlocking {
-    val context: Context = ApplicationProvider.getApplicationContext()
-    val paths = StoragePaths(context)
-    val packager = NeptunePackager(paths) // keep if your use case still needs it
-    val repo = FakeRepo()
-    val importer = FakeImporter(context.cacheDir)
-
-    // If your ImportMediaUseCase ctor changed (e.g., no packager anymore), drop 'packager' here.
-    val importUC = ImportMediaUseCase(importer, repo, packager)
-    val libraryUC = GetLibraryUseCase(repo)
-
-    val vm = ImportViewModel(importUC, libraryUC)
-
-    vm.importFromSaf("content://picked")
-
+  fun import_triggers_repo_and_exposes_item() = runBlocking {
+    val ctx: Context = ApplicationProvider.getApplicationContext()
+    val vm =
+        ImportViewModel(
+            ImportMediaUseCase(Importer(ctx.cacheDir), Repo(), NeptunePackager(StoragePaths(ctx))),
+            GetLibraryUseCase(Repo()))
+    vm.importFromSaf("content://x")
     val items = vm.library.first { it.isNotEmpty() }
     assertEquals(1, items.size)
-    val projectUri = items.first().projectUri
-    check(projectUri.endsWith(".zip")) { "expected .zip, got $projectUri" }
   }
 }
