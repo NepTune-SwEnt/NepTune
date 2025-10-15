@@ -4,17 +4,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.neptune.neptune.Sample
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class ProjectListViewModel : ViewModel() {
 
   // All the projects we have
   private val _projects = MutableStateFlow<List<Sample>>(emptyList())
-  val projects: MutableStateFlow<List<Sample>> = _projects
+  val projects: StateFlow<List<Sample>> = _projects.asStateFlow()
 
   // The project we have selected (to open in the sampler or to post it)
   private val _projectsSelected = MutableStateFlow<Sample?>(null)
-  val projectsSelected: MutableStateFlow<Sample?> = _projectsSelected
+  val projectsSelected: StateFlow<Sample?> = _projectsSelected.asStateFlow()
 
   init {
     loadExistingProjects()
@@ -55,7 +57,7 @@ class ProjectListViewModel : ViewModel() {
                   12,
                   12,
                   12,
-                  "content://com.neptune.provider/sample/sample3.wave"),
+                  "content://com.neptune.provider/sample/sample3.wav"),
               Sample(
                   4,
                   "Sample 4",
@@ -65,7 +67,7 @@ class ProjectListViewModel : ViewModel() {
                   1,
                   2,
                   1,
-                  "content://com.neptune.provider/sample/sample4.wave"),
+                  "content://com.neptune.provider/sample/sample4.wav"),
           )
     }
   }
