@@ -109,9 +109,7 @@ class ProfileRepositoryFirebase(
     }
 
     override suspend fun isUsernameAvailable(username: String): Boolean {
-        val currentUser = Firebase.auth.currentUser
-        val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
-        return !usernames.document(uid).get().await().exists()
+        return !usernames.document(username).get().await().exists()
     }
 
     override suspend fun setUsername(newUsername: String) {
