@@ -8,11 +8,12 @@ import java.io.File
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+
 /*
-    This test ensures that the audio workspace is located under the "imports" folder
-    within the app-specific external files directory, and that it is writable.
-    Written with help from ChatGPT.
- */
+   This test ensures that the audio workspace is located under the "imports" folder
+   within the app-specific external files directory, and that it is writable.
+   Written with help from ChatGPT.
+*/
 @RunWith(RobolectricTestRunner::class)
 class AudioWorkspaceTest {
 

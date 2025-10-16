@@ -17,11 +17,12 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+
 /*
-    This test ensures that if the Importer fails (throws), the repository remains unchanged
-    and no zip file is created.
-    Written with help from ChatGPT.
- */
+   This test ensures that if the Importer fails (throws), the repository remains unchanged
+   and no zip file is created.
+   Written with help from ChatGPT.
+*/
 private class ThrowingImporter : FileImporter {
   override suspend fun importFile(sourceUri: URI): FileImporter.ImportedFile {
     throw IllegalStateException("boom")

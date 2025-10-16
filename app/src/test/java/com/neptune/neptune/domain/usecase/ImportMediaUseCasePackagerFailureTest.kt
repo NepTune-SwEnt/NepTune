@@ -17,11 +17,12 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+
 /*
-    This test ensures that if the Packager fails (e.g. because the imported file
-    is missing), the repository remains unchanged and no zip file is created.
-    Written with help from ChatGPT.
- */
+   This test ensures that if the Packager fails (e.g. because the imported file
+   is missing), the repository remains unchanged and no zip file is created.
+   Written with help from ChatGPT.
+*/
 class FakeRepo : MediaRepository {
   private val s = MutableStateFlow<List<MediaItem>>(emptyList())
 

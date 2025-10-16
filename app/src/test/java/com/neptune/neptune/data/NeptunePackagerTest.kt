@@ -9,12 +9,13 @@ import java.util.zip.ZipFile
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+
 /*
-    This test ensures that NeptunePackager creates unique zip files
-    in the correct workspace directory, and that the zips contain
-    the expected config and audio files.
-    Written with help from ChatGPT.
- */
+   This test ensures that NeptunePackager creates unique zip files
+   in the correct workspace directory, and that the zips contain
+   the expected config and audio files.
+   Written with help from ChatGPT.
+*/
 @RunWith(RobolectricTestRunner::class)
 class NeptunePackagerTest {
 

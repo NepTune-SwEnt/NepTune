@@ -12,14 +12,15 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.shadows.ShadowContentResolver
+
 /*
-    This test class is designed to achieve code coverage for FileImporterImpl,
-    specifically targeting branches that are not covered by standard unit tests.
-    It includes tests for handling file:// and content:// URIs, as well as error
-    conditions like unsupported URI schemes. A minimal valid WAV file writer and
-    a test ContentProvider are implemented to facilitate testing.
-    Written with help from ChatGPT.
- */
+   This test class is designed to achieve code coverage for FileImporterImpl,
+   specifically targeting branches that are not covered by standard unit tests.
+   It includes tests for handling file:// and content:// URIs, as well as error
+   conditions like unsupported URI schemes. A minimal valid WAV file writer and
+   a test ContentProvider are implemented to facilitate testing.
+   Written with help from ChatGPT.
+*/
 @RunWith(RobolectricTestRunner::class)
 class FileImporterImplCoverageTest {
 

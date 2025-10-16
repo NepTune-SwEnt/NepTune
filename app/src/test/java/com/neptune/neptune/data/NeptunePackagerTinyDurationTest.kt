@@ -9,13 +9,14 @@ import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+
 /*
-    This test ensures that when creating a project zip with a very tiny duration (1 ms),
-    the resulting config.json in the zip has a non-negative duration that rounds to
-    either 0.0 or the minimum step (implementation-specific).
-    This guards against issues with floating point representation of tiny durations.
-    Written with help from ChatGPT.
- */
+   This test ensures that when creating a project zip with a very tiny duration (1 ms),
+   the resulting config.json in the zip has a non-negative duration that rounds to
+   either 0.0 or the minimum step (implementation-specific).
+   This guards against issues with floating point representation of tiny durations.
+   Written with help from ChatGPT.
+*/
 @RunWith(RobolectricTestRunner::class)
 class NeptunePackagerTinyDurationTest {
 

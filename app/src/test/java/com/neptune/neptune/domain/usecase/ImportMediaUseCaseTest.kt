@@ -17,12 +17,13 @@ import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+
 /*
-    Fakes with minimal implementation to support ImportViewModelTest.
-    More extensive tests of the individual components are in their own
-    test files (NeptunePackagerTest, FileImporterImplCoverageTest, etc).
-    Written with help from ChatGPT.
- */
+   Fakes with minimal implementation to support ImportViewModelTest.
+   More extensive tests of the individual components are in their own
+   test files (NeptunePackagerTest, FileImporterImplCoverageTest, etc).
+   Written with help from ChatGPT.
+*/
 private class FakeRepo2 : MediaRepository {
   private val flow = MutableStateFlow<List<MediaItem>>(emptyList())
 

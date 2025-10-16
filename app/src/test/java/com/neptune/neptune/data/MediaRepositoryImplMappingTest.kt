@@ -4,11 +4,12 @@ import com.neptune.neptune.data.local.MediaItemEntity
 import com.neptune.neptune.domain.model.MediaItem
 import org.junit.Assert.assertEquals
 import org.junit.Test
+
 /*
-    This test ensures that the mapping between MediaItemEntity and MediaItem
-    is consistent in both directions.
-    Written with help from ChatGPT.
- */
+   This test ensures that the mapping between MediaItemEntity and MediaItem
+   is consistent in both directions.
+   Written with help from ChatGPT.
+*/
 class MediaRepositoryImplMappingTest {
 
   @Test

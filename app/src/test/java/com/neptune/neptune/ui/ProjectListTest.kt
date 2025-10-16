@@ -16,9 +16,9 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 /*
-    * Basic tests for ProjectList composable.
-    * Verifies that items are shown correctly, and that scrolling works.
-    * Written partially with ChatGPT
+ * Basic tests for ProjectList composable.
+ * Verifies that items are shown correctly, and that scrolling works.
+ * Written partially with ChatGPT
  */
 @RunWith(RobolectricTestRunner::class)
 class ProjectListTest {

@@ -9,13 +9,14 @@ import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+
 /*
-    This test ensures that when creating a project zip with default parameters
-    (omitting volume and startSeconds), the resulting config.json in the zip
-    uses the expected default values and that duration is rounded to one decimal place.
-    Adjust expected default values if your implementation differs.
-    Written with help from ChatGPT.
- */
+   This test ensures that when creating a project zip with default parameters
+   (omitting volume and startSeconds), the resulting config.json in the zip
+   uses the expected default values and that duration is rounded to one decimal place.
+   Adjust expected default values if your implementation differs.
+   Written with help from ChatGPT.
+*/
 @RunWith(RobolectricTestRunner::class)
 class NeptunePackagerDefaultsTest {
 

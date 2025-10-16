@@ -10,12 +10,13 @@ import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+
 /*
-    This test verifies that NeptunePackager.createProjectZip correctly creates a zip file
-    containing the specified audio file and a config.json with the expected content.
-    It uses Robolectric to provide an Android-like environment for file operations.
-    Written with help from ChatGPT.
- */
+   This test verifies that NeptunePackager.createProjectZip correctly creates a zip file
+   containing the specified audio file and a config.json with the expected content.
+   It uses Robolectric to provide an Android-like environment for file operations.
+   Written with help from ChatGPT.
+*/
 @RunWith(RobolectricTestRunner::class)
 class NeptunePackagerRobolectricTest {
 

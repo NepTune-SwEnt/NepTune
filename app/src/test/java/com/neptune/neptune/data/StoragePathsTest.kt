@@ -8,12 +8,13 @@ import java.io.File
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+
 /*
-    This test ensures that the StoragePaths returns directories and files
-    under the app-specific external files directory, which is writable
-    and does not require special permissions.
-    Written with help from ChatGPT.
- */
+   This test ensures that the StoragePaths returns directories and files
+   under the app-specific external files directory, which is writable
+   and does not require special permissions.
+   Written with help from ChatGPT.
+*/
 @RunWith(RobolectricTestRunner::class)
 class StoragePathsTest {
 

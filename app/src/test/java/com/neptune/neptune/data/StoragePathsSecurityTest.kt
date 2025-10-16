@@ -7,11 +7,12 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+
 /*
-    This test ensures that the StoragePaths.projectFile() method sanitizes
-    input to prevent directory traversal and enforces a single .zip extension.
-    Written with help from ChatGPT.
- */
+   This test ensures that the StoragePaths.projectFile() method sanitizes
+   input to prevent directory traversal and enforces a single .zip extension.
+   Written with help from ChatGPT.
+*/
 @RunWith(RobolectricTestRunner::class)
 class StoragePathsSecurityTest {
 
