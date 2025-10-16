@@ -3,13 +3,13 @@ package com.neptune.neptune.data
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import java.io.File
+import java.util.zip.ZipFile
+import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import java.io.File
-import java.util.zip.ZipFile
-import org.json.JSONObject
 
 @RunWith(RobolectricTestRunner::class)
 class NeptunePackagerRobolectricTest {
@@ -21,19 +21,20 @@ class NeptunePackagerRobolectricTest {
     val packager = NeptunePackager(paths)
 
     // Create a tiny "audio" file in your imports/audio (or whatever your method is)
-    val audioDir: File = paths.audioWorkspace()   // if your API is importsAudioDir(), use that
+    val audioDir: File = paths.audioWorkspace() // if your API is importsAudioDir(), use that
     audioDir.mkdirs()
-    val audio = File(audioDir, "clip.wav").apply {
-      // simpler write
-      writeBytes(ByteArray(256) { 0x23 })
-    }
+    val audio =
+        File(audioDir, "clip.wav").apply {
+          // simpler write
+          writeBytes(ByteArray(256) { 0x23 })
+        }
 
-    val zip = packager.createProjectZip(
-      audioFile = audio,
-      durationMs = 3456L,  // 3.456s -> rounded to 3.5
-      volume = 80,
-      startSeconds = 0.5
-    )
+    val zip =
+        packager.createProjectZip(
+            audioFile = audio,
+            durationMs = 3456L, // 3.456s -> rounded to 3.5
+            volume = 80,
+            startSeconds = 0.5)
 
     assertTrue(zip.exists())
     assertEquals("zip", zip.extension)
@@ -50,8 +51,7 @@ class NeptunePackagerRobolectricTest {
       assertTrue("clip.wav missing", "clip.wav" in names)
 
       // Read and parse JSON (ignore whitespace & formatting)
-      val cfg = zf.getInputStream(zf.getEntry("config.json"))
-        .bufferedReader().readText()
+      val cfg = zf.getInputStream(zf.getEntry("config.json")).bufferedReader().readText()
 
       val root = JSONObject(cfg)
       val files = root.getJSONArray("files")

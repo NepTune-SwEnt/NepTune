@@ -20,15 +20,17 @@ class MediaRepositoryImplTest {
   private lateinit var db: MediaDb
   private lateinit var repo: MediaRepositoryImpl
 
-  @Before fun setUp() {
+  @Before
+  fun setUp() {
     val ctx: Context = ApplicationProvider.getApplicationContext()
-    db = Room.inMemoryDatabaseBuilder(ctx, MediaDb::class.java)
-      .allowMainThreadQueries()
-      .build()
+    db = Room.inMemoryDatabaseBuilder(ctx, MediaDb::class.java).allowMainThreadQueries().build()
     repo = MediaRepositoryImpl(db.mediaDao())
   }
 
-  @After fun tearDown() { db.close() }
+  @After
+  fun tearDown() {
+    db.close()
+  }
 
   @Test
   fun upsert_and_observe_maps_domain_and_emits() = runBlocking {

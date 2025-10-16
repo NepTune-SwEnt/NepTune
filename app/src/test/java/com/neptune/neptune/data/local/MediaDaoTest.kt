@@ -18,15 +18,17 @@ class MediaDaoTest {
   private lateinit var db: MediaDb
   private lateinit var dao: MediaDao
 
-  @Before fun setUp() {
+  @Before
+  fun setUp() {
     val ctx: Context = ApplicationProvider.getApplicationContext()
-    db = Room.inMemoryDatabaseBuilder(ctx, MediaDb::class.java)
-      .allowMainThreadQueries()
-      .build()
+    db = Room.inMemoryDatabaseBuilder(ctx, MediaDb::class.java).allowMainThreadQueries().build()
     dao = db.mediaDao()
   }
 
-  @After fun tearDown() { db.close() }
+  @After
+  fun tearDown() {
+    db.close()
+  }
 
   @Test
   fun order_is_desc_by_importedAt() = runBlocking {
@@ -35,7 +37,7 @@ class MediaDaoTest {
     dao.upsert(MediaItemEntity("c", "file:///c.zip", importedAt = 2))
 
     val ids = dao.observeAll().first().map { it.id }
-    assertThat(ids).isEqualTo(listOf("b","c","a"))
+    assertThat(ids).isEqualTo(listOf("b", "c", "a"))
   }
 
   @Test
@@ -46,7 +48,6 @@ class MediaDaoTest {
     assertThat(list).hasSize(1)
     assertThat(list.first().projectUri).isEqualTo("file:///2.zip")
   }
-
 
   @Test
   fun insert_replace_and_order_by_importedAt_desc() = runBlocking {

@@ -7,12 +7,13 @@ import com.neptune.neptune.domain.port.MediaRepository
 import java.io.File
 import java.net.URI
 import java.util.UUID
+
 /*
-    Use case to import a media file from an external URI into the app's local audio workspace.
-    This involves copying the file locally, packaging it into a .zip with a config.json, and
-    persisting a MediaItem that points to the .zip location.
-    Partially written with ChatGPT
- */
+   Use case to import a media file from an external URI into the app's local audio workspace.
+   This involves copying the file locally, packaging it into a .zip with a config.json, and
+   persisting a MediaItem that points to the .zip location.
+   Partially written with ChatGPT
+*/
 class ImportMediaUseCase(
     private val importer: FileImporter,
     private val repo: MediaRepository,
@@ -24,17 +25,18 @@ class ImportMediaUseCase(
     val localAudio = File(URI(probe.localUri.toString()))
 
     // Create .zip with config.json + audio
-    val projectZip = try {
-        packager.createProjectZip(audioFile = localAudio, durationMs = probe.durationMs)
-    } catch (e: Exception) {
-        // ensure we don't leak the copied audio if packaging fails
-        runCatching { localAudio.delete() }
-        throw e
-    }
+    val projectZip =
+        try {
+          packager.createProjectZip(audioFile = localAudio, durationMs = probe.durationMs)
+        } catch (e: Exception) {
+          // ensure we don't leak the copied audio if packaging fails
+          runCatching { localAudio.delete() }
+          throw e
+        }
     // remove the copied audio; project now owns the bytes
     runCatching { localAudio.delete() }
 
-    //Persist only the project file path
+    // Persist only the project file path
     val item =
         MediaItem(id = UUID.randomUUID().toString(), projectUri = projectZip.toURI().toString())
     repo.upsert(item)

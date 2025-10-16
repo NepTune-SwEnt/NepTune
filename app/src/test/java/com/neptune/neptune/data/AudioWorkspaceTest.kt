@@ -4,32 +4,32 @@ package com.neptune.neptune.data
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
+import java.io.File
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
 class AudioWorkspaceTest {
 
-    @Test
-    fun audioWorkspace_is_under_imports_folder_and_writable() {
-        val ctx: Context = ApplicationProvider.getApplicationContext()
-        val paths = StoragePaths(ctx)
+  @Test
+  fun audioWorkspace_is_under_imports_folder_and_writable() {
+    val ctx: Context = ApplicationProvider.getApplicationContext()
+    val paths = StoragePaths(ctx)
 
-        val externalBase = requireNotNull(ctx.getExternalFilesDir(null)).canonicalFile
-        val audioDir = paths.audioWorkspace().canonicalFile
+    val externalBase = requireNotNull(ctx.getExternalFilesDir(null)).canonicalFile
+    val audioDir = paths.audioWorkspace().canonicalFile
 
-        // The audio workspace must live inside "<external>/imports"
-        val importsDir = File(externalBase, "imports").canonicalFile
-        assertThat(audioDir.path.startsWith(importsDir.path)).isTrue()
+    // The audio workspace must live inside "<external>/imports"
+    val importsDir = File(externalBase, "imports").canonicalFile
+    assertThat(audioDir.path.startsWith(importsDir.path)).isTrue()
 
-        //Name check (last folder is "audio")
-        assertThat(audioDir.name).isEqualTo("audio")
+    // Name check (last folder is "audio")
+    assertThat(audioDir.name).isEqualTo("audio")
 
-        //Ensure directory exists and is writable
-        assertThat(audioDir.exists() || audioDir.mkdirs()).isTrue()
-        val testFile = File(audioDir, "beep.tmp").apply { writeText("ok") }
-        assertThat(testFile.exists()).isTrue()
-    }
+    // Ensure directory exists and is writable
+    assertThat(audioDir.exists() || audioDir.mkdirs()).isTrue()
+    val testFile = File(audioDir, "beep.tmp").apply { writeText("ok") }
+    assertThat(testFile.exists()).isTrue()
+  }
 }

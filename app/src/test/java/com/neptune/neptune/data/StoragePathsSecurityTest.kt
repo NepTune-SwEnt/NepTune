@@ -11,33 +11,34 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class StoragePathsSecurityTest {
 
-    @Test
-    fun projectFile_sanitizes_baseName_and_enforces_single_zip_extension() {
-        val ctx: Context = ApplicationProvider.getApplicationContext()
-        val paths = StoragePaths(ctx)
-        val base = requireNotNull(ctx.getExternalFilesDir(null)).canonicalFile
-        val ws = paths.projectsWorkspace().canonicalFile
+  @Test
+  fun projectFile_sanitizes_baseName_and_enforces_single_zip_extension() {
+    val ctx: Context = ApplicationProvider.getApplicationContext()
+    val paths = StoragePaths(ctx)
+    val base = requireNotNull(ctx.getExternalFilesDir(null)).canonicalFile
+    val ws = paths.projectsWorkspace().canonicalFile
 
-        val evil = paths.projectFile("../evil..project.zip").canonicalFile
-        val normal = paths.projectFile("good").canonicalFile
+    val evil = paths.projectFile("../evil..project.zip").canonicalFile
+    val normal = paths.projectFile("good").canonicalFile
 
-        // Location: projectFile must live INSIDE externalFilesDir (regardless of whether you use projects/)
-        assertThat(evil.path.startsWith(base.path)).isTrue()
-        assertThat(normal.path.startsWith(base.path)).isTrue()
+    // Location: projectFile must live INSIDE externalFilesDir (regardless of whether you use
+    // projects/)
+    assertThat(evil.path.startsWith(base.path)).isTrue()
+    assertThat(normal.path.startsWith(base.path)).isTrue()
 
-        // Optional: if your impl DOES use projects/, this will still pass; if not, it's fine.
-        // We only assert containment, not exact parent equality anymore.
-        assertThat(ws.path.startsWith(base.path)).isTrue()
+    // Optional: if your impl DOES use projects/, this will still pass; if not, it's fine.
+    // We only assert containment, not exact parent equality anymore.
+    assertThat(ws.path.startsWith(base.path)).isTrue()
 
-        // No raw traversal remnants and only a single .zip extension
-        assertThat(evil.name).doesNotContain("..")
-        assertThat(evil.extension).isEqualTo("zip")
-        assertThat(normal.extension).isEqualTo("zip")
+    // No raw traversal remnants and only a single .zip extension
+    assertThat(evil.name).doesNotContain("..")
+    assertThat(evil.extension).isEqualTo("zip")
+    assertThat(normal.extension).isEqualTo("zip")
 
-        // Extra: avoid ".zip.zip" or empty basenames like ".zip"
-        fun hasSingleZip(name: String) =
-            name.endsWith(".zip") && !name.substringBeforeLast(".zip").endsWith(".zip")
-        assertThat(hasSingleZip(evil.name)).isTrue()
-        assertThat(hasSingleZip(normal.name)).isTrue()
-    }
+    // Extra: avoid ".zip.zip" or empty basenames like ".zip"
+    fun hasSingleZip(name: String) =
+        name.endsWith(".zip") && !name.substringBeforeLast(".zip").endsWith(".zip")
+    assertThat(hasSingleZip(evil.name)).isTrue()
+    assertThat(hasSingleZip(normal.name)).isTrue()
+  }
 }

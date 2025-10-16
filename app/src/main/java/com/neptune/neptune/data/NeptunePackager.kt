@@ -17,7 +17,9 @@ class NeptunePackager(private val paths: StoragePaths) {
       volume: Int = 100,
       startSeconds: Double = 0.0
   ): File {
-    require(audioFile.exists() && audioFile.isFile) { "Audio file does not exist: ${audioFile.path}" }
+    require(audioFile.exists() && audioFile.isFile) {
+      "Audio file does not exist: ${audioFile.path}"
+    }
     val base = audioFile.nameWithoutExtension
     val zipFile = paths.projectFile(base)
     val durationSec = durationMs?.div(1000.0) ?: 0.0
