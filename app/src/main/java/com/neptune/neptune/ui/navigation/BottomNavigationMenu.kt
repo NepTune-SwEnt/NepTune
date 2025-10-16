@@ -43,7 +43,7 @@ sealed class Tab(val name: String, val icon: Int, val destination: Screen, val t
           NavigationTestTags.SEARCH_TAB)
 
   // TODO update post tag
-  object New : Tab("New", android.R.drawable.ic_menu_add, Screen.Post, NavigationTestTags.POST_TAB)
+  object New : Tab("New", android.R.drawable.ic_menu_add, Screen.ImportFile, NavigationTestTags.POST_TAB)
 }
 
 private val tabs =
