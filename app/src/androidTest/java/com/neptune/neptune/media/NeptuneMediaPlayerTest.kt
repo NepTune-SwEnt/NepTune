@@ -4,27 +4,21 @@ import android.content.Context
 import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.core.net.toUri
 import com.neptune.neptune.R
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
 class NeptuneMediaPlayerTest {
-  private lateinit var contextMock: Context
   private lateinit var mediaPlayer: NeptuneMediaPlayer
   private lateinit var testURI1: Uri
   private lateinit var testURI2: Uri
+  private lateinit var context: Context
 
   // Helper functions
   fun isPlayingURI(uri: Uri): Boolean {
     return mediaPlayer.isPlaying() && mediaPlayer.getCurrentUri() == uri
-  }
-
-  fun printAllInfo() {
-    println("Is Playing: ${mediaPlayer.isPlaying()}")
-    println("Current URI: ${mediaPlayer.getCurrentUri()}")
-    println("Duration: ${mediaPlayer.getDuration()}")
-    println("Current Position: ${mediaPlayer.getCurrentPosition()}")
   }
 
   fun waitForPlayback(timeoutMs: Long = 200): Boolean {
@@ -42,7 +36,7 @@ class NeptuneMediaPlayerTest {
 
   @Before
   fun setup() {
-    val context = composeTestRule.activity.applicationContext
+    context = composeTestRule.activity.applicationContext
     mediaPlayer = NeptuneMediaPlayer(context)
 
     testURI1 = Uri.parse("android.resource://${context.packageName}/${R.raw.record1}")
@@ -113,6 +107,21 @@ class NeptuneMediaPlayerTest {
   }
 
   @Test
+  fun testTogglePause() {
+    mediaPlayer.play(testURI1)
+    waitForPlayback()
+    assert(isPlayingURI(testURI1))
+
+    mediaPlayer.togglePause()
+    assert(!mediaPlayer.isPlaying())
+    assert(mediaPlayer.getCurrentUri() == testURI1)
+
+    mediaPlayer.togglePause()
+    waitForPlayback()
+    assert(isPlayingURI(testURI1))
+  }
+
+  @Test
   fun testStop() {
     mediaPlayer.play(testURI1)
     waitForPlayback()
@@ -158,5 +167,14 @@ class NeptuneMediaPlayerTest {
   fun testSeekToNoMedia() {
     mediaPlayer.goTo(500)
     assert(mediaPlayer.getCurrentPosition() == -1)
+  }
+
+  @Test
+  fun testGetUriFromSampleId() {
+    val uri1 = mediaPlayer.getUriFromSampleId(0)
+    val uri2 = mediaPlayer.getUriFromSampleId(1)
+
+    assert(uri1 == "android.resource://${context.packageName}/raw/record1".toUri())
+    assert(uri2 == "android.resource://${context.packageName}/raw/record2".toUri())
   }
 }
