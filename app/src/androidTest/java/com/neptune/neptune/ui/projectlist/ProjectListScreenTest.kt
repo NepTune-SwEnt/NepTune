@@ -8,6 +8,7 @@ import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -69,7 +70,7 @@ class ProjectListScreenTest {
   }
 
   @Test
-  fun opening_project_calls_navigate() {
+  fun openingProjectCallsNavigate() {
     // Click on project "Fav" card
     composeTestRule.onNodeWithTag("project_2").performClick()
 
@@ -78,7 +79,7 @@ class ProjectListScreenTest {
   }
 
   @Test
-  fun sorted_list_shows_favorites_first_and_by_date() {
+  fun sortedListShowsFavoritesFirstAndByDate() {
     composeTestRule.waitForIdle()
     // After view model sorts: "Fav" should be first, then "New", then "Old"
     val nameNodes =
@@ -90,7 +91,7 @@ class ProjectListScreenTest {
   }
 
   @Test
-  fun favorite_toggle_updates_order() {
+  fun favoriteToggleUpdatesOrder() {
     composeTestRule.waitForIdle()
     // Initially Fav is first
     composeTestRule
@@ -110,7 +111,7 @@ class ProjectListScreenTest {
   }
 
   @Test
-  fun renaming_project_updates_ui() {
+  fun renamingProjectUpdatesUi() {
     // Open menu for project 1 and choose Rename
     composeTestRule.onNodeWithTag("menu_1").performClick()
     composeTestRule.onNodeWithText("Rename").performClick()
@@ -126,7 +127,7 @@ class ProjectListScreenTest {
   }
 
   @Test
-  fun change_description_updates_repository() {
+  fun changeDescriptionUpdatesRepository() {
     val newDesc = "Updated description from test"
 
     // Open menu for project 3 and choose Change description
@@ -155,7 +156,7 @@ class ProjectListScreenTest {
   }
 
   @Test
-  fun delete_project_removes_item_from_ui() {
+  fun deleteProjectRemovesItemFromUi() {
     // Delete project 1
     composeTestRule.onNodeWithTag("menu_1").performClick()
     composeTestRule.onNodeWithText("Delete").performClick()
@@ -164,5 +165,37 @@ class ProjectListScreenTest {
 
     // Project 1 should no longer exist in UI
     composeTestRule.onNodeWithText("Old").assertDoesNotExist()
+  }
+
+  @Test
+  fun testTagsAreCorrect() {
+    composeTestRule.onNodeWithTag(ProjectListScreenTestTags.PROJECT_LIST_SCREEN).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(ProjectListScreenTestTags.PROJECT_LIST).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(ProjectListScreenTestTags.SEARCH_BAR).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(ProjectListScreenTestTags.SEARCH_TEXT_FIELD).assertIsDisplayed()
+  }
+
+  /** Tests that you can type on the search bar */
+  @Test
+  fun searchbarCanType() {
+
+    // Simulate typing
+    composeTestRule
+        .onNodeWithTag(ProjectListScreenTestTags.SEARCH_TEXT_FIELD)
+        .performTextInput("Test")
+
+    composeTestRule
+        .onNode(hasText("Test"))
+        .assertExists("Text input wasn't updated in the search field.")
+  }
+
+  /** Tests that the search icon exists and that the topBar has the right default text */
+  @Test
+  fun searchbarHasDefaultText() {
+
+    // Assert that the search icon exist
+    composeTestRule.onNodeWithContentDescription("Search Icon").assertExists()
+
+    composeTestRule.onNode(hasText("Search for a Project")).assertIsDisplayed()
   }
 }

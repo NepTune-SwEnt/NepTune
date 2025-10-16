@@ -1,4 +1,3 @@
-// Kotlin
 package com.neptune.neptune.ui.projectlist
 
 import androidx.compose.foundation.background
@@ -83,6 +82,8 @@ object ProjectListScreenTestTags {
   const val EDIT_MENU = "EditMenu"
   const val FAVORITE_BUTTON = "FavoriteButton"
   const val DESCRIPTION_TEXT_FIELD = "DescriptionTextField"
+  const val PROJECT_CARD = "ProjectCard"
+  const val SEARCH_TEXT_FIELD = "SearchTextField"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -111,15 +112,19 @@ fun ProjectListScreen(
   Scaffold(
       containerColor = DarkBlue1,
       content = {
-        Column(modifier = Modifier.fillMaxSize().padding(it)) {
-          SearchBar(value = searchText, onValueChange = { searchText = it })
-          ProjectList(
-              projects = filteredProjects,
-              selectedProjects = selectedProjects,
-              modifier = Modifier.padding(it),
-              projectListViewModel = projectListViewModel,
-              navigateToSampler = navigateToSampler)
-        }
+        Column(
+            modifier =
+                Modifier.testTag(ProjectListScreenTestTags.PROJECT_LIST_SCREEN)
+                    .fillMaxSize()
+                    .padding(it)) {
+              SearchBar(value = searchText, onValueChange = { searchText = it })
+              ProjectList(
+                  projects = filteredProjects,
+                  selectedProjects = selectedProjects,
+                  modifier = Modifier.padding(it),
+                  projectListViewModel = projectListViewModel,
+                  navigateToSampler = navigateToSampler)
+            }
       })
 }
 
@@ -142,7 +147,7 @@ fun ProjectList(
           },
   ) {
     if (projects.isNotEmpty()) {
-      LazyColumn(modifier = modifier) {
+      LazyColumn(modifier = modifier.testTag(ProjectListScreenTestTags.PROJECT_LIST)) {
         items(items = projects, key = { project -> project.id }) { project ->
           ProjectListItem(
               project = project,
@@ -343,7 +348,7 @@ private const val SEARCHBAR_FONT_SIZE = 21
 fun SearchBar(value: String, onValueChange: (String) -> Unit) {
   Row(
       verticalAlignment = Alignment.CenterVertically,
-      modifier = Modifier.fillMaxWidth(),
+      modifier = Modifier.fillMaxWidth().testTag(ProjectListScreenTestTags.SEARCH_BAR),
       horizontalArrangement = Arrangement.Center) {
         TextField(
             value = value,
@@ -361,6 +366,7 @@ fun SearchBar(value: String, onValueChange: (String) -> Unit) {
             },
             modifier =
                 Modifier.height(70.dp)
+                    .testTag(ProjectListScreenTestTags.SEARCH_TEXT_FIELD)
                     .clip(RoundedCornerShape(8.dp))
                     .background(DarkBlue1, RoundedCornerShape(8.dp))
                     .padding(top = 9.dp, bottom = 9.dp),
