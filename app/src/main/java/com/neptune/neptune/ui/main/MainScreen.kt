@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -31,7 +30,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
 import com.neptune.neptune.Sample
+import com.neptune.neptune.ui.navigation.TopBarNavigation
 import com.neptune.neptune.ui.theme.DarkBlue1
 import com.neptune.neptune.ui.theme.DarkBlueGray
 import com.neptune.neptune.ui.theme.LightTurquoise
@@ -55,16 +54,6 @@ import com.neptune.neptune.ui.theme.LightTurquoise
 object MainScreenTestTags {
   // General
   const val MAIN_SCREEN = "mainScreen"
-  const val TOP_APP_BAR = "topAppBar"
-  const val APP_TITLE = "appTitle"
-  const val PROFILE_BUTTON = "profileButton"
-  const val BOTTOM_NAVIGATION_BAR = "bottomNavigationBar"
-
-  // Bottom navigation items
-  const val NAV_HOME = "navHome"
-  const val NAV_SEARCH = "navSearch"
-  const val NAV_SAMPLER = "navSampler"
-  const val NAV_NEW_POST = "navNewPost"
 
   // Sample Card
   const val SAMPLE_CARD = "sampleCard"
@@ -89,12 +78,10 @@ fun MainScreen(mainViewModel: MainViewModel = viewModel()) {
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
   Scaffold(
-      modifier = Modifier.testTag(MainScreenTestTags.MAIN_SCREEN), containerColor = DarkBlue1) {
-          innerPadding ->
+      topBar = { TopBarNavigation() },
+      modifier = Modifier.testTag(MainScreenTestTags.MAIN_SCREEN),
+      containerColor = DarkBlue1) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-          // Bottom border of the topAppBar
-          HorizontalDivider(
-              modifier = Modifier.fillMaxWidth(), thickness = 0.75.dp, color = LightTurquoise)
           LazyColumn(
               modifier =
                   Modifier.fillMaxSize()

@@ -8,20 +8,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -41,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
+import com.neptune.neptune.ui.navigation.TopBarNavigation
 import com.neptune.neptune.ui.theme.DarkBlue1
 import com.neptune.neptune.ui.theme.LightTurquoise
 import com.neptune.neptune.ui.theme.TextColorDarkMode
@@ -48,8 +45,6 @@ import com.neptune.neptune.ui.theme.TextColorDarkMode
 object SignInScreenTags {
   const val LOGIN_TITLE = "loginTitle"
   const val LOGIN_BUTTON = "loginButton"
-  const val TOP_BAR = "topBar"
-  const val TOP_BAR_TITLE = "topBarTitle"
 }
 
 /**
@@ -85,28 +80,7 @@ fun SignInScreen(
   val googleId = R.drawable.google_logo
 
   Scaffold(
-      topBar = {
-        Column {
-          CenterAlignedTopAppBar(
-              modifier = Modifier.fillMaxWidth().height(112.dp).testTag(SignInScreenTags.TOP_BAR),
-              title = {
-                Text(
-                    text = "NepTune",
-                    style =
-                        TextStyle(
-                            fontSize = 45.sp,
-                            fontFamily = FontFamily(Font(R.font.lily_script_one)),
-                            fontWeight = FontWeight(149),
-                            color = LightTurquoise,
-                        ),
-                    modifier = Modifier.padding(25.dp).testTag(SignInScreenTags.TOP_BAR_TITLE),
-                    textAlign = TextAlign.Center)
-              },
-              colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = DarkBlue1))
-          HorizontalDivider(
-              modifier = Modifier.fillMaxWidth(), thickness = 0.75.dp, color = LightTurquoise)
-        }
-      },
+      topBar = { TopBarNavigation() },
       containerColor = DarkBlue1,
   ) { innerPadding ->
     Column(
