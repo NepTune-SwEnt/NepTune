@@ -1,7 +1,6 @@
 package com.neptune.neptune.model.project
 
 import android.util.Log
-import com.google.firebase.Timestamp
 
 class ProjectItemsRepositoryVar : ProjectItemsRepository {
 
