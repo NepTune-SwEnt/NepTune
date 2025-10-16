@@ -1,5 +1,7 @@
 package com.neptune.neptune.model.project
 
+import android.util.Log
+
 class ProjectItemsRepositoryVar : ProjectItemsRepository {
 
     private val projects = mutableListOf<ProjectItem>()
@@ -19,7 +21,10 @@ class ProjectItemsRepositoryVar : ProjectItemsRepository {
     }
 
     override suspend fun addProject(project: ProjectItem) {
+        Log.i("ProjectItemsRepositoryVar", "Repo state: $projects")
+        Log.i("ProjectItemsRepositoryVar", "Adding project: $project")
         if (projects.any { it.id == project.id }) {
+            Log.e("ProjectItemsRepositoryVar", "ProjectItem with the same ID already exists, project: ${getProject(project.id)}")
             throw Exception("ProjectItemsRepositoryVar: ProjectItem with the same ID already exists")
         }
         projects.add(project)
@@ -45,5 +50,9 @@ class ProjectItemsRepositoryVar : ProjectItemsRepository {
             return
         }
         throw Exception("ProjectItemsRepositoryVar: ProjectItem not found")
+    }
+
+    override suspend fun getProjectDuration(projectID: String): Int {
+        TODO("Not yet implemented")
     }
 }

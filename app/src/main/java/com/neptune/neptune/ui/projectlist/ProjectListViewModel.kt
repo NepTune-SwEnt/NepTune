@@ -1,3 +1,4 @@
+// Kotlin
 package com.neptune.neptune.ui.projectlist
 
 import android.util.Log
@@ -38,8 +39,7 @@ class ProjectListViewModel(
                 _uiState.value = ProjectListUiState(projects = projects.toList(), isLoading = false)
                 Log.i("ProjectListViewModel", "Loaded ${projects.toString()}")
             } catch (e: Exception) {
-                // Handle the error appropriately in a real app
-                _uiState.value = _uiState.value.copy(isLoading = false) // Also set loading to false on error
+                _uiState.value = _uiState.value.copy(isLoading = false)
                 Log.e("ProjectListViewModel", "Error loading projects", e)
             }
         }
@@ -49,9 +49,8 @@ class ProjectListViewModel(
         viewModelScope.launch {
             try {
                 projectRepository.deleteProject(projectId)
-                getAllTodos() // Reload projects after deletion
+                getAllTodos()
             } catch (e: Exception) {
-                // Handle error
                 Log.e("ProjectListViewModel", "Error deleting project", e)
             }
         }
@@ -63,9 +62,8 @@ class ProjectListViewModel(
                 val project = projectRepository.getProject(projectId)
                 val updatedProject = project.copy(name = newName)
                 projectRepository.editProject(projectId, updatedProject)
-                getAllTodos() // Reload projects after renaming
+                getAllTodos()
             } catch (e: Exception) {
-                // Handle error
                 Log.e("ProjectListViewModel", "Error renaming project", e)
             }
         }
@@ -77,16 +75,42 @@ class ProjectListViewModel(
                 val project = projectRepository.getProject(projectId)
                 val updatedProject = project.copy(description = newDescription)
                 projectRepository.editProject(projectId, updatedProject)
-                getAllTodos() // Reload projects after changing description
+                getAllTodos()
             } catch (e: Exception) {
-                // Handle error
                 Log.e("ProjectListViewModel", "Error changing project description", e)
             }
         }
+    }
+
+    fun toggleFavorite(projectId: String) {
+        viewModelScope.launch {
+            try {
+                val project = projectRepository.getProject(projectId)
+                val updatedProject = project.copy(isFavorite = !project.isFavorite)
+                projectRepository.editProject(projectId, updatedProject)
+                getAllTodos()
+            } catch (e: Exception) {
+                Log.e("ProjectListViewModel", "Error toggling favorite", e)
+            }
+        }
+    }
+
+    fun selectProject(project: ProjectItem) {
+        _uiState.value = _uiState.value.copy(selectedProject = project.id)
+    }
+
+    fun getProjectDuration(project: ProjectItem): String {
+        if (project.previewUrl.isNullOrEmpty()) return "00:00"
+        return "00:59"
+    }
+
+    fun storeInCloud(projectId: String) {
+
     }
 }
 
 data class ProjectListUiState(
     val projects: List<ProjectItem>,
     val isLoading: Boolean = false,
+    val selectedProject : String? = null
 )
