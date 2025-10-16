@@ -9,7 +9,6 @@ enum class SamplerTab {
   BASICS,
   EQ,
   COMP,
-  TEMP
 }
 
 private val NOTE_ORDER = listOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
@@ -31,7 +30,12 @@ data class SamplerUiState(
     val sustain: Float = 0.0f,
     val release: Float = 0.0f,
     val playbackPosition: Float = 0.0f,
-    val eqBands: List<Float> = List(EQ_FREQUENCIES.size) { EQ_GAIN_DEFAULT }
+    val eqBands: List<Float> = List(EQ_FREQUENCIES.size) { EQ_GAIN_DEFAULT },
+    val reverbWet: Float = 0.25f,
+    val reverbSize: Float = 3.0f,
+    val reverbWidth: Float = 1.0f,
+    val reverbDepth: Float = 0.5f,
+    val reverbPredelay: Float = 10.0f
 ) {
   val fullPitch: String
     get() = "$pitchNote$pitchOctave"
@@ -145,5 +149,25 @@ open class SamplerViewModel : ViewModel() {
       }
       currentState.copy(eqBands = newBands)
     }
+  }
+
+  open fun updateReverbWet(value: Float) {
+    _uiState.update { it.copy(reverbWet = value.coerceIn(0.0f, 1.0f)) }
+  }
+
+  open fun updateReverbSize(value: Float) {
+    _uiState.update { it.copy(reverbSize = value.coerceIn(0.1f, 10.0f)) }
+  }
+
+  open fun updateReverbWidth(value: Float) {
+    _uiState.update { it.copy(reverbWidth = value.coerceIn(0.0f, 1.0f)) }
+  }
+
+  open fun updateReverbDepth(value: Float) {
+    _uiState.update { it.copy(reverbDepth = value.coerceIn(0.0f, 1.0f)) }
+  }
+
+  open fun updateReverbPredelay(value: Float) {
+    _uiState.update { it.copy(reverbPredelay = value.coerceIn(0.0f, 100.0f)) }
   }
 }

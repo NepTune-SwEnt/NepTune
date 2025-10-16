@@ -191,8 +191,6 @@ class SamplerScreenTest {
 
     composeTestRule.onNodeWithText("COMP").performClick()
     assertEquals(SamplerTab.COMP, fakeViewModel.isSelectTabCalled)
-    composeTestRule.onNodeWithText("TEMP").performClick()
-    assertEquals(SamplerTab.TEMP, fakeViewModel.isSelectTabCalled)
   }
 
   @Test
