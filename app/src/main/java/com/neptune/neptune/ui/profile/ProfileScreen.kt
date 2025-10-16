@@ -15,11 +15,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SmallFloatingActionButton
@@ -72,6 +74,7 @@ object ProfileScreenTestTags {
 
   const val EDIT_BUTTON = "profile/btn/edit"
   const val SAVE_BUTTON = "profile/btn/save"
+  const val LOGOUT_BUTTON = "profile/btn/logout"
 
   const val FIELD_NAME = "profile/field/name"
   const val FIELD_USERNAME = "profile/field/username"
@@ -89,6 +92,7 @@ object ProfileScreenTestTags {
  * @param onNameChange Called whenever the user edits their name field.
  * @param onUsernameChange Called whenever the user edits their username field.
  * @param onBioChange Called whenever the user edits their bio field.
+ * @param onLogoutClick Callback invoked when the Logout button is pressed.
  */
 @Composable
 fun ProfileScreen(
@@ -98,6 +102,7 @@ fun ProfileScreen(
     onNameChange: (String) -> Unit = {},
     onUsernameChange: (String) -> Unit = {},
     onBioChange: (String) -> Unit = {},
+    onLogoutClick: () -> Unit = {},
 ) {
   // TODO: add profile picture, follower/following count and back button
   Column(modifier = Modifier.padding(16.dp).testTag(ProfileScreenTestTags.ROOT)) {
@@ -106,6 +111,7 @@ fun ProfileScreen(
         ProfileViewContent(
             state = uiState,
             onEdit = onEditClick,
+            onLogout = onLogoutClick,
         )
       }
       ProfileMode.EDIT -> {
@@ -133,59 +139,76 @@ fun ProfileScreen(
 private fun ProfileViewContent(
     state: ProfileUiState,
     onEdit: () -> Unit,
+    onLogout: () -> Unit,
 ) {
-  Column(
-      modifier = Modifier.fillMaxSize().testTag(ProfileScreenTestTags.VIEW_CONTENT),
-      horizontalAlignment = Alignment.CenterHorizontally,
-      // verticalArrangement = Arrangement.Center
-  ) {
-    Spacer(Modifier.height(15.dp))
-    Avatar(modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR), showEditPencil = false)
-    Spacer(Modifier.height(15.dp))
+  Box(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier.fillMaxSize().testTag(ProfileScreenTestTags.VIEW_CONTENT),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        // verticalArrangement = Arrangement.Center
+    ) {
+      Spacer(Modifier.height(15.dp))
+      Avatar(modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR), showEditPencil = false)
+      Spacer(Modifier.height(15.dp))
 
-    Text(
-        text = state.name,
-        color = LightTurquoise,
-        style = MaterialTheme.typography.headlineMedium,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
+      Text(
+          text = state.name,
+          color = LightTurquoise,
+          style = MaterialTheme.typography.headlineMedium,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
 
-    Text(
-        text = "@${state.username}",
-        color = LightTurquoise,
-        style = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
+      Text(
+          text = "@${state.username}",
+          color = LightTurquoise,
+          style = MaterialTheme.typography.bodyMedium,
+          modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
 
-    Spacer(Modifier.height(100.dp))
+      Spacer(Modifier.height(100.dp))
 
-    Text(
-        text = if (state.bio != "") "“ ${state.bio} ”" else "",
-        color = LightTurquoise,
-        style = MaterialTheme.typography.titleLarge,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
-    Spacer(Modifier.height(150.dp))
-    Row(Modifier.fillMaxWidth()) {
-      StatBlock(
-          label = "Followers",
-          value = state.followers,
-          modifier = Modifier.weight(1f),
-          testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
-      StatBlock(
-          label = "Following",
-          value = state.following,
-          modifier = Modifier.weight(1f),
-          testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
+      Text(
+          text = if (state.bio != "") "“ ${state.bio} ”" else "",
+          color = LightTurquoise,
+          style = MaterialTheme.typography.titleLarge,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
+      Spacer(Modifier.height(150.dp))
+      Row(Modifier.fillMaxWidth()) {
+        StatBlock(
+            label = "Followers",
+            value = state.followers,
+            modifier = Modifier.weight(1f),
+            testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
+        StatBlock(
+            label = "Following",
+            value = state.following,
+            modifier = Modifier.weight(1f),
+            testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
+      }
+      Spacer(Modifier.height(80.dp))
+
+      Button(
+          onClick = onEdit,
+          enabled = true,
+          modifier = Modifier.testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
+            Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
+            Spacer(Modifier.width(8.dp))
+            Text("Edit")
+          }
     }
-    Spacer(Modifier.height(80.dp))
-
-    Button(
-        onClick = onEdit,
-        enabled = true,
-        modifier = Modifier.testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
-          Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
-          Spacer(Modifier.width(8.dp))
-          Text("Edit")
+    // the logout button is aligned to the top end corner
+    IconButton(
+        modifier =
+            Modifier.align(Alignment.TopEnd)
+                .padding(8.dp)
+                .size(48.dp) // Make the touch target bigger
+                .testTag(ProfileScreenTestTags.LOGOUT_BUTTON),
+        onClick = onLogout) {
+          Icon(
+              modifier = Modifier.size(32.dp), // And the icon too
+              imageVector = Icons.AutoMirrored.Filled.Logout,
+              contentDescription = "Logout",
+              tint = LightTurquoise)
         }
   }
 }
