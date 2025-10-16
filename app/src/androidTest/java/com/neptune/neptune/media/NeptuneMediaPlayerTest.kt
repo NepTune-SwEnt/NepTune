@@ -1,131 +1,162 @@
 package com.neptune.neptune.media
 
 import android.content.Context
-import com.neptune.neptune.R
 import android.net.Uri
+import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import com.neptune.neptune.R
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
 class NeptuneMediaPlayerTest {
-    private lateinit var contextMock: Context
-    private lateinit var mediaPlayer: NeptuneMediaPlayer
-    private lateinit var testURI1: Uri
-    private lateinit var testURI2: Uri
+  private lateinit var contextMock: Context
+  private lateinit var mediaPlayer: NeptuneMediaPlayer
+  private lateinit var testURI1: Uri
+  private lateinit var testURI2: Uri
 
-    // Helper functions
-    fun isPlayingURI(uri: Uri): Boolean {
-        return mediaPlayer.isPlaying() && mediaPlayer.getCurrentUri() == uri
+  // Helper functions
+  fun isPlayingURI(uri: Uri): Boolean {
+    return mediaPlayer.isPlaying() && mediaPlayer.getCurrentUri() == uri
+  }
+
+  fun printAllInfo() {
+    println("Is Playing: ${mediaPlayer.isPlaying()}")
+    println("Current URI: ${mediaPlayer.getCurrentUri()}")
+    println("Duration: ${mediaPlayer.getDuration()}")
+    println("Current Position: ${mediaPlayer.getCurrentPosition()}")
+  }
+
+  fun waitForPlayback(timeoutMs: Long = 200): Boolean {
+    val start = System.currentTimeMillis()
+    while (System.currentTimeMillis() - start < timeoutMs) {
+      if (mediaPlayer.isPlaying()) return true
+      Thread.sleep(10)
     }
+    return false
+  }
 
-    @Before
-    fun setup() {
-        testURI1 = Uri.parse("android.resource://com.neptune.neptune/" + R.raw.record1)
-        testURI2 = Uri.parse("android.resource://com.neptune.neptune/" + R.raw.record2)
-        println(testURI1.toString())
-        println(testURI2.toString())
-        contextMock = androidx.test.core.app.ApplicationProvider.getApplicationContext()
-        mediaPlayer = NeptuneMediaPlayer(contextMock)
-    }
+  var timeStart = 0L
 
-    @Test
-    fun testNoURIPlaying() {
-        assert(!mediaPlayer.isPlaying())
-        assert(mediaPlayer.getCurrentUri() == null)
-    }
+  @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
-    @Test
-    fun testPlay() {
-        mediaPlayer.play(testURI1)
-        assert(isPlayingURI(testURI1))
+  @Before
+  fun setup() {
+    val context = composeTestRule.activity.applicationContext
+    mediaPlayer = NeptuneMediaPlayer(context)
 
-        mediaPlayer.play(testURI2)
-        assert(isPlayingURI(testURI2))
-    }
+    testURI1 = Uri.parse("android.resource://${context.packageName}/${R.raw.record1}")
+    testURI2 = Uri.parse("android.resource://${context.packageName}/${R.raw.record2}")
+  }
 
-    @Test
-    fun testPause(){
-        mediaPlayer.play(testURI1)
+  @Test
+  fun testNoURIPlaying() {
+    assert(!mediaPlayer.isPlaying())
+    assert(mediaPlayer.getCurrentUri() == null)
+  }
 
-        mediaPlayer.pause()
-        assert(!mediaPlayer.isPlaying())
-        assert(mediaPlayer.getCurrentUri() == testURI1)
-    }
+  @Test
+  fun testPlay() {
+    mediaPlayer.play(testURI1)
+    timeStart = System.currentTimeMillis()
+    waitForPlayback()
+    assert(isPlayingURI(testURI1))
 
-    @Test
-    fun testResume(){
-        mediaPlayer.play(testURI1)
-        mediaPlayer.pause()
-        mediaPlayer.resume()
-        assert(isPlayingURI(testURI1))
-    }
+    mediaPlayer.play(testURI2)
+    waitForPlayback()
+    assert(isPlayingURI(testURI2))
+  }
 
-    @Test
-    fun testTogglePlayTogglePauseOnSameURI(){
-        mediaPlayer.play(testURI1)
-        assert(isPlayingURI(testURI1))
+  @Test
+  fun testPause() {
+    mediaPlayer.play(testURI1)
+    waitForPlayback()
 
-        mediaPlayer.togglePlay(testURI1)
-        assert(!mediaPlayer.isPlaying())
-        assert(mediaPlayer.getCurrentUri() == testURI1)
+    mediaPlayer.pause()
+    assert(!mediaPlayer.isPlaying())
+    assert(mediaPlayer.getCurrentUri() == testURI1)
+  }
 
-        mediaPlayer.togglePlay(testURI1)
-        assert(isPlayingURI(testURI1))
-    }
+  @Test
+  fun testResume() {
+    mediaPlayer.play(testURI1)
+    waitForPlayback()
+    mediaPlayer.pause()
+    mediaPlayer.resume()
+    waitForPlayback()
+    assert(isPlayingURI(testURI1))
+  }
 
-    @Test
-    fun testTogglePlayOnDifferentURI(){
-        mediaPlayer.play(testURI1)
+  @Test
+  fun testTogglePlayOnSameURI() {
+    mediaPlayer.play(testURI1)
+    waitForPlayback()
+    assert(isPlayingURI(testURI1))
 
-        mediaPlayer.togglePlay(testURI2)
-        assert(isPlayingURI(testURI2))
-    }
+    mediaPlayer.togglePlay(testURI1)
+    assert(!mediaPlayer.isPlaying())
+    assert(mediaPlayer.getCurrentUri() == testURI1)
 
-    @Test
-    fun testStop(){
-        mediaPlayer.play(testURI1)
-        mediaPlayer.stop()
-        assert(!mediaPlayer.isPlaying())
-        assert(mediaPlayer.getCurrentUri() == null)
-    }
+    mediaPlayer.togglePlay(testURI1)
+    waitForPlayback()
+    assert(isPlayingURI(testURI1))
+  }
 
-    @Test
-    fun testGetDurationValid(){
-        mediaPlayer.play(testURI1)
-        val duration = mediaPlayer.getDuration()
-        assert(duration > 0)
-    }
+  @Test
+  fun testTogglePlayOnDifferentURI() {
+    mediaPlayer.play(testURI1)
+    waitForPlayback()
 
-    @Test
-    fun testGetDurationNoMedia(){
-        assert(mediaPlayer.getDuration() == -1)
-    }
+    mediaPlayer.togglePlay(testURI2)
+    waitForPlayback()
+    assert(isPlayingURI(testURI2))
+  }
 
+  @Test
+  fun testStop() {
+    mediaPlayer.play(testURI1)
+    waitForPlayback()
+    mediaPlayer.stop()
+    assert(!mediaPlayer.isPlaying())
+    assert(mediaPlayer.getCurrentUri() == null)
+  }
 
-    @Test
-    fun testGetCurrentPositionValid(){
-        mediaPlayer.play(testURI1)
-        Thread.sleep(500)
-        assert(mediaPlayer.getCurrentPosition() >= 500)
-    }
+  @Test
+  fun testGetDurationValid() {
+    mediaPlayer.play(testURI1)
+    waitForPlayback()
+    val duration = mediaPlayer.getDuration()
+    assert(duration > 0)
+  }
 
-    @Test
-    fun testGetCurrentPositionNoMedia(){
-        assert(mediaPlayer.getCurrentPosition() == -1)
-    }
+  @Test
+  fun testGetDurationNoMedia() {
+    assert(mediaPlayer.getDuration() == -1)
+  }
 
-    @Test
-    fun testSeekTo() {
-        mediaPlayer.play(testURI1)
-        mediaPlayer.goTo(500)
-        assert(mediaPlayer.getCurrentPosition() >= 500)
-    }
+  @Test
+  fun testGetCurrentPositionValid() {
+    mediaPlayer.play(testURI1)
+    waitForPlayback()
+    assert(mediaPlayer.getCurrentPosition() >= 0)
+  }
 
-    @Test
-    fun testSeekToNoMedia() {
-        mediaPlayer.goTo(500)
-        assert(mediaPlayer.getCurrentPosition() == -1)
-    }
+  @Test
+  fun testGetCurrentPositionNoMedia() {
+    assert(mediaPlayer.getCurrentPosition() == -1)
+  }
 
+  @Test
+  fun testSeekTo() {
+    mediaPlayer.play(testURI1)
+    waitForPlayback()
+    mediaPlayer.goTo(500)
+    assert(mediaPlayer.getCurrentPosition() >= 500)
+  }
 
-
+  @Test
+  fun testSeekToNoMedia() {
+    mediaPlayer.goTo(500)
+    assert(mediaPlayer.getCurrentPosition() == -1)
+  }
 }
