@@ -13,6 +13,8 @@ import kotlinx.coroutines.tasks.await
 
 const val PROFILES_COLLECTION_PATH = "profiles"
 const val USERNAMES_COLLECTION_PATH = "usernames"
+private const val DEFAULT_BIO = "Hello! New NepTune user here!"
+
 
 class ProfileRepositoryFirebase(
     private val db: FirebaseFirestore,
@@ -76,9 +78,18 @@ class ProfileRepositoryFirebase(
             if (!snap.exists()) {
                 val base = toUsernameBase(suggestedUsernameBase?.takeIf { it.isNotBlank() } ?: "user")
                 val username = claimFreeUsername(tx, base, uid)
+
+                val initialName = name?.takeIf { it.isNotBlank() } ?: username
+                val initialBio = DEFAULT_BIO
+
                 tx.set(profile, mapOf(
-                    "uid" to uid, "username" to username, "name" to (name ?: ""),
-                    "bio" to "", "avatarUrl" to "", "subscribers" to 0L, "subscriptions" to 0L
+                    "uid" to uid,
+                    "username" to username,
+                    "name" to initialName,
+                    "bio" to initialBio,
+                    "avatarUrl" to "",
+                    "subscribers" to 0L,
+                    "subscriptions" to 0L
                 ))
                 return@runTransaction
             }
