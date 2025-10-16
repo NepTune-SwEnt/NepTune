@@ -83,8 +83,7 @@ fun ImportAppRoot(): ImportVMFactory {
 public fun ProjectList(items: List<MediaItem>, modifier: Modifier = Modifier) {
   LazyColumn(modifier = modifier.fillMaxSize().testTag("project_list")) {
     items(items) { item ->
-      var fileName by remember{
-          mutableStateOf(item.projectUri.substringAfterLast('/'))}
+      var fileName by remember { mutableStateOf(item.projectUri.substringAfterLast('/')) }
       ListItem(
           headlineContent = { Text(fileName, maxLines = 1, overflow = TextOverflow.Ellipsis) },
           supportingContent = {
