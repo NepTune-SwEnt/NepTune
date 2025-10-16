@@ -77,12 +77,8 @@ object ProjectListScreenTestTags {
   const val PROJECT_LIST_SCREEN = "ProjectListScreen"
   const val PROJECT_LIST = "projectList"
   const val SEARCH_BAR = "searchBar"
-  const val NO_PROJECTS_TEXT = "noProjectsText"
   const val PROJECT_NAME = "ProjectName"
-  const val EDIT_MENU = "EditMenu"
-  const val FAVORITE_BUTTON = "FavoriteButton"
   const val DESCRIPTION_TEXT_FIELD = "DescriptionTextField"
-  const val PROJECT_CARD = "ProjectCard"
   const val SEARCH_TEXT_FIELD = "SearchTextField"
 }
 
@@ -120,7 +116,7 @@ fun ProjectListScreen(
               SearchBar(value = searchText, onValueChange = { searchText = it })
               ProjectList(
                   projects = filteredProjects,
-                  selectedProjects = selectedProjects,
+                  selectedProject = selectedProjects,
                   modifier = Modifier.padding(it),
                   projectListViewModel = projectListViewModel,
                   navigateToSampler = navigateToSampler)
@@ -131,7 +127,7 @@ fun ProjectListScreen(
 @Composable
 fun ProjectList(
     projects: List<ProjectItem>,
-    selectedProjects: String? = null,
+    selectedProject: String? = null,
     modifier: Modifier = Modifier,
     projectListViewModel: ProjectListViewModel,
     navigateToSampler: () -> Unit = {},
@@ -151,7 +147,7 @@ fun ProjectList(
         items(items = projects, key = { project -> project.id }) { project ->
           ProjectListItem(
               project = project,
-              selectedProject = selectedProjects,
+              selectedProject = selectedProject,
               openProject = navigateToSampler,
               projectListViewModel = projectListViewModel)
         }

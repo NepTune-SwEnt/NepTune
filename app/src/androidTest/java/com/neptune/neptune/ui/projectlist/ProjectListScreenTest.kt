@@ -178,7 +178,6 @@ class ProjectListScreenTest {
   /** Tests that you can type on the search bar */
   @Test
   fun searchbarCanType() {
-
     // Simulate typing
     composeTestRule
         .onNodeWithTag(ProjectListScreenTestTags.SEARCH_TEXT_FIELD)
