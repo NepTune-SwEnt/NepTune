@@ -10,7 +10,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -80,7 +83,8 @@ fun ImportAppRoot(): ImportVMFactory {
 public fun ProjectList(items: List<MediaItem>, modifier: Modifier = Modifier) {
   LazyColumn(modifier = modifier.fillMaxSize().testTag("project_list")) {
     items(items) { item ->
-      val fileName = remember(item.projectUri) { item.projectUri.substringAfterLast('/') }
+      var fileName by remember{
+          mutableStateOf(item.projectUri.substringAfterLast('/'))}
       ListItem(
           headlineContent = { Text(fileName, maxLines = 1, overflow = TextOverflow.Ellipsis) },
           supportingContent = {
