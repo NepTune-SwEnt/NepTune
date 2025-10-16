@@ -449,7 +449,7 @@ fun ProfileScreenEditModePreview() {
  * function is typically used as the entry point for navigation to the profile screen.
  */
 @Composable
-fun ProfileRoute() {
+fun ProfileRoute(logout: () -> Unit = {}) {
   val viewModel: ProfileViewModel = viewModel()
   val state = viewModel.uiState.collectAsState().value
 
@@ -460,5 +460,5 @@ fun ProfileRoute() {
       onNameChange = viewModel::onNameChange,
       onUsernameChange = viewModel::onUsernameChange,
       onBioChange = viewModel::onBioChange,
-  )
+      onLogoutClick = logout)
 }

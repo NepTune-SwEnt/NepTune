@@ -62,10 +62,10 @@ open class NavigationActions(
     if (currentRoute() != screen.route) {
       navController.navigate(screen.route) {
         if (screen.route == Screen.Main.route || screen.route == Screen.SignIn.route) {
-          popUpTo(navController.graph.startDestinationId) { inclusive = true }
+          popUpTo(navController.graph.id) { inclusive = true }
         }
-        restoreState = true
         launchSingleTop = true
+        restoreState = screen.route != Screen.SignIn.route
       }
     }
   }
