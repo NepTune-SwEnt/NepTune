@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.Timestamp
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepository
 import com.neptune.neptune.model.project.ProjectItemsRepositoryProvider
@@ -35,8 +36,12 @@ class ProjectListViewModel(
     viewModelScope.launch {
       try {
         val projects = projectRepository.getAllProjects()
-        _uiState.value = ProjectListUiState(projects = projects.toList(), isLoading = false)
-        Log.i("ProjectListViewModel", "Loaded ${projects.toString()}")
+        val sortedProjects =
+            projects.sortedWith(
+                compareByDescending<ProjectItem> { it.isFavorite }
+                    .thenByDescending { it.lastUpdated })
+        _uiState.value = ProjectListUiState(projects = sortedProjects, isLoading = false)
+        Log.i("ProjectListViewModel", "Loaded $sortedProjects")
       } catch (e: Exception) {
         _uiState.value = _uiState.value.copy(isLoading = false)
         Log.e("ProjectListViewModel", "Error loading projects", e)
@@ -59,7 +64,7 @@ class ProjectListViewModel(
     viewModelScope.launch {
       try {
         val project = projectRepository.getProject(projectId)
-        val updatedProject = project.copy(name = newName)
+        val updatedProject = project.copy(name = newName, lastUpdated = Timestamp.now())
         projectRepository.editProject(projectId, updatedProject)
         getAllTodos()
       } catch (e: Exception) {
@@ -72,7 +77,8 @@ class ProjectListViewModel(
     viewModelScope.launch {
       try {
         val project = projectRepository.getProject(projectId)
-        val updatedProject = project.copy(description = newDescription)
+        val updatedProject =
+            project.copy(description = newDescription, lastUpdated = Timestamp.now())
         projectRepository.editProject(projectId, updatedProject)
         getAllTodos()
       } catch (e: Exception) {
@@ -85,7 +91,8 @@ class ProjectListViewModel(
     viewModelScope.launch {
       try {
         val project = projectRepository.getProject(projectId)
-        val updatedProject = project.copy(isFavorite = !project.isFavorite)
+        val updatedProject =
+            project.copy(isFavorite = !project.isFavorite, lastUpdated = Timestamp.now())
         projectRepository.editProject(projectId, updatedProject)
         getAllTodos()
       } catch (e: Exception) {

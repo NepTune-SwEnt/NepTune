@@ -1,10 +1,36 @@
 package com.neptune.neptune.model.project
 
 import android.util.Log
+import com.google.firebase.Timestamp
 
 class ProjectItemsRepositoryVar : ProjectItemsRepository {
 
-  private val projects = mutableListOf<ProjectItem>()
+  private val projects = mutableListOf<ProjectItem>(
+    ProjectItem(
+      id = "1",
+      name = "Project 1",
+      description = "Description 1",
+      isFavorite = false,
+      tags = listOf(),
+      previewUrl = null,
+      fileUrl = null,
+      lastUpdated = Timestamp.now(),
+      ownerId = null,
+      collaborators = listOf(),
+    ),
+    ProjectItem(
+      id = "2",
+      name = "Project 2",
+      description = "Description 2",
+      isFavorite = true,
+      tags = listOf(),
+      previewUrl = null,
+      fileUrl = null,
+      lastUpdated = Timestamp.now(),
+      ownerId = null,
+      collaborators = listOf(),
+    )
+  )
   private var idCounter = 0
 
   override fun getNewId(): String {
