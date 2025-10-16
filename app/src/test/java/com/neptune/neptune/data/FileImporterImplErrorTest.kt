@@ -1,0 +1,50 @@
+package com.neptune.neptune.data
+
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.runBlocking
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import java.io.File
+import java.net.URI
+
+@RunWith(RobolectricTestRunner::class)
+class FileImporterImplErrorTest {
+
+    private fun importer(ctx: Context) =
+        FileImporterImpl(
+            context = ctx,
+            cr = ctx.contentResolver,
+            paths = StoragePaths(ctx)
+        )
+
+    @Test
+    fun rejects_unsupported_uri_scheme() = runBlocking {
+        val ctx = ApplicationProvider.getApplicationContext<Context>()
+        val imp = importer(ctx)
+
+        var threw = false
+        try {
+            // Unsupported scheme (HTTP should not be accepted)
+            imp.importFile(URI("http://example.com/foo.wav"))
+        } catch (_: Throwable) { threw = true }
+
+        assertThat(threw).isTrue()
+    }
+
+    @Test
+    fun missing_local_file_throws_and_does_not_copy() = runBlocking {
+        val ctx = ApplicationProvider.getApplicationContext<Context>()
+        val imp = importer(ctx)
+
+        val missing = File(ctx.cacheDir, "nope.wav")
+        var threw = false
+        try {
+            imp.importFile(missing.toURI())
+        } catch (_: Throwable) { threw = true }
+
+        assertThat(threw).isTrue()
+    }
+}

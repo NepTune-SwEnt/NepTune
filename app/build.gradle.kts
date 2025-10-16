@@ -191,6 +191,10 @@ tasks.withType<Test> {
         isIncludeNoLocationClasses = true
         excludes = listOf("jdk.internal.*")
     }
+    jvmArgs(
+        "--add-opens=java.base/java.io=ALL-UNNAMED",
+        "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+    )
 }
 
 tasks.register("jacocoTestReport", JacocoReport::class) {

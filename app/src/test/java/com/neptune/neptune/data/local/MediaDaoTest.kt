@@ -46,4 +46,23 @@ class MediaDaoTest {
     assertThat(list).hasSize(1)
     assertThat(list.first().projectUri).isEqualTo("file:///2.zip")
   }
+
+
+  @Test
+  fun insert_replace_and_order_by_importedAt_desc() = runBlocking {
+    // insert two, older first
+    dao.upsert(MediaItemEntity("a", "file:///a.zip", importedAt = 10L))
+    dao.upsert(MediaItemEntity("b", "file:///b.zip", importedAt = 20L))
+
+    // initial order by importedAt DESC -> b then a
+    val first = dao.observeAll().first()
+    assertThat(first.map { it.id }).containsExactly("b", "a").inOrder()
+
+    // replace 'a' with newer timestamp -> should jump to the top
+    dao.upsert(MediaItemEntity("a", "file:///a2.zip", importedAt = 99L))
+
+    val second = dao.observeAll().first()
+    assertThat(second.map { it.id }).containsExactly("a", "b").inOrder()
+    assertThat(second.first().projectUri).isEqualTo("file:///a2.zip")
+  }
 }

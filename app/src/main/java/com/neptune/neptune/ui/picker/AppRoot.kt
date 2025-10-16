@@ -3,13 +3,16 @@ package com.neptune.neptune.ui.picker
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -74,25 +77,24 @@ private fun PlaceholderImportHost(vm: ImportViewModel) {
         }
       }
 }
-
+@VisibleForTesting
 @Composable
-private fun ProjectList(items: List<MediaItem>, modifier: Modifier = Modifier) {
-  LazyColumn(modifier = modifier.fillMaxSize()) {
-    items(items) { item ->
-      val fileName = remember(item.projectUri) { item.projectUri.substringAfterLast('/') }
-      ListItem(
-          headlineContent = { Text(fileName, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-          supportingContent = {
-            Text(item.projectUri, maxLines = 1, overflow = TextOverflow.Ellipsis)
-          })
-      Divider()
+public fun ProjectList(items: List<MediaItem>, modifier: Modifier = Modifier) {
+    LazyColumn(modifier = modifier.fillMaxSize().testTag("project_list")) {
+        items(items) { item ->
+            val fileName = remember(item.projectUri) { item.projectUri.substringAfterLast('/') }
+            ListItem(
+                headlineContent = { Text(fileName, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                supportingContent = { Text(item.projectUri, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            )
+            HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
+        }
     }
-  }
 }
 
 private fun provideDb(context: Context): MediaDb =
     Room.databaseBuilder(context.applicationContext, MediaDb::class.java, "media.db")
-        .fallbackToDestructiveMigration()
+        .fallbackToDestructiveMigration(false)
         .build()
 
 /** ViewModel factory Crafts a ImportViewModel with required use cases */

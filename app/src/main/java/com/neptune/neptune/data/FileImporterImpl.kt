@@ -4,9 +4,11 @@ import android.content.ContentResolver
 import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.os.Build
 import android.provider.OpenableColumns
 import android.util.Log
 import android.webkit.MimeTypeMap
+import androidx.annotation.RequiresApi
 import com.neptune.neptune.domain.port.FileImporter
 import java.io.File
 import java.io.FileOutputStream
@@ -26,6 +28,7 @@ class FileImporterImpl(
   private val allowedMimes = setOf("audio/mpeg", "audio/wav")
   private val allowedExts = setOf("mp3", "wav")
 
+  @RequiresApi(Build.VERSION_CODES.Q)
   override suspend fun importFile(sourceUri: URI): FileImporter.ImportedFile {
     val safUri = android.net.Uri.parse(sourceUri.toString())
     val (mime, base, ext) = resolveAndValidateAudio(safUri)
@@ -54,69 +57,72 @@ class FileImporterImpl(
         sourceUri = sourceUri,
         localUri = target.toURI(), // file://... in audio workspace
         sizeBytes = target.length(),
-        durationMs = duration)
+        durationMs = duration?: 0L)
   }
 
   // Ensures the file is MP3 or WAV by MIME and/or extension; derives a sane name.
   private fun resolveAndValidateAudio(uri: android.net.Uri): Triple<String?, String, String> {
-    val display =
-        cr.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
-          if (it.moveToFirst()) it.getString(0) else null
-        }
+      // 1) Pull display + mime, with robust fallbacks for file:// URIs
+      val isFile = uri.scheme == android.content.ContentResolver.SCHEME_FILE
+      val crMime = if (!isFile) cr.getType(uri) else null
 
-    val extFromName = display?.substringAfterLast('.', "")?.lowercase().orEmpty()
-    val mimeFromCR = cr.getType(uri)
-    val extFromMime =
-        MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeFromCR ?: "")?.lowercase().orEmpty()
+      val displayFromQuery: String? =
+          if (!isFile)
+              cr.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)
+                  ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
+          else null
 
-    // Decide extension preference: filename first, then MIME hint
-    val ext =
-        when {
+      val displayFromPath: String? = uri.lastPathSegment?.substringAfterLast('/')?.takeIf { it.isNotBlank() }
+      val display = displayFromQuery ?: displayFromPath
+
+      // Resolve extensions from name and MIME (both may be null)
+      val extFromName = display?.substringAfterLast('.', "")?.lowercase().orEmpty()
+      val extFromMime = android.webkit.MimeTypeMap.getSingleton()
+          .getExtensionFromMimeType(crMime ?: "")?.lowercase().orEmpty()
+
+      // If both are empty, try path suffix once more
+      val extFromPath = displayFromPath?.substringAfterLast('.', "")?.lowercase().orEmpty()
+
+      val ext = when {
           extFromName in allowedExts -> extFromName
           extFromMime in allowedExts -> extFromMime
+          extFromPath in allowedExts -> extFromPath
           else -> ""
-        }
-    val base = (display ?: "audio").removeSuffix(if (ext.isNotEmpty()) ".$ext" else "")
+      }
 
-    // Validate
-    val normalizedMime =
-        when {
-          mimeFromCR in allowedMimes -> mimeFromCR
+      // Normalize base name (without extension), robust fallback
+      val rawBase = (display ?: "audio").removeSuffix(if (ext.isNotEmpty()) ".$ext" else "")
+      val base = rawBase
+          .replace(Regex("[^A-Za-z0-9._-]+"), "_") // sanitize
+          .trim('_', '.', ' ')
+          .ifEmpty { "audio" }
+
+      // Normalize/validate MIME from CR or from extension
+      val normalizedMime: String? = when {
+          crMime in allowedMimes -> crMime
           ext == "mp3" -> "audio/mpeg"
           ext == "wav" -> "audio/wav"
+          // For file:// with no CR type, infer from path if possible
+          isFile && ext.isNotEmpty() && "audio/$ext" in allowedMimes -> "audio/$ext"
           else -> null
-        }
-    if (normalizedMime !in allowedMimes) {
-      throw UnsupportedAudioFormat("Only MP3/WAV are supported. Got mime=$mimeFromCR name=$display")
-    }
-    val finalExt =
-        when (normalizedMime) {
+      }
+
+      if (normalizedMime !in allowedMimes) {
+          throw UnsupportedAudioFormat("Only MP3/WAV are supported. Got mime=$crMime name=$display")
+      }
+
+      // Final extension consistent with normalized MIME
+      val finalExt = when (normalizedMime) {
           "audio/mpeg" -> "mp3"
-          "audio/wav" -> "wav"
-          else -> ext.ifEmpty { "mp3" } // safe default (shouldn’t happen after validation)
-        }
-    return Triple(normalizedMime, base, finalExt)
+          "audio/wav"  -> "wav"
+          else         -> ext.ifEmpty { "mp3" } // safe default; shouldn't happen after validation
+      }
+
+      return Triple(normalizedMime, base, finalExt)
   }
 
-  fun getAudioDurationMsCompat(context: Context, uri: Uri): Long? {
-    return runCatching {
-          MediaMetadataRetriever().use { mmr ->
-            // Prefer FD path (works broadly on old APIs)
-            context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { afd ->
-              mmr.setDataSource(afd.fileDescriptor)
-            }
-                ?: run {
-                  // Fallback: context+uri
-                  mmr.setDataSource(context, uri)
-                }
 
-            mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong()
-          }
-        }
-        .getOrNull()
-  }
-
-  // If file exists, appends (2), (3) etc. to base name to make it unique
+    // If file exists, appends (2), (3) etc. to base name to make it unique
   private fun uniqueFile(dir: File, candidate: String): File {
     var f = File(dir, candidate)
     if (!f.exists()) return f
