@@ -8,7 +8,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
-
+/*
+    Simple test to verify that GetLibraryUseCase emits items from the repository
+    and updates when new items are added.
+    Written with help from ChatGPT.
+ */
 private class RepoStub : MediaRepository {
   private val s = MutableStateFlow<List<MediaItem>>(emptyList())
 

@@ -13,7 +13,12 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-
+/*
+    Tests that MediaRepositoryImpl correctly maps between domain and database models,
+    and that upsert and observeAll work as expected.
+    Uses an in-memory Room database for testing.
+    Written with help from ChatGPT.
+ */
 @RunWith(RobolectricTestRunner::class)
 class MediaRepositoryImplTest {
 

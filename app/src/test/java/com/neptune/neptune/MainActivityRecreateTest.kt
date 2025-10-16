@@ -6,6 +6,10 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 
+/*
+    A test to verify that MainActivity survives configuration changes (recreation)
+    Partially written with ChatGPT
+ */
 @RunWith(RobolectricTestRunner::class)
 class MainActivityRecreateTest {
 
