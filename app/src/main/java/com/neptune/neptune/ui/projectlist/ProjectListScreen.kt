@@ -53,6 +53,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -72,6 +73,17 @@ import com.neptune.neptune.ui.theme.DarkBlueGray
 import com.neptune.neptune.ui.theme.FadedDarkBlue
 import com.neptune.neptune.ui.theme.LightTurquoise
 import kotlinx.coroutines.runBlocking
+
+object ProjectListScreenTestTags {
+  const val PROJECT_LIST_SCREEN = "ProjectListScreen"
+  const val PROJECT_LIST = "projectList"
+  const val SEARCH_BAR = "searchBar"
+  const val NO_PROJECTS_TEXT = "noProjectsText"
+  const val PROJECT_NAME = "ProjectName"
+  const val EDIT_MENU = "EditMenu"
+  const val FAVORITE_BUTTON = "FavoriteButton"
+  const val DESCRIPTION_TEXT_FIELD = "DescriptionTextField"
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -167,7 +179,8 @@ fun ProjectListItem(
                     start = Offset(0f, size.height),
                     end = Offset(size.width, size.height),
                     strokeWidth = 2.dp.toPx())
-              },
+              }
+              .testTag("project_${project.id}"),
       elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
       colors = CardDefaults.cardColors(backGroundColor),
       shape = RoundedCornerShape(0.dp),
@@ -192,6 +205,7 @@ fun ProjectListItem(
 
                 Text(
                     text = project.name,
+                    modifier = Modifier.testTag(ProjectListScreenTestTags.PROJECT_NAME),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style =
@@ -237,16 +251,18 @@ fun EditMenu(
   // Right  buttons
   Row {
     // Star favorite toggle
-    IconButton(onClick = { projectListViewModel.toggleFavorite(project.id) }) {
-      Icon(
-          imageVector = if (project.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
-          contentDescription = "Favorite",
-          tint = LightTurquoise,
-          modifier = Modifier.size(26.dp))
-    }
+    IconButton(
+        onClick = { projectListViewModel.toggleFavorite(project.id) },
+        modifier = Modifier.testTag("favorite_${project.id}")) {
+          Icon(
+              imageVector = if (project.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
+              contentDescription = "Favorite",
+              tint = LightTurquoise,
+              modifier = Modifier.size(26.dp))
+        }
 
     Box(modifier = Modifier.padding(end = 0.dp)) {
-      IconButton(onClick = { expanded = true }) {
+      IconButton(onClick = { expanded = true }, modifier = Modifier.testTag("menu_${project.id}")) {
         Icon(
             Icons.Rounded.MoreVert,
             contentDescription = "Edit",
@@ -310,6 +326,7 @@ fun ChangeDescriptionDialog(
       title = { Text("Change Description") },
       text = {
         OutlinedTextField(
+            modifier = Modifier.testTag(ProjectListScreenTestTags.DESCRIPTION_TEXT_FIELD),
             value = text,
             onValueChange = { text = it },
             label = { Text("Description") },

@@ -91,8 +91,7 @@ class ProjectListViewModel(
     viewModelScope.launch {
       try {
         val project = projectRepository.getProject(projectId)
-        val updatedProject =
-            project.copy(isFavorite = !project.isFavorite, lastUpdated = Timestamp.now())
+        val updatedProject = project.copy(isFavorite = !project.isFavorite)
         projectRepository.editProject(projectId, updatedProject)
         getAllTodos()
       } catch (e: Exception) {
