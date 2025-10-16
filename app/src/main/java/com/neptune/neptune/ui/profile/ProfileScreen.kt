@@ -40,7 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
-import com.neptune.neptune.ui.theme.LightTurquoise
+import com.neptune.neptune.ui.theme.NepTuneTheme
 
 /**
  * Centralized constants defining all `testTag` identifiers used in [ProfileScreen] UI tests.
@@ -153,14 +153,14 @@ private fun ProfileViewContent(
 
       Text(
           text = state.name,
-          color = LightTurquoise,
+          color = NepTuneTheme.colors.onBackground,
           style = MaterialTheme.typography.headlineMedium,
           textAlign = TextAlign.Center,
           modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
 
       Text(
           text = "@${state.username}",
-          color = LightTurquoise,
+          color = NepTuneTheme.colors.onBackground,
           style = MaterialTheme.typography.bodyMedium,
           modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
 
@@ -168,7 +168,7 @@ private fun ProfileViewContent(
 
       Text(
           text = if (state.bio != "") "“ ${state.bio} ”" else "",
-          color = LightTurquoise,
+          color = NepTuneTheme.colors.onBackground,
           style = MaterialTheme.typography.titleLarge,
           textAlign = TextAlign.Center,
           modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
@@ -208,7 +208,7 @@ private fun ProfileViewContent(
               modifier = Modifier.size(32.dp), // And the icon too
               imageVector = Icons.AutoMirrored.Filled.Logout,
               contentDescription = "Logout",
-              tint = LightTurquoise)
+              tint = NepTuneTheme.colors.onBackground)
         }
   }
 }
@@ -217,15 +217,15 @@ private fun ProfileViewContent(
 @OptIn(ExperimentalMaterial3Api::class)
 val TextFieldColors: @Composable () -> TextFieldColors = {
   TextFieldDefaults.outlinedTextFieldColors(
-      unfocusedBorderColor = LightTurquoise,
-      focusedBorderColor = LightTurquoise,
-      disabledBorderColor = LightTurquoise,
-      cursorColor = LightTurquoise,
-      focusedLabelColor = LightTurquoise,
-      unfocusedLabelColor = LightTurquoise,
-      focusedTextColor = LightTurquoise,
-      unfocusedTextColor = LightTurquoise,
-      disabledTextColor = LightTurquoise,
+      unfocusedBorderColor = NepTuneTheme.colors.onBackground,
+      focusedBorderColor = NepTuneTheme.colors.onBackground,
+      disabledBorderColor = NepTuneTheme.colors.onBackground,
+      cursorColor = NepTuneTheme.colors.onBackground,
+      focusedLabelColor = NepTuneTheme.colors.onBackground,
+      unfocusedLabelColor = NepTuneTheme.colors.onBackground,
+      focusedTextColor = NepTuneTheme.colors.onBackground,
+      unfocusedTextColor = NepTuneTheme.colors.onBackground,
+      disabledTextColor = NepTuneTheme.colors.onBackground,
   )
 }
 
@@ -279,7 +279,7 @@ private fun ProfileEditContent(
               } else {
                 Text(
                     text = "${uiState.name.trim().length}/30",
-                    color = LightTurquoise,
+                    color = NepTuneTheme.colors.onBackground,
                     style = MaterialTheme.typography.bodySmall)
               }
             })
@@ -302,7 +302,7 @@ private fun ProfileEditContent(
                     style = MaterialTheme.typography.bodySmall)
               } else {
                 Text(
-                    color = LightTurquoise,
+                    color = NepTuneTheme.colors.onBackground,
                     text = "${uiState.username.trim().length}/15",
                     style = MaterialTheme.typography.bodySmall)
               }
@@ -327,7 +327,7 @@ private fun ProfileEditContent(
               } else {
                 Text(
                     text = "${uiState.bio.length}/160",
-                    color = LightTurquoise,
+                    color = NepTuneTheme.colors.onBackground,
                     style = MaterialTheme.typography.bodySmall)
               }
             })
@@ -356,13 +356,13 @@ private fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, 
   Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
     Text(
         text = label,
-        color = LightTurquoise,
+        color = NepTuneTheme.colors.onBackground,
         style = MaterialTheme.typography.bodySmall,
         textAlign = TextAlign.Center)
     Spacer(Modifier.height(8.dp))
     Text(
         text = "$value",
-        color = LightTurquoise,
+        color = NepTuneTheme.colors.onBackground,
         style = MaterialTheme.typography.bodyLarge,
         textAlign = TextAlign.Center,
         modifier = Modifier.testTag(testTag))

@@ -27,10 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.neptune.neptune.ui.theme.DarkBlue1
-import com.neptune.neptune.ui.theme.LightPurpleBlue
-import com.neptune.neptune.ui.theme.LightSkyBlue
-import com.neptune.neptune.ui.theme.White
+import com.neptune.neptune.ui.theme.NepTuneTheme
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -52,8 +49,6 @@ object SamplerTestTags {
   const val TEMPO_SELECTOR = "tempoSelector"
 }
 
-val FrameBorderColor = LightPurpleBlue
-
 const val SampleDurationMillis = 4000
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,7 +58,7 @@ fun SamplerScreen(viewModel: SamplerViewModel = viewModel(), onBack: () -> Unit 
   var selectedItem by remember { mutableIntStateOf(2) }
 
   Scaffold(
-      containerColor = DarkBlue1,
+      containerColor = NepTuneTheme.colors.background,
       modifier = Modifier.testTag(SamplerTestTags.SCREEN_CONTAINER),
   ) { paddingValues ->
     Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp)) {
@@ -108,7 +103,7 @@ fun PlaybackAndWaveformControls(
       modifier =
           Modifier.fillMaxWidth()
               .clip(MaterialTheme.shapes.small)
-              .background(DarkBlue1)
+              .background(NepTuneTheme.colors.background)
               .testTag(SamplerTestTags.PLAYHEAD_CONTROLS)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -118,14 +113,14 @@ fun PlaybackAndWaveformControls(
                 Icon(
                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                     contentDescription = if (isPlaying) "Pause" else "Play",
-                    tint = LightPurpleBlue,
+                    tint = NepTuneTheme.colors.accentPrimary,
                     modifier = Modifier.size(32.dp))
               }
               IconButton(onClick = onSave) {
                 Icon(
                     imageVector = Icons.Default.Save,
                     contentDescription = "Save",
-                    tint = LightPurpleBlue,
+                    tint = NepTuneTheme.colors.accentPrimary,
                     modifier = Modifier.size(32.dp))
               }
               Spacer(modifier = Modifier.weight(1f))
@@ -136,7 +131,8 @@ fun PlaybackAndWaveformControls(
                   onIncrease = onIncreasePitch,
                   onDecrease = onDecreasePitch,
                   modifier =
-                      Modifier.border(2.dp, FrameBorderColor, MaterialTheme.shapes.small)
+                      Modifier.border(
+                              2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
                           .testTag(SamplerTestTags.PITCH_SELECTOR))
               Spacer(modifier = Modifier.width(8.dp))
 
@@ -146,7 +142,8 @@ fun PlaybackAndWaveformControls(
                   onIncrease = { onTempoChange(tempo + 1) },
                   onDecrease = { onTempoChange(tempo - 1) },
                   modifier =
-                      Modifier.border(2.dp, FrameBorderColor, MaterialTheme.shapes.small)
+                      Modifier.border(
+                              2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
                           .testTag(SamplerTestTags.TEMPO_SELECTOR))
             }
 
@@ -156,7 +153,7 @@ fun PlaybackAndWaveformControls(
             modifier =
                 Modifier.fillMaxWidth()
                     .height(120.dp)
-                    .border(2.dp, FrameBorderColor, MaterialTheme.shapes.small)
+                    .border(2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
                     .testTag(SamplerTestTags.WAVEFORM_DISPLAY),
             isPlaying = isPlaying,
             playbackPosition = playbackPosition,
@@ -175,11 +172,11 @@ fun PitchTempoSelector(
   Row(
       verticalAlignment = Alignment.CenterVertically,
       modifier = modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
-        Text(text = label, color = White, fontSize = 16.sp)
+        Text(text = label, color = NepTuneTheme.colors.smallText, fontSize = 16.sp)
         if (value.isNotEmpty()) {
           Text(
               text = value,
-              color = White,
+              color = NepTuneTheme.colors.smallText,
               fontSize = 16.sp,
               modifier = Modifier.padding(start = 4.dp))
         }
@@ -188,12 +185,12 @@ fun PitchTempoSelector(
           Icon(
               imageVector = Icons.Default.KeyboardArrowUp,
               contentDescription = "Increase",
-              tint = LightPurpleBlue,
+              tint = NepTuneTheme.colors.accentPrimary,
               modifier = Modifier.size(24.dp).clickable(onClick = onIncrease))
           Icon(
               imageVector = Icons.Default.KeyboardArrowDown,
               contentDescription = "Decrease",
-              tint = LightPurpleBlue,
+              tint = NepTuneTheme.colors.accentPrimary,
               modifier = Modifier.size(24.dp).clickable(onClick = onDecrease))
         }
       }
@@ -206,6 +203,7 @@ fun WaveformDisplay(
     playbackPosition: Float = 0.0f,
     onPositionChange: (Float) -> Unit = {}
 ) {
+  val soundWaveColor = NepTuneTheme.colors.soundWave
   val localDensity = LocalDensity.current
   val latestOnPositionChange = rememberUpdatedState(onPositionChange)
 
@@ -240,7 +238,7 @@ fun WaveformDisplay(
 
   val currentAnimPosition = playbackPositionAnimatable.value
 
-  val playheadColor = if (isPlaying) Color.Green else Color.Red
+  val playheadColor = if (isPlaying) Color.Green else NepTuneTheme.colors.smallText
 
   val paddingPx = localDensity.run { 8.dp.toPx() }
   val playheadStrokeWidth = localDensity.run { 1.5.dp.toPx() }
@@ -285,7 +283,7 @@ fun WaveformDisplay(
           val endY = centerY + barHeight / 2
 
           drawLine(
-              color = LightSkyBlue,
+              color = soundWaveColor,
               start = Offset(startX, startY),
               end = Offset(startX, endY),
               strokeWidth = barWidth)
@@ -308,14 +306,18 @@ fun SamplerTabs(currentTab: SamplerTab, onTabSelected: (SamplerTab) -> Unit) {
       val isSelected = tab == currentTab
       Text(
           text = tab.name.uppercase(),
-          color = if (isSelected) LightPurpleBlue else White.copy(alpha = 0.6f),
+          color =
+              if (isSelected) NepTuneTheme.colors.accentPrimary
+              else NepTuneTheme.colors.smallText.copy(alpha = 0.6f),
           fontSize = 18.sp,
           fontWeight = FontWeight.SemiBold,
           modifier =
               Modifier.weight(1f)
                   .clip(MaterialTheme.shapes.small)
                   .clickable { onTabSelected(tab) }
-                  .background(if (isSelected) White.copy(alpha = 0.1f) else Color.Transparent)
+                  .background(
+                      if (isSelected) NepTuneTheme.colors.smallText.copy(alpha = 0.1f)
+                      else Color.Transparent)
                   .padding(vertical = 8.dp, horizontal = 4.dp)
                   .wrapContentWidth(Alignment.CenterHorizontally)
                   .testTag("${SamplerTestTags.SAMPLER_TABS}_${tab.name.uppercase()}"))
@@ -330,20 +332,23 @@ fun TabContent(currentTab: SamplerTab, uiState: SamplerUiState, viewModel: Sampl
           Modifier.fillMaxWidth()
               .wrapContentHeight()
               .padding(top = 8.dp)
-              .border(2.dp, FrameBorderColor)) {
+              .border(2.dp, NepTuneTheme.colors.accentPrimary)) {
         when (currentTab) {
           SamplerTab.BASICS -> BasicsTabContent(uiState, viewModel)
           SamplerTab.EQ ->
-              Text("EQ Settings...", color = White, modifier = Modifier.align(Alignment.Center))
+              Text(
+                  "EQ Settings...",
+                  color = NepTuneTheme.colors.smallText,
+                  modifier = Modifier.align(Alignment.Center))
           SamplerTab.COMP ->
               Text(
                   "Compressor Settings...",
-                  color = White,
+                  color = NepTuneTheme.colors.smallText,
                   modifier = Modifier.align(Alignment.Center))
           SamplerTab.TEMP ->
               Text(
                   "Tempo/Time Settings...",
-                  color = White,
+                  color = NepTuneTheme.colors.smallText,
                   modifier = Modifier.align(Alignment.Center))
         }
       }
@@ -398,8 +403,13 @@ fun ADSRKnob(
     maxValue: Float,
     modifier: Modifier = Modifier
 ) {
+  val accentColor = NepTuneTheme.colors.accentPrimary
+  val smallTextColor = NepTuneTheme.colors.smallText
   Column(modifier = modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-    Text(text = "${String.format("%.2f", value)}s", color = LightPurpleBlue, fontSize = 14.sp)
+    Text(
+        text = "${String.format("%.2f", value)}s",
+        color = NepTuneTheme.colors.accentPrimary,
+        fontSize = 14.sp)
 
     Spacer(modifier = Modifier.height(4.dp))
 
@@ -408,7 +418,7 @@ fun ADSRKnob(
             Modifier.size(70.dp)
                 .clip(CircleShape)
                 .background(Color.Black)
-                .border(2.dp, LightPurpleBlue, CircleShape)
+                .border(2.dp, NepTuneTheme.colors.accentPrimary, CircleShape)
                 .pointerInput(Unit) {
                   detectDragGestures(
                       onDrag = { change, _ ->
@@ -450,12 +460,12 @@ fun ADSRKnob(
             val adjustedAngleRad = Math.toRadians(finalAngle.toDouble())
 
             drawCircle(
-                color = LightPurpleBlue.copy(alpha = 0.3f),
+                color = accentColor.copy(alpha = 0.3f),
                 radius = radius,
                 style = Stroke(width = 1.5.dp.toPx()))
 
             drawArc(
-                color = LightPurpleBlue,
+                color = accentColor,
                 startAngle = 135f,
                 sweepAngle = sweepAngle,
                 useCenter = false,
@@ -465,17 +475,20 @@ fun ADSRKnob(
             val indicatorY = center.y + radius * sin(adjustedAngleRad).toFloat()
 
             drawLine(
-                color = White,
+                color = smallTextColor,
                 start = center,
                 end = Offset(indicatorX, indicatorY),
                 strokeWidth = 1.5.dp.toPx())
-            drawCircle(color = White, radius = 3.dp.toPx(), center = Offset(indicatorX, indicatorY))
+            drawCircle(
+                color = smallTextColor,
+                radius = 3.dp.toPx(),
+                center = Offset(indicatorX, indicatorY))
           }
         }
 
     Spacer(modifier = Modifier.height(8.dp))
 
-    Text(text = label, color = White, fontSize = 16.sp)
+    Text(text = label, color = NepTuneTheme.colors.smallText, fontSize = 16.sp)
   }
 }
 

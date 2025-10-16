@@ -41,9 +41,7 @@ import androidx.compose.ui.unit.sp
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
-import com.neptune.neptune.ui.theme.DarkBlue1
-import com.neptune.neptune.ui.theme.LightTurquoise
-import com.neptune.neptune.ui.theme.TextColorDarkMode
+import com.neptune.neptune.ui.theme.NepTuneTheme
 
 object SignInScreenTags {
   const val LOGIN_TITLE = "loginTitle"
@@ -99,17 +97,21 @@ fun SignInScreen(
                             fontSize = 45.sp,
                             fontFamily = FontFamily(Font(R.font.lily_script_one)),
                             fontWeight = FontWeight(149),
-                            color = LightTurquoise,
+                            color = NepTuneTheme.colors.onBackground,
                         ),
                     modifier = Modifier.padding(25.dp).testTag(SignInScreenTags.TOP_BAR_TITLE),
                     textAlign = TextAlign.Center)
               },
-              colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = DarkBlue1))
+              colors =
+                  TopAppBarDefaults.centerAlignedTopAppBarColors(
+                      containerColor = NepTuneTheme.colors.background))
           HorizontalDivider(
-              modifier = Modifier.fillMaxWidth(), thickness = 0.75.dp, color = LightTurquoise)
+              modifier = Modifier.fillMaxWidth(),
+              thickness = 0.75.dp,
+              color = NepTuneTheme.colors.onBackground)
         }
       },
-      containerColor = DarkBlue1,
+      containerColor = NepTuneTheme.colors.background,
   ) { innerPadding ->
     Column(
         modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp),
@@ -123,7 +125,7 @@ fun SignInScreen(
                       fontSize = 80.sp,
                       fontFamily = FontFamily(Font(R.font.markazi_text)),
                       fontWeight = FontWeight(400)),
-              color = LightTurquoise,
+              color = NepTuneTheme.colors.onBackground,
               modifier = Modifier.testTag(SignInScreenTags.LOGIN_TITLE))
 
           Spacer(modifier = Modifier.height(200.dp))
@@ -135,7 +137,8 @@ fun SignInScreen(
                       signInStatus != SignInStatus.IN_PROGRESS_FIREBASE_AUTH,
               colors =
                   ButtonDefaults.buttonColors(
-                      containerColor = LightTurquoise, contentColor = TextColorDarkMode),
+                      containerColor = NepTuneTheme.colors.onBackground,
+                      contentColor = NepTuneTheme.colors.loginText),
               shape = RoundedCornerShape(12.dp),
               modifier = Modifier.testTag(SignInScreenTags.LOGIN_BUTTON)) {
                 Row {

@@ -31,7 +31,7 @@ import com.neptune.neptune.ui.navigation.Screen
 import com.neptune.neptune.ui.profile.ProfileRoute
 import com.neptune.neptune.ui.project.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
-import com.neptune.neptune.ui.theme.DarkBlue1
+import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.ui.theme.SampleAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -65,7 +65,7 @@ fun NeptuneApp(
       bottomBar = {
         BottomNavigationMenu(navigationActions = navigationActions, screen = currentScreen)
       },
-      containerColor = DarkBlue1,
+      containerColor = NepTuneTheme.colors.background,
       content = { innerPadding ->
         NavHost(
             navController = navController,

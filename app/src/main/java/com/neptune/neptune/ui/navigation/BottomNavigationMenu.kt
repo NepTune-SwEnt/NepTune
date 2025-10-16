@@ -15,10 +15,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.neptune.neptune.R
-import com.neptune.neptune.ui.theme.DarkBlue1
-import com.neptune.neptune.ui.theme.DarkBlue2
-import com.neptune.neptune.ui.theme.LightPurpleBlue
-import com.neptune.neptune.ui.theme.LightTurquoise
+import com.neptune.neptune.ui.theme.NepTuneTheme
 
 /**
  * Tabs used in the bottom navigation bar.
@@ -74,10 +71,12 @@ fun BottomNavigationMenu(
   }
   Column {
     HorizontalDivider(
-        modifier = Modifier.fillMaxWidth(), thickness = 0.75.dp, color = LightTurquoise)
+        modifier = Modifier.fillMaxWidth(),
+        thickness = 0.75.dp,
+        color = NepTuneTheme.colors.onBackground)
     NavigationBar(
         modifier = Modifier.testTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU),
-        containerColor = DarkBlue1) {
+        containerColor = NepTuneTheme.colors.background) {
           tabs.forEach { tab ->
             NavigationBarItem(
                 icon = {
@@ -85,7 +84,7 @@ fun BottomNavigationMenu(
                       painter = painterResource(id = tab.icon),
                       contentDescription = tab.name,
                       modifier = Modifier.size(33.dp),
-                      tint = LightTurquoise)
+                      tint = NepTuneTheme.colors.onBackground)
                 },
                 alwaysShowLabel = false,
                 label = { Text(tab.name) },
@@ -95,10 +94,10 @@ fun BottomNavigationMenu(
                 modifier = Modifier.testTag(tab.testTag),
                 colors =
                     NavigationBarItemDefaults.colors(
-                        selectedTextColor = LightPurpleBlue,
-                        selectedIconColor = LightPurpleBlue,
-                        unselectedIconColor = LightTurquoise,
-                        indicatorColor = DarkBlue2))
+                        selectedTextColor = NepTuneTheme.colors.accentPrimary,
+                        selectedIconColor = NepTuneTheme.colors.accentPrimary,
+                        unselectedIconColor = NepTuneTheme.colors.onBackground,
+                        indicatorColor = NepTuneTheme.colors.indicatorColor))
           }
         }
   }

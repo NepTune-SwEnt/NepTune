@@ -47,10 +47,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
 import com.neptune.neptune.Sample
-import com.neptune.neptune.ui.theme.DarkBlue1
-import com.neptune.neptune.ui.theme.DarkBlueGray
-import com.neptune.neptune.ui.theme.FadedDarkBlue
-import com.neptune.neptune.ui.theme.LightTurquoise
+import com.neptune.neptune.ui.theme.NepTuneTheme
 
 object ProjectListScreenTestTags {
   const val PROJECT_LIST_SCREEN = "ProjectListScreen"
@@ -72,7 +69,7 @@ fun ProjectListScreen(
 
   Scaffold(
       modifier = Modifier.testTag(ProjectListScreenTestTags.PROJECT_LIST_SCREEN),
-      containerColor = DarkBlue1,
+      containerColor = NepTuneTheme.colors.background,
       topBar = {
         // Top Search Bar
         TopSearch()
@@ -111,7 +108,7 @@ fun ProjectSample(sample: Sample) {
           Icon(
               painterResource(R.drawable.file),
               contentDescription = "Project",
-              tint = LightTurquoise,
+              tint = NepTuneTheme.colors.onBackground,
               modifier = Modifier.size(26.dp))
 
           Spacer(modifier = Modifier.width(8.dp))
@@ -126,7 +123,7 @@ fun ProjectSample(sample: Sample) {
                       fontSize = 27.sp,
                       fontFamily = FontFamily(Font(R.font.markazi_text)),
                       fontWeight = FontWeight(150),
-                      color = LightTurquoise))
+                      color = NepTuneTheme.colors.onBackground))
         }
         val minutes = sample.durationSeconds / 60
         val seconds = sample.durationSeconds % 60
@@ -135,7 +132,7 @@ fun ProjectSample(sample: Sample) {
         // Duration Text
         Text(
             durationText,
-            color = LightTurquoise,
+            color = NepTuneTheme.colors.onBackground,
             modifier = Modifier.padding(end = 16.dp),
             style =
                 TextStyle(
@@ -161,7 +158,7 @@ fun TopSearch() {
             placeholder = {
               Text(
                   text = "Search for a Project",
-                  color = FadedDarkBlue,
+                  color = NepTuneTheme.colors.searchBar,
                   style =
                       TextStyle(
                           fontSize = 21.sp,
@@ -173,28 +170,28 @@ fun TopSearch() {
                     .padding(horizontal = 16.dp)
                     .height(70.dp)
                     .clip(RoundedCornerShape(15.dp))
-                    .background(DarkBlue1, RoundedCornerShape(8.dp))
+                    .background(NepTuneTheme.colors.background, RoundedCornerShape(8.dp))
                     .padding(top = 9.dp, bottom = 9.dp)
                     .testTag(ProjectListScreenTestTags.SEARCH_TEXT_FIELD),
             singleLine = true,
             colors =
                 TextFieldDefaults.colors(
-                    focusedContainerColor = DarkBlueGray,
-                    unfocusedContainerColor = DarkBlueGray,
-                    disabledContainerColor = DarkBlueGray,
-                    cursorColor = LightTurquoise,
+                    focusedContainerColor = NepTuneTheme.colors.listBackground,
+                    unfocusedContainerColor = NepTuneTheme.colors.listBackground,
+                    disabledContainerColor = NepTuneTheme.colors.listBackground,
+                    cursorColor = NepTuneTheme.colors.onBackground,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
                     disabledIndicatorColor = Color.Transparent,
-                    focusedTextColor = LightTurquoise,
-                    unfocusedTextColor = LightTurquoise),
+                    focusedTextColor = NepTuneTheme.colors.onBackground,
+                    unfocusedTextColor = NepTuneTheme.colors.onBackground),
 
             // Search Icon
             leadingIcon = {
               Icon(
                   imageVector = Icons.Default.Search,
                   contentDescription = "Search Icon",
-                  tint = FadedDarkBlue,
+                  tint = NepTuneTheme.colors.searchBar,
                   modifier = Modifier.size(30.dp))
             },
         )
@@ -205,7 +202,8 @@ fun TopSearch() {
 @Composable
 fun ProjectSampleCard(sample: Sample, isSelected: Boolean, onClick: () -> Unit) {
 
-  val backGroundColor = if (isSelected) DarkBlueGray else DarkBlue1
+  val backGroundColor =
+      if (isSelected) NepTuneTheme.colors.listBackground else NepTuneTheme.colors.background
 
   Card(
       modifier =
@@ -214,7 +212,7 @@ fun ProjectSampleCard(sample: Sample, isSelected: Boolean, onClick: () -> Unit) 
               .testTag(ProjectListScreenTestTags.PROJECT_CARD),
       elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
       colors = CardDefaults.cardColors(backGroundColor),
-      border = BorderStroke(1.dp, FadedDarkBlue),
+      border = BorderStroke(1.dp, NepTuneTheme.colors.searchBar),
       shape = RoundedCornerShape(0.dp)) {
         ProjectSample(sample)
       }
