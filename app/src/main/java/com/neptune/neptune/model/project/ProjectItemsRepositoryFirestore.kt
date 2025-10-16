@@ -31,4 +31,8 @@ class ProjectItemsRepositoryFirestore(private val db: FirebaseFirestore) : Proje
     override suspend fun deleteProject(projectID: String) {
         TODO("Not yet implemented")
     }
+
+    override suspend fun getProjectDuration(projectID: String): Int {
+        TODO("Not yet implemented")
+    }
 }
