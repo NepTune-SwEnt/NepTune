@@ -28,7 +28,7 @@ import com.neptune.neptune.ui.navigation.NavigationActions
 import com.neptune.neptune.ui.navigation.Screen
 import com.neptune.neptune.ui.navigation.TopBar
 import com.neptune.neptune.ui.profile.ProfileRoute
-import com.neptune.neptune.ui.project.ProjectListScreen
+import com.neptune.neptune.ui.projectlist.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.theme.DarkBlue1
 import com.neptune.neptune.ui.theme.SampleAppTheme
@@ -86,7 +86,7 @@ fun NeptuneApp(
               }
               composable(Screen.ProjectList.route) {
                 ProjectListScreen(
-                    onNavigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
+                    navigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
               }
             }
       })
