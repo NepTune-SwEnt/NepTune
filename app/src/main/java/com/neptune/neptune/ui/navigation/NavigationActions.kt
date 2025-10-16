@@ -27,6 +27,8 @@ sealed class Screen(
 
   object Post : Screen(route = "post", name = "Post")
 
+  object ProjectList : Screen(route = "project_list", name = "Project List", showProfile = false)
+
   object Profile :
       Screen(route = "profile", name = "My Profile", showBottomBar = false, showBackButton = true)
 
@@ -62,6 +64,7 @@ open class NavigationActions(
       Screen.Search.route -> Screen.Search
       Screen.Post.route -> Screen.Post
       Screen.SignIn.route -> Screen.SignIn
+      Screen.ProjectList.route -> Screen.ProjectList
       else -> Screen.SignIn
     }
   }
@@ -72,10 +75,15 @@ open class NavigationActions(
    */
   open fun navigateTo(screen: Screen) {
     // If the user is already on the destination, do nothing
-    if (currentRoute() == screen.route) {
-      return
+    if (currentRoute() != screen.route) {
+      navController.navigate(screen.route) {
+        if (screen.route == Screen.Main.route || screen.route == Screen.SignIn.route) {
+          popUpTo(navController.graph.startDestinationId) { inclusive = true }
+        }
+        restoreState = true
+        launchSingleTop = true
+      }
     }
-    navController.navigate(screen.route) { restoreState = true }
   }
 
   /** Navigate back to the previous screen in the back stack. */

@@ -66,7 +66,7 @@ class BottomNavigationMenuTest {
       val navController = rememberNavController()
       val navigationActions = NavigationActions(navController)
       // Set the current screen to Edit
-      BottomNavigationMenu(screen = Screen.Edit, navigationActions = navigationActions)
+      BottomNavigationMenu(screen = Screen.ProjectList, navigationActions = navigationActions)
     }
 
     // Assert that the Edit tab is marked as selected
@@ -102,7 +102,7 @@ class BottomNavigationMenuTest {
       BottomNavigationMenu(screen = Screen.Main, navigationActions = fakeNavigationActions)
     }
     composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).performClick()
-    assert(navigatedTo == Screen.Edit)
+    assert(navigatedTo == Screen.ProjectList)
   }
 
   @Test
