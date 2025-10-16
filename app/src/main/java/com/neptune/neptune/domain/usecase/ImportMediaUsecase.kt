@@ -7,18 +7,23 @@ import com.neptune.neptune.domain.port.MediaRepository
 import java.io.File
 import java.net.URI
 import java.util.UUID
-
+/*
+    Use case to import a media file from an external URI into the app's local audio workspace.
+    This involves copying the file locally, packaging it into a .zip with a config.json, and
+    persisting a MediaItem that points to the .zip location.
+    Partially written with ChatGPT
+ */
 class ImportMediaUseCase(
     private val importer: FileImporter,
     private val repo: MediaRepository,
     private val packager: NeptunePackager
 ) {
   suspend operator fun invoke(sourceUriString: String): MediaItem {
-    // 1) Copy picked audio (still needed to read bytes)
+    // Copy picked audio (still needed to read bytes)
     val probe = importer.importFile(URI(sourceUriString))
     val localAudio = File(URI(probe.localUri.toString()))
 
-    // 2) Create .zip with config.json + audio
+    // Create .zip with config.json + audio
     val projectZip = try {
         packager.createProjectZip(audioFile = localAudio, durationMs = probe.durationMs)
     } catch (e: Exception) {

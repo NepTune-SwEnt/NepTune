@@ -27,8 +27,11 @@ import com.neptune.neptune.data.local.MediaDb
 import com.neptune.neptune.domain.model.MediaItem
 import com.neptune.neptune.domain.usecase.GetLibraryUseCase
 import com.neptune.neptune.domain.usecase.ImportMediaUseCase
-
-// partially written with ChatGPT
+/*
+    Root composable for the Importer app.
+    Sets up singletons, ViewModel, and hosts the temp ImportScreen.
+     partially written with ChatGPT
+ */
 @Composable
 fun AppRoot() {
   val context = LocalContext.current

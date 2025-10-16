@@ -8,6 +8,7 @@ import kotlin.math.round
 
 /*
  * Creates a Neptune project zip file containing the audio file and a config.json
+ * Partially written with ChatGPT
  */
 class NeptunePackager(private val paths: StoragePaths) {
   fun createProjectZip(
