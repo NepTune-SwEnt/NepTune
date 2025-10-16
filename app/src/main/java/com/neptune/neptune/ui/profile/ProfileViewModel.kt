@@ -200,6 +200,7 @@ class ProfileViewModel(
                 usernameError = "This username is already taken."
             )
         } catch (t: Throwable) {
+            android.util.Log.e("Profile", "Save failed", t)
             _uiState.value = _uiState.value.copy(
                 isSaving = false,
                 error = t.message ?: "Couldn’t save changes."

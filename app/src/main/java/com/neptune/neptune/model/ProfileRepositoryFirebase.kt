@@ -119,33 +119,61 @@ class ProfileRepositoryFirebase(
         error("no-username")
     }
 
+    private fun normalizeUsername(u: String) =
+        u.trim().lowercase().replace(Regex("[^a-z0-9_]"), "")
+
     override suspend fun isUsernameAvailable(username: String): Boolean {
-        return !usernames.document(username).get().await().exists()
+        val uid = Firebase.auth.currentUser?.uid ?: error("No authenticated user")
+        val desired = normalizeUsername(username)
+        val doc = usernames.document(desired).get().await()
+        if (!doc.exists()) return true
+        val owner = doc.getString("uid")
+        return owner == uid
     }
 
+    @Throws(UsernameTakenException::class)
     override suspend fun setUsername(newUsername: String) {
-        val currentUser = Firebase.auth.currentUser
-        val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
+        val uid = Firebase.auth.currentUser?.uid ?: error("No authenticated user")
+        val desired = newUsername.trim().lowercase().replace(Regex("[^a-z0-9_]"), "")
+
         db.runTransaction { tx ->
-            val username = usernames.document(newUsername)
-            if (tx.get(username).exists()) {
-                throw UsernameTakenException(newUsername)
+            val profileRef = profiles.document(uid)
+
+            // READS — all before any writes
+            val profileSnap = tx.get(profileRef)
+            val oldUsername = profileSnap.getString("username")?.trim().orEmpty()
+                .lowercase().replace(Regex("[^a-z0-9_]"), "")
+
+            // No-op if unchanged
+            if (desired == oldUsername) return@runTransaction
+
+            val newRef = usernames.document(desired)
+            val newDoc = tx.get(newRef) // read
+
+            val oldRef = if (oldUsername.isNotBlank()) usernames.document(oldUsername) else null
+            val oldDoc = oldRef?.let { tx.get(it) } // read (if present)
+
+            // DECIDE based on reads, still no writes so far
+            if (newDoc.exists()) {
+                val owner = newDoc.getString("uid")
+                if (owner != uid) throw UsernameTakenException(desired)
+                // already mine → no need to set() again (avoids update-in-place)
             }
-            tx.set(username, mapOf("uid" to uid))
 
-            val profile = profiles.document(uid)
-            val oldUsername = tx.get(profile).getString("username")
-            tx.update(profile, "username", newUsername)
+            // WRITES — only after all reads are done
+            if (!newDoc.exists()) {
+                tx.set(newRef, mapOf("uid" to uid))           // create reservation
+            }
 
-            if (!oldUsername.isNullOrBlank()) {
-                val oldUsernameDoc = usernames.document(oldUsername)
-                val usernameUid = tx.get(oldUsernameDoc).getString("uid")
-                if (usernameUid == uid) {
-                    tx.delete(oldUsernameDoc)
-                }
+            tx.update(profileRef, "username", desired)        // update profile
+
+            // Release old username if it exists and was owned by me
+            if (oldRef != null && oldDoc?.exists() == true && oldDoc.getString("uid") == uid) {
+                tx.delete(oldRef)
             }
         }.await()
     }
+
 
     override suspend fun generateRandomFreeUsername(base: String): String {
         val b = toUsernameBase(base).ifBlank { "user" }
