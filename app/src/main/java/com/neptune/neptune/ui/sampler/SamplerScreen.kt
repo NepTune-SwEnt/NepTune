@@ -969,15 +969,6 @@ fun CompTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
   Column(
       modifier = Modifier.fillMaxWidth().wrapContentHeight().padding(16.dp),
       horizontalAlignment = Alignment.CenterHorizontally) {
-        CompressorCurve(
-            modifier = Modifier.size(200.dp).testTag("compressorCurve"),
-            threshold = uiState.compThreshold,
-            ratio = compRatioFloat,
-            knee = uiState.compKnee,
-            compGain = uiState.compGain)
-
-        Spacer(modifier = Modifier.height(24.dp))
-
         Column(modifier = Modifier.fillMaxWidth()) {
           Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
             UniversalKnob(
@@ -1036,6 +1027,14 @@ fun CompTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
                 modifier = Modifier.weight(1f).testTag(SamplerTestTags.KNOB_COMP_DECAY))
           }
         }
+        Spacer(modifier = Modifier.height(24.dp))
+
+        CompressorCurve(
+            modifier = Modifier.size(200.dp).testTag("compressorCurve"),
+            threshold = uiState.compThreshold,
+            ratio = compRatioFloat,
+            knee = uiState.compKnee,
+            compGain = uiState.compGain)
       }
 }
 
