@@ -34,11 +34,11 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.neptune.neptune.ui.sampler.SamplerTestTags.FADER_60HZ_TAG
 import com.neptune.neptune.ui.theme.DarkBlue1
 import com.neptune.neptune.ui.theme.LightPurpleBlue
 import com.neptune.neptune.ui.theme.LightSkyBlue
@@ -62,6 +62,23 @@ object SamplerTestTags {
 
   const val PITCH_SELECTOR = "pitchSelector"
   const val TEMPO_SELECTOR = "tempoSelector"
+
+  const val KNOB_REVERB_WET = "knobReverbWet"
+  const val KNOB_REVERB_SIZE = "knobReverbSize"
+  const val KNOB_REVERB_WIDTH = "knobReverbWidth"
+  const val KNOB_REVERB_DEPTH = "knobReverbDepth"
+  const val KNOB_REVERB_PREDELAY = "knobReverbPredelay"
+
+  const val KNOB_COMP_THRESHOLD = "knobCompThreshold"
+  const val INPUT_COMP_RATIO = "inputFieldCompRatio"
+  const val KNOB_COMP_KNEE = "knobCompKnee"
+  const val KNOB_COMP_GAIN = "knobCompGain"
+  const val KNOB_COMP_ATTACK = "knobCompAttack"
+  const val KNOB_COMP_DECAY = "knobCompDecay"
+  const val SECTION_ADSR = "sectionAdsrControls"
+  const val SECTION_REVERB = "sectionReverbControls"
+  const val EQ_FADER_BOX_INPUT = "eqFaderBoxInput"
+  const val FADER_60HZ_TAG = "fader60Hz"
 }
 
 val FrameBorderColor = LightPurpleBlue
@@ -373,7 +390,7 @@ fun TabContent(currentTab: SamplerTab, uiState: SamplerUiState, viewModel: Sampl
 @Composable
 fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
   var isADSrExpanded by remember { mutableStateOf(false) }
-  var isReverbExpanded by remember { mutableStateOf(false) } // NOUVEL ÉTAT POUR LA RÉVERB
+  var isReverbExpanded by remember { mutableStateOf(false) }
 
   Column(
       modifier =
@@ -381,9 +398,6 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
               .wrapContentHeight()
               .padding(top = 8.dp)
               .testTag(SamplerTestTags.TAB_BASICS_CONTENT)) {
-        // -------------------------------------------------------------
-        // 1. SECTION ADSR
-        // -------------------------------------------------------------
         ExpandableSection(
             title = "ADSR Envelope Controls",
             isExpanded = isADSrExpanded,
@@ -451,9 +465,6 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // -------------------------------------------------------------
-        // 2. NOUVELLE SECTION REVERB
-        // -------------------------------------------------------------
         ExpandableSection(
             title = "Reverb Controls",
             isExpanded = isReverbExpanded,
@@ -461,7 +472,6 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
               Column(
                   modifier =
                       Modifier.fillMaxWidth().padding(vertical = 8.dp).background(DarkBlue1)) {
-                    // Ligne 1: Wet, Size, Width
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceAround) {
@@ -472,7 +482,8 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
                               minValue = 0.0f,
                               maxValue = 1.0f,
                               unit = KnobUnit.PERCENT,
-                              modifier = Modifier.weight(1f))
+                              modifier =
+                                  Modifier.weight(1f).testTag(SamplerTestTags.KNOB_REVERB_WET))
                           UniversalKnob(
                               label = "Size",
                               value = uiState.reverbSize,
@@ -480,7 +491,8 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
                               minValue = 0.1f,
                               maxValue = REVERB_SIZE_MAX,
                               unit = KnobUnit.SECONDS,
-                              modifier = Modifier.weight(1f))
+                              modifier =
+                                  Modifier.weight(1f).testTag(SamplerTestTags.KNOB_REVERB_SIZE))
                           UniversalKnob(
                               label = "Width",
                               value = uiState.reverbWidth,
@@ -488,12 +500,12 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
                               minValue = 0.0f,
                               maxValue = 1.0f,
                               unit = KnobUnit.PERCENT,
-                              modifier = Modifier.weight(1f))
+                              modifier =
+                                  Modifier.weight(1f).testTag(SamplerTestTags.KNOB_REVERB_WIDTH))
                         }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Ligne 2: Depth, Predelay
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceAround) {
@@ -504,7 +516,8 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
                               minValue = 0.0f,
                               maxValue = 1.0f,
                               unit = KnobUnit.PERCENT,
-                              modifier = Modifier.weight(1f))
+                              modifier =
+                                  Modifier.weight(1f).testTag(SamplerTestTags.KNOB_REVERB_DEPTH))
                           UniversalKnob(
                               label = "Predelay",
                               value = uiState.reverbPredelay,
@@ -512,9 +525,10 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
                               minValue = 0.0f,
                               maxValue = PREDELAY_MAX_MS,
                               unit = KnobUnit.MILLISECONDS,
-                              modifier = Modifier.weight(1f))
-                          Spacer(modifier = Modifier.weight(1f)) // Espace vide pour l'alignement
-                    }
+                              modifier =
+                                  Modifier.weight(1f).testTag(SamplerTestTags.KNOB_REVERB_PREDELAY))
+                          Spacer(modifier = Modifier.weight(1f))
+                        }
                   }
             }
       }
@@ -781,8 +795,6 @@ fun UniversalKnob(
             val currentRotationDegrees = (normalizedValue * 270f) - 135f
             val finalAngle = currentRotationDegrees - 90f
             val adjustedAngleRad = Math.toRadians(finalAngle.toDouble())
-
-            // Dessin du cercle/arc de progression/indicateur (inchangé)
             drawCircle(
                 color = accentColor.copy(alpha = 0.3f),
                 radius = radius,
@@ -825,6 +837,7 @@ fun ExpandableSection(
         Row(
             modifier =
                 Modifier.fillMaxWidth()
+                    .testTag("${title.replace(" ", "")}ClickableHeader")
                     .clickable(onClick = onToggle)
                     .background(Color.Black.copy(alpha = 0.3f))
                     .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -879,6 +892,7 @@ fun EQFader(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(4.dp))
                     .background(Color.Black.copy(alpha = 0.5f))
+                    .testTag(SamplerTestTags.EQ_FADER_BOX_INPUT)
                     .pointerInput(minGain, maxGain) {
                       detectDragGestures(
                           onDragStart = {},
@@ -942,7 +956,8 @@ fun EQTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
           EQFader(
               frequency = frequency,
               gain = uiState.eqBands.getOrElse(index) { EQ_GAIN_DEFAULT },
-              onGainChange = { newGain -> viewModel.updateEqBand(index, newGain) })
+              onGainChange = { newGain -> viewModel.updateEqBand(index, newGain) },
+              modifier = if (index == 0) Modifier.testTag(FADER_60HZ_TAG) else Modifier)
         }
       }
 }
@@ -971,15 +986,15 @@ fun CompTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
                 onValueChange = viewModel::updateCompThreshold,
                 minValue = COMP_GAIN_MIN,
                 maxValue = COMP_GAIN_MAX,
-                unit = KnobUnit.NONE, // Affichage simple sans unité pour le moment
-                modifier = Modifier.weight(1f))
+                unit = KnobUnit.NONE,
+                modifier = Modifier.weight(1f).testTag(SamplerTestTags.KNOB_COMP_THRESHOLD))
             RatioInputField(
                 label = "Ratio",
                 ratio = uiState.compRatio,
                 onValueChange = viewModel::updateCompRatio,
                 minValue = 1,
                 maxValue = 20,
-                modifier = Modifier.weight(1f))
+                modifier = Modifier.weight(1f).testTag(SamplerTestTags.INPUT_COMP_RATIO))
             UniversalKnob(
                 label = "Knee",
                 value = uiState.compKnee,
@@ -987,7 +1002,7 @@ fun CompTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
                 minValue = 0.0f,
                 maxValue = COMP_KNEE_MAX,
                 unit = KnobUnit.NONE,
-                modifier = Modifier.weight(1f))
+                modifier = Modifier.weight(1f).testTag(SamplerTestTags.KNOB_COMP_KNEE))
           }
 
           Spacer(modifier = Modifier.height(16.dp))
@@ -999,8 +1014,8 @@ fun CompTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
                 onValueChange = viewModel::updateCompGain,
                 minValue = COMP_GAIN_MIN,
                 maxValue = COMP_GAIN_MAX,
-                unit = KnobUnit.NONE, // Pas d'impact visuel
-                modifier = Modifier.weight(1f))
+                unit = KnobUnit.NONE,
+                modifier = Modifier.weight(1f).testTag(SamplerTestTags.KNOB_COMP_GAIN))
 
             UniversalKnob(
                 label = "Attack",
@@ -1009,7 +1024,7 @@ fun CompTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
                 minValue = 0.0f,
                 maxValue = COMP_TIME_MAX,
                 unit = KnobUnit.SECONDS,
-                modifier = Modifier.weight(1f))
+                modifier = Modifier.weight(1f).testTag(SamplerTestTags.KNOB_COMP_ATTACK))
 
             UniversalKnob(
                 label = "Decay",
@@ -1018,7 +1033,7 @@ fun CompTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
                 minValue = 0.0f,
                 maxValue = COMP_TIME_MAX,
                 unit = KnobUnit.SECONDS,
-                modifier = Modifier.weight(1f))
+                modifier = Modifier.weight(1f).testTag(SamplerTestTags.KNOB_COMP_DECAY))
           }
         }
       }
@@ -1070,16 +1085,13 @@ fun CompressorCurve(
             end = Offset(width, dbToY(0f)),
             strokeWidth = 1f)
 
-        linePath.moveTo(
-            dbToX(minDb), dbToY(minDb)) // Correction du point de départ à (minDb, minDb)
+        linePath.moveTo(dbToX(minDb), dbToY(minDb))
 
         for (i in 0..1000) {
           val inputDb = minDb + (i / 1000f) * totalDbRange
           var outputDb = inputDb
 
-          // Hard Knee et Soft Knee
           if (inputDb > threshold) {
-            // Par défaut Hard Knee (0 dB Knee)
             outputDb = threshold + (inputDb - threshold) * compressionFactor
           }
 
@@ -1089,24 +1101,18 @@ fun CompressorCurve(
             val kneeEndDb = threshold + kneeHalf
 
             if (inputDb > kneeStartDb && inputDb < kneeEndDb) {
-              // LOGIQUE CRITIQUE DU SOFT KNEE
 
-              // 1. Position normalisée dans la zone du Knee (de 0 à 1)
               val x = (inputDb - kneeStartDb) / knee
               val compressedOutputAtEnd = threshold + (kneeEndDb - threshold) * compressionFactor
               val uncompressedOutputAtStart = kneeStartDb
 
-              // Interpolation du gain de sortie dans la zone du Knee
               outputDb =
                   uncompressedOutputAtStart +
                       (compressedOutputAtEnd - uncompressedOutputAtStart) * x
             } else if (inputDb >= kneeEndDb) {
-              // Après le Knee End : Utiliser la pente de compression totale
               outputDb = threshold + (inputDb - threshold) * compressionFactor
             }
           }
-
-          // Appliquer le Gain de Sortie et Ajouter le Point
           linePath.lineTo(dbToX(inputDb), dbToY(outputDb))
         }
 
@@ -1146,7 +1152,8 @@ fun RatioInputField(
           val filteredValue = newValue.filter { it.isDigit() }
           text = filteredValue
           filteredValue.toIntOrNull()?.let { intValue ->
-            onValueChange(intValue.coerceIn(minValue, maxValue).toFloat())
+            val coercedValue = intValue.coerceIn(minValue, maxValue).toFloat()
+            onValueChange(coercedValue)
           }
         },
         modifier = Modifier.size(70.dp, 70.dp),
@@ -1166,8 +1173,10 @@ fun RatioInputField(
   }
 }
 
+/*
 @Preview(showBackground = true)
 @Composable
 fun PreviewSamplerScreen() {
   MaterialTheme { SamplerScreen(viewModel = SamplerViewModel()) }
 }
+*/
