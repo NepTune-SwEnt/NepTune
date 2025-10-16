@@ -156,7 +156,8 @@ fun SampleCard(sample: Sample) {
       modifier =
           Modifier.width(150.dp)
               .height(166.dp)
-              .clickable(onClick = { mediaPlayer.togglePlay(mediaPlayer.getUriFromSampleId(sample.id)) })
+              .clickable(
+                  onClick = { mediaPlayer.togglePlay(mediaPlayer.getUriFromSampleId(sample.id)) })
               .testTag(MainScreenTestTags.SAMPLE_CARD),
       colors = CardDefaults.cardColors(containerColor = DarkBlueGray),
       shape = RoundedCornerShape(12.dp),

@@ -64,35 +64,41 @@ fun NeptuneApp(
   val navBackStackEntry by navController.currentBackStackEntryAsState()
   val currentRoute = navBackStackEntry?.destination?.route
   val currentScreen = navigationActions.currentScreen(currentRoute ?: startDestination)
-  Scaffold(
-      bottomBar = {
-        BottomNavigationMenu(navigationActions = navigationActions, screen = currentScreen)
-      },
-      topBar = {
-        TopBar(
-            currentScreen = currentScreen,
-            navigationActions = navigationActions,
-            canNavigateBack = currentScreen.showBackButton)
-      },
-      containerColor = DarkBlue1,
-      content = { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = startDestination,
-            modifier = Modifier.padding(innerPadding)) {
-              // TODO: Replace mock screens with actual app screens
-              composable(Screen.Main.route) { MainScreen() }
-              composable(Screen.Profile.route) { ProfileRoute() }
-              composable(Screen.Edit.route) { SamplerScreen() }
-              composable(Screen.Search.route) { MockSearchScreen() }
-              composable(Screen.Post.route) { MockPostScreen() }
-              composable(Screen.SignIn.route) {
-                SignInScreen(navigateMain = { navigationActions.navigateTo(Screen.Main) })
+  // Media Player values
+  val context = LocalContext.current.applicationContext
+  val mediaPlayer = remember { NeptuneMediaPlayer(context) }
+  // Give the whole app access to the MediaPlayer
+  CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
+    Scaffold(
+        bottomBar = {
+          BottomNavigationMenu(navigationActions = navigationActions, screen = currentScreen)
+        },
+        topBar = {
+          TopBar(
+              currentScreen = currentScreen,
+              navigationActions = navigationActions,
+              canNavigateBack = currentScreen.showBackButton)
+        },
+        containerColor = DarkBlue1,
+        content = { innerPadding ->
+          NavHost(
+              navController = navController,
+              startDestination = startDestination,
+              modifier = Modifier.padding(innerPadding)) {
+                // TODO: Replace mock screens with actual app screens
+                composable(Screen.Main.route) { MainScreen() }
+                composable(Screen.Profile.route) { ProfileRoute() }
+                composable(Screen.Edit.route) { SamplerScreen() }
+                composable(Screen.Search.route) { MockSearchScreen() }
+                composable(Screen.Post.route) { MockPostScreen() }
+                composable(Screen.SignIn.route) {
+                  SignInScreen(navigateMain = { navigationActions.navigateTo(Screen.Main) })
+                }
+                composable(Screen.ProjectList.route) {
+                  ProjectListScreen(
+                      onNavigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
+                }
               }
-              composable(Screen.ProjectList.route) {
-                ProjectListScreen(
-                    onNavigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
-              }
-            }
-      })
+        })
+  }
 }
