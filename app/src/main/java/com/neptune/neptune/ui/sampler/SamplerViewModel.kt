@@ -1,6 +1,7 @@
 package com.neptune.neptune.ui.sampler
 
 import androidx.lifecycle.ViewModel
+import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -17,6 +18,12 @@ private val EQ_FREQUENCIES = listOf(60, 120, 250, 500, 1000, 2500, 5000, 10000)
 const val EQ_GAIN_DEFAULT = 0.0f
 private const val EQ_GAIN_MIN = -20.0f
 private const val EQ_GAIN_MAX = 20.0f
+
+const val COMP_GAIN_MIN = -20.0f
+const val COMP_GAIN_MAX = 20.0f
+const val COMP_TIME_MAX = 1.0f
+const val COMP_THRESHOLD_DEFAULT = -10.0f
+const val COMP_KNEE_MAX = 20.0f
 
 data class SamplerUiState(
     val isPlaying: Boolean = false,
@@ -35,7 +42,13 @@ data class SamplerUiState(
     val reverbSize: Float = 3.0f,
     val reverbWidth: Float = 1.0f,
     val reverbDepth: Float = 0.5f,
-    val reverbPredelay: Float = 10.0f
+    val reverbPredelay: Float = 10.0f,
+    val compThreshold: Float = COMP_THRESHOLD_DEFAULT,
+    val compRatio: Int = 4,
+    val compKnee: Float = 0.0f,
+    val compGain: Float = 0.0f,
+    val compAttack: Float = 0.010f,
+    val compDecay: Float = 0.100f
 ) {
   val fullPitch: String
     get() = "$pitchNote$pitchOctave"
@@ -169,5 +182,29 @@ open class SamplerViewModel : ViewModel() {
 
   open fun updateReverbPredelay(value: Float) {
     _uiState.update { it.copy(reverbPredelay = value.coerceIn(0.0f, 100.0f)) }
+  }
+
+  open fun updateCompThreshold(value: Float) {
+    _uiState.update { it.copy(compThreshold = value.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)) }
+  }
+
+  open fun updateCompRatio(value: Float) {
+    _uiState.update { it.copy(compRatio = value.roundToInt().coerceIn(1, 20)) }
+  }
+
+  open fun updateCompKnee(value: Float) {
+    _uiState.update { it.copy(compKnee = value.coerceIn(0.0f, COMP_KNEE_MAX)) }
+  }
+
+  open fun updateCompGain(value: Float) {
+    _uiState.update { it.copy(compGain = value.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)) }
+  }
+
+  open fun updateCompAttack(value: Float) {
+    _uiState.update { it.copy(compAttack = value.coerceIn(0.0f, COMP_TIME_MAX)) }
+  }
+
+  open fun updateCompDecay(value: Float) {
+    _uiState.update { it.copy(compDecay = value.coerceIn(0.0f, COMP_TIME_MAX)) }
   }
 }

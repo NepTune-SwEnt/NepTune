@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -29,7 +30,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -361,11 +365,7 @@ fun TabContent(currentTab: SamplerTab, uiState: SamplerUiState, viewModel: Sampl
         when (currentTab) {
           SamplerTab.BASICS -> BasicsTabContent(uiState, viewModel)
           SamplerTab.EQ -> EQTabContent(uiState, viewModel)
-          SamplerTab.COMP ->
-              Text(
-                  "Compressor Settings...",
-                  color = White,
-                  modifier = Modifier.align(Alignment.Center))
+          SamplerTab.COMP -> CompTabContent(uiState, viewModel)
         }
       }
 }
@@ -945,6 +945,225 @@ fun EQTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
               onGainChange = { newGain -> viewModel.updateEqBand(index, newGain) })
         }
       }
+}
+
+@Composable
+fun CompTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
+  val compRatioFloat = uiState.compRatio.toFloat()
+
+  Column(
+      modifier = Modifier.fillMaxWidth().wrapContentHeight().padding(16.dp),
+      horizontalAlignment = Alignment.CenterHorizontally) {
+        CompressorCurve(
+            modifier = Modifier.size(200.dp).testTag("compressorCurve"),
+            threshold = uiState.compThreshold,
+            ratio = compRatioFloat,
+            knee = uiState.compKnee,
+            compGain = uiState.compGain)
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Column(modifier = Modifier.fillMaxWidth()) {
+          Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
+            UniversalKnob(
+                label = "Threshold",
+                value = uiState.compThreshold,
+                onValueChange = viewModel::updateCompThreshold,
+                minValue = COMP_GAIN_MIN,
+                maxValue = COMP_GAIN_MAX,
+                unit = KnobUnit.NONE, // Affichage simple sans unité pour le moment
+                modifier = Modifier.weight(1f))
+            RatioInputField(
+                label = "Ratio",
+                ratio = uiState.compRatio,
+                onValueChange = viewModel::updateCompRatio,
+                minValue = 1,
+                maxValue = 20,
+                modifier = Modifier.weight(1f))
+            UniversalKnob(
+                label = "Knee",
+                value = uiState.compKnee,
+                onValueChange = viewModel::updateCompKnee,
+                minValue = 0.0f,
+                maxValue = COMP_KNEE_MAX,
+                unit = KnobUnit.NONE,
+                modifier = Modifier.weight(1f))
+          }
+
+          Spacer(modifier = Modifier.height(16.dp))
+
+          Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
+            UniversalKnob(
+                label = "Gain",
+                value = uiState.compGain,
+                onValueChange = viewModel::updateCompGain,
+                minValue = COMP_GAIN_MIN,
+                maxValue = COMP_GAIN_MAX,
+                unit = KnobUnit.NONE, // Pas d'impact visuel
+                modifier = Modifier.weight(1f))
+
+            UniversalKnob(
+                label = "Attack",
+                value = uiState.compAttack,
+                onValueChange = viewModel::updateCompAttack,
+                minValue = 0.0f,
+                maxValue = COMP_TIME_MAX,
+                unit = KnobUnit.SECONDS,
+                modifier = Modifier.weight(1f))
+
+            UniversalKnob(
+                label = "Decay",
+                value = uiState.compDecay,
+                onValueChange = viewModel::updateCompDecay,
+                minValue = 0.0f,
+                maxValue = COMP_TIME_MAX,
+                unit = KnobUnit.SECONDS,
+                modifier = Modifier.weight(1f))
+          }
+        }
+      }
+}
+
+@Composable
+fun CompressorCurve(
+    modifier: Modifier = Modifier,
+    threshold: Float,
+    ratio: Float,
+    knee: Float,
+    compGain: Float
+) {
+  val lightPurpleBlue = LightPurpleBlue
+  val minDb = COMP_GAIN_MIN
+  val maxDb = COMP_GAIN_MAX
+  val totalDbRange = maxDb - minDb
+
+  Canvas(
+      modifier =
+          modifier.border(2.dp, lightPurpleBlue).background(Color.Black.copy(alpha = 0.5f))) {
+        val width = size.width
+        val height = size.height
+
+        fun dbToX(db: Float): Float = ((db - minDb) / totalDbRange) * width
+        fun dbToY(db: Float): Float = height - ((db - minDb) / totalDbRange) * height
+
+        val compressionFactor = 1.0f / ratio
+
+        val thresholdX = dbToX(threshold)
+        val thresholdY = dbToY(threshold)
+
+        val kneeStartDb = threshold - knee / 2f
+        val kneeEndDb = threshold + knee / 2f
+
+        val kneeStartX = dbToX(kneeStartDb)
+        val kneeEndX = dbToX(kneeEndDb)
+
+        val linePath = androidx.compose.ui.graphics.Path()
+
+        drawLine(
+            color = Color.Gray,
+            start = Offset(dbToX(0f), 0f),
+            end = Offset(dbToX(0f), height),
+            strokeWidth = 1f)
+        drawLine(
+            color = Color.Gray,
+            start = Offset(0f, dbToY(0f)),
+            end = Offset(width, dbToY(0f)),
+            strokeWidth = 1f)
+
+        linePath.moveTo(
+            dbToX(minDb), dbToY(minDb)) // Correction du point de départ à (minDb, minDb)
+
+        for (i in 0..1000) {
+          val inputDb = minDb + (i / 1000f) * totalDbRange
+          var outputDb = inputDb
+
+          // Hard Knee et Soft Knee
+          if (inputDb > threshold) {
+            // Par défaut Hard Knee (0 dB Knee)
+            outputDb = threshold + (inputDb - threshold) * compressionFactor
+          }
+
+          if (knee > 0f) {
+            val kneeHalf = knee / 2f
+            val kneeStartDb = threshold - kneeHalf
+            val kneeEndDb = threshold + kneeHalf
+
+            if (inputDb > kneeStartDb && inputDb < kneeEndDb) {
+              // LOGIQUE CRITIQUE DU SOFT KNEE
+
+              // 1. Position normalisée dans la zone du Knee (de 0 à 1)
+              val x = (inputDb - kneeStartDb) / knee
+              val compressedOutputAtEnd = threshold + (kneeEndDb - threshold) * compressionFactor
+              val uncompressedOutputAtStart = kneeStartDb
+
+              // Interpolation du gain de sortie dans la zone du Knee
+              outputDb =
+                  uncompressedOutputAtStart +
+                      (compressedOutputAtEnd - uncompressedOutputAtStart) * x
+            } else if (inputDb >= kneeEndDb) {
+              // Après le Knee End : Utiliser la pente de compression totale
+              outputDb = threshold + (inputDb - threshold) * compressionFactor
+            }
+          }
+
+          // Appliquer le Gain de Sortie et Ajouter le Point
+          linePath.lineTo(dbToX(inputDb), dbToY(outputDb))
+        }
+
+        drawPath(linePath, color = lightPurpleBlue, style = Stroke(width = 3.dp.toPx()))
+
+        drawCircle(color = Color.Red, center = Offset(thresholdX, thresholdY), radius = 6.dp.toPx())
+      }
+}
+
+@Composable
+fun RatioInputField(
+    label: String,
+    ratio: Int,
+    onValueChange: (Float) -> Unit,
+    minValue: Int,
+    maxValue: Int,
+    modifier: Modifier = Modifier
+) {
+  val accentColor = LightPurpleBlue
+  val lightText = White
+
+  var text by remember { mutableStateOf(ratio.toString()) }
+
+  LaunchedEffect(ratio) {
+    if (text.toIntOrNull() != ratio) {
+      text = ratio.toString()
+    }
+  }
+
+  Column(modifier = modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Text(text = "$text:1", color = accentColor, fontSize = 14.sp)
+    Spacer(modifier = Modifier.height(4.dp))
+
+    OutlinedTextField(
+        value = text,
+        onValueChange = { newValue ->
+          val filteredValue = newValue.filter { it.isDigit() }
+          text = filteredValue
+          filteredValue.toIntOrNull()?.let { intValue ->
+            onValueChange(intValue.coerceIn(minValue, maxValue).toFloat())
+          }
+        },
+        modifier = Modifier.size(70.dp, 70.dp),
+        textStyle = TextStyle(textAlign = TextAlign.Center, fontSize = 18.sp, color = lightText),
+        singleLine = true,
+        colors =
+            OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = accentColor,
+                unfocusedBorderColor = accentColor.copy(alpha = 0.5f),
+                cursorColor = accentColor,
+                focusedContainerColor = Color.Black.copy(alpha = 0.3f),
+                unfocusedContainerColor = Color.Black.copy(alpha = 0.3f)),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(text = label, color = lightText, fontSize = 16.sp)
+  }
 }
 
 @Preview(showBackground = true)
