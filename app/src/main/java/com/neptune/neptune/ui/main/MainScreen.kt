@@ -22,11 +22,14 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,12 +44,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
 import com.neptune.neptune.Sample
-import com.neptune.neptune.ui.navigation.TopBarNavigation
+import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.theme.DarkBlue1
 import com.neptune.neptune.ui.theme.DarkBlueGray
 import com.neptune.neptune.ui.theme.LightTurquoise
@@ -54,6 +58,10 @@ import com.neptune.neptune.ui.theme.LightTurquoise
 object MainScreenTestTags {
   // General
   const val MAIN_SCREEN = "mainScreen"
+
+  // Top Bar
+  const val TOP_BAR = "topBar"
+  const val TOP_BAR_TITLE = "topBarTitle"
 
   // Sample Card
   const val SAMPLE_CARD = "sampleCard"
@@ -74,11 +82,45 @@ object MainScreenTestTags {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 // Implementation of the main screen
-fun MainScreen(mainViewModel: MainViewModel = viewModel()) {
+fun MainScreen(mainViewModel: MainViewModel = viewModel(), navigateToProfile: () -> Unit = {}) {
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
   Scaffold(
-      topBar = { TopBarNavigation() },
+      topBar = {
+        Column {
+          CenterAlignedTopAppBar(
+              modifier = Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
+              title = {
+                Text(
+                    text = "NepTune",
+                    style =
+                        TextStyle(
+                            fontSize = 45.sp,
+                            fontFamily = FontFamily(Font(R.font.lily_script_one)),
+                            fontWeight = FontWeight(149),
+                            color = LightTurquoise,
+                        ),
+                    modifier = Modifier.padding(25.dp).testTag(MainScreenTestTags.TOP_BAR_TITLE),
+                    textAlign = TextAlign.Center)
+              },
+              actions = {
+                IconButton(
+                    onClick = navigateToProfile,
+                    modifier =
+                        Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
+                            .size(57.dp)
+                            .testTag(NavigationTestTags.PROFILE_BUTTON)) {
+                      Icon(
+                          painter = painterResource(id = R.drawable.profile),
+                          contentDescription = "Profile",
+                          tint = Color.Unspecified)
+                    }
+              },
+              colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = DarkBlue1))
+          HorizontalDivider(
+              modifier = Modifier.fillMaxWidth(), thickness = 0.75.dp, color = LightTurquoise)
+        }
+      },
       modifier = Modifier.testTag(MainScreenTestTags.MAIN_SCREEN),
       containerColor = DarkBlue1) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
