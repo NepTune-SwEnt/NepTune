@@ -85,8 +85,7 @@ fun NeptuneApp(
                 SignInScreen(navigateMain = { navigationActions.navigateTo(Screen.Main) })
               }
               composable(Screen.ProjectList.route) {
-                ProjectListScreen(
-                    navigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
+                ProjectListScreen(navigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
               }
             }
       })
