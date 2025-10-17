@@ -10,12 +10,16 @@ val FadedDarkBlue = Color(0x80C9F7F4)
 val LightPurpleBlue = Color(0xFF7A84E1)
 val LightTurquoise = Color(0xFFC9F7F4)
 val LightLavender = Color(0xFFE8E7FF)
-val Black = Color(0xFF000000)
 val LightSkyBlue = Color(0xFFC7C5FF)
 
 // white mode
-
+val GhostWhite = Color(0xFFF1F3FF)
+val DarkBlue3 = Color(0xFF1C1F35)
+val LightLavenderBlue = Color(0xFFE3E8FF)
+val white = Color(0xFFFFFFFF)
+val purple = Color(0xFFE6E6FA)
 // shared
+val Black = Color(0xFF000000)
 
 // colorScheme
 val Purple80 = Color(0xFFD0BCFF)

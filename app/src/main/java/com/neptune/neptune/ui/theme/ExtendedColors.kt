@@ -15,7 +15,8 @@ data class ExtendedColors(
     val onBackground: Color,
     val smallText: Color,
     val loginText: Color,
-    val soundWave: Color
+    val soundWave: Color,
+    val profileIcon: Color
 )
 
 val DarkExtendedColors =
@@ -29,9 +30,22 @@ val DarkExtendedColors =
         onBackground = LightTurquoise,
         smallText = LightLavender,
         loginText = Black,
-        soundWave = LightSkyBlue)
+        soundWave = LightSkyBlue,
+        profileIcon = Color.Unspecified)
 
-val LightExtendedColors = DarkExtendedColors
+val LightExtendedColors =
+    ExtendedColors(
+        background = GhostWhite,
+        indicatorColor = purple,
+        cardBackground = LightLavenderBlue,
+        listBackground = DarkBlue3,
+        searchBar = LightLavenderBlue,
+        accentPrimary = LightPurpleBlue,
+        onBackground = DarkBlue3,
+        smallText = Black,
+        loginText = white,
+        soundWave = DarkBlue3,
+        profileIcon = DarkBlue3)
 
 val LocalExtendedColors = staticCompositionLocalOf {
   // default value

@@ -238,7 +238,7 @@ fun WaveformDisplay(
 
   val currentAnimPosition = playbackPositionAnimatable.value
 
-  val playheadColor = if (isPlaying) Color.Green else NepTuneTheme.colors.smallText
+  val playheadColor = if (isPlaying) Color.Green else Color.Red
 
   val paddingPx = localDensity.run { 8.dp.toPx() }
   val playheadStrokeWidth = localDensity.run { 1.5.dp.toPx() }

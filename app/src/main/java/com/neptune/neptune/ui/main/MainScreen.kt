@@ -111,7 +111,8 @@ fun MainScreen(mainViewModel: MainViewModel = viewModel(), navigateToProfile: ()
                       Icon(
                           painter = painterResource(id = R.drawable.profile),
                           contentDescription = "Profile",
-                          tint = Color.Unspecified)
+                          tint = Color.Unspecified,
+                      )
                     }
               },
               colors =
@@ -194,7 +195,7 @@ fun SampleCard(sample: Sample) {
                 Icon(
                     painter = painterResource(R.drawable.profile),
                     contentDescription = "Profile",
-                    tint = Color.Unspecified, // Keep the original icon color,
+                    tint = Color.Unspecified,
                     modifier = Modifier.size(22.dp).testTag(MainScreenTestTags.SAMPLE_PROFILE_ICON))
                 Spacer(Modifier.width(6.dp))
                 Text(
