@@ -40,21 +40,21 @@ class ProjectListScreenTest {
       // create three projects with controlled timestamps and favorite flag
       repository.addProject(
           ProjectItem(
-              id = "1",
+              uid = "1",
               name = "Old",
               description = "Old desc",
               isFavorite = false,
               lastUpdated = Timestamp(1, 0)))
       repository.addProject(
           ProjectItem(
-              id = "2",
+              uid = "2",
               name = "Fav",
               description = "Favorite item",
               isFavorite = true,
               lastUpdated = Timestamp(2, 0)))
       repository.addProject(
           ProjectItem(
-              id = "3",
+              uid = "3",
               name = "New",
               description = "New item",
               isFavorite = false,

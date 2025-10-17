@@ -66,7 +66,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Timestamp
 import com.neptune.neptune.R
 import com.neptune.neptune.model.project.ProjectItem
-import com.neptune.neptune.model.project.ProjectItemsRepositoryProvider
+import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.ui.theme.DarkBlue1
 import com.neptune.neptune.ui.theme.DarkBlueGray
 import com.neptune.neptune.ui.theme.FadedDarkBlue
@@ -118,7 +118,7 @@ fun ProjectListScreen(
 
   Scaffold(
       containerColor = DarkBlue1,
-      content = {
+      content = { it ->
         Column(
             modifier =
                 Modifier.testTag(ProjectListScreenTestTags.PROJECT_LIST_SCREEN)
@@ -147,9 +147,9 @@ fun ProjectListScreen(
  */
 @Composable
 fun ProjectList(
+    modifier: Modifier = Modifier,
     projects: List<ProjectItem>,
     selectedProject: String? = null,
-    modifier: Modifier = Modifier,
     projectListViewModel: ProjectListViewModel,
     navigateToSampler: () -> Unit = {},
 ) {
@@ -165,7 +165,7 @@ fun ProjectList(
   ) {
     if (projects.isNotEmpty()) {
       LazyColumn(modifier = modifier.testTag(ProjectListScreenTestTags.PROJECT_LIST)) {
-        items(items = projects, key = { project -> project.id }) { project ->
+        items(items = projects, key = { project -> project.uid }) { project ->
           ProjectListItem(
               project = project,
               selectedProject = selectedProject,
@@ -194,7 +194,7 @@ fun ProjectListItem(
     openProject: () -> Unit = {},
     projectListViewModel: ProjectListViewModel,
 ) {
-  val backGroundColor = if (project.id == selectedProject) DarkBlueGray else DarkBlue1
+  val backGroundColor = if (project.uid == selectedProject) DarkBlueGray else DarkBlue1
 
   Card(
       modifier =
@@ -212,7 +212,7 @@ fun ProjectListItem(
                     end = Offset(size.width, size.height),
                     strokeWidth = 2.dp.toPx())
               }
-              .testTag("project_${project.id}"),
+              .testTag("project_${project.uid}"),
       elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
       colors = CardDefaults.cardColors(backGroundColor),
       shape = RoundedCornerShape(0.dp),
@@ -273,7 +273,7 @@ fun EditMenu(
     RenameProjectDialog(
         onDismiss = { showRenameDialog = false },
         onConfirm = { newName ->
-          projectListViewModel.renameProject(project.id, newName)
+          projectListViewModel.renameProject(project.uid, newName)
           showRenameDialog = false
         })
   }
@@ -283,7 +283,7 @@ fun EditMenu(
         initialDescription = project.description,
         onDismiss = { showChangeDescDialog = false },
         onConfirm = { newDesc ->
-          projectListViewModel.changeProjectDescription(project.id, newDesc)
+          projectListViewModel.changeProjectDescription(project.uid, newDesc)
           showChangeDescDialog = false
         })
   }
@@ -292,8 +292,8 @@ fun EditMenu(
   Row {
     // Star favorite toggle
     IconButton(
-        onClick = { projectListViewModel.toggleFavorite(project.id) },
-        modifier = Modifier.testTag("favorite_${project.id}")) {
+        onClick = { projectListViewModel.toggleFavorite(project.uid) },
+        modifier = Modifier.testTag("favorite_${project.uid}")) {
           Icon(
               imageVector = if (project.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
               contentDescription = "Favorite",
@@ -302,7 +302,7 @@ fun EditMenu(
         }
 
     Box(modifier = Modifier.padding(end = 0.dp)) {
-      IconButton(onClick = { expanded = true }, modifier = Modifier.testTag("menu_${project.id}")) {
+      IconButton(onClick = { expanded = true }, modifier = Modifier.testTag("menu_${project.uid}")) {
         Icon(
             Icons.Rounded.MoreVert,
             contentDescription = "Edit",
@@ -331,7 +331,7 @@ fun EditMenu(
         DropdownMenuItem(
             text = { Text("Delete") },
             onClick = {
-              projectListViewModel.deleteProject(project.id)
+              projectListViewModel.deleteProject(project.uid)
               expanded = false
             })
       }
@@ -463,11 +463,11 @@ fun ProjectListScreenPreview(
     navigateBack: () -> Unit = {},
     navigateToSampler: () -> Unit = {},
 ) {
-  val repo = ProjectItemsRepositoryProvider.repository
+  val repo = TotalProjectItemsRepositoryProvider.repository
   runBlocking {
     repo.addProject(
         ProjectItem(
-            id = "1",
+            uid = "1",
             name = "Project 1",
             description = "Description 1",
             isFavorite = false,
@@ -480,7 +480,7 @@ fun ProjectListScreenPreview(
         ))
     repo.addProject(
         ProjectItem(
-            id = "2",
+            uid = "2",
             name = "Project 2",
             description = "Description 2",
             isFavorite = true,

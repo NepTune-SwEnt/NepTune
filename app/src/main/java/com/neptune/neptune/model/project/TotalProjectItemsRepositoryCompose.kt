@@ -2,7 +2,7 @@ package com.neptune.neptune.model.project
 
 import android.util.Log
 
-class TotalProjectItemsRepositoryCompose(
+open class TotalProjectItemsRepositoryCompose(
   val localRepo: ProjectItemsRepository,
   val cloudRepo: ProjectItemsRepository) : TotalProjectItemsRepository {
 
@@ -15,8 +15,8 @@ class TotalProjectItemsRepositoryCompose(
   }
 
   override suspend fun getAllProjects(): List<ProjectItem> {
-    val localProjects = localRepo.getAllProjects().map { it.id to it }.toMap()
-    val cloudProjects = cloudRepo.getAllProjects().map { it.id to it }.toMap()
+    val localProjects = localRepo.getAllProjects().associateBy { it.uid }
+    val cloudProjects = cloudRepo.getAllProjects().associateBy { it.uid }
 
     val allProjectIDs = localProjects.keys + cloudProjects.keys
 
@@ -27,7 +27,7 @@ class TotalProjectItemsRepositoryCompose(
       when {
         localProject != null && cloudProject != null -> {
           // Both local and cloud versions exist, choose the one with the latest lastEdited
-          if (localProject.lastEdited >= cloudProject.lastEdited) {
+          if (localProject.lastUpdated >= cloudProject.lastUpdated) {
             localProject
           } else {
             cloudProject
@@ -46,15 +46,22 @@ class TotalProjectItemsRepositoryCompose(
   }
 
   override suspend fun getProject(projectID: String): ProjectItem {
+    return getAllProjects().find { it.uid == projectID } ?: throw Exception("Project not found")
   }
 
   override suspend fun addProject(project: ProjectItem) {
+    localRepo.addProject(project)
+    cloudRepo.addProject(project)
   }
 
   override suspend fun editProject(projectID: String, newValue: ProjectItem) {
+    localRepo.editProject(projectID, newValue)
+    cloudRepo.editProject(projectID, newValue)
   }
 
   override suspend fun deleteProject(projectID: String) {
+    localRepo.deleteProject(projectID)
+    cloudRepo.deleteProject(projectID)
   }
 
   override suspend fun getProjectDuration(projectID: String): Int {
@@ -62,22 +69,23 @@ class TotalProjectItemsRepositoryCompose(
   }
 
   override suspend fun getAllLocalProjects(): List<ProjectItem> {
-    TODO("Not yet implemented")
+    return localRepo.getAllProjects()
   }
 
   override suspend fun getAllCloudProjects(): List<ProjectItem> {
-    TODO("Not yet implemented")
+    return cloudRepo.getAllProjects()
   }
 
   override suspend fun removeProjectFromCloud(projectID: String) {
-    TODO("Not yet implemented")
+    cloudRepo.deleteProject(projectID)
   }
 
   override suspend fun addProjectToCloud(projectID: String) {
-    TODO("Not yet implemented")
+    val project = localRepo.getProject(projectID)
+    cloudRepo.addProject(project)
   }
 
   override suspend fun removeProjectFromLocalStorage(projectID: String) {
-    TODO("Not yet implemented")
+    localRepo.deleteProject(projectID)
   }
 }

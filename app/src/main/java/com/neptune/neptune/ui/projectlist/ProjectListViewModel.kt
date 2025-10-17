@@ -5,8 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
 import com.neptune.neptune.model.project.ProjectItem
-import com.neptune.neptune.model.project.ProjectItemsRepository
-import com.neptune.neptune.model.project.ProjectItemsRepositoryProvider
+import com.neptune.neptune.model.project.TotalProjectItemsRepository
+import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,8 +20,8 @@ import kotlinx.coroutines.launch
  * @author Uri Jaquet
  */
 class ProjectListViewModel(
-    private val projectRepository: ProjectItemsRepository =
-        ProjectItemsRepositoryProvider.repository,
+  private val projectRepository: TotalProjectItemsRepository =
+        TotalProjectItemsRepositoryProvider.repository,
 ) : ViewModel() {
   private var _uiState = MutableStateFlow(ProjectListUiState(projects = emptyList()))
   val uiState: StateFlow<ProjectListUiState> = _uiState.asStateFlow()
@@ -141,7 +141,7 @@ class ProjectListViewModel(
    * @param project The project to select.
    */
   fun selectProject(project: ProjectItem) {
-    _uiState.value = _uiState.value.copy(selectedProject = project.id)
+    _uiState.value = _uiState.value.copy(selectedProject = project.uid)
   }
 
   /** Gets the duration of a project in "MM:SS" format. */
