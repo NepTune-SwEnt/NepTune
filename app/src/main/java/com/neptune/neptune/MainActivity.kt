@@ -21,6 +21,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.neptune.neptune.resources.C
 import com.neptune.neptune.ui.authentification.SignInScreen
+import com.neptune.neptune.ui.authentification.SignInViewModel
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.mock.MockImportScreen
 import com.neptune.neptune.ui.mock.MockPostScreen
@@ -32,9 +33,9 @@ import com.neptune.neptune.ui.navigation.TopBar
 import com.neptune.neptune.ui.picker.ImportAppRoot
 import com.neptune.neptune.ui.picker.ImportViewModel
 import com.neptune.neptune.ui.profile.ProfileRoute
-import com.neptune.neptune.ui.project.ProjectListScreen
+import com.neptune.neptune.ui.projectlist.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
-import com.neptune.neptune.ui.theme.DarkBlue1
+import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.ui.theme.SampleAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -58,6 +59,7 @@ fun NeptuneApp(
     navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.SignIn.route,
 ) {
+  val signInViewModel: SignInViewModel = viewModel()
   val navigationActions = NavigationActions(navController)
   val navBackStackEntry by navController.currentBackStackEntryAsState()
   val currentRoute = navBackStackEntry?.destination?.route
@@ -67,31 +69,35 @@ fun NeptuneApp(
       bottomBar = {
         BottomNavigationMenu(navigationActions = navigationActions, screen = currentScreen)
       },
-      topBar = {
-        TopBar(
-            currentScreen = currentScreen,
-            navigationActions = navigationActions,
-            canNavigateBack = currentScreen.showBackButton)
-      },
-      containerColor = DarkBlue1,
+      containerColor = NepTuneTheme.colors.background,
       content = { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = startDestination,
             modifier = Modifier.padding(innerPadding)) {
               // TODO: Replace mock screens with actual app screens
-              composable(Screen.Main.route) { MainScreen() }
-              composable(Screen.Profile.route) { ProfileRoute() }
+              composable(Screen.Main.route) {
+                MainScreen(navigateToProfile = { navigationActions.navigateTo(Screen.Profile) })
+              }
+              composable(Screen.Profile.route) {
+                ProfileRoute(
+                    logout = {
+                      signInViewModel.signOut()
+                      navigationActions.navigateTo(Screen.SignIn)
+                    },
+                    goBack = { navigationActions.goBack() })
+              }
               composable(Screen.Edit.route) { SamplerScreen() }
               composable(Screen.Search.route) { MockSearchScreen() }
               composable(Screen.Post.route) { MockPostScreen() }
               composable(Screen.ImportFile.route) { MockImportScreen(importViewModel) }
               composable(Screen.SignIn.route) {
-                SignInScreen(navigateMain = { navigationActions.navigateTo(Screen.Main) })
+                SignInScreen(
+                    signInViewModel = signInViewModel,
+                    navigateMain = { navigationActions.navigateTo(Screen.Main) })
               }
               composable(Screen.ProjectList.route) {
-                ProjectListScreen(
-                    onNavigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
+                ProjectListScreen(navigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
               }
             }
       })

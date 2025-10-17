@@ -35,13 +35,10 @@ class MainScreenTest {
   }
 
   @Test
-  fun mainScreen_displaysTopAppBarAndBottomNav() {
+  fun mainScreen_displaysBottomNav() {
     setContent()
 
     composeTestRule.onNodeWithTag(MainScreenTestTags.MAIN_SCREEN).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
   }
 
@@ -51,8 +48,8 @@ class MainScreenTest {
 
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsDisplayed()
   }
 
   @Test
@@ -61,8 +58,8 @@ class MainScreenTest {
     listOf(
             NavigationTestTags.MAIN_TAB,
             NavigationTestTags.SEARCH_TAB,
-            NavigationTestTags.EDIT_TAB,
-            NavigationTestTags.IMPORT_FILE)
+            NavigationTestTags.IMPORT_FILE
+            NavigationTestTags.PROJECTLIST_TAB)
         .forEach { tag -> composeTestRule.onNodeWithTag(tag).assertHasClickAction().performClick() }
   }
 
