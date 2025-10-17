@@ -171,6 +171,9 @@ dependencies {
     implementation(libs.credentials.play.services.auth)
     implementation(libs.googleid)
 
+    // Networking with OkHttp
+    implementation(libs.okhttp)
+
     androidTestImplementation("io.mockk:mockk-android:1.13.10")
     testImplementation("junit:junit:4.13.2")
     testImplementation("io.mockk:mockk:1.13.10")
@@ -231,4 +234,10 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         val newContent = reportFile.readText().replace("<line[^>]+nr=\"65535\"[^>]*>".toRegex(), "")
         reportFile.writeText(newContent)
     }
+}
+
+configurations.forEach { configuration ->
+    // Exclude protobuf-lite from all configurations
+    // This fixes a fatal exception for tests interacting with Cloud Firestore
+    configuration.exclude("com.google.protobuf", "protobuf-lite")
 }
