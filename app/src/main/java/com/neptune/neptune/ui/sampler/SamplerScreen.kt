@@ -754,7 +754,7 @@ fun UniversalKnob(
     modifier: Modifier = Modifier
 ) {
   val accentColor = NepTuneTheme.colors.accentPrimary
-  val lightText = LightPurpleBlue
+  val lightText = Color.White
 
   val displayValue =
       when (unit) {
