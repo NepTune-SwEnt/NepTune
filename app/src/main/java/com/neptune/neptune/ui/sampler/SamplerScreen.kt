@@ -394,104 +394,10 @@ fun TabContent(currentTab: SamplerTab, uiState: SamplerUiState, viewModel: Sampl
       }
 }
 
-data class KnobConfig(
-    val label: String,
-    val minValue: Float,
-    val maxValue: Float,
-    val unit: KnobUnit,
-    val getter: (SamplerUiState) -> Float,
-    val setter: (SamplerViewModel) -> (Float) -> Unit,
-    val testTag: String
-)
-
 @Composable
 fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
   var isADSrExpanded by remember { mutableStateOf(false) }
   var isReverbExpanded by remember { mutableStateOf(false) }
-
-  val adsrKnobs = remember {
-    listOf(
-        KnobConfig(
-            "Attack",
-            0.0f,
-            ADSR_MAX_TIME,
-            KnobUnit.SECONDS,
-            { it.attack },
-            { vm -> vm::updateAttack },
-            SamplerTestTags.KNOB_ATTACK),
-        KnobConfig(
-            "Decay",
-            0.0f,
-            ADSR_MAX_TIME,
-            KnobUnit.SECONDS,
-            { it.decay },
-            { vm -> vm::updateDecay },
-            SamplerTestTags.KNOB_DECAY),
-        KnobConfig(
-            "Sustain",
-            0.0f,
-            ADSR_MAX_SUSTAIN,
-            KnobUnit.PERCENT,
-            { it.sustain },
-            { vm -> vm::updateSustain },
-            SamplerTestTags.KNOB_SUSTAIN),
-        KnobConfig(
-            "Release",
-            0.0f,
-            ADSR_MAX_TIME,
-            KnobUnit.SECONDS,
-            { it.release },
-            { vm -> vm::updateRelease },
-            SamplerTestTags.KNOB_RELEASE))
-  }
-
-  val reverbKnobsLine1 = remember {
-    listOf(
-        KnobConfig(
-            "Wet",
-            0.0f,
-            1.0f,
-            KnobUnit.PERCENT,
-            { it.reverbWet },
-            { vm -> vm::updateReverbWet },
-            SamplerTestTags.KNOB_REVERB_WET),
-        KnobConfig(
-            "Size",
-            0.1f,
-            REVERB_SIZE_MAX,
-            KnobUnit.SECONDS,
-            { it.reverbSize },
-            { vm -> vm::updateReverbSize },
-            SamplerTestTags.KNOB_REVERB_SIZE),
-        KnobConfig(
-            "Width",
-            0.0f,
-            1.0f,
-            KnobUnit.PERCENT,
-            { it.reverbWidth },
-            { vm -> vm::updateReverbWidth },
-            SamplerTestTags.KNOB_REVERB_WIDTH))
-  }
-
-  val reverbKnobsLine2 = remember {
-    listOf(
-        KnobConfig(
-            "Depth",
-            0.0f,
-            1.0f,
-            KnobUnit.PERCENT,
-            { it.reverbDepth },
-            { vm -> vm::updateReverbDepth },
-            SamplerTestTags.KNOB_REVERB_DEPTH),
-        KnobConfig(
-            "Predelay",
-            0.0f,
-            PREDELAY_MAX_MS,
-            KnobUnit.MILLISECONDS,
-            { it.reverbPredelay },
-            { vm -> vm::updateReverbPredelay },
-            SamplerTestTags.KNOB_REVERB_PREDELAY))
-  }
 
   Column(
       modifier =
@@ -521,7 +427,46 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
                     maxTime = ADSR_MAX_TIME,
                     maxSustain = ADSR_MAX_SUSTAIN)
 
-                KnobRow(uiState = uiState, viewModel = viewModel, knobs = adsrKnobs)
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .wrapContentHeight()
+                            .padding(vertical = 8.dp)
+                            .background(DarkBlue1),
+                    horizontalArrangement = Arrangement.SpaceAround) {
+                      UniversalKnob(
+                          label = "Attack",
+                          value = uiState.attack,
+                          onValueChange = viewModel::updateAttack,
+                          minValue = 0.0f,
+                          maxValue = ADSR_MAX_TIME,
+                          unit = KnobUnit.SECONDS,
+                          modifier = Modifier.weight(1f).testTag(SamplerTestTags.KNOB_ATTACK))
+                      UniversalKnob(
+                          label = "Decay",
+                          value = uiState.decay,
+                          onValueChange = viewModel::updateDecay,
+                          minValue = 0.0f,
+                          maxValue = ADSR_MAX_TIME,
+                          unit = KnobUnit.SECONDS,
+                          modifier = Modifier.weight(1f).testTag(SamplerTestTags.KNOB_DECAY))
+                      UniversalKnob(
+                          label = "Sustain",
+                          value = uiState.sustain,
+                          onValueChange = viewModel::updateSustain,
+                          minValue = 0.0f,
+                          maxValue = ADSR_MAX_SUSTAIN,
+                          unit = KnobUnit.PERCENT,
+                          modifier = Modifier.weight(1f).testTag(SamplerTestTags.KNOB_SUSTAIN))
+                      UniversalKnob(
+                          label = "Release",
+                          value = uiState.release,
+                          onValueChange = viewModel::updateRelease,
+                          minValue = 0.0f,
+                          maxValue = ADSR_MAX_TIME,
+                          unit = KnobUnit.SECONDS,
+                          modifier = Modifier.weight(1f).testTag(SamplerTestTags.KNOB_RELEASE))
+                    }
               }
             }
 
@@ -534,42 +479,65 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
               Column(
                   modifier =
                       Modifier.fillMaxWidth().padding(vertical = 8.dp).background(DarkBlue1)) {
-                    KnobRow(uiState = uiState, viewModel = viewModel, knobs = reverbKnobsLine1)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceAround) {
+                          UniversalKnob(
+                              label = "Wet",
+                              value = uiState.reverbWet,
+                              onValueChange = viewModel::updateReverbWet,
+                              minValue = 0.0f,
+                              maxValue = 1.0f,
+                              unit = KnobUnit.PERCENT,
+                              modifier =
+                                  Modifier.weight(1f).testTag(SamplerTestTags.KNOB_REVERB_WET))
+                          UniversalKnob(
+                              label = "Size",
+                              value = uiState.reverbSize,
+                              onValueChange = viewModel::updateReverbSize,
+                              minValue = 0.1f,
+                              maxValue = REVERB_SIZE_MAX,
+                              unit = KnobUnit.SECONDS,
+                              modifier =
+                                  Modifier.weight(1f).testTag(SamplerTestTags.KNOB_REVERB_SIZE))
+                          UniversalKnob(
+                              label = "Width",
+                              value = uiState.reverbWidth,
+                              onValueChange = viewModel::updateReverbWidth,
+                              minValue = 0.0f,
+                              maxValue = 1.0f,
+                              unit = KnobUnit.PERCENT,
+                              modifier =
+                                  Modifier.weight(1f).testTag(SamplerTestTags.KNOB_REVERB_WIDTH))
+                        }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceAround) {
-                          KnobRow(
-                              uiState = uiState, viewModel = viewModel, knobs = reverbKnobsLine2)
-
+                          UniversalKnob(
+                              label = "Depth",
+                              value = uiState.reverbDepth,
+                              onValueChange = viewModel::updateReverbDepth,
+                              minValue = 0.0f,
+                              maxValue = 1.0f,
+                              unit = KnobUnit.PERCENT,
+                              modifier =
+                                  Modifier.weight(1f).testTag(SamplerTestTags.KNOB_REVERB_DEPTH))
+                          UniversalKnob(
+                              label = "Predelay",
+                              value = uiState.reverbPredelay,
+                              onValueChange = viewModel::updateReverbPredelay,
+                              minValue = 0.0f,
+                              maxValue = PREDELAY_MAX_MS,
+                              unit = KnobUnit.MILLISECONDS,
+                              modifier =
+                                  Modifier.weight(1f).testTag(SamplerTestTags.KNOB_REVERB_PREDELAY))
                           Spacer(modifier = Modifier.weight(1f))
                         }
                   }
             }
-      }
-}
-
-@Composable
-fun KnobRow(uiState: SamplerUiState, viewModel: SamplerViewModel, knobs: List<KnobConfig>) {
-  Row(
-      modifier =
-          Modifier.fillMaxWidth()
-              .wrapContentHeight()
-              .padding(vertical = 8.dp)
-              .background(DarkBlue1),
-      horizontalArrangement = Arrangement.SpaceAround) {
-        knobs.forEach { config ->
-          UniversalKnob(
-              label = config.label,
-              value = config.getter(uiState),
-              onValueChange = config.setter(viewModel),
-              minValue = config.minValue,
-              maxValue = config.maxValue,
-              unit = config.unit,
-              modifier = Modifier.weight(1f).testTag(config.testTag))
-        }
       }
 }
 
