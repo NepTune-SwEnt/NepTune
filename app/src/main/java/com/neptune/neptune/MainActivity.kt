@@ -9,8 +9,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -19,6 +22,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.neptune.neptune.media.LocalMediaPlayer
+import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.resources.C
 import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInViewModel
@@ -59,41 +64,48 @@ fun NeptuneApp(
   val navigationActions = NavigationActions(navController)
   val navBackStackEntry by navController.currentBackStackEntryAsState()
   val currentRoute = navBackStackEntry?.destination?.route
-
   val currentScreen = navigationActions.currentScreen(currentRoute ?: startDestination)
-  Scaffold(
-      bottomBar = {
-        BottomNavigationMenu(navigationActions = navigationActions, screen = currentScreen)
-      },
-      containerColor = NepTuneTheme.colors.background,
-      content = { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = startDestination,
-            modifier = Modifier.padding(innerPadding)) {
-              // TODO: Replace mock screens with actual app screens
-              composable(Screen.Main.route) {
-                MainScreen(navigateToProfile = { navigationActions.navigateTo(Screen.Profile) })
+
+  // Media Player values
+  val context = LocalContext.current.applicationContext
+  val mediaPlayer = remember { NeptuneMediaPlayer(context) }
+
+  CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
+    Scaffold(
+        bottomBar = {
+          BottomNavigationMenu(navigationActions = navigationActions, screen = currentScreen)
+        },
+        containerColor = NepTuneTheme.colors.background,
+        content = { innerPadding ->
+          NavHost(
+              navController = navController,
+              startDestination = startDestination,
+              modifier = Modifier.padding(innerPadding)) {
+                // TODO: Replace mock screens with actual app screens
+                composable(Screen.Main.route) {
+                  MainScreen(navigateToProfile = { navigationActions.navigateTo(Screen.Profile) })
+                }
+                composable(Screen.Profile.route) {
+                  ProfileRoute(
+                      logout = {
+                        signInViewModel.signOut()
+                        navigationActions.navigateTo(Screen.SignIn)
+                      },
+                      goBack = { navigationActions.goBack() })
+                }
+                composable(Screen.Edit.route) { SamplerScreen() }
+                composable(Screen.Search.route) { MockSearchScreen() }
+                composable(Screen.Post.route) { MockPostScreen() }
+                composable(Screen.SignIn.route) {
+                  SignInScreen(
+                      signInViewModel = signInViewModel,
+                      navigateMain = { navigationActions.navigateTo(Screen.Main) })
+                }
+                composable(Screen.ProjectList.route) {
+                  ProjectListScreen(
+                      navigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
+                }
               }
-              composable(Screen.Profile.route) {
-                ProfileRoute(
-                    logout = {
-                      signInViewModel.signOut()
-                      navigationActions.navigateTo(Screen.SignIn)
-                    },
-                    goBack = { navigationActions.goBack() })
-              }
-              composable(Screen.Edit.route) { SamplerScreen() }
-              composable(Screen.Search.route) { MockSearchScreen() }
-              composable(Screen.Post.route) { MockPostScreen() }
-              composable(Screen.SignIn.route) {
-                SignInScreen(
-                    signInViewModel = signInViewModel,
-                    navigateMain = { navigationActions.navigateTo(Screen.Main) })
-              }
-              composable(Screen.ProjectList.route) {
-                ProjectListScreen(navigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
-              }
-            }
-      })
+        })
+  }
 }
