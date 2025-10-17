@@ -80,7 +80,7 @@ object SamplerTestTags {
   const val SECTION_REVERB = "sectionReverbControls"
   const val EQ_FADER_BOX_INPUT = "eqFaderBoxInput"
   const val FADER_60HZ_TAG = "fader60Hz"
-    const val CURVE_EDITOR_SCROLL_CONTAINER = "curveEditorScrollContainer"
+  const val CURVE_EDITOR_SCROLL_CONTAINER = "curveEditorScrollContainer"
 }
 
 val KnobBackground = Color.Black
@@ -99,8 +99,6 @@ val ADSR_GRID_COLOR = Color.Gray.copy(alpha = 0.4f)
 
 private const val EQ_GAIN_MIN = -20.0f
 private const val EQ_GAIN_MAX = 20.0f
-
-
 
 val frameBorderColor = LightPurpleBlue
 val lightText = White
@@ -405,55 +403,127 @@ data class KnobConfig(
     val setter: (SamplerViewModel) -> (Float) -> Unit,
     val testTag: String
 )
+
 @Composable
 fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
-    var isADSrExpanded by remember { mutableStateOf(false) }
-    var isReverbExpanded by remember { mutableStateOf(false) }
+  var isADSrExpanded by remember { mutableStateOf(false) }
+  var isReverbExpanded by remember { mutableStateOf(false) }
 
+  val adsrKnobs = remember {
+    listOf(
+        KnobConfig(
+            "Attack",
+            0.0f,
+            ADSR_MAX_TIME,
+            KnobUnit.SECONDS,
+            { it.attack },
+            { vm -> vm::updateAttack },
+            SamplerTestTags.KNOB_ATTACK),
+        KnobConfig(
+            "Decay",
+            0.0f,
+            ADSR_MAX_TIME,
+            KnobUnit.SECONDS,
+            { it.decay },
+            { vm -> vm::updateDecay },
+            SamplerTestTags.KNOB_DECAY),
+        KnobConfig(
+            "Sustain",
+            0.0f,
+            ADSR_MAX_SUSTAIN,
+            KnobUnit.PERCENT,
+            { it.sustain },
+            { vm -> vm::updateSustain },
+            SamplerTestTags.KNOB_SUSTAIN),
+        KnobConfig(
+            "Release",
+            0.0f,
+            ADSR_MAX_TIME,
+            KnobUnit.SECONDS,
+            { it.release },
+            { vm -> vm::updateRelease },
+            SamplerTestTags.KNOB_RELEASE))
+  }
 
-    val adsrKnobs = remember {
-        listOf(
-            KnobConfig("Attack", 0.0f, ADSR_MAX_TIME, KnobUnit.SECONDS, { it.attack }, { vm -> vm::updateAttack }, SamplerTestTags.KNOB_ATTACK),
-            KnobConfig("Decay", 0.0f, ADSR_MAX_TIME, KnobUnit.SECONDS, { it.decay }, { vm -> vm::updateDecay }, SamplerTestTags.KNOB_DECAY),
-            KnobConfig("Sustain", 0.0f, ADSR_MAX_SUSTAIN, KnobUnit.PERCENT, { it.sustain }, { vm -> vm::updateSustain }, SamplerTestTags.KNOB_SUSTAIN),
-            KnobConfig("Release", 0.0f, ADSR_MAX_TIME, KnobUnit.SECONDS, { it.release }, { vm -> vm::updateRelease }, SamplerTestTags.KNOB_RELEASE)
-        )
-    }
+  val reverbKnobsLine1 = remember {
+    listOf(
+        KnobConfig(
+            "Wet",
+            0.0f,
+            1.0f,
+            KnobUnit.PERCENT,
+            { it.reverbWet },
+            { vm -> vm::updateReverbWet },
+            SamplerTestTags.KNOB_REVERB_WET),
+        KnobConfig(
+            "Size",
+            0.1f,
+            REVERB_SIZE_MAX,
+            KnobUnit.SECONDS,
+            { it.reverbSize },
+            { vm -> vm::updateReverbSize },
+            SamplerTestTags.KNOB_REVERB_SIZE),
+        KnobConfig(
+            "Width",
+            0.0f,
+            1.0f,
+            KnobUnit.PERCENT,
+            { it.reverbWidth },
+            { vm -> vm::updateReverbWidth },
+            SamplerTestTags.KNOB_REVERB_WIDTH))
+  }
 
-    val reverbKnobsLine1 = remember {
-        listOf(
-            KnobConfig("Wet", 0.0f, 1.0f, KnobUnit.PERCENT, { it.reverbWet }, { vm -> vm::updateReverbWet }, SamplerTestTags.KNOB_REVERB_WET),
-            KnobConfig("Size", 0.1f, REVERB_SIZE_MAX, KnobUnit.SECONDS, { it.reverbSize }, { vm -> vm::updateReverbSize }, SamplerTestTags.KNOB_REVERB_SIZE),
-            KnobConfig("Width", 0.0f, 1.0f, KnobUnit.PERCENT, { it.reverbWidth }, { vm -> vm::updateReverbWidth }, SamplerTestTags.KNOB_REVERB_WIDTH)
-        )
-    }
+  val reverbKnobsLine2 = remember {
+    listOf(
+        KnobConfig(
+            "Depth",
+            0.0f,
+            1.0f,
+            KnobUnit.PERCENT,
+            { it.reverbDepth },
+            { vm -> vm::updateReverbDepth },
+            SamplerTestTags.KNOB_REVERB_DEPTH),
+        KnobConfig(
+            "Predelay",
+            0.0f,
+            PREDELAY_MAX_MS,
+            KnobUnit.MILLISECONDS,
+            { it.reverbPredelay },
+            { vm -> vm::updateReverbPredelay },
+            SamplerTestTags.KNOB_REVERB_PREDELAY))
+  }
 
-    val reverbKnobsLine2 = remember {
-        listOf(
-            KnobConfig("Depth", 0.0f, 1.0f, KnobUnit.PERCENT, { it.reverbDepth }, { vm -> vm::updateReverbDepth }, SamplerTestTags.KNOB_REVERB_DEPTH),
-            KnobConfig("Predelay", 0.0f, PREDELAY_MAX_MS, KnobUnit.MILLISECONDS, { it.reverbPredelay }, { vm -> vm::updateReverbPredelay }, SamplerTestTags.KNOB_REVERB_PREDELAY)
-        )
-    }
-
-    Column(
-        modifier = Modifier.fillMaxWidth().wrapContentHeight().padding(top = 8.dp).testTag(SamplerTestTags.TAB_BASICS_CONTENT)
-    ) {
-
+  Column(
+      modifier =
+          Modifier.fillMaxWidth()
+              .wrapContentHeight()
+              .padding(top = 8.dp)
+              .testTag(SamplerTestTags.TAB_BASICS_CONTENT)) {
         ExpandableSection(
             title = "ADSR Envelope Controls",
             isExpanded = isADSrExpanded,
             onToggle = { isADSrExpanded = !isADSrExpanded }) {
-            Column(modifier = Modifier.fillMaxWidth()) {
+              Column(modifier = Modifier.fillMaxWidth()) {
                 ADSRCurveEditor(
-                    modifier = Modifier.fillMaxWidth().height(160.dp).padding(horizontal = 8.dp, vertical = 16.dp).testTag("curveEditor"),
-                    attack = uiState.attack, decay = uiState.decay, sustain = uiState.sustain, release = uiState.release,
-                    onAttackChange = viewModel::updateAttack, onDecayChange = viewModel::updateDecay, onSustainChange = viewModel::updateSustain, onReleaseChange = viewModel::updateRelease,
-                    maxTime = ADSR_MAX_TIME, maxSustain = ADSR_MAX_SUSTAIN
-                )
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .height(160.dp)
+                            .padding(horizontal = 8.dp, vertical = 16.dp)
+                            .testTag("curveEditor"),
+                    attack = uiState.attack,
+                    decay = uiState.decay,
+                    sustain = uiState.sustain,
+                    release = uiState.release,
+                    onAttackChange = viewModel::updateAttack,
+                    onDecayChange = viewModel::updateDecay,
+                    onSustainChange = viewModel::updateSustain,
+                    onReleaseChange = viewModel::updateRelease,
+                    maxTime = ADSR_MAX_TIME,
+                    maxSustain = ADSR_MAX_SUSTAIN)
 
                 KnobRow(uiState = uiState, viewModel = viewModel, knobs = adsrKnobs)
+              }
             }
-        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -461,47 +531,47 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
             title = "Reverb Controls",
             isExpanded = isReverbExpanded,
             onToggle = { isReverbExpanded = !isReverbExpanded }) {
-            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).background(DarkBlue1)) {
+              Column(
+                  modifier =
+                      Modifier.fillMaxWidth().padding(vertical = 8.dp).background(DarkBlue1)) {
+                    KnobRow(uiState = uiState, viewModel = viewModel, knobs = reverbKnobsLine1)
 
-                KnobRow(uiState = uiState, viewModel = viewModel, knobs = reverbKnobsLine1)
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceAround) {
+                          KnobRow(
+                              uiState = uiState, viewModel = viewModel, knobs = reverbKnobsLine2)
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceAround) {
-
-                    KnobRow(uiState = uiState, viewModel = viewModel, knobs = reverbKnobsLine2)
-
-                    Spacer(modifier = Modifier.weight(1f))
-                }
+                          Spacer(modifier = Modifier.weight(1f))
+                        }
+                  }
             }
-        }
-    }
+      }
 }
 
 @Composable
 fun KnobRow(uiState: SamplerUiState, viewModel: SamplerViewModel, knobs: List<KnobConfig>) {
-    Row(
-        modifier = Modifier.fillMaxWidth().wrapContentHeight().padding(vertical = 8.dp).background(DarkBlue1),
-        horizontalArrangement = Arrangement.SpaceAround
-    ) {
+  Row(
+      modifier =
+          Modifier.fillMaxWidth()
+              .wrapContentHeight()
+              .padding(vertical = 8.dp)
+              .background(DarkBlue1),
+      horizontalArrangement = Arrangement.SpaceAround) {
         knobs.forEach { config ->
-            UniversalKnob(
-                label = config.label,
-                value = config.getter(uiState),
-                onValueChange = config.setter(viewModel),
-                minValue = config.minValue,
-                maxValue = config.maxValue,
-                unit = config.unit,
-                modifier = Modifier.weight(1f).testTag(config.testTag)
-            )
+          UniversalKnob(
+              label = config.label,
+              value = config.getter(uiState),
+              onValueChange = config.setter(viewModel),
+              minValue = config.minValue,
+              maxValue = config.maxValue,
+              unit = config.unit,
+              modifier = Modifier.weight(1f).testTag(config.testTag))
         }
-    }
+      }
 }
-
-
-
 
 enum class CurvePoint(val id: Int) {
   P1(1),
@@ -1014,74 +1084,71 @@ fun CompressorCurve(
   val maxDb = COMP_GAIN_MAX
   val totalDbRange = maxDb - minDb
 
-  Canvas(
-      modifier =
-          modifier.border(2.dp, lightPurpleBlue).background(spectrogramBackground)) {
-        val width = size.width
-        val height = size.height
+  Canvas(modifier = modifier.border(2.dp, lightPurpleBlue).background(spectrogramBackground)) {
+    val width = size.width
+    val height = size.height
 
-        fun dbToX(db: Float): Float = ((db - minDb) / totalDbRange) * width
-        fun dbToY(db: Float): Float = height - ((db - minDb) / totalDbRange) * height
+    fun dbToX(db: Float): Float = ((db - minDb) / totalDbRange) * width
+    fun dbToY(db: Float): Float = height - ((db - minDb) / totalDbRange) * height
 
-        val compressionFactor = 1.0f / ratio
+    val compressionFactor = 1.0f / ratio
 
-        val thresholdX = dbToX(threshold)
-        val thresholdY = dbToY(threshold)
+    val thresholdX = dbToX(threshold)
+    val thresholdY = dbToY(threshold)
 
-        val kneeStartDb = threshold - knee / 2f
-        val kneeEndDb = threshold + knee / 2f
+    val kneeStartDb = threshold - knee / 2f
+    val kneeEndDb = threshold + knee / 2f
 
-        val kneeStartX = dbToX(kneeStartDb)
-        val kneeEndX = dbToX(kneeEndDb)
+    val kneeStartX = dbToX(kneeStartDb)
+    val kneeEndX = dbToX(kneeEndDb)
 
-        val linePath = androidx.compose.ui.graphics.Path()
+    val linePath = androidx.compose.ui.graphics.Path()
 
-        drawLine(
-            color = Color.Gray,
-            start = Offset(dbToX(0f), 0f),
-            end = Offset(dbToX(0f), height),
-            strokeWidth = 1f)
-        drawLine(
-            color = Color.Gray,
-            start = Offset(0f, dbToY(0f)),
-            end = Offset(width, dbToY(0f)),
-            strokeWidth = 1f)
+    drawLine(
+        color = Color.Gray,
+        start = Offset(dbToX(0f), 0f),
+        end = Offset(dbToX(0f), height),
+        strokeWidth = 1f)
+    drawLine(
+        color = Color.Gray,
+        start = Offset(0f, dbToY(0f)),
+        end = Offset(width, dbToY(0f)),
+        strokeWidth = 1f)
 
-        linePath.moveTo(dbToX(minDb), dbToY(minDb))
+    linePath.moveTo(dbToX(minDb), dbToY(minDb))
 
-        for (i in 0..1000) {
-          val inputDb = minDb + (i / 1000f) * totalDbRange
-          var outputDb = inputDb
+    for (i in 0..1000) {
+      val inputDb = minDb + (i / 1000f) * totalDbRange
+      var outputDb = inputDb
 
-          if (inputDb > threshold) {
-            outputDb = threshold + (inputDb - threshold) * compressionFactor
-          }
-
-          if (knee > 0f) {
-            val kneeHalf = knee / 2f
-            val kneeStartDb = threshold - kneeHalf
-            val kneeEndDb = threshold + kneeHalf
-
-            if (inputDb > kneeStartDb && inputDb < kneeEndDb) {
-
-              val x = (inputDb - kneeStartDb) / knee
-              val compressedOutputAtEnd = threshold + (kneeEndDb - threshold) * compressionFactor
-              val uncompressedOutputAtStart = kneeStartDb
-
-              outputDb =
-                  uncompressedOutputAtStart +
-                      (compressedOutputAtEnd - uncompressedOutputAtStart) * x
-            } else if (inputDb >= kneeEndDb) {
-              outputDb = threshold + (inputDb - threshold) * compressionFactor
-            }
-          }
-          linePath.lineTo(dbToX(inputDb), dbToY(outputDb))
-        }
-
-        drawPath(linePath, color = lightPurpleBlue, style = Stroke(width = 3.dp.toPx()))
-
-        drawCircle(color = Color.Red, center = Offset(thresholdX, thresholdY), radius = 6.dp.toPx())
+      if (inputDb > threshold) {
+        outputDb = threshold + (inputDb - threshold) * compressionFactor
       }
+
+      if (knee > 0f) {
+        val kneeHalf = knee / 2f
+        val kneeStartDb = threshold - kneeHalf
+        val kneeEndDb = threshold + kneeHalf
+
+        if (inputDb > kneeStartDb && inputDb < kneeEndDb) {
+
+          val x = (inputDb - kneeStartDb) / knee
+          val compressedOutputAtEnd = threshold + (kneeEndDb - threshold) * compressionFactor
+          val uncompressedOutputAtStart = kneeStartDb
+
+          outputDb =
+              uncompressedOutputAtStart + (compressedOutputAtEnd - uncompressedOutputAtStart) * x
+        } else if (inputDb >= kneeEndDb) {
+          outputDb = threshold + (inputDb - threshold) * compressionFactor
+        }
+      }
+      linePath.lineTo(dbToX(inputDb), dbToY(outputDb))
+    }
+
+    drawPath(linePath, color = lightPurpleBlue, style = Stroke(width = 3.dp.toPx()))
+
+    drawCircle(color = Color.Red, center = Offset(thresholdX, thresholdY), radius = 6.dp.toPx())
+  }
 }
 
 @Composable
