@@ -102,32 +102,41 @@ class MainScreenTest {
     setContent()
 
     composeTestRule
-        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_PROFILE_ICON)
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_PROFILE_ICON, true)
         .onFirst()
         .assertIsDisplayed()
     composeTestRule
-        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_USERNAME)
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_USERNAME, true)
         .onFirst()
         .assertIsDisplayed()
-    composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_NAME).onFirst().assertIsDisplayed()
     composeTestRule
-        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_DURATION)
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_NAME, true)
         .onFirst()
         .assertIsDisplayed()
-    composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_TAGS).onFirst().assertIsDisplayed()
+    composeTestRule
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_DURATION, true)
+        .onFirst()
+        .assertIsDisplayed()
+    composeTestRule
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_TAGS, true)
+        .onFirst()
+        .assertIsDisplayed()
   }
 
   @Test
   fun sampleCard_displaysActions() {
     setContent()
 
-    composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_LIKES).onFirst().assertIsDisplayed()
     composeTestRule
-        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_COMMENTS)
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_LIKES, true)
         .onFirst()
         .assertIsDisplayed()
     composeTestRule
-        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_DOWNLOADS)
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_COMMENTS, true)
+        .onFirst()
+        .assertIsDisplayed()
+    composeTestRule
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_DOWNLOADS, true)
         .onFirst()
         .assertIsDisplayed()
   }
