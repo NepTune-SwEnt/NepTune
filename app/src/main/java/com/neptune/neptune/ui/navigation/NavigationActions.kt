@@ -22,15 +22,9 @@ sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
 
   object Profile : Screen(route = "profile", showBottomBar = false)
 
-  object SignIn :
-      Screen(route = "signIn", name = "Neptune", showBottomBar = false, showBackButton = false)
+  object SignIn : Screen(route = "signIn", showBottomBar = false)
 
-  object ImportFile :
-      Screen(
-          route = "import_file",
-          name = "Import Project",
-          showBottomBar = false,
-          showBackButton = true)
+  object ImportFile : Screen(route = "import_file", showBottomBar = false)
 }
 
 /**
