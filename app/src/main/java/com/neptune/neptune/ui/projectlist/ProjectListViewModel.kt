@@ -151,8 +151,7 @@ class ProjectListViewModel(
    * Gets the duration of a project in "MM:SS" format.
    */
   fun getProjectDuration(project: ProjectItem): String {
-    if (project.previewUrl.isNullOrEmpty()) return "00:00"
-    return "00:59"
+    TODO("Not yet implemented")
   }
 }
 
