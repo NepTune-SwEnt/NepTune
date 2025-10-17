@@ -40,10 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.ui.sampler.SamplerTestTags.CURVE_EDITOR_SCROLL_CONTAINER
 import com.neptune.neptune.ui.sampler.SamplerTestTags.FADER_60HZ_TAG
-import com.neptune.neptune.ui.theme.DarkBlue1
-import com.neptune.neptune.ui.theme.LightPurpleBlue
-import com.neptune.neptune.ui.theme.LightSkyBlue
-import com.neptune.neptune.ui.theme.White
+import com.neptune.neptune.ui.theme.NepTuneTheme
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -100,8 +97,6 @@ val ADSR_GRID_COLOR = Color.Gray.copy(alpha = 0.4f)
 private const val EQ_GAIN_MIN = -20.0f
 private const val EQ_GAIN_MAX = 20.0f
 
-val frameBorderColor = LightPurpleBlue
-val lightText = White
 val spectrogramBackground = Color.Black.copy(alpha = 0.5f)
 
 enum class KnobUnit {
@@ -118,7 +113,7 @@ fun SamplerScreen(viewModel: SamplerViewModel = viewModel(), onBack: () -> Unit 
   var selectedItem by remember { mutableIntStateOf(2) }
 
   Scaffold(
-      containerColor = DarkBlue1,
+      containerColor = NepTuneTheme.colors.background,
       modifier = Modifier.testTag(SamplerTestTags.SCREEN_CONTAINER),
   ) { paddingValues ->
     Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp)) {
@@ -163,7 +158,7 @@ fun PlaybackAndWaveformControls(
       modifier =
           Modifier.fillMaxWidth()
               .clip(MaterialTheme.shapes.small)
-              .background(DarkBlue1)
+              .background(NepTuneTheme.colors.background)
               .testTag(SamplerTestTags.PLAYHEAD_CONTROLS)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -173,14 +168,14 @@ fun PlaybackAndWaveformControls(
                 Icon(
                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                     contentDescription = if (isPlaying) "Pause" else "Play",
-                    tint = LightPurpleBlue,
+                    tint = NepTuneTheme.colors.accentPrimary,
                     modifier = Modifier.size(32.dp))
               }
               IconButton(onClick = onSave) {
                 Icon(
                     imageVector = Icons.Default.Save,
                     contentDescription = "Save",
-                    tint = LightPurpleBlue,
+                    tint = NepTuneTheme.colors.accentPrimary,
                     modifier = Modifier.size(32.dp))
               }
               Spacer(modifier = Modifier.weight(1f))
@@ -191,7 +186,8 @@ fun PlaybackAndWaveformControls(
                   onIncrease = onIncreasePitch,
                   onDecrease = onDecreasePitch,
                   modifier =
-                      Modifier.border(2.dp, frameBorderColor, MaterialTheme.shapes.small)
+                      Modifier.border(
+                              2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
                           .testTag(SamplerTestTags.PITCH_SELECTOR))
               Spacer(modifier = Modifier.width(8.dp))
 
@@ -201,7 +197,8 @@ fun PlaybackAndWaveformControls(
                   onIncrease = { onTempoChange(tempo + 1) },
                   onDecrease = { onTempoChange(tempo - 1) },
                   modifier =
-                      Modifier.border(2.dp, frameBorderColor, MaterialTheme.shapes.small)
+                      Modifier.border(
+                              2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
                           .testTag(SamplerTestTags.TEMPO_SELECTOR))
             }
 
@@ -211,7 +208,7 @@ fun PlaybackAndWaveformControls(
             modifier =
                 Modifier.fillMaxWidth()
                     .height(120.dp)
-                    .border(2.dp, frameBorderColor, MaterialTheme.shapes.small)
+                    .border(2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
                     .testTag(SamplerTestTags.WAVEFORM_DISPLAY),
             isPlaying = isPlaying,
             playbackPosition = playbackPosition,
@@ -230,11 +227,11 @@ fun PitchTempoSelector(
   Row(
       verticalAlignment = Alignment.CenterVertically,
       modifier = modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
-        Text(text = label, color = White, fontSize = 16.sp)
+        Text(text = label, color = NepTuneTheme.colors.smallText, fontSize = 16.sp)
         if (value.isNotEmpty()) {
           Text(
               text = value,
-              color = White,
+              color = NepTuneTheme.colors.smallText,
               fontSize = 16.sp,
               modifier = Modifier.padding(start = 4.dp))
         }
@@ -243,12 +240,12 @@ fun PitchTempoSelector(
           Icon(
               imageVector = Icons.Default.KeyboardArrowUp,
               contentDescription = "Increase",
-              tint = LightPurpleBlue,
+              tint = NepTuneTheme.colors.accentPrimary,
               modifier = Modifier.size(24.dp).clickable(onClick = onIncrease))
           Icon(
               imageVector = Icons.Default.KeyboardArrowDown,
               contentDescription = "Decrease",
-              tint = LightPurpleBlue,
+              tint = NepTuneTheme.colors.accentPrimary,
               modifier = Modifier.size(24.dp).clickable(onClick = onDecrease))
         }
       }
@@ -261,6 +258,7 @@ fun WaveformDisplay(
     playbackPosition: Float = 0.0f,
     onPositionChange: (Float) -> Unit = {}
 ) {
+  val soundWaveColor = NepTuneTheme.colors.soundWave
   val localDensity = LocalDensity.current
   val latestOnPositionChange = rememberUpdatedState(onPositionChange)
 
@@ -340,7 +338,7 @@ fun WaveformDisplay(
           val endY = centerY + barHeight / 2
 
           drawLine(
-              color = LightSkyBlue,
+              color = soundWaveColor,
               start = Offset(startX, startY),
               end = Offset(startX, endY),
               strokeWidth = barWidth)
@@ -363,14 +361,18 @@ fun SamplerTabs(currentTab: SamplerTab, onTabSelected: (SamplerTab) -> Unit) {
       val isSelected = tab == currentTab
       Text(
           text = tab.name.uppercase(),
-          color = if (isSelected) LightPurpleBlue else White.copy(alpha = 0.6f),
+          color =
+              if (isSelected) NepTuneTheme.colors.accentPrimary
+              else NepTuneTheme.colors.smallText.copy(alpha = 0.6f),
           fontSize = 18.sp,
           fontWeight = FontWeight.SemiBold,
           modifier =
               Modifier.weight(1f)
                   .clip(MaterialTheme.shapes.small)
                   .clickable { onTabSelected(tab) }
-                  .background(if (isSelected) White.copy(alpha = 0.1f) else Color.Transparent)
+                  .background(
+                      if (isSelected) NepTuneTheme.colors.smallText.copy(alpha = 0.1f)
+                      else Color.Transparent)
                   .padding(vertical = 8.dp, horizontal = 4.dp)
                   .wrapContentWidth(Alignment.CenterHorizontally)
                   .testTag("${SamplerTestTags.SAMPLER_TABS}_${tab.name.uppercase()}"))
@@ -385,7 +387,7 @@ fun TabContent(currentTab: SamplerTab, uiState: SamplerUiState, viewModel: Sampl
           Modifier.fillMaxWidth()
               .wrapContentHeight()
               .padding(top = 8.dp)
-              .border(2.dp, frameBorderColor)) {
+              .border(2.dp, NepTuneTheme.colors.accentPrimary)) {
         when (currentTab) {
           SamplerTab.BASICS -> BasicsTabContent(uiState, viewModel)
           SamplerTab.EQ -> EQTabContent(uiState, viewModel)
@@ -432,7 +434,7 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
                         Modifier.fillMaxWidth()
                             .wrapContentHeight()
                             .padding(vertical = 8.dp)
-                            .background(DarkBlue1),
+                            .background(NepTuneTheme.colors.background),
                     horizontalArrangement = Arrangement.SpaceAround) {
                       UniversalKnob(
                           label = "Attack",
@@ -478,7 +480,9 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
             onToggle = { isReverbExpanded = !isReverbExpanded }) {
               Column(
                   modifier =
-                      Modifier.fillMaxWidth().padding(vertical = 8.dp).background(DarkBlue1)) {
+                      Modifier.fillMaxWidth()
+                          .padding(vertical = 8.dp)
+                          .background(NepTuneTheme.colors.background)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceAround) {
@@ -568,7 +572,7 @@ fun CurveCanvas(
       modifier =
           modifier
               .background(spectrogramBackground)
-              .border(2.dp, frameBorderColor)
+              .border(2.dp, NepTuneTheme.colors.accentPrimary)
               .padding(1.dp)
               .pointerInput(p1x, p2x, p2y, p3x) {
                 detectDragGestures(
@@ -614,6 +618,8 @@ fun CurveCanvas(
                       }
                     })
               }) {
+        val colorAccent = NepTuneTheme.colors.accentPrimary
+        val lightTextColor = NepTuneTheme.colors.smallText
         Canvas(modifier = Modifier.fillMaxSize()) {
           val width = size.width
           val height = size.height
@@ -644,21 +650,16 @@ fun CurveCanvas(
           val startDraw = Offset(0f, height)
 
           drawLine(
-              color = frameBorderColor,
-              start = startDraw,
-              end = p1Draw,
-              strokeWidth = lineStrokeWidth)
-          drawLine(
-              color = frameBorderColor, start = p1Draw, end = p2Draw, strokeWidth = lineStrokeWidth)
-          drawLine(
-              color = frameBorderColor, start = p2Draw, end = p3Draw, strokeWidth = lineStrokeWidth)
+              color = colorAccent, start = startDraw, end = p1Draw, strokeWidth = lineStrokeWidth)
+          drawLine(color = colorAccent, start = p1Draw, end = p2Draw, strokeWidth = lineStrokeWidth)
+          drawLine(color = colorAccent, start = p2Draw, end = p3Draw, strokeWidth = lineStrokeWidth)
 
           val pointsToDraw = listOf(p1Draw, p2Draw, p3Draw)
           val radiusPx = pointRadius.dp.toPx()
           val contourWidthPx = 2.dp.toPx()
 
           pointsToDraw.forEach { center ->
-            drawCircle(color = lightText, radius = radiusPx, center = center)
+            drawCircle(color = lightTextColor, radius = radiusPx, center = center)
 
             drawCircle(
                 color = PointColor,
@@ -751,8 +752,8 @@ fun UniversalKnob(
     unit: KnobUnit,
     modifier: Modifier = Modifier
 ) {
-  val accentColor = LightPurpleBlue
-  val lightText = White
+  val accentColor = NepTuneTheme.colors.accentPrimary
+  val lightText = Color.White
 
   val displayValue =
       when (unit) {
@@ -830,7 +831,7 @@ fun ExpandableSection(
     content: @Composable () -> Unit
 ) {
   val indicator = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown
-  val frameBorderColor = LightPurpleBlue
+  val frameBorderColor = NepTuneTheme.colors.accentPrimary
 
   Column(
       modifier =
@@ -844,11 +845,15 @@ fun ExpandableSection(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween) {
-              Text(title, color = White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+              Text(
+                  title,
+                  color = NepTuneTheme.colors.smallText,
+                  fontSize = 18.sp,
+                  fontWeight = FontWeight.Bold)
               Icon(
                   imageVector = indicator,
                   contentDescription = if (isExpanded) "Collapse" else "Expand",
-                  tint = LightPurpleBlue)
+                  tint = NepTuneTheme.colors.accentPrimary)
             }
 
         androidx.compose.animation.AnimatedVisibility(
@@ -869,8 +874,8 @@ fun EQFader(
     minGain: Float = EQ_GAIN_MIN,
     maxGain: Float = EQ_GAIN_MAX
 ) {
-  val lightPurpleBlue = LightPurpleBlue
-  val white = White
+  val lightPurpleBlue = NepTuneTheme.colors.accentPrimary
+  val white = NepTuneTheme.colors.smallText
 
   val range = maxGain - minGain
 
@@ -1047,7 +1052,7 @@ fun CompressorCurve(
     knee: Float,
     compGain: Float
 ) {
-  val lightPurpleBlue = LightPurpleBlue
+  val lightPurpleBlue = NepTuneTheme.colors.accentPrimary
   val minDb = COMP_GAIN_MIN
   val maxDb = COMP_GAIN_MAX
   val totalDbRange = maxDb - minDb
@@ -1128,8 +1133,8 @@ fun RatioInputField(
     maxValue: Int,
     modifier: Modifier = Modifier
 ) {
-  val accentColor = LightPurpleBlue
-  val lightText = White
+  val accentColor = NepTuneTheme.colors.accentPrimary
+  val lightText = NepTuneTheme.colors.smallText
 
   var text by remember { mutableStateOf(ratio.toString()) }
 

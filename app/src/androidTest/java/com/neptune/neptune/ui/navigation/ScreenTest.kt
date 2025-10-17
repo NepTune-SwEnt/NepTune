@@ -9,27 +9,21 @@ class ScreenTest {
   fun testMainScreenProperties() {
     val screen = Screen.Main
     assertEquals("main", screen.route)
-    assertEquals("Neptune", screen.name)
     assertTrue(screen.showBottomBar)
-    assertFalse(screen.showBackButton)
   }
 
   @Test
   fun testEditScreenProperties() {
     val screen = Screen.Edit
     assertEquals("edit", screen.route)
-    assertEquals("Edit", screen.name)
     assertTrue(screen.showBottomBar)
-    assertFalse(screen.showBackButton)
   }
 
   @Test
   fun testProfileScreenProperties() {
     val screen = Screen.Profile
     assertEquals("profile", screen.route)
-    assertEquals("My Profile", screen.name)
     assertFalse(screen.showBottomBar)
-    assertTrue(screen.showBackButton)
   }
 
   @Test

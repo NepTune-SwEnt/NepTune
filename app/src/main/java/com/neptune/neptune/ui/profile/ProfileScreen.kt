@@ -15,13 +15,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldColors
@@ -38,7 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
-import com.neptune.neptune.ui.theme.LightTurquoise
+import com.neptune.neptune.ui.theme.NepTuneTheme
 
 /**
  * Centralized constants defining all `testTag` identifiers used in [ProfileScreen] UI tests.
@@ -72,6 +75,8 @@ object ProfileScreenTestTags {
 
   const val EDIT_BUTTON = "profile/btn/edit"
   const val SAVE_BUTTON = "profile/btn/save"
+  const val LOGOUT_BUTTON = "profile/btn/logout"
+  const val GOBACK_BUTTON = "profile/btn/goback"
 
   const val FIELD_NAME = "profile/field/name"
   const val FIELD_USERNAME = "profile/field/username"
@@ -89,7 +94,9 @@ object ProfileScreenTestTags {
  * @param onNameChange Called whenever the user edits their name field.
  * @param onUsernameChange Called whenever the user edits their username field.
  * @param onBioChange Called whenever the user edits their bio field.
+ * @param onLogoutClick Callback invoked when the Logout button is pressed.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     uiState: ProfileUiState,
@@ -98,15 +105,15 @@ fun ProfileScreen(
     onNameChange: (String) -> Unit = {},
     onUsernameChange: (String) -> Unit = {},
     onBioChange: (String) -> Unit = {},
+    onLogoutClick: () -> Unit = {},
+    goBackClick: () -> Unit = {}
 ) {
   // TODO: add profile picture, follower/following count and back button
   Column(modifier = Modifier.padding(16.dp).testTag(ProfileScreenTestTags.ROOT)) {
     when (uiState.mode) {
       ProfileMode.VIEW -> {
         ProfileViewContent(
-            state = uiState,
-            onEdit = onEditClick,
-        )
+            state = uiState, onEdit = onEditClick, logout = onLogoutClick, goBack = goBackClick)
       }
       ProfileMode.EDIT -> {
         ProfileEditContent(
@@ -133,76 +140,111 @@ fun ProfileScreen(
 private fun ProfileViewContent(
     state: ProfileUiState,
     onEdit: () -> Unit,
+    goBack: () -> Unit,
+    logout: () -> Unit,
 ) {
-  Column(
-      modifier = Modifier.fillMaxSize().testTag(ProfileScreenTestTags.VIEW_CONTENT),
-      horizontalAlignment = Alignment.CenterHorizontally,
-      // verticalArrangement = Arrangement.Center
-  ) {
-    Spacer(Modifier.height(15.dp))
-    Avatar(modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR), showEditPencil = false)
-    Spacer(Modifier.height(15.dp))
-
-    Text(
-        text = state.name,
-        color = LightTurquoise,
-        style = MaterialTheme.typography.headlineMedium,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
-
-    Text(
-        text = "@${state.username}",
-        color = LightTurquoise,
-        style = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
-
-    Spacer(Modifier.height(100.dp))
-
-    Text(
-        text = if (state.bio != "") "“ ${state.bio} ”" else "",
-        color = LightTurquoise,
-        style = MaterialTheme.typography.titleLarge,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
-    Spacer(Modifier.height(150.dp))
-    Row(Modifier.fillMaxWidth()) {
-      StatBlock(
-          label = "Followers",
-          value = state.followers,
-          modifier = Modifier.weight(1f),
-          testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
-      StatBlock(
-          label = "Following",
-          value = state.following,
-          modifier = Modifier.weight(1f),
-          testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
-    }
-    Spacer(Modifier.height(80.dp))
-
-    Button(
-        onClick = onEdit,
-        enabled = true,
-        modifier = Modifier.testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
-          Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
-          Spacer(Modifier.width(8.dp))
-          Text("Edit")
+  Scaffold(
+      modifier = Modifier.testTag(ProfileScreenTestTags.ROOT),
+      topBar = {
+        Column {
+          Row(
+              modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = goBack,
+                    modifier = Modifier.testTag(ProfileScreenTestTags.GOBACK_BUTTON)) {
+                      Icon(
+                          painter = painterResource(id = android.R.drawable.ic_menu_revert),
+                          contentDescription = "Go Back",
+                          tint = NepTuneTheme.colors.onBackground)
+                    }
+                IconButton(
+                    modifier = Modifier.size(30.dp).testTag(ProfileScreenTestTags.LOGOUT_BUTTON),
+                    onClick = logout) {
+                      Icon(
+                          modifier = Modifier.size(30.dp),
+                          imageVector = Icons.AutoMirrored.Filled.Logout,
+                          contentDescription = "Logout",
+                          tint = NepTuneTheme.colors.onBackground)
+                    }
+              }
         }
-  }
+      },
+      containerColor = NepTuneTheme.colors.background) { innerPadding ->
+        Column(
+            modifier =
+                Modifier.fillMaxSize()
+                    .padding(innerPadding)
+                    .testTag(ProfileScreenTestTags.VIEW_CONTENT),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            // verticalArrangement = Arrangement.Center
+        ) {
+          Spacer(Modifier.height(15.dp))
+          Avatar(modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR), showEditPencil = false)
+          Spacer(Modifier.height(15.dp))
+
+          Text(
+              text = state.name,
+              color = NepTuneTheme.colors.onBackground,
+              style = MaterialTheme.typography.headlineMedium,
+              textAlign = TextAlign.Center,
+              modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
+
+          Text(
+              text = "@${state.username}",
+              color = NepTuneTheme.colors.onBackground,
+              style = MaterialTheme.typography.bodyMedium,
+              modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
+
+          Spacer(Modifier.height(100.dp))
+
+          Text(
+              text = if (state.bio != "") "“ ${state.bio} ”" else "",
+              color = NepTuneTheme.colors.onBackground,
+              style = MaterialTheme.typography.titleLarge,
+              textAlign = TextAlign.Center,
+              modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
+          Spacer(Modifier.height(150.dp))
+          Row(Modifier.fillMaxWidth()) {
+            StatBlock(
+                label = "Followers",
+                value = state.followers,
+                modifier = Modifier.weight(1f),
+                testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
+            StatBlock(
+                label = "Following",
+                value = state.following,
+                modifier = Modifier.weight(1f),
+                testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
+          }
+          Spacer(Modifier.height(80.dp))
+
+          Button(
+              onClick = onEdit,
+              enabled = true,
+              modifier = Modifier.testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
+                Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
+                Spacer(Modifier.width(8.dp))
+                Text("Edit")
+              }
+        }
+      }
 }
 
 /** Colors for all OutlinedTextField components. */
 @OptIn(ExperimentalMaterial3Api::class)
 val TextFieldColors: @Composable () -> TextFieldColors = {
   TextFieldDefaults.outlinedTextFieldColors(
-      unfocusedBorderColor = LightTurquoise,
-      focusedBorderColor = LightTurquoise,
-      disabledBorderColor = LightTurquoise,
-      cursorColor = LightTurquoise,
-      focusedLabelColor = LightTurquoise,
-      unfocusedLabelColor = LightTurquoise,
-      focusedTextColor = LightTurquoise,
-      unfocusedTextColor = LightTurquoise,
-      disabledTextColor = LightTurquoise,
+      unfocusedBorderColor = NepTuneTheme.colors.onBackground,
+      focusedBorderColor = NepTuneTheme.colors.onBackground,
+      disabledBorderColor = NepTuneTheme.colors.onBackground,
+      cursorColor = NepTuneTheme.colors.onBackground,
+      focusedLabelColor = NepTuneTheme.colors.onBackground,
+      unfocusedLabelColor = NepTuneTheme.colors.onBackground,
+      focusedTextColor = NepTuneTheme.colors.onBackground,
+      unfocusedTextColor = NepTuneTheme.colors.onBackground,
+      disabledTextColor = NepTuneTheme.colors.onBackground,
   )
 }
 
@@ -256,7 +298,7 @@ private fun ProfileEditContent(
               } else {
                 Text(
                     text = "${uiState.name.trim().length}/30",
-                    color = LightTurquoise,
+                    color = NepTuneTheme.colors.onBackground,
                     style = MaterialTheme.typography.bodySmall)
               }
             })
@@ -279,7 +321,7 @@ private fun ProfileEditContent(
                     style = MaterialTheme.typography.bodySmall)
               } else {
                 Text(
-                    color = LightTurquoise,
+                    color = NepTuneTheme.colors.onBackground,
                     text = "${uiState.username.trim().length}/15",
                     style = MaterialTheme.typography.bodySmall)
               }
@@ -304,7 +346,7 @@ private fun ProfileEditContent(
               } else {
                 Text(
                     text = "${uiState.bio.length}/160",
-                    color = LightTurquoise,
+                    color = NepTuneTheme.colors.onBackground,
                     style = MaterialTheme.typography.bodySmall)
               }
             })
@@ -333,13 +375,13 @@ private fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, 
   Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
     Text(
         text = label,
-        color = LightTurquoise,
+        color = NepTuneTheme.colors.onBackground,
         style = MaterialTheme.typography.bodySmall,
         textAlign = TextAlign.Center)
     Spacer(Modifier.height(8.dp))
     Text(
         text = "$value",
-        color = LightTurquoise,
+        color = NepTuneTheme.colors.onBackground,
         style = MaterialTheme.typography.bodyLarge,
         textAlign = TextAlign.Center,
         modifier = Modifier.testTag(testTag))
@@ -426,7 +468,7 @@ fun ProfileScreenEditModePreview() {
  * function is typically used as the entry point for navigation to the profile screen.
  */
 @Composable
-fun ProfileRoute() {
+fun ProfileRoute(logout: () -> Unit = {}, goBack: () -> Unit = {}) {
   val viewModel: ProfileViewModel = viewModel()
   val state = viewModel.uiState.collectAsState().value
 
@@ -437,5 +479,6 @@ fun ProfileRoute() {
       onNameChange = viewModel::onNameChange,
       onUsernameChange = viewModel::onUsernameChange,
       onBioChange = viewModel::onBioChange,
-  )
+      onLogoutClick = logout,
+      goBackClick = goBack)
 }
