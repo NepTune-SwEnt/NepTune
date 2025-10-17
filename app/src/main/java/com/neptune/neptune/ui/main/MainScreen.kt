@@ -52,9 +52,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
 import com.neptune.neptune.Sample
 import com.neptune.neptune.media.LocalMediaPlayer
-import com.neptune.neptune.ui.theme.DarkBlue1
-import com.neptune.neptune.ui.theme.DarkBlueGray
-import com.neptune.neptune.ui.theme.LightTurquoise
 import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
@@ -189,7 +186,12 @@ fun SampleCardRow(samples: List<Sample>) {
 fun SampleCard(sample: Sample) {
   val mediaPlayer = LocalMediaPlayer.current
   Card(
-      modifier = Modifier.width(150.dp).height(166.dp).testTag(MainScreenTestTags.SAMPLE_CARD),
+      modifier =
+          Modifier.width(150.dp)
+              .height(166.dp)
+              .clickable(
+                  onClick = { mediaPlayer.togglePlay(mediaPlayer.getUriFromSampleId(sample.id)) })
+              .testTag(MainScreenTestTags.SAMPLE_CARD),
       colors = CardDefaults.cardColors(containerColor = NepTuneTheme.colors.cardBackground),
       shape = RoundedCornerShape(12.dp),
       border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground)) {

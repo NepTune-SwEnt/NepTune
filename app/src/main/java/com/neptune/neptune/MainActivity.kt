@@ -65,38 +65,46 @@ fun NeptuneApp(
   val navBackStackEntry by navController.currentBackStackEntryAsState()
   val currentRoute = navBackStackEntry?.destination?.route
   val currentScreen = navigationActions.currentScreen(currentRoute ?: startDestination)
-  Scaffold(
-      bottomBar = {
-        BottomNavigationMenu(navigationActions = navigationActions, screen = currentScreen)
-      },
-      containerColor = NepTuneTheme.colors.background,
-      content = { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = startDestination,
-            modifier = Modifier.padding(innerPadding)) {
-              // TODO: Replace mock screens with actual app screens
-              composable(Screen.Main.route) {
-                MainScreen(navigateToProfile = { navigationActions.navigateTo(Screen.Profile) })
-              }
-              composable(Screen.Profile.route) {
-                ProfileRoute(
-                    logout = {
-                      signInViewModel.signOut()
-                      navigationActions.navigateTo(Screen.SignIn)
-                    },
-                    goBack = { navigationActions.goBack() })
-              }
-              composable(Screen.Edit.route) { SamplerScreen() }
-              composable(Screen.Search.route) { MockSearchScreen() }
-              composable(Screen.Post.route) { MockPostScreen() }
-              composable(Screen.SignIn.route) {
-                SignInScreen(
-                    signInViewModel = signInViewModel,
-                    navigateMain = { navigationActions.navigateTo(Screen.Main) })
-              }
-              composable(Screen.ProjectList.route) {
-                ProjectListScreen(navigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
+
+  // Media Player values
+  val context = LocalContext.current.applicationContext
+  val mediaPlayer = remember { NeptuneMediaPlayer(context) }
+
+  CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
+    Scaffold(
+        bottomBar = {
+          BottomNavigationMenu(navigationActions = navigationActions, screen = currentScreen)
+        },
+        containerColor = NepTuneTheme.colors.background,
+        content = { innerPadding ->
+          NavHost(
+              navController = navController,
+              startDestination = startDestination,
+              modifier = Modifier.padding(innerPadding)) {
+                // TODO: Replace mock screens with actual app screens
+                composable(Screen.Main.route) {
+                  MainScreen(navigateToProfile = { navigationActions.navigateTo(Screen.Profile) })
+                }
+                composable(Screen.Profile.route) {
+                  ProfileRoute(
+                      logout = {
+                        signInViewModel.signOut()
+                        navigationActions.navigateTo(Screen.SignIn)
+                      },
+                      goBack = { navigationActions.goBack() })
+                }
+                composable(Screen.Edit.route) { SamplerScreen() }
+                composable(Screen.Search.route) { MockSearchScreen() }
+                composable(Screen.Post.route) { MockPostScreen() }
+                composable(Screen.SignIn.route) {
+                  SignInScreen(
+                      signInViewModel = signInViewModel,
+                      navigateMain = { navigationActions.navigateTo(Screen.Main) })
+                }
+                composable(Screen.ProjectList.route) {
+                  ProjectListScreen(
+                      navigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
+                }
               }
         })
   }
