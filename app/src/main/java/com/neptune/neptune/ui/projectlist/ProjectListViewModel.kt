@@ -13,8 +13,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel for managing the state and operations related to the list of projects.
- * This has been written with the help of LLMs.
+ * ViewModel for managing the state and operations related to the list of projects. This has been
+ * written with the help of LLMs.
  *
  * @property projectRepository Repository for accessing and manipulating project items.
  * @author Uri Jaquet
@@ -30,17 +30,14 @@ class ProjectListViewModel(
     getAllProjects()
   }
 
-  /**
-   * Refreshes the list of projects by fetching them from the repository.
-   */
+  /** Refreshes the list of projects by fetching them from the repository. */
   fun refreshProjects() {
     getAllProjects()
   }
 
   /**
    * Fetches all projects from the repository, sorts them by favorite status and last updated time,
-   * and updates the UI state accordingly.
-   * This has been written with the help of LLMs.
+   * and updates the UI state accordingly. This has been written with the help of LLMs.
    */
   private fun getAllProjects() {
     _uiState.value = _uiState.value.copy(isLoading = true)
@@ -62,8 +59,8 @@ class ProjectListViewModel(
   }
 
   /**
-   * Deletes a project by its ID and refreshes the project list.
-   * This has been written with the help of LLMs.
+   * Deletes a project by its ID and refreshes the project list. This has been written with the help
+   * of LLMs.
    *
    * @param projectId The ID of the project to delete.
    */
@@ -79,8 +76,8 @@ class ProjectListViewModel(
   }
 
   /**
-   * Renames a project by its ID and refreshes the project list.
-   * This has been written with the help of LLMs.
+   * Renames a project by its ID and refreshes the project list. This has been written with the help
+   * of LLMs.
    *
    * @param projectId The ID of the project to rename.
    * @param newName The new name for the project.
@@ -99,8 +96,8 @@ class ProjectListViewModel(
   }
 
   /**
-   * Changes the description of a project by its ID and refreshes the project list.
-   * This has been written with the help of LLMs.
+   * Changes the description of a project by its ID and refreshes the project list. This has been
+   * written with the help of LLMs.
    *
    * @param projectId The ID of the project to update.
    * @param newDescription The new description for the project.
@@ -120,8 +117,8 @@ class ProjectListViewModel(
   }
 
   /**
-   * Toggles the favorite status of a project by its ID and refreshes the project list.
-   * This has been written with the help of LLMs.
+   * Toggles the favorite status of a project by its ID and refreshes the project list. This has
+   * been written with the help of LLMs.
    *
    * @param projectId The ID of the project to toggle favorite status.
    */
@@ -147,9 +144,7 @@ class ProjectListViewModel(
     _uiState.value = _uiState.value.copy(selectedProject = project.id)
   }
 
-  /**
-   * Gets the duration of a project in "MM:SS" format.
-   */
+  /** Gets the duration of a project in "MM:SS" format. */
   fun getProjectDuration(project: ProjectItem): String {
     TODO("Not yet implemented")
   }

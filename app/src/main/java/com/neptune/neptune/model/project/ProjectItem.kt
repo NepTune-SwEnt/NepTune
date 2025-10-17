@@ -5,8 +5,6 @@ import com.google.firebase.Timestamp
 /**
  * Data class representing a project item.
  *
- * @author Uri Jaquet
- *
  * @property id Unique identifier for the project.
  * @property name Name of the project.
  * @property description Description of the project.
@@ -20,8 +18,8 @@ import com.google.firebase.Timestamp
  * @property lastUpdated Timestamp of the last update to the project.
  * @property ownerId Identifier of the user who owns the project.
  * @property collaborators List of user identifiers who are collaborators on the project.
+ * @author Uri Jaquet
  */
-
 data class ProjectItem(
     val id: String,
     val name: String,

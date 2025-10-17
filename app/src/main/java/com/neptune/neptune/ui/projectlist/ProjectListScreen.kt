@@ -81,17 +81,17 @@ object ProjectListScreenTestTags {
   const val DESCRIPTION_TEXT_FIELD = "DescriptionTextField"
   const val SEARCH_TEXT_FIELD = "SearchTextField"
 }
+
 private const val SEARCHBAR_FONT_SIZE = 21
 
 /**
- * Composable function representing the Project List Screen.
- * This has been written with the help of LLMs.
- *
- * @author Uri Jaquet
+ * Composable function representing the Project List Screen. This has been written with the help of
+ * LLMs.
  *
  * @param credentialManager Manages user credentials.
  * @param navigateToSampler Lambda function to navigate to the sampler screen.
  * @param projectListViewModel ViewModel managing the state of the project list.
+ * @author Uri Jaquet
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -136,16 +136,14 @@ fun ProjectListScreen(
 }
 
 /**
- * Composable function to display a list of projects.
- * This has been written with the help of LLMs.
- *
- * @author Uri Jaquet
+ * Composable function to display a list of projects. This has been written with the help of LLMs.
  *
  * @param projects List of ProjectItem to display.
  * @param selectedProject ID of the currently selected project, if any.
  * @param modifier Modifier for styling.
  * @param projectListViewModel ViewModel managing the state of the project list.
  * @param navigateToSampler Lambda function to navigate to the sampler screen.
+ * @author Uri Jaquet
  */
 @Composable
 fun ProjectList(
@@ -180,15 +178,14 @@ fun ProjectList(
 }
 
 /**
- * Composable function representing a single item in the project list.
- * This has been written with the help of LLMs.
- *
- * @author Uri Jaquet
+ * Composable function representing a single item in the project list. This has been written with
+ * the help of LLMs.
  *
  * @param project The ProjectItem to display.
  * @param selectedProject ID of the currently selected project, if any.
  * @param openProject Lambda function to open the selected project.
  * @param projectListViewModel ViewModel managing the state of the project list.
+ * @author Uri Jaquet
  */
 @Composable
 fun ProjectListItem(
@@ -256,13 +253,12 @@ fun ProjectListItem(
 }
 
 /**
- * Composable function representing the edit menu for a project item.
- * This has been written with the help of LLMs.
- *
- * @author Uri Jaquet
+ * Composable function representing the edit menu for a project item. This has been written with the
+ * help of LLMs.
  *
  * @param project The ProjectItem for which the edit menu is displayed.
  * @param projectListViewModel ViewModel managing the state of the project list.
+ * @author Uri Jaquet
  */
 @Composable
 fun EditMenu(
@@ -344,13 +340,12 @@ fun EditMenu(
 }
 
 /**
- * Composable function representing a dialog to rename a project.
- * This has been written with the help of LLMs.
- *
- * @author Uri Jaquet
+ * Composable function representing a dialog to rename a project. This has been written with the
+ * help of LLMs.
  *
  * @param onDismiss Lambda function to call when the dialog is dismissed.
  * @param onConfirm Lambda function to call with the new name when confirmed.
+ * @author Uri Jaquet
  */
 @Composable
 fun RenameProjectDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
@@ -367,14 +362,13 @@ fun RenameProjectDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
 }
 
 /**
- * Composable function representing a dialog to change a project's description.
- * This has been written with the help of LLMs.
- *
- * @author Uri Jaquet
+ * Composable function representing a dialog to change a project's description. This has been
+ * written with the help of LLMs.
  *
  * @param initialDescription The initial description to display in the text field.
  * @param onDismiss Lambda function to call when the dialog is dismissed.
  * @param onConfirm Lambda function to call with the new description when confirmed.
+ * @author Uri Jaquet
  */
 @Composable
 fun ChangeDescriptionDialog(
@@ -401,13 +395,11 @@ fun ChangeDescriptionDialog(
 }
 
 /**
- * Composable function representing a search bar.
- * This has been written with the help of LLMs.
- *
- * @author Uri Jaquet
+ * Composable function representing a search bar. This has been written with the help of LLMs.
  *
  * @param value The current text in the search bar.
  * @param onValueChange Lambda function to call when the text changes.
+ * @author Uri Jaquet
  */
 @Composable
 fun SearchBar(value: String, onValueChange: (String) -> Unit) {
@@ -461,10 +453,9 @@ fun SearchBar(value: String, onValueChange: (String) -> Unit) {
 /**
  * Preview function for the ProjectListScreen composable.
  *
- * @author Uri Jaquet
- *
  * @param navigateBack Lambda function to navigate back (default is empty).
  * @param navigateToSampler Lambda function to navigate to the sampler screen (default is empty).
+ * @author Uri Jaquet
  */
 @Preview
 @Composable

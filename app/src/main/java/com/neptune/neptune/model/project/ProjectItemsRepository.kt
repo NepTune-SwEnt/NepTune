@@ -6,9 +6,7 @@ package com.neptune.neptune.model.project
  * @author Uri Jaquet
  */
 interface ProjectItemsRepository {
-  /**
-   * Generates and returns a new unique identifier for a project.
-   */
+  /** Generates and returns a new unique identifier for a project. */
   fun getNewId(): String
 
   /**
