@@ -55,9 +55,16 @@ open class TotalProjectItemsRepositoryCompose(
   }
 
   override suspend fun editProject(projectID: String, newValue: ProjectItem) {
-
-    localRepo.editProject(projectID, newValue)
-    cloudRepo.editProject(projectID, newValue)
+    try {
+      localRepo.editProject(projectID, newValue)
+    } catch (e: Exception) {
+      Log.e("TotalRepo", "Local edit failed for projectID $projectID: ${e.message}")
+    }
+    try {
+      cloudRepo.editProject(projectID, newValue)
+    } catch (e: Exception) {
+      Log.e("TotalRepo", "Cloud edit failed for projectID $projectID: ${e.message}")
+    }
   }
 
   override suspend fun deleteProject(projectID: String) {
