@@ -1,6 +1,8 @@
 package com.neptune.neptune.model.project
 
 import android.util.Log
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 
 open class TotalProjectItemsRepositoryCompose(
   val localRepo: ProjectItemsRepository,
@@ -28,7 +30,7 @@ open class TotalProjectItemsRepositoryCompose(
         localProject != null && cloudProject != null -> {
           // Both local and cloud versions exist, choose the one with the latest lastEdited
           if (localProject.lastUpdated >= cloudProject.lastUpdated) {
-            localProject
+            localProject.copy(isStoredInCloud = true)
           } else {
             cloudProject
           }
@@ -90,7 +92,11 @@ open class TotalProjectItemsRepositoryCompose(
 
   override suspend fun addProjectToCloud(projectID: String) {
     val project = localRepo.getProject(projectID)
-    cloudRepo.addProject(project)
+    val newUid = cloudRepo.getNewId()
+    val newProject = project.copy(uid = newUid, isStoredInCloud = true, ownerId = Firebase.auth.currentUser?.uid)
+    removeProjectFromLocalStorage(projectID)
+    localRepo.addProject(newProject)
+    cloudRepo.addProject(newProject)
   }
 
   override suspend fun removeProjectFromLocalStorage(projectID: String) {

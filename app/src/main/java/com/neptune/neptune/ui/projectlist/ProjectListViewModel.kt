@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
  */
 class ProjectListViewModel(
   private val projectRepository: TotalProjectItemsRepository =
-        TotalProjectItemsRepositoryProvider.repository,
+    TotalProjectItemsRepositoryProvider.repository,
 ) : ViewModel() {
   private var _uiState = MutableStateFlow(ProjectListUiState(projects = emptyList()))
   val uiState: StateFlow<ProjectListUiState> = _uiState.asStateFlow()
@@ -46,9 +46,9 @@ class ProjectListViewModel(
       try {
         val projects = projectRepository.getAllProjects()
         val sortedProjects =
-            projects.sortedWith(
-                compareByDescending<ProjectItem> { it.isFavorite }
-                    .thenByDescending { it.lastUpdated })
+          projects.sortedWith(
+            compareByDescending<ProjectItem> { it.isFavorite }
+              .thenByDescending { it.lastUpdated })
         _uiState.value = ProjectListUiState(projects = sortedProjects, isLoading = false)
         Log.i("ProjectListViewModel", "Loaded $sortedProjects")
       } catch (e: Exception) {
@@ -107,11 +107,43 @@ class ProjectListViewModel(
       try {
         val project = projectRepository.getProject(projectId)
         val updatedProject =
-            project.copy(description = newDescription, lastUpdated = Timestamp.now())
+          project.copy(description = newDescription, lastUpdated = Timestamp.now())
         projectRepository.editProject(projectId, updatedProject)
         refreshProjects()
       } catch (e: Exception) {
         Log.e("ProjectListViewModel", "Error changing project description", e)
+      }
+    }
+  }
+
+  /**
+   * Adds a project to the cloud and refreshes the project list.
+   *
+   * @param projectId The ID of the project to add to the cloud.
+   */
+  fun addProjectToCloud(projectId: String) {
+    viewModelScope.launch {
+      try {
+        projectRepository.addProjectToCloud(projectId)
+        refreshProjects()
+      } catch (e: Exception) {
+        Log.e("ProjectListViewModel", "Error adding project to cloud", e)
+      }
+    }
+  }
+
+  /**
+   * Removes a project from the cloud and refreshes the project list.
+   *
+   * @param projectId The ID of the project to remove from the cloud.
+   */
+  fun removeProjectFromCloud(projectId: String) {
+    viewModelScope.launch {
+      try {
+        projectRepository.removeProjectFromCloud(projectId)
+        refreshProjects()
+      } catch (e: Exception) {
+        Log.e("ProjectListViewModel", "Error removing project from cloud", e)
       }
     }
   }
@@ -159,7 +191,7 @@ class ProjectListViewModel(
  * @author Uri Jaquet
  */
 data class ProjectListUiState(
-    val projects: List<ProjectItem>,
-    val isLoading: Boolean = false,
-    val selectedProject: String? = null
+  val projects: List<ProjectItem>,
+  val isLoading: Boolean = false,
+  val selectedProject: String? = null
 )

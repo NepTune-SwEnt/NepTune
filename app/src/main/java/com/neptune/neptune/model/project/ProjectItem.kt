@@ -25,7 +25,7 @@ data class ProjectItem(
     val uid: String,
     val name: String,
     val description: String = "",
-    val isStoredInCloud: Boolean = false,
+    @get:PropertyName("isStoredInCloud") val isStoredInCloud: Boolean = false,
     @get:PropertyName("isFavorite") val isFavorite: Boolean = false,
     val tags: List<String> = emptyList(),
     val previewPath: String? = null,

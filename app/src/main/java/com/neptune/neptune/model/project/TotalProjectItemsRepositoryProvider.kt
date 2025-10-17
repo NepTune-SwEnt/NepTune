@@ -10,8 +10,8 @@ import com.google.firebase.firestore.firestore
  */
 object TotalProjectItemsRepositoryProvider {
   private val _repository: TotalProjectItemsRepository by lazy {
-//    TotalProjectItemsRepositoryCompose(ProjectItemsRepositoryVar(),ProjectItemsRepositoryFirestore(Firebase.firestore))
-    ProjectItemsRepositoryVarVar()
+    TotalProjectItemsRepositoryCompose(ProjectItemsRepositoryVar(),ProjectItemsRepositoryFirestore(Firebase.firestore))
+//    ProjectItemsRepositoryVarVar()
   }
 
   var repository: TotalProjectItemsRepository = _repository
