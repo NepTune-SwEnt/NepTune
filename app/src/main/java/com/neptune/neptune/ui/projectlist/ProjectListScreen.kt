@@ -67,10 +67,7 @@ import com.google.firebase.Timestamp
 import com.neptune.neptune.R
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
-import com.neptune.neptune.ui.theme.DarkBlue1
-import com.neptune.neptune.ui.theme.DarkBlueGray
-import com.neptune.neptune.ui.theme.FadedDarkBlue
-import com.neptune.neptune.ui.theme.LightTurquoise
+import com.neptune.neptune.ui.theme.NepTuneTheme
 import kotlinx.coroutines.runBlocking
 
 object ProjectListScreenTestTags {
@@ -117,7 +114,7 @@ fun ProjectListScreen(
       }
 
   Scaffold(
-      containerColor = DarkBlue1,
+      containerColor = NepTuneTheme.colors.background,
       content = { it ->
         Column(
             modifier =
@@ -153,11 +150,12 @@ fun ProjectList(
     projectListViewModel: ProjectListViewModel,
     navigateToSampler: () -> Unit = {},
 ) {
+  val colorSearchBar = NepTuneTheme.colors.searchBar
   Column(
       modifier =
           modifier.drawBehind {
             drawLine(
-                color = FadedDarkBlue,
+                color = colorSearchBar,
                 start = Offset(0f, 0f),
                 end = Offset(size.width, 0f),
                 strokeWidth = 2.dp.toPx())
@@ -194,8 +192,10 @@ fun ProjectListItem(
     openProject: () -> Unit = {},
     projectListViewModel: ProjectListViewModel,
 ) {
-  val backGroundColor = if (project.uid == selectedProject) DarkBlueGray else DarkBlue1
-
+  val backGroundColor =
+      if (project.uid == selectedProject) NepTuneTheme.colors.listBackground
+      else NepTuneTheme.colors.background
+  val lineColor = NepTuneTheme.colors.searchBar
   Card(
       modifier =
           Modifier.fillMaxWidth()
@@ -207,7 +207,7 @@ fun ProjectListItem(
                   })
               .drawBehind {
                 drawLine(
-                    color = FadedDarkBlue,
+                    color = lineColor,
                     start = Offset(0f, size.height),
                     end = Offset(size.width, size.height),
                     strokeWidth = 2.dp.toPx())
@@ -230,7 +230,7 @@ fun ProjectListItem(
                       Icon(
                           Icons.Default.PlayArrow,
                           contentDescription = "Play",
-                          tint = LightTurquoise,
+                          tint = NepTuneTheme.colors.onBackground,
                           modifier = Modifier.size(26.dp))
                     })
                 Spacer(modifier = Modifier.width(8.dp))
@@ -245,7 +245,7 @@ fun ProjectListItem(
                             fontSize = 27.sp,
                             fontFamily = FontFamily(Font(R.font.markazi_text)),
                             fontWeight = FontWeight(150),
-                            color = LightTurquoise))
+                            color = NepTuneTheme.colors.onBackground))
               }
           EditMenu(project, projectListViewModel = projectListViewModel)
         }
@@ -297,7 +297,7 @@ fun EditMenu(
           Icon(
               imageVector = if (project.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
               contentDescription = "Favorite",
-              tint = LightTurquoise,
+              tint = NepTuneTheme.colors.onBackground,
               modifier = Modifier.size(26.dp))
         }
 
@@ -306,7 +306,7 @@ fun EditMenu(
         Icon(
             Icons.Rounded.MoreVert,
             contentDescription = "Edit",
-            tint = LightTurquoise,
+            tint = NepTuneTheme.colors.onBackground,
             modifier = Modifier.size(30.dp).padding(end = 0.dp),
         )
       }
@@ -414,7 +414,7 @@ fun SearchBar(value: String, onValueChange: (String) -> Unit) {
               Text(
                   modifier = Modifier.fillMaxHeight().wrapContentHeight(Alignment.CenterVertically),
                   text = "Search for a Project",
-                  color = FadedDarkBlue,
+                  color = NepTuneTheme.colors.searchBar,
                   style =
                       TextStyle(
                           fontSize = SEARCHBAR_FONT_SIZE.sp,
@@ -425,25 +425,25 @@ fun SearchBar(value: String, onValueChange: (String) -> Unit) {
                 Modifier.height(70.dp)
                     .testTag(ProjectListScreenTestTags.SEARCH_TEXT_FIELD)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(DarkBlue1, RoundedCornerShape(8.dp))
+                    .background(NepTuneTheme.colors.background, RoundedCornerShape(8.dp))
                     .padding(top = 9.dp, bottom = 9.dp),
             singleLine = true,
             colors =
                 TextFieldDefaults.colors(
-                    focusedContainerColor = DarkBlueGray,
-                    unfocusedContainerColor = DarkBlueGray,
-                    disabledContainerColor = DarkBlueGray,
-                    cursorColor = LightTurquoise,
+                    focusedContainerColor = NepTuneTheme.colors.listBackground,
+                    unfocusedContainerColor = NepTuneTheme.colors.listBackground,
+                    disabledContainerColor = NepTuneTheme.colors.listBackground,
+                    cursorColor = NepTuneTheme.colors.onBackground,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
                     disabledIndicatorColor = Color.Transparent,
-                    focusedTextColor = LightTurquoise,
-                    unfocusedTextColor = LightTurquoise),
+                    focusedTextColor = NepTuneTheme.colors.onBackground,
+                    unfocusedTextColor = NepTuneTheme.colors.onBackground),
             leadingIcon = {
               Icon(
                   imageVector = Icons.Default.Search,
                   contentDescription = "Search Icon",
-                  tint = FadedDarkBlue,
+                  tint = NepTuneTheme.colors.searchBar,
                   modifier = Modifier.size(30.dp))
             },
         )

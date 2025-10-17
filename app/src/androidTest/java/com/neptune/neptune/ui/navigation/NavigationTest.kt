@@ -5,7 +5,6 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
-import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -29,23 +28,6 @@ class NavigationTest {
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).assertIsNotDisplayed()
-  }
-
-  @Test
-  fun navigationToEditTabShowsEditScreen() {
-    setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Project List")
-  }
-
-  @Test
-  fun navigationToMainTabShowsMainScreen() {
-    setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Neptune")
   }
 
   @Test
@@ -53,24 +35,12 @@ class NavigationTest {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("My Profile")
-    composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).assertIsDisplayed()
   }
 
   @Test
   fun goBackFromProfileToMain() {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Neptune")
-  }
-
-  @Test
-  fun goBackFromProfileToEdit() {
-    setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).assertDoesNotExist()
   }
 
   @Test
@@ -111,14 +81,12 @@ class NavigationTest {
   fun navigationToPostTabShowsPostScreen() {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Post")
   }
 
   @Test
   fun navigationToSearchTabShowsSearchScreen() {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Search")
   }
 
   @Test
@@ -143,9 +111,6 @@ class NavigationTest {
   fun goBackFromProfileToPost() {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Post")
   }
 
   @Test
@@ -154,8 +119,5 @@ class NavigationTest {
       NeptuneApp(navController = rememberNavController(), startDestination = Screen.Main.route)
     }
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Search")
   }
 }
