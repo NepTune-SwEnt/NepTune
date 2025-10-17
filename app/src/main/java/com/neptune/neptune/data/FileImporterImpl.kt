@@ -7,8 +7,8 @@ import android.net.Uri
 import android.os.Build
 import android.provider.OpenableColumns
 import android.util.Log
-import android.webkit.MimeTypeMap
 import androidx.annotation.RequiresApi
+import androidx.core.net.toUri
 import com.neptune.neptune.domain.port.FileImporter
 import java.io.File
 import java.io.FileOutputStream
@@ -30,17 +30,18 @@ class FileImporterImpl(
 
   @RequiresApi(Build.VERSION_CODES.Q)
   override suspend fun importFile(sourceUri: URI): FileImporter.ImportedFile {
-    val safUri = android.net.Uri.parse(sourceUri.toString())
-    val (mime, base, ext) = resolveAndValidateAudio(safUri)
+    val safUri = sourceUri.toString().toUri()
+    val parsed: ParsedFromUri = resolveAndValidateAudio(safUri)
 
     // Single audio workspace
     val dir = paths.audioWorkspace()
     // Create unique file in workspace
-    val target = uniqueFile(dir, "$base.$ext")
+    val target = uniqueFile(dir, "${parsed.base}.${parsed.ext}")
 
-    cr.openInputStream(safUri)!!.use { input ->
-      FileOutputStream(target).use { output -> input.copyTo(output) }
-    }
+    val inputStream =
+        cr.openInputStream(safUri)
+            ?: throw IllegalArgumentException("Cannot open input stream for URI: $safUri")
+    inputStream.use { input -> FileOutputStream(target).use { output -> input.copyTo(output) } }
     // Try to get duration (may fail for some formats/encodings)
     val duration =
         runCatching {
@@ -53,7 +54,7 @@ class FileImporterImpl(
     Log.v("FileImporter", "imported ${target.name} (${target.length()} bytes, $duration ms)")
     return FileImporter.ImportedFile(
         displayName = target.name,
-        mimeType = mime,
+        mimeType = parsed.mime,
         sourceUri = sourceUri,
         localUri = target.toURI(), // file://... in audio workspace
         sizeBytes = target.length(),
@@ -61,15 +62,16 @@ class FileImporterImpl(
   }
 
   // Ensures the file is MP3 or WAV by MIME and/or extension; derives a sane name.
-  private fun resolveAndValidateAudio(uri: android.net.Uri): Triple<String?, String, String> {
+  private fun resolveAndValidateAudio(uri: Uri): ParsedFromUri {
     // 1) Pull display + mime, with robust fallbacks for file:// URIs
-    val isFile = uri.scheme == android.content.ContentResolver.SCHEME_FILE
+    val isFile = uri.scheme == ContentResolver.SCHEME_FILE
     val crMime = if (!isFile) cr.getType(uri) else null
 
     val displayFromQuery: String? =
         if (!isFile)
-            cr.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)
-                ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
+            cr.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+              if (c.moveToFirst()) c.getString(0) else null
+            }
         else null
 
     val displayFromPath: String? =
@@ -126,7 +128,7 @@ class FileImporterImpl(
           else -> ext.ifEmpty { "mp3" } // safe default; shouldn't happen after validation
         }
 
-    return Triple(normalizedMime, base, finalExt)
+    return ParsedFromUri(normalizedMime, base, finalExt)
   }
 
   // If file exists, appends (2), (3) etc. to base name to make it unique
@@ -142,4 +144,6 @@ class FileImporterImpl(
     } while (f.exists())
     return f
   }
+
+  private data class ParsedFromUri(val mime: String?, val base: String, val ext: String)
 }

@@ -51,7 +51,7 @@ class ImportPipelineTest {
   }
 
   @Test
-  fun import_createsNeptuneZip_andStoresOnlyProjectUri() = runBlocking {
+  fun importCreatesNeptuneZipAndStoresOnlyProjectUri() = runBlocking {
     // WHEN: we run the import use case with any URI (unused by fake)
     val item = importUC(URI("file://dummy").toString())
 

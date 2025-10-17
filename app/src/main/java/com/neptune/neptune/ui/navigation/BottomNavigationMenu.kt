@@ -42,9 +42,8 @@ sealed class Tab(val name: String, val icon: Int, val destination: Screen, val t
           Screen.Search,
           NavigationTestTags.SEARCH_TAB)
 
-  // TODO update post tag
   object New :
-      Tab("New", android.R.drawable.ic_menu_add, Screen.ImportFile, NavigationTestTags.POST_TAB)
+      Tab("New", android.R.drawable.ic_menu_add, Screen.ImportFile, NavigationTestTags.IMPORT_FILE)
 }
 
 private val tabs =

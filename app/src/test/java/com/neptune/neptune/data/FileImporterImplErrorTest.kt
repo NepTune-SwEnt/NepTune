@@ -30,7 +30,7 @@ class FileImporterImplErrorTest {
       threw = true
     }
 
-    assertThat(threw).isTrue()
+    assert(threw)
   }
 
   @Test

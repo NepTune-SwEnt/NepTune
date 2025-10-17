@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import java.io.File
 import java.util.zip.ZipFile
+import junit.framework.TestCase.assertEquals
 import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -45,7 +46,7 @@ class NeptunePackagerDefaultsTest {
 
       // Defaults: these should be whatever your code sets by default.
       // Adjust expected values if your defaults differ.
-      assertThat(f0.getInt("volume")).isEqualTo(100) // default path
+      assertEquals(f0.getInt("volume"), 100) // default path
       assertThat(f0.getDouble("start")).isWithin(1e-9).of(0.0)
 
       // Boundary rounding to one decimal place

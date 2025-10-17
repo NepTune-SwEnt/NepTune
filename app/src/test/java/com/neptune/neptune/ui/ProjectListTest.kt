@@ -15,6 +15,18 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
+/** Object containing all test tags used in the UI for centralized management. */
+object ProjectListTestTags {
+  const val PROJECT_LIST = "project_list"
+}
+
+/** Object containing all non-code-generated text strings used for test assertions. */
+object ProjectListTestTexts {
+  // Shared text for URI structure verification
+  const val URI_BASE_PATH = "file:///storage/projects/"
+  const val URI_EXTENSION = ".zip"
+}
+
 /*
  * Basic tests for ProjectList composable.
  * Verifies that items are shown correctly, and that scrolling works.
@@ -29,38 +41,51 @@ class ProjectListTest {
   fun shows_filename_and_full_uri_for_each_item() {
     val items =
         listOf(
-            MediaItem(id = "1", projectUri = "file:///storage/projects/a-1.zip"),
-            MediaItem(id = "2", projectUri = "file:///storage/projects/b.zip"))
+            MediaItem(id = "1", projectUri = ProjectListTestTexts.URI_BASE_PATH + "a-1.zip"),
+            MediaItem(id = "2", projectUri = ProjectListTestTexts.URI_BASE_PATH + "b.zip"))
 
     compose.setContent { MaterialTheme { ProjectList(items) } }
 
     // Each row is one merged node; both filename + URI are present in that node's text.
     compose.onNodeWithText("a-1.zip").assertExists()
-    compose.onNodeWithText("file:///storage/projects/a-1.zip").assertExists()
+    compose.onNodeWithText(ProjectListTestTexts.URI_BASE_PATH + "a-1.zip").assertExists()
     compose.onNodeWithText("b.zip").assertExists()
-    compose.onNodeWithText("file:///storage/projects/b.zip").assertExists()
+    compose.onNodeWithText(ProjectListTestTexts.URI_BASE_PATH + "b.zip").assertExists()
 
-    // Because of merged semantics, we have 2 rows -> 2 nodes containing ".zip"
-    compose.onAllNodesWithText(".zip", substring = true).assertCountEquals(2)
+    // Use the centralized extension constant for the check
+    compose
+        .onAllNodesWithText(ProjectListTestTexts.URI_EXTENSION, substring = true)
+        .assertCountEquals(2)
   }
 
   @Test
   fun handles_many_items_scrolling_list() {
     val items =
-        (1..30).map { i -> MediaItem(id = "$i", projectUri = "file:///storage/projects/p$i.zip") }
+        (1..30).map { i ->
+          MediaItem(
+              id = "$i",
+              projectUri =
+                  ProjectListTestTexts.URI_BASE_PATH + "p$i" + ProjectListTestTexts.URI_EXTENSION)
+        }
 
     compose.setContent { MaterialTheme { ProjectList(items) } }
 
-    // Scroll the LazyColumn until the node with "p30.zip" is composed.
-    compose.onNodeWithTag("project_list").performScrollToNode(hasText("p30.zip"))
+    val lastFileName = "p30" + ProjectListTestTexts.URI_EXTENSION
+    val middleFullUri =
+        ProjectListTestTexts.URI_BASE_PATH + "p15" + ProjectListTestTexts.URI_EXTENSION
+
+    // Scroll the LazyColumn until the node with the last item is composed.
+    compose
+        .onNodeWithTag(ProjectListTestTags.PROJECT_LIST)
+        .performScrollToNode(hasText(lastFileName))
 
     // Now it exists.
-    compose.onNodeWithText("p30.zip").assertExists()
+    compose.onNodeWithText(lastFileName).assertExists()
 
     // Also verify a middle full URI (scroll will bring it in if needed)
     compose
-        .onNodeWithTag("project_list")
-        .performScrollToNode(hasText("file:///storage/projects/p15.zip"))
-    compose.onNodeWithText("file:///storage/projects/p15.zip").assertExists()
+        .onNodeWithTag(ProjectListTestTags.PROJECT_LIST)
+        .performScrollToNode(hasText(middleFullUri))
+    compose.onNodeWithText(middleFullUri).assertExists()
   }
 }

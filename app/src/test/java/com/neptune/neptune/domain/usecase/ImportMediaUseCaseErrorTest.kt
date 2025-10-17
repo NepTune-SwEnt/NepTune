@@ -25,7 +25,7 @@ import org.robolectric.RobolectricTestRunner
 */
 private class ThrowingImporter : FileImporter {
   override suspend fun importFile(sourceUri: URI): FileImporter.ImportedFile {
-    throw IllegalStateException("boom")
+    throw IllegalArgumentException("invalid URI for testing")
   }
 }
 
