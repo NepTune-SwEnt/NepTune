@@ -40,10 +40,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.ui.sampler.SamplerTestTags.CURVE_EDITOR_SCROLL_CONTAINER
 import com.neptune.neptune.ui.sampler.SamplerTestTags.FADER_60HZ_TAG
-import com.neptune.neptune.ui.theme.DarkBlue1
 import com.neptune.neptune.ui.theme.LightPurpleBlue
-import com.neptune.neptune.ui.theme.LightSkyBlue
-import com.neptune.neptune.ui.theme.White
+import com.neptune.neptune.ui.theme.NepTuneTheme
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -100,8 +98,6 @@ val ADSR_GRID_COLOR = Color.Gray.copy(alpha = 0.4f)
 private const val EQ_GAIN_MIN = -20.0f
 private const val EQ_GAIN_MAX = 20.0f
 
-val frameBorderColor = LightPurpleBlue
-val lightText = White
 val spectrogramBackground = Color.Black.copy(alpha = 0.5f)
 
 enum class KnobUnit {
@@ -193,7 +189,6 @@ fun PlaybackAndWaveformControls(
                   modifier =
                       Modifier.border(
                               2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
-                      Modifier.border(2.dp, frameBorderColor, MaterialTheme.shapes.small)
                           .testTag(SamplerTestTags.PITCH_SELECTOR))
               Spacer(modifier = Modifier.width(8.dp))
 
@@ -205,7 +200,6 @@ fun PlaybackAndWaveformControls(
                   modifier =
                       Modifier.border(
                               2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
-                      Modifier.border(2.dp, frameBorderColor, MaterialTheme.shapes.small)
                           .testTag(SamplerTestTags.TEMPO_SELECTOR))
             }
 
@@ -215,7 +209,6 @@ fun PlaybackAndWaveformControls(
             modifier =
                 Modifier.fillMaxWidth()
                     .height(120.dp)
-                    .border(2.dp, frameBorderColor, MaterialTheme.shapes.small)
                     .border(2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
                     .testTag(SamplerTestTags.WAVEFORM_DISPLAY),
             isPlaying = isPlaying,
@@ -395,7 +388,7 @@ fun TabContent(currentTab: SamplerTab, uiState: SamplerUiState, viewModel: Sampl
           Modifier.fillMaxWidth()
               .wrapContentHeight()
               .padding(top = 8.dp)
-              .border(2.dp, frameBorderColor)) {
+              .border(2.dp, NepTuneTheme.colors.accentPrimary)) {
         when (currentTab) {
           SamplerTab.BASICS -> BasicsTabContent(uiState, viewModel)
           SamplerTab.EQ -> EQTabContent(uiState, viewModel)
@@ -442,7 +435,7 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
                         Modifier.fillMaxWidth()
                             .wrapContentHeight()
                             .padding(vertical = 8.dp)
-                            .background(DarkBlue1),
+                            .background(NepTuneTheme.colors.background),
                     horizontalArrangement = Arrangement.SpaceAround) {
                       UniversalKnob(
                           label = "Attack",
@@ -488,7 +481,9 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
             onToggle = { isReverbExpanded = !isReverbExpanded }) {
               Column(
                   modifier =
-                      Modifier.fillMaxWidth().padding(vertical = 8.dp).background(DarkBlue1)) {
+                      Modifier.fillMaxWidth()
+                          .padding(vertical = 8.dp)
+                          .background(NepTuneTheme.colors.background)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceAround) {
@@ -578,7 +573,7 @@ fun CurveCanvas(
       modifier =
           modifier
               .background(spectrogramBackground)
-              .border(2.dp, frameBorderColor)
+              .border(2.dp, NepTuneTheme.colors.accentPrimary)
               .padding(1.dp)
               .pointerInput(p1x, p2x, p2y, p3x) {
                 detectDragGestures(
@@ -624,6 +619,8 @@ fun CurveCanvas(
                       }
                     })
               }) {
+        val colorAccent = NepTuneTheme.colors.accentPrimary
+        val lightTextColor = NepTuneTheme.colors.smallText
         Canvas(modifier = Modifier.fillMaxSize()) {
           val width = size.width
           val height = size.height
@@ -654,21 +651,16 @@ fun CurveCanvas(
           val startDraw = Offset(0f, height)
 
           drawLine(
-              color = frameBorderColor,
-              start = startDraw,
-              end = p1Draw,
-              strokeWidth = lineStrokeWidth)
-          drawLine(
-              color = frameBorderColor, start = p1Draw, end = p2Draw, strokeWidth = lineStrokeWidth)
-          drawLine(
-              color = frameBorderColor, start = p2Draw, end = p3Draw, strokeWidth = lineStrokeWidth)
+              color = colorAccent, start = startDraw, end = p1Draw, strokeWidth = lineStrokeWidth)
+          drawLine(color = colorAccent, start = p1Draw, end = p2Draw, strokeWidth = lineStrokeWidth)
+          drawLine(color = colorAccent, start = p2Draw, end = p3Draw, strokeWidth = lineStrokeWidth)
 
           val pointsToDraw = listOf(p1Draw, p2Draw, p3Draw)
           val radiusPx = pointRadius.dp.toPx()
           val contourWidthPx = 2.dp.toPx()
 
           pointsToDraw.forEach { center ->
-            drawCircle(color = lightText, radius = radiusPx, center = center)
+            drawCircle(color = lightTextColor, radius = radiusPx, center = center)
 
             drawCircle(
                 color = PointColor,
@@ -761,8 +753,8 @@ fun UniversalKnob(
     unit: KnobUnit,
     modifier: Modifier = Modifier
 ) {
-  val accentColor = LightPurpleBlue
-  val lightText = White
+  val accentColor = NepTuneTheme.colors.accentPrimary
+  val lightText = LightPurpleBlue
 
   val displayValue =
       when (unit) {
@@ -840,7 +832,7 @@ fun ExpandableSection(
     content: @Composable () -> Unit
 ) {
   val indicator = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown
-  val frameBorderColor = LightPurpleBlue
+  val frameBorderColor = NepTuneTheme.colors.accentPrimary
 
   Column(
       modifier =
@@ -854,11 +846,15 @@ fun ExpandableSection(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween) {
-              Text(title, color = White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+              Text(
+                  title,
+                  color = NepTuneTheme.colors.smallText,
+                  fontSize = 18.sp,
+                  fontWeight = FontWeight.Bold)
               Icon(
                   imageVector = indicator,
                   contentDescription = if (isExpanded) "Collapse" else "Expand",
-                  tint = LightPurpleBlue)
+                  tint = NepTuneTheme.colors.accentPrimary)
             }
 
         androidx.compose.animation.AnimatedVisibility(
@@ -879,8 +875,8 @@ fun EQFader(
     minGain: Float = EQ_GAIN_MIN,
     maxGain: Float = EQ_GAIN_MAX
 ) {
-  val lightPurpleBlue = LightPurpleBlue
-  val white = White
+  val lightPurpleBlue = NepTuneTheme.colors.accentPrimary
+  val white = NepTuneTheme.colors.smallText
 
   val range = maxGain - minGain
 
@@ -1057,7 +1053,7 @@ fun CompressorCurve(
     knee: Float,
     compGain: Float
 ) {
-  val lightPurpleBlue = LightPurpleBlue
+  val lightPurpleBlue = NepTuneTheme.colors.accentPrimary
   val minDb = COMP_GAIN_MIN
   val maxDb = COMP_GAIN_MAX
   val totalDbRange = maxDb - minDb
@@ -1138,8 +1134,8 @@ fun RatioInputField(
     maxValue: Int,
     modifier: Modifier = Modifier
 ) {
-  val accentColor = LightPurpleBlue
-  val lightText = White
+  val accentColor = NepTuneTheme.colors.accentPrimary
+  val lightText = NepTuneTheme.colors.smallText
 
   var text by remember { mutableStateOf(ratio.toString()) }
 
