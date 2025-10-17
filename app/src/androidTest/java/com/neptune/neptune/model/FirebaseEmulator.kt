@@ -1,4 +1,4 @@
-package com.github.se.bootcamp.utils
+package com.neptune.neptune.model
 
 import android.util.Log
 import com.google.firebase.Firebase

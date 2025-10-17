@@ -1,5 +1,8 @@
 package com.neptune.neptune.model.project
 
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
+
 /**
  * Singleton object providing access to the ProjectItemsRepository instance.
  *
@@ -7,7 +10,7 @@ package com.neptune.neptune.model.project
  */
 object TotalProjectItemsRepositoryProvider {
   private val _repository: TotalProjectItemsRepository by lazy {
-    //        ProjectItemsRepositoryFirestore(Firebase.firestore)
+//    TotalProjectItemsRepositoryCompose(ProjectItemsRepositoryVar(),ProjectItemsRepositoryFirestore(Firebase.firestore))
     ProjectItemsRepositoryVarVar()
   }
 

@@ -1,15 +1,13 @@
-// language: kotlin
 package com.neptune.neptune.model
 
+import android.util.Log
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepositoryFirestore
-import com.github.se.bootcamp.utils.FirebaseEmulator
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.tasks.await
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -125,6 +123,10 @@ class ProjectItemsRepositoryFirestoreTest {
     repository.addProject(p2)
 
     val retrieved = repository.getProject(p2.uid)
+    Log.i(
+      "canRetrieveAProjectByIDTest",
+      "Retrieved project: ${retrieved}, \nexpected: $p2"
+    )
     assertEquals(p2, retrieved)
   }
 
@@ -178,6 +180,8 @@ class ProjectItemsRepositoryFirestoreTest {
     val all = repository.getAllProjects()
     assertEquals(3, all.size)
     val expected = setOf(modified, p2, p3)
+    Log.i("canEditTheCorrectProjectByIDTest", "All expected projects:   $expected")
+    Log.i("canEditTheCorrectProjectByIDTest", "All projects after edit: $all")
     assertEquals(expected, all.toSet())
   }
 }

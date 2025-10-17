@@ -17,6 +17,7 @@ import androidx.compose.ui.test.performTextInput
 import com.google.firebase.Timestamp
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepositoryVar
+import com.neptune.neptune.model.project.TotalProjectItemsRepositoryCompose
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -28,31 +29,33 @@ class ProjectListScreenTest {
   @get:Rule val composeTestRule = createComposeRule()
 
   private lateinit var viewModel: ProjectListViewModel
-  private lateinit var repository: ProjectItemsRepositoryVar
+  private lateinit var localRepository: ProjectItemsRepositoryVar
+  private lateinit var cloudRepository: ProjectItemsRepositoryVar
   private val navCalls = mutableListOf<String>()
 
   @Before
   fun setUp() {
     navCalls.clear()
 
-    repository = ProjectItemsRepositoryVar()
+    localRepository = ProjectItemsRepositoryVar()
+    cloudRepository = ProjectItemsRepositoryVar()
     runBlocking {
       // create three projects with controlled timestamps and favorite flag
-      repository.addProject(
+      cloudRepository.addProject(
           ProjectItem(
               uid = "1",
               name = "Old",
               description = "Old desc",
               isFavorite = false,
               lastUpdated = Timestamp(1, 0)))
-      repository.addProject(
+      cloudRepository.addProject(
           ProjectItem(
               uid = "2",
               name = "Fav",
               description = "Favorite item",
               isFavorite = true,
               lastUpdated = Timestamp(2, 0)))
-      repository.addProject(
+      cloudRepository.addProject(
           ProjectItem(
               uid = "3",
               name = "New",
@@ -61,7 +64,7 @@ class ProjectListScreenTest {
               lastUpdated = Timestamp(3, 0)))
     }
 
-    viewModel = ProjectListViewModel(repository)
+    viewModel = ProjectListViewModel(TotalProjectItemsRepositoryCompose(localRepository, cloudRepository))
 
     // Single setContent call per test lifecycle — inject navCalls collector here
     composeTestRule.setContent {
@@ -147,7 +150,7 @@ class ProjectListScreenTest {
 
     // Verify repository has the updated description
     runBlocking {
-      val p = repository.getProject("3")
+      val p = cloudRepository.getProject("3")
       Log.i(
           "change_description_updates_repositoryTest",
           "Project after description change: ${p.description}")

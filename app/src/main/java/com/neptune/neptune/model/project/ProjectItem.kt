@@ -1,6 +1,7 @@
 package com.neptune.neptune.model.project
 
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.PropertyName
 
 /**
  * Data class representing a project item.
@@ -25,7 +26,7 @@ data class ProjectItem(
     val name: String,
     val description: String = "",
     val isStoredInCloud: Boolean = false,
-    val isFavorite: Boolean = false,
+    @get:PropertyName("isFavorite") val isFavorite: Boolean = false,
     val tags: List<String> = emptyList(),
     val previewPath: String? = null,
     val filePath: String? = null,

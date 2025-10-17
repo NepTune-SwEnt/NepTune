@@ -59,10 +59,12 @@ class ProjectItemsRepositoryFirestore(private val db: FirebaseFirestore) : Proje
       val uid = document.id
       val name = document.getString("name") ?: return null
       val description = document.getString("description") ?: return null
-      val isFavorite = document.getBoolean("isFavorite") ?: false
+      val isFavorite = document.getBoolean("isFavorite") ?: return null
       val tags = document.get("tags") as? List<String> ?: emptyList()
-      val previewUrl = document.getString("previewUrl") ?: ""
-      val fileUrl = document.getString("fileUrl") ?: ""
+      val previewPath = document.getString("previewPath")
+      val filePath = document.getString("filePath")
+      val previewUrl = document.getString("previewUrl")
+      val fileUrl = document.getString("fileUrl")
       val lastUpdated = document.getTimestamp("lastUpdated") ?: return null
       val ownerId = document.getString("ownerId") ?: return null
       val collaborators = document.get("collaborators") as? List<String> ?: emptyList()
@@ -74,8 +76,8 @@ class ProjectItemsRepositoryFirestore(private val db: FirebaseFirestore) : Proje
         isStoredInCloud = true,
         isFavorite = isFavorite,
         tags = tags,
-        previewPath = null,
-        filePath = null,
+        previewPath = previewPath,
+        filePath = filePath,
         previewUrl = previewUrl,
         fileUrl = fileUrl,
         lastUpdated = lastUpdated,

@@ -55,6 +55,7 @@ open class TotalProjectItemsRepositoryCompose(
   }
 
   override suspend fun editProject(projectID: String, newValue: ProjectItem) {
+
     localRepo.editProject(projectID, newValue)
     cloudRepo.editProject(projectID, newValue)
   }
