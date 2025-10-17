@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.ui.sampler.SamplerTestTags.CURVE_EDITOR_SCROLL_CONTAINER
 import com.neptune.neptune.ui.sampler.SamplerTestTags.FADER_60HZ_TAG
-import com.neptune.neptune.ui.theme.LightPurpleBlue
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import kotlin.math.PI
 import kotlin.math.atan2
