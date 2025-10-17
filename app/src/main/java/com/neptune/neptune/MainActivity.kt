@@ -80,7 +80,8 @@ fun NeptuneApp(
                     logout = {
                       signInViewModel.signOut()
                       navigationActions.navigateTo(Screen.SignIn)
-                    })
+                    },
+                    goBack = { navigationActions.goBack() })
               }
               composable(Screen.Edit.route) { SamplerScreen() }
               composable(Screen.Search.route) { MockSearchScreen() }
