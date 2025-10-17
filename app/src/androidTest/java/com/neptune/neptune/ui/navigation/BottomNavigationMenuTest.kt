@@ -25,7 +25,7 @@ class BottomNavigationMenuTest {
         .assertIsNotEnabled()
 
     composeTestRule
-        .onNodeWithTag(NavigationTestTags.EDIT_TAB)
+        .onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB)
         .assertIsDisplayed()
         .assertIsNotEnabled()
   }
@@ -35,13 +35,13 @@ class BottomNavigationMenuTest {
     composeTestRule.setContent {
       val navController = rememberNavController()
       val navigationActions = NavigationActions(navController)
-      BottomNavigationMenu(screen = Screen.Edit, navigationActions = navigationActions)
+      BottomNavigationMenu(screen = Screen.ProjectList, navigationActions = navigationActions)
     }
 
     // Verify that the menu and all its items are displayed.
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsDisplayed()
   }
 
   @Test
@@ -57,7 +57,7 @@ class BottomNavigationMenuTest {
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
 
     // Assert that the Edit tab is NOT selected
-    composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).assertIsNotSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsNotSelected()
   }
 
   @Test
@@ -70,7 +70,7 @@ class BottomNavigationMenuTest {
     }
 
     // Assert that the Edit tab is marked as selected
-    composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).assertIsSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsSelected()
 
     // Assert that the Main tab is NOT selected
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
@@ -101,7 +101,7 @@ class BottomNavigationMenuTest {
           }
       BottomNavigationMenu(screen = Screen.Main, navigationActions = fakeNavigationActions)
     }
-    composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
     assert(navigatedTo == Screen.ProjectList)
   }
 

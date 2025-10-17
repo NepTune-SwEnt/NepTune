@@ -7,38 +7,22 @@ import androidx.navigation.NavHostController
  * profile icon are shown by default, back button is hidden by default.
  *
  * @param route The route of the screen
- * @param name The name of the screen
  * @param showBottomBar Whether to show the bottom navigation bar
- * @param showBackButton Whether to show the back button in the top app bar
- * @param showProfile Whether to show the profile icon in the top app bar
  */
-sealed class Screen(
-    val route: String,
-    val name: String,
-    val showBottomBar: Boolean = true,
-    val showProfile: Boolean = true,
-    val showBackButton: Boolean = false,
-) {
-  object Main : Screen(route = "main", name = "Neptune")
+sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
+  object Main : Screen(route = "main")
 
-  object Edit : Screen(route = "edit", name = "Edit")
+  object Edit : Screen(route = "edit")
 
-  object Search : Screen(route = "search", name = "Search")
+  object Search : Screen(route = "search")
 
-  object Post : Screen(route = "post", name = "Post")
+  object Post : Screen(route = "post")
 
-  object ProjectList : Screen(route = "project_list", name = "Project List", showProfile = false)
+  object ProjectList : Screen(route = "project_list")
 
-  object Profile :
-      Screen(route = "profile", name = "My Profile", showBottomBar = false, showBackButton = true)
+  object Profile : Screen(route = "profile", showBottomBar = false)
 
-  object SignIn :
-      Screen(
-          route = "signIn",
-          name = "Neptune",
-          showBottomBar = false,
-          showBackButton = false,
-          showProfile = false)
+  object SignIn : Screen(route = "signIn", showBottomBar = false)
 }
 
 /**
@@ -78,10 +62,10 @@ open class NavigationActions(
     if (currentRoute() != screen.route) {
       navController.navigate(screen.route) {
         if (screen.route == Screen.Main.route || screen.route == Screen.SignIn.route) {
-          popUpTo(navController.graph.startDestinationId) { inclusive = true }
+          popUpTo(navController.graph.id) { inclusive = true }
         }
-        restoreState = true
         launchSingleTop = true
+        restoreState = screen.route != Screen.SignIn.route
       }
     }
   }

@@ -23,12 +23,14 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -43,6 +45,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -52,20 +55,16 @@ import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.ui.theme.DarkBlue1
 import com.neptune.neptune.ui.theme.DarkBlueGray
 import com.neptune.neptune.ui.theme.LightTurquoise
+import com.neptune.neptune.ui.navigation.NavigationTestTags
+import com.neptune.neptune.ui.theme.NepTuneTheme
 
 object MainScreenTestTags {
   // General
   const val MAIN_SCREEN = "mainScreen"
-  const val TOP_APP_BAR = "topAppBar"
-  const val APP_TITLE = "appTitle"
-  const val PROFILE_BUTTON = "profileButton"
-  const val BOTTOM_NAVIGATION_BAR = "bottomNavigationBar"
 
-  // Bottom navigation items
-  const val NAV_HOME = "navHome"
-  const val NAV_SEARCH = "navSearch"
-  const val NAV_SAMPLER = "navSampler"
-  const val NAV_NEW_POST = "navNewPost"
+  // Top Bar
+  const val TOP_BAR = "topBar"
+  const val TOP_BAR_TITLE = "topBarTitle"
 
   // Sample Card
   const val SAMPLE_CARD = "sampleCard"
@@ -86,16 +85,53 @@ object MainScreenTestTags {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 // Implementation of the main screen
-fun MainScreen(mainViewModel: MainViewModel = viewModel()) {
+fun MainScreen(mainViewModel: MainViewModel = viewModel(), navigateToProfile: () -> Unit = {}) {
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
   Scaffold(
-      modifier = Modifier.testTag(MainScreenTestTags.MAIN_SCREEN), containerColor = DarkBlue1) {
-          innerPadding ->
-        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-          // Bottom border of the topAppBar
+      topBar = {
+        Column {
+          CenterAlignedTopAppBar(
+              modifier = Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
+              title = {
+                Text(
+                    text = "NepTune",
+                    style =
+                        TextStyle(
+                            fontSize = 45.sp,
+                            fontFamily = FontFamily(Font(R.font.lily_script_one)),
+                            fontWeight = FontWeight(149),
+                            color = NepTuneTheme.colors.onBackground,
+                        ),
+                    modifier = Modifier.padding(25.dp).testTag(MainScreenTestTags.TOP_BAR_TITLE),
+                    textAlign = TextAlign.Center)
+              },
+              actions = {
+                IconButton(
+                    onClick = navigateToProfile,
+                    modifier =
+                        Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
+                            .size(57.dp)
+                            .testTag(NavigationTestTags.PROFILE_BUTTON)) {
+                      Icon(
+                          painter = painterResource(id = R.drawable.profile),
+                          contentDescription = "Profile",
+                          tint = Color.Unspecified,
+                      )
+                    }
+              },
+              colors =
+                  TopAppBarDefaults.centerAlignedTopAppBarColors(
+                      containerColor = NepTuneTheme.colors.background))
           HorizontalDivider(
-              modifier = Modifier.fillMaxWidth(), thickness = 0.75.dp, color = LightTurquoise)
+              modifier = Modifier.fillMaxWidth(),
+              thickness = 0.75.dp,
+              color = NepTuneTheme.colors.onBackground)
+        }
+      },
+      modifier = Modifier.testTag(MainScreenTestTags.MAIN_SCREEN),
+      containerColor = NepTuneTheme.colors.background) { innerPadding ->
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
           LazyColumn(
               modifier =
                   Modifier.fillMaxSize()
@@ -122,7 +158,7 @@ fun SectionHeader(title: String) {
       verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = title,
-            color = LightTurquoise,
+            color = NepTuneTheme.colors.onBackground,
             style =
                 TextStyle(
                     fontSize = 37.sp,
@@ -133,7 +169,7 @@ fun SectionHeader(title: String) {
               imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
               contentDescription = "See More",
               modifier = Modifier.size(40.dp),
-              tint = LightTurquoise)
+              tint = NepTuneTheme.colors.onBackground)
         }
       }
 }
@@ -153,15 +189,10 @@ fun SampleCardRow(samples: List<Sample>) {
 fun SampleCard(sample: Sample) {
   val mediaPlayer = LocalMediaPlayer.current
   Card(
-      modifier =
-          Modifier.width(150.dp)
-              .height(166.dp)
-              .clickable(
-                  onClick = { mediaPlayer.togglePlay(mediaPlayer.getUriFromSampleId(sample.id)) })
-              .testTag(MainScreenTestTags.SAMPLE_CARD),
-      colors = CardDefaults.cardColors(containerColor = DarkBlueGray),
+      modifier = Modifier.width(150.dp).height(166.dp).testTag(MainScreenTestTags.SAMPLE_CARD),
+      colors = CardDefaults.cardColors(containerColor = NepTuneTheme.colors.cardBackground),
       shape = RoundedCornerShape(12.dp),
-      border = BorderStroke(1.dp, LightTurquoise)) {
+      border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground)) {
         Column(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
           // Profile and Name
           Row(
@@ -170,13 +201,13 @@ fun SampleCard(sample: Sample) {
                 Icon(
                     painter = painterResource(R.drawable.profile),
                     contentDescription = "Profile",
-                    tint = Color.Unspecified, // Keep the original icon color,
+                    tint = Color.Unspecified,
                     modifier = Modifier.size(22.dp).testTag(MainScreenTestTags.SAMPLE_PROFILE_ICON))
                 Spacer(Modifier.width(6.dp))
                 Text(
                     /*Todo: Replace the hardCoded "Name" with the one provided by the Profile ViewModel*/
                     text = "Name",
-                    color = LightTurquoise,
+                    color = NepTuneTheme.colors.onBackground,
                     modifier = Modifier.testTag(MainScreenTestTags.SAMPLE_USERNAME),
                     style =
                         TextStyle(
@@ -204,7 +235,7 @@ fun SampleCard(sample: Sample) {
               horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
                     sample.name,
-                    color = LightTurquoise,
+                    color = NepTuneTheme.colors.onBackground,
                     modifier =
                         Modifier.padding(start = 6.dp).testTag(MainScreenTestTags.SAMPLE_NAME),
                     style =
@@ -217,7 +248,7 @@ fun SampleCard(sample: Sample) {
                 val durationText = "%02d:%02d".format(minutes, seconds)
                 Text(
                     durationText,
-                    color = LightTurquoise,
+                    color = NepTuneTheme.colors.onBackground,
                     modifier =
                         Modifier.padding(end = 8.dp).testTag(MainScreenTestTags.SAMPLE_DURATION),
                     style =
@@ -230,14 +261,14 @@ fun SampleCard(sample: Sample) {
           Column(
               modifier =
                   Modifier.fillMaxWidth()
-                      .background(LightTurquoise)
+                      .background(NepTuneTheme.colors.onBackground)
                       .padding(vertical = 4.dp, horizontal = 6.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween) {
                       Text(
                           sample.tags.joinToString(", "),
-                          color = DarkBlue1,
+                          color = NepTuneTheme.colors.background,
                           modifier = Modifier.testTag(MainScreenTestTags.SAMPLE_TAGS),
                           style =
                               TextStyle(
@@ -246,7 +277,7 @@ fun SampleCard(sample: Sample) {
                                   fontWeight = FontWeight(400)))
                       Text(
                           text = "see more…",
-                          color = DarkBlue1,
+                          color = NepTuneTheme.colors.background,
                           style =
                               TextStyle(
                                   fontSize = 10.sp,
@@ -290,10 +321,10 @@ fun IconWithText(
     Icon(
         icon,
         contentDescription = iconDescription,
-        tint = DarkBlue1,
+        tint = NepTuneTheme.colors.background,
         modifier = Modifier.size(16.dp))
     Spacer(Modifier.width(3.dp))
-    Text(text, color = DarkBlue1, fontSize = 10.sp)
+    Text(text, color = NepTuneTheme.colors.background, fontSize = 10.sp)
   }
 }
 
@@ -309,10 +340,10 @@ fun IconWithTextPainter(
     Icon(
         icon,
         contentDescription = iconDescription,
-        tint = DarkBlue1,
+        tint = NepTuneTheme.colors.background,
         modifier = Modifier.size(16.dp))
     Spacer(Modifier.width(3.dp))
-    Text(text, color = DarkBlue1, fontSize = 10.sp)
+    Text(text, color = NepTuneTheme.colors.background, fontSize = 10.sp)
   }
 }
 
