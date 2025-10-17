@@ -51,7 +51,7 @@ private val tabs =
     listOf(
         Tab.Main,
         Tab.Search,
-        Tab.ProjectList,    
+        Tab.ProjectList,
         Tab.New,
     )
 

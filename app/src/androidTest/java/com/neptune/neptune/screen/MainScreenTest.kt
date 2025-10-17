@@ -58,7 +58,7 @@ class MainScreenTest {
     listOf(
             NavigationTestTags.MAIN_TAB,
             NavigationTestTags.SEARCH_TAB,
-            NavigationTestTags.IMPORT_FILE
+            NavigationTestTags.IMPORT_FILE,
             NavigationTestTags.PROJECTLIST_TAB)
         .forEach { tag -> composeTestRule.onNodeWithTag(tag).assertHasClickAction().performClick() }
   }
