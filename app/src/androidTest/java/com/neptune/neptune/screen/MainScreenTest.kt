@@ -35,13 +35,10 @@ class MainScreenTest {
   }
 
   @Test
-  fun mainScreen_displaysTopAppBarAndBottomNav() {
+  fun mainScreen_displaysBottomNav() {
     setContent()
 
     composeTestRule.onNodeWithTag(MainScreenTestTags.MAIN_SCREEN).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
   }
 
