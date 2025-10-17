@@ -27,7 +27,7 @@ class NavigationTest {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertIsDisplayed()
@@ -37,7 +37,7 @@ class NavigationTest {
   @Test
   fun navigationToEditTabShowsEditScreen() {
     setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Project List")
   }
 
@@ -67,6 +67,13 @@ class NavigationTest {
   }
 
   @Test
+  fun goBackFromProfileToEdit() {
+    setContent()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).assertDoesNotExist()
+  }
+
+  @Test
   fun bottomBarIsHiddenOnProfileScreen() {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
@@ -78,26 +85,26 @@ class NavigationTest {
   fun mainTabIsSelectedByDefault() {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).assertIsNotSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsNotSelected()
   }
 
   @Test
   fun editTabIsSelectedAfterClick() {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).assertIsSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsSelected()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
   }
 
   @Test
   fun mainTabIsSelectedAfterNavigatingBackFromEdit() {
     setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).assertIsSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsSelected()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).assertIsNotSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsNotSelected()
   }
 
   @Test
