@@ -12,6 +12,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+/**
+ * ViewModel for managing the state and operations related to the list of projects.
+ * This has been written with the help of LLMs.
+ *
+ * @property projectRepository Repository for accessing and manipulating project items.
+ * @author Uri Jaquet
+ */
 class ProjectListViewModel(
     private val projectRepository: ProjectItemsRepository =
         ProjectItemsRepositoryProvider.repository,
@@ -23,10 +30,18 @@ class ProjectListViewModel(
     getAllProjects()
   }
 
+  /**
+   * Refreshes the list of projects by fetching them from the repository.
+   */
   fun refreshProjects() {
     getAllProjects()
   }
 
+  /**
+   * Fetches all projects from the repository, sorts them by favorite status and last updated time,
+   * and updates the UI state accordingly.
+   * This has been written with the help of LLMs.
+   */
   private fun getAllProjects() {
     _uiState.value = _uiState.value.copy(isLoading = true)
     Log.i("ProjectListViewModel", "Loading projects")
@@ -46,6 +61,12 @@ class ProjectListViewModel(
     }
   }
 
+  /**
+   * Deletes a project by its ID and refreshes the project list.
+   * This has been written with the help of LLMs.
+   *
+   * @param projectId The ID of the project to delete.
+   */
   fun deleteProject(projectId: String) {
     viewModelScope.launch {
       try {
@@ -57,6 +78,13 @@ class ProjectListViewModel(
     }
   }
 
+  /**
+   * Renames a project by its ID and refreshes the project list.
+   * This has been written with the help of LLMs.
+   *
+   * @param projectId The ID of the project to rename.
+   * @param newName The new name for the project.
+   */
   fun renameProject(projectId: String, newName: String) {
     viewModelScope.launch {
       try {
@@ -70,6 +98,13 @@ class ProjectListViewModel(
     }
   }
 
+  /**
+   * Changes the description of a project by its ID and refreshes the project list.
+   * This has been written with the help of LLMs.
+   *
+   * @param projectId The ID of the project to update.
+   * @param newDescription The new description for the project.
+   */
   fun changeProjectDescription(projectId: String, newDescription: String) {
     viewModelScope.launch {
       try {
@@ -84,6 +119,12 @@ class ProjectListViewModel(
     }
   }
 
+  /**
+   * Toggles the favorite status of a project by its ID and refreshes the project list.
+   * This has been written with the help of LLMs.
+   *
+   * @param projectId The ID of the project to toggle favorite status.
+   */
   fun toggleFavorite(projectId: String) {
     viewModelScope.launch {
       try {
@@ -97,16 +138,32 @@ class ProjectListViewModel(
     }
   }
 
+  /**
+   * Selects a project and updates the UI state with the selected project's ID.
+   *
+   * @param project The project to select.
+   */
   fun selectProject(project: ProjectItem) {
     _uiState.value = _uiState.value.copy(selectedProject = project.id)
   }
 
+  /**
+   * Gets the duration of a project in "MM:SS" format.
+   */
   fun getProjectDuration(project: ProjectItem): String {
     if (project.previewUrl.isNullOrEmpty()) return "00:00"
     return "00:59"
   }
 }
 
+/**
+ * Data class representing the UI state for the project list.
+ *
+ * @property projects List of project items to display.
+ * @property isLoading Indicates if the project list is currently being loaded.
+ * @property selectedProject The ID of the currently selected project, if any.
+ * @author Uri Jaquet
+ */
 data class ProjectListUiState(
     val projects: List<ProjectItem>,
     val isLoading: Boolean = false,
