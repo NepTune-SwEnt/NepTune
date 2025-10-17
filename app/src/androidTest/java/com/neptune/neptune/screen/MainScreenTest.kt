@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
@@ -32,6 +33,9 @@ class MainScreenTest {
 
   private fun setContent(mainViewModel: MainViewModel = MainViewModel()) {
     composeTestRule.setContent { NeptuneApp(startDestination = Screen.Main.route) }
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).isDisplayed()
+    }
   }
 
   @Test
@@ -46,10 +50,12 @@ class MainScreenTest {
   fun mainScreen_bottomNavigationBar_hasAllButton() {
     setContent()
 
+    // Original order: MAIN, SEARCH, PROJECTLIST, POST (now IMPORT_FILE)
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsDisplayed()
+    // The changed/new tab
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).assertIsDisplayed()
   }
 
   @Test
@@ -58,8 +64,8 @@ class MainScreenTest {
     listOf(
             NavigationTestTags.MAIN_TAB,
             NavigationTestTags.SEARCH_TAB,
-            NavigationTestTags.IMPORT_FILE,
-            NavigationTestTags.PROJECTLIST_TAB)
+            NavigationTestTags.PROJECTLIST_TAB, // Retained original position (3rd)
+            NavigationTestTags.IMPORT_FILE) // Replaces POST_TAB (4th)
         .forEach { tag -> composeTestRule.onNodeWithTag(tag).assertHasClickAction().performClick() }
   }
 
