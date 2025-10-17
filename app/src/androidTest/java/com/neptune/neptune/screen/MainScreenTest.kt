@@ -52,7 +52,7 @@ class MainScreenTest {
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.EDIT_TAB).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).assertIsDisplayed()
   }
 
   @Test
@@ -62,7 +62,7 @@ class MainScreenTest {
             NavigationTestTags.MAIN_TAB,
             NavigationTestTags.SEARCH_TAB,
             NavigationTestTags.EDIT_TAB,
-            NavigationTestTags.POST_TAB)
+            NavigationTestTags.IMPORT_FILE)
         .forEach { tag -> composeTestRule.onNodeWithTag(tag).assertHasClickAction().performClick() }
   }
 

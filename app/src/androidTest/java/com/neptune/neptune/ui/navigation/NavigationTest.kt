@@ -101,13 +101,6 @@ class NavigationTest {
   }
 
   @Test
-  fun navigationToPostTabShowsPostScreen() {
-    setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Post")
-  }
-
-  @Test
   fun navigationToSearchTabShowsSearchScreen() {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
@@ -115,11 +108,11 @@ class NavigationTest {
   }
 
   @Test
-  fun postTabIsSelectedAfterClick() {
+  fun importTabIsSelectedAfterClick() {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).assertIsSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).assertIsSelected()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
   }
 
@@ -135,7 +128,7 @@ class NavigationTest {
   @Test
   fun goBackFromProfileToPost() {
     setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Post")
