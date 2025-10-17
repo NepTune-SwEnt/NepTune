@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.neptune.neptune.ui.sampler.SamplerTestTags.CURVE_EDITOR_SCROLL_CONTAINER
 import com.neptune.neptune.ui.sampler.SamplerTestTags.FADER_60HZ_TAG
 import com.neptune.neptune.ui.theme.DarkBlue1
 import com.neptune.neptune.ui.theme.LightPurpleBlue
@@ -79,9 +80,11 @@ object SamplerTestTags {
   const val SECTION_REVERB = "sectionReverbControls"
   const val EQ_FADER_BOX_INPUT = "eqFaderBoxInput"
   const val FADER_60HZ_TAG = "fader60Hz"
+    const val CURVE_EDITOR_SCROLL_CONTAINER = "curveEditorScrollContainer"
 }
 
-val FrameBorderColor = LightPurpleBlue
+val KnobBackground = Color.Black
+val PointColor = Color.Red
 
 const val SampleDurationMillis = 4000
 
@@ -96,6 +99,12 @@ val ADSR_GRID_COLOR = Color.Gray.copy(alpha = 0.4f)
 
 private const val EQ_GAIN_MIN = -20.0f
 private const val EQ_GAIN_MAX = 20.0f
+
+
+
+val frameBorderColor = LightPurpleBlue
+val lightText = White
+val spectrogramBackground = Color.Black.copy(alpha = 0.5f)
 
 enum class KnobUnit {
   SECONDS,
@@ -184,7 +193,7 @@ fun PlaybackAndWaveformControls(
                   onIncrease = onIncreasePitch,
                   onDecrease = onDecreasePitch,
                   modifier =
-                      Modifier.border(2.dp, FrameBorderColor, MaterialTheme.shapes.small)
+                      Modifier.border(2.dp, frameBorderColor, MaterialTheme.shapes.small)
                           .testTag(SamplerTestTags.PITCH_SELECTOR))
               Spacer(modifier = Modifier.width(8.dp))
 
@@ -194,7 +203,7 @@ fun PlaybackAndWaveformControls(
                   onIncrease = { onTempoChange(tempo + 1) },
                   onDecrease = { onTempoChange(tempo - 1) },
                   modifier =
-                      Modifier.border(2.dp, FrameBorderColor, MaterialTheme.shapes.small)
+                      Modifier.border(2.dp, frameBorderColor, MaterialTheme.shapes.small)
                           .testTag(SamplerTestTags.TEMPO_SELECTOR))
             }
 
@@ -204,7 +213,7 @@ fun PlaybackAndWaveformControls(
             modifier =
                 Modifier.fillMaxWidth()
                     .height(120.dp)
-                    .border(2.dp, FrameBorderColor, MaterialTheme.shapes.small)
+                    .border(2.dp, frameBorderColor, MaterialTheme.shapes.small)
                     .testTag(SamplerTestTags.WAVEFORM_DISPLAY),
             isPlaying = isPlaying,
             playbackPosition = playbackPosition,
@@ -295,7 +304,7 @@ fun WaveformDisplay(
 
   Canvas(
       modifier =
-          modifier.background(Color.Black.copy(alpha = 0.5f)).padding(8.dp).pointerInput(Unit) {
+          modifier.background(spectrogramBackground).padding(8.dp).pointerInput(Unit) {
             detectDragGestures(
                 onDrag = { change, _ ->
                   change.consume()
@@ -378,7 +387,7 @@ fun TabContent(currentTab: SamplerTab, uiState: SamplerUiState, viewModel: Sampl
           Modifier.fillMaxWidth()
               .wrapContentHeight()
               .padding(top = 8.dp)
-              .border(2.dp, FrameBorderColor)) {
+              .border(2.dp, frameBorderColor)) {
         when (currentTab) {
           SamplerTab.BASICS -> BasicsTabContent(uiState, viewModel)
           SamplerTab.EQ -> EQTabContent(uiState, viewModel)
@@ -387,81 +396,64 @@ fun TabContent(currentTab: SamplerTab, uiState: SamplerUiState, viewModel: Sampl
       }
 }
 
+data class KnobConfig(
+    val label: String,
+    val minValue: Float,
+    val maxValue: Float,
+    val unit: KnobUnit,
+    val getter: (SamplerUiState) -> Float,
+    val setter: (SamplerViewModel) -> (Float) -> Unit,
+    val testTag: String
+)
 @Composable
 fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
-  var isADSrExpanded by remember { mutableStateOf(false) }
-  var isReverbExpanded by remember { mutableStateOf(false) }
+    var isADSrExpanded by remember { mutableStateOf(false) }
+    var isReverbExpanded by remember { mutableStateOf(false) }
 
-  Column(
-      modifier =
-          Modifier.fillMaxWidth()
-              .wrapContentHeight()
-              .padding(top = 8.dp)
-              .testTag(SamplerTestTags.TAB_BASICS_CONTENT)) {
+
+    val adsrKnobs = remember {
+        listOf(
+            KnobConfig("Attack", 0.0f, ADSR_MAX_TIME, KnobUnit.SECONDS, { it.attack }, { vm -> vm::updateAttack }, SamplerTestTags.KNOB_ATTACK),
+            KnobConfig("Decay", 0.0f, ADSR_MAX_TIME, KnobUnit.SECONDS, { it.decay }, { vm -> vm::updateDecay }, SamplerTestTags.KNOB_DECAY),
+            KnobConfig("Sustain", 0.0f, ADSR_MAX_SUSTAIN, KnobUnit.PERCENT, { it.sustain }, { vm -> vm::updateSustain }, SamplerTestTags.KNOB_SUSTAIN),
+            KnobConfig("Release", 0.0f, ADSR_MAX_TIME, KnobUnit.SECONDS, { it.release }, { vm -> vm::updateRelease }, SamplerTestTags.KNOB_RELEASE)
+        )
+    }
+
+    val reverbKnobsLine1 = remember {
+        listOf(
+            KnobConfig("Wet", 0.0f, 1.0f, KnobUnit.PERCENT, { it.reverbWet }, { vm -> vm::updateReverbWet }, SamplerTestTags.KNOB_REVERB_WET),
+            KnobConfig("Size", 0.1f, REVERB_SIZE_MAX, KnobUnit.SECONDS, { it.reverbSize }, { vm -> vm::updateReverbSize }, SamplerTestTags.KNOB_REVERB_SIZE),
+            KnobConfig("Width", 0.0f, 1.0f, KnobUnit.PERCENT, { it.reverbWidth }, { vm -> vm::updateReverbWidth }, SamplerTestTags.KNOB_REVERB_WIDTH)
+        )
+    }
+
+    val reverbKnobsLine2 = remember {
+        listOf(
+            KnobConfig("Depth", 0.0f, 1.0f, KnobUnit.PERCENT, { it.reverbDepth }, { vm -> vm::updateReverbDepth }, SamplerTestTags.KNOB_REVERB_DEPTH),
+            KnobConfig("Predelay", 0.0f, PREDELAY_MAX_MS, KnobUnit.MILLISECONDS, { it.reverbPredelay }, { vm -> vm::updateReverbPredelay }, SamplerTestTags.KNOB_REVERB_PREDELAY)
+        )
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth().wrapContentHeight().padding(top = 8.dp).testTag(SamplerTestTags.TAB_BASICS_CONTENT)
+    ) {
+
         ExpandableSection(
             title = "ADSR Envelope Controls",
             isExpanded = isADSrExpanded,
             onToggle = { isADSrExpanded = !isADSrExpanded }) {
-              Column(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 ADSRCurveEditor(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .height(160.dp)
-                            .padding(horizontal = 8.dp, vertical = 16.dp)
-                            .testTag("curveEditor"),
-                    attack = uiState.attack,
-                    decay = uiState.decay,
-                    sustain = uiState.sustain,
-                    release = uiState.release,
-                    onAttackChange = viewModel::updateAttack,
-                    onDecayChange = viewModel::updateDecay,
-                    onSustainChange = viewModel::updateSustain,
-                    onReleaseChange = viewModel::updateRelease,
-                    maxTime = ADSR_MAX_TIME,
-                    maxSustain = ADSR_MAX_SUSTAIN)
+                    modifier = Modifier.fillMaxWidth().height(160.dp).padding(horizontal = 8.dp, vertical = 16.dp).testTag("curveEditor"),
+                    attack = uiState.attack, decay = uiState.decay, sustain = uiState.sustain, release = uiState.release,
+                    onAttackChange = viewModel::updateAttack, onDecayChange = viewModel::updateDecay, onSustainChange = viewModel::updateSustain, onReleaseChange = viewModel::updateRelease,
+                    maxTime = ADSR_MAX_TIME, maxSustain = ADSR_MAX_SUSTAIN
+                )
 
-                Row(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .wrapContentHeight()
-                            .padding(vertical = 8.dp)
-                            .background(DarkBlue1),
-                    horizontalArrangement = Arrangement.SpaceAround) {
-                      UniversalKnob(
-                          label = "Attack",
-                          value = uiState.attack,
-                          onValueChange = viewModel::updateAttack,
-                          minValue = 0.0f,
-                          maxValue = ADSR_MAX_TIME,
-                          unit = KnobUnit.SECONDS,
-                          modifier = Modifier.weight(1f).testTag(SamplerTestTags.KNOB_ATTACK))
-                      UniversalKnob(
-                          label = "Decay",
-                          value = uiState.decay,
-                          onValueChange = viewModel::updateDecay,
-                          minValue = 0.0f,
-                          maxValue = ADSR_MAX_TIME,
-                          unit = KnobUnit.SECONDS,
-                          modifier = Modifier.weight(1f).testTag(SamplerTestTags.KNOB_DECAY))
-                      UniversalKnob(
-                          label = "Sustain",
-                          value = uiState.sustain,
-                          onValueChange = viewModel::updateSustain,
-                          minValue = 0.0f,
-                          maxValue = ADSR_MAX_SUSTAIN,
-                          unit = KnobUnit.PERCENT,
-                          modifier = Modifier.weight(1f).testTag(SamplerTestTags.KNOB_SUSTAIN))
-                      UniversalKnob(
-                          label = "Release",
-                          value = uiState.release,
-                          onValueChange = viewModel::updateRelease,
-                          minValue = 0.0f,
-                          maxValue = ADSR_MAX_TIME,
-                          unit = KnobUnit.SECONDS,
-                          modifier = Modifier.weight(1f).testTag(SamplerTestTags.KNOB_RELEASE))
-                    }
-              }
+                KnobRow(uiState = uiState, viewModel = viewModel, knobs = adsrKnobs)
             }
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -469,73 +461,47 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
             title = "Reverb Controls",
             isExpanded = isReverbExpanded,
             onToggle = { isReverbExpanded = !isReverbExpanded }) {
-              Column(
-                  modifier =
-                      Modifier.fillMaxWidth().padding(vertical = 8.dp).background(DarkBlue1)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceAround) {
-                          UniversalKnob(
-                              label = "Wet",
-                              value = uiState.reverbWet,
-                              onValueChange = viewModel::updateReverbWet,
-                              minValue = 0.0f,
-                              maxValue = 1.0f,
-                              unit = KnobUnit.PERCENT,
-                              modifier =
-                                  Modifier.weight(1f).testTag(SamplerTestTags.KNOB_REVERB_WET))
-                          UniversalKnob(
-                              label = "Size",
-                              value = uiState.reverbSize,
-                              onValueChange = viewModel::updateReverbSize,
-                              minValue = 0.1f,
-                              maxValue = REVERB_SIZE_MAX,
-                              unit = KnobUnit.SECONDS,
-                              modifier =
-                                  Modifier.weight(1f).testTag(SamplerTestTags.KNOB_REVERB_SIZE))
-                          UniversalKnob(
-                              label = "Width",
-                              value = uiState.reverbWidth,
-                              onValueChange = viewModel::updateReverbWidth,
-                              minValue = 0.0f,
-                              maxValue = 1.0f,
-                              unit = KnobUnit.PERCENT,
-                              modifier =
-                                  Modifier.weight(1f).testTag(SamplerTestTags.KNOB_REVERB_WIDTH))
-                        }
+            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).background(DarkBlue1)) {
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                KnobRow(uiState = uiState, viewModel = viewModel, knobs = reverbKnobsLine1)
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceAround) {
-                          UniversalKnob(
-                              label = "Depth",
-                              value = uiState.reverbDepth,
-                              onValueChange = viewModel::updateReverbDepth,
-                              minValue = 0.0f,
-                              maxValue = 1.0f,
-                              unit = KnobUnit.PERCENT,
-                              modifier =
-                                  Modifier.weight(1f).testTag(SamplerTestTags.KNOB_REVERB_DEPTH))
-                          UniversalKnob(
-                              label = "Predelay",
-                              value = uiState.reverbPredelay,
-                              onValueChange = viewModel::updateReverbPredelay,
-                              minValue = 0.0f,
-                              maxValue = PREDELAY_MAX_MS,
-                              unit = KnobUnit.MILLISECONDS,
-                              modifier =
-                                  Modifier.weight(1f).testTag(SamplerTestTags.KNOB_REVERB_PREDELAY))
-                          Spacer(modifier = Modifier.weight(1f))
-                        }
-                  }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceAround) {
+
+                    KnobRow(uiState = uiState, viewModel = viewModel, knobs = reverbKnobsLine2)
+
+                    Spacer(modifier = Modifier.weight(1f))
+                }
             }
-      }
+        }
+    }
 }
 
-val SpectrogramBackground = Color.Black.copy(alpha = 0.5f)
-val PointColor = Color.Red
+@Composable
+fun KnobRow(uiState: SamplerUiState, viewModel: SamplerViewModel, knobs: List<KnobConfig>) {
+    Row(
+        modifier = Modifier.fillMaxWidth().wrapContentHeight().padding(vertical = 8.dp).background(DarkBlue1),
+        horizontalArrangement = Arrangement.SpaceAround
+    ) {
+        knobs.forEach { config ->
+            UniversalKnob(
+                label = config.label,
+                value = config.getter(uiState),
+                onValueChange = config.setter(viewModel),
+                minValue = config.minValue,
+                maxValue = config.maxValue,
+                unit = config.unit,
+                modifier = Modifier.weight(1f).testTag(config.testTag)
+            )
+        }
+    }
+}
+
+
+
 
 enum class CurvePoint(val id: Int) {
   P1(1),
@@ -557,10 +523,7 @@ fun CurveCanvas(
     maxHorizontalTime: Float,
     pointRadius: Float = 6.0f
 ) {
-  val frameBorderColor = LightPurpleBlue
-  val lightText = White
-  val pointColor = PointColor
-  val spectrogramBackground = Color.Black.copy(alpha = 0.5f)
+
   val detectionRadiusPx = LocalDensity.current.run { detectionRadius.toPx() }
 
   Box(
@@ -660,7 +623,7 @@ fun CurveCanvas(
             drawCircle(color = lightText, radius = radiusPx, center = center)
 
             drawCircle(
-                color = pointColor,
+                color = PointColor,
                 radius = radiusPx + contourWidthPx / 2,
                 center = center,
                 style = Stroke(width = contourWidthPx))
@@ -719,7 +682,7 @@ fun ADSRCurveEditor(
               .height(160.dp)
               .padding(horizontal = 8.dp, vertical = 16.dp)
               .clip(MaterialTheme.shapes.small)
-              .testTag("curveEditorScrollContainer")
+              .testTag(CURVE_EDITOR_SCROLL_CONTAINER)
               .horizontalScroll(scrollState, enabled = activePoint == null)) {
         CurveCanvas(
             modifier =
@@ -767,7 +730,7 @@ fun UniversalKnob(
         modifier =
             Modifier.size(70.dp)
                 .clip(CircleShape)
-                .background(Color.Black)
+                .background(KnobBackground)
                 .border(2.dp, accentColor, CircleShape)
                 .pointerInput(Unit) {
                   detectDragGestures(
@@ -891,7 +854,7 @@ fun EQFader(
                 Modifier.weight(1f)
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(4.dp))
-                    .background(Color.Black.copy(alpha = 0.5f))
+                    .background(spectrogramBackground)
                     .testTag(SamplerTestTags.EQ_FADER_BOX_INPUT)
                     .pointerInput(minGain, maxGain) {
                       detectDragGestures(
@@ -1053,7 +1016,7 @@ fun CompressorCurve(
 
   Canvas(
       modifier =
-          modifier.border(2.dp, lightPurpleBlue).background(Color.Black.copy(alpha = 0.5f))) {
+          modifier.border(2.dp, lightPurpleBlue).background(spectrogramBackground)) {
         val width = size.width
         val height = size.height
 
