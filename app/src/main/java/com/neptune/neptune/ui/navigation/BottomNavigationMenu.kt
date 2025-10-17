@@ -29,8 +29,12 @@ sealed class Tab(val name: String, val icon: Int, val destination: Screen, val t
 
   object Main : Tab("Home", R.drawable.home_planet, Screen.Main, NavigationTestTags.MAIN_TAB)
 
-  object Edit :
-      Tab("Select Project", R.drawable.music_note, Screen.ProjectList, NavigationTestTags.EDIT_TAB)
+  object ProjectList :
+      Tab(
+          "Select Project",
+          R.drawable.music_note,
+          Screen.ProjectList,
+          NavigationTestTags.PROJECTLIST_TAB)
 
   object Search :
       Tab(
@@ -47,7 +51,7 @@ private val tabs =
     listOf(
         Tab.Main,
         Tab.Search,
-        Tab.Edit,
+        Tab.ProjectList,
         Tab.Post,
     )
 
