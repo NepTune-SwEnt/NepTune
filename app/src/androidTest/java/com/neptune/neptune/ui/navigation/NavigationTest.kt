@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -20,6 +21,9 @@ class NavigationTest {
 
   private fun setContent(mainViewModel: MainViewModel = MainViewModel()) {
     composeTestRule.setContent { NeptuneApp(startDestination = Screen.Main.route) }
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).isDisplayed()
+    }
   }
 
   @Test
