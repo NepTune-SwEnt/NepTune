@@ -1,0 +1,4 @@
+<!-- res/xml/file_paths.xml -->
+<paths>
+    <external-files-path name="imports" path="imports/"/>
+</paths>

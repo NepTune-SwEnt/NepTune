@@ -10,4 +10,5 @@ object NavigationTestTags {
   const val SEARCH_TAB = "SearchTab"
   const val POST_TAB = "PostTab"
   const val PROFILE_BUTTON = "ProfileButton"
+  const val IMPORT_FILE = "ImportFile"
 }

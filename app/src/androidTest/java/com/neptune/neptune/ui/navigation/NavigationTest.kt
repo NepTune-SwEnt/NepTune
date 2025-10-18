@@ -5,6 +5,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -15,10 +17,14 @@ import org.junit.Rule
 import org.junit.Test
 
 class NavigationTest {
+
   @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
   private fun setContent(mainViewModel: MainViewModel = MainViewModel()) {
     composeTestRule.setContent { NeptuneApp(startDestination = Screen.Main.route) }
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).isDisplayed()
+    }
   }
 
   @Test
@@ -62,62 +68,87 @@ class NavigationTest {
   fun editTabIsSelectedAfterClick() {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsSelected()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
   }
 
   @Test
   fun mainTabIsSelectedAfterNavigatingBackFromEdit() {
+
     setContent()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsSelected()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsNotSelected()
   }
 
   @Test
-  fun navigationToPostTabShowsPostScreen() {
-    setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).performClick()
-  }
-
-  @Test
   fun navigationToSearchTabShowsSearchScreen() {
+
     setContent()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
   }
 
   @Test
-  fun postTabIsSelectedAfterClick() {
+  fun importTabIsSelectedAfterClick() {
+
     setContent()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).assertIsSelected()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).performClick()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).assertIsSelected()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
   }
 
   @Test
   fun searchTabIsSelectedAfterClick() {
+
     setContent()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsSelected()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
   }
 
   @Test
   fun goBackFromProfileToPost() {
+
     setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).performClick()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).performClick()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Post")
   }
 
   @Test
   fun goBackFromProfileToSearch() {
+
     composeTestRule.setContent {
       NeptuneApp(navController = rememberNavController(), startDestination = Screen.Main.route)
     }
+
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
   }
 }
