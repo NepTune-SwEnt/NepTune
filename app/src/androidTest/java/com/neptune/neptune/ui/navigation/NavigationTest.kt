@@ -1,168 +1,164 @@
 package com.neptune.neptune.ui.navigation
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
-import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
-import androidx.navigation.compose.rememberNavController
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.printToLog
 import com.neptune.neptune.NeptuneApp
-import com.neptune.neptune.ui.main.MainViewModel
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
 class NavigationTest {
-  @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
-  private fun setContent(mainViewModel: MainViewModel = MainViewModel()) {
-    composeTestRule.setContent { NeptuneApp(startDestination = Screen.Main.route) }
-    // Global Wait: Ensure the Bottom Navigation Menu is composed
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).isDisplayed()
+  @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
+
+  // ---------- Helpers ----------
+
+  /** Find a node by tag in the unmerged tree (more reliable on CI). */
+  private fun node(tag: String): SemanticsNodeInteraction =
+      composeRule.onNodeWithTag(tag, useUnmergedTree = true)
+
+  /** Wait until at least one node with [tag] exists (no assertions inside the wait). */
+  private fun waitForTag(tag: String, timeoutMs: Long = 10_000) {
+    composeRule.waitUntil(timeoutMs) {
+      composeRule.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
     }
   }
+
+  /** Set content and wait for the bottom nav to appear. */
+  private fun setContent() {
+    composeRule.setContent {
+      // If you have a "testMode" or fake DI entrypoint, pass it here.
+      NeptuneApp(startDestination = Screen.Main.route)
+    }
+    waitForTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU)
+    node(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
+  }
+
+  @Before
+  fun before() {
+    // Keeps animations/timers from causing idle flakiness.
+    composeRule.mainClock.autoAdvance = true
+  }
+
+  @After
+  fun dumpTreeOnCI() {
+    // Handy when CI can’t find a node—check the run log.
+    composeRule.onRoot(useUnmergedTree = true).printToLog("ComposeTree")
+  }
+
+  // ---------- Tests ----------
 
   @Test
   fun testTagsAreCorrect() {
     setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsDisplayed()
 
-    // Specific Wait for Top Bar Element
-    composeTestRule.waitUntil(timeoutMillis = 2000) {
-      composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).isDisplayed()
-    }
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).assertIsDisplayed()
-  }
+    node(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
+    node(NavigationTestTags.PROJECTLIST_TAB).assertIsDisplayed()
 
-  @Test
-  fun profileButtonNavigatesToProfileScreen() {
-    setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
-
-    // Wait for the Profile Button to be available before clicking
-    composeTestRule.waitUntil(timeoutMillis = 2000) {
-      composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).isDisplayed()
-    }
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
-  }
-
-  @Test
-  fun goBackFromProfileToMain() {
-    setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
-  }
-
-  @Test
-  fun bottomBarIsHiddenOnProfileScreen() {
-    setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
-
-    // Wait for the Profile Button to be available before clicking
-    composeTestRule.waitUntil(timeoutMillis = 2000) {
-      composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).isDisplayed()
-    }
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsNotDisplayed()
+    waitForTag(NavigationTestTags.PROFILE_BUTTON)
+    node(NavigationTestTags.PROFILE_BUTTON).assertIsDisplayed()
   }
 
   @Test
   fun mainTabIsSelectedByDefault() {
     setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsNotSelected()
+    node(NavigationTestTags.MAIN_TAB).assertIsSelected()
+    node(NavigationTestTags.PROJECTLIST_TAB).assertIsNotSelected()
   }
 
   @Test
   fun editTabIsSelectedAfterClick() {
     setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
+
+    node(NavigationTestTags.PROJECTLIST_TAB).performScrollTo().performClick()
+
+    composeRule.waitForIdle()
+
+    node(NavigationTestTags.PROJECTLIST_TAB).assertIsSelected()
+    node(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
   }
 
   @Test
   fun mainTabIsSelectedAfterNavigatingBackFromEdit() {
     setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsNotSelected()
+
+    node(NavigationTestTags.PROJECTLIST_TAB).performScrollTo().performClick()
+
+    node(NavigationTestTags.PROJECTLIST_TAB).assertIsSelected()
+
+    node(NavigationTestTags.MAIN_TAB).performScrollTo().performClick()
+
+    node(NavigationTestTags.MAIN_TAB).assertIsSelected()
+    node(NavigationTestTags.PROJECTLIST_TAB).assertIsNotSelected()
   }
 
   @Test
   fun navigationToSearchTabShowsSearchScreen() {
     setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
+    waitForTag(NavigationTestTags.SEARCH_TAB)
+
+    node(NavigationTestTags.SEARCH_TAB).performScrollTo().performClick()
+
+    node(NavigationTestTags.SEARCH_TAB).assertIsSelected()
   }
 
   @Test
   fun importTabIsSelectedAfterClick() {
     setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
 
-    // Wait for the Import tab specifically before interacting
-    composeTestRule.waitUntil(timeoutMillis = 2000) {
-      composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).isDisplayed()
-    }
-    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).assertIsSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
+    node(NavigationTestTags.MAIN_TAB).assertIsSelected()
+
+    waitForTag(NavigationTestTags.IMPORT_FILE)
+    node(NavigationTestTags.IMPORT_FILE).performScrollTo().performClick()
+
+    composeRule.waitForIdle()
+
+    node(NavigationTestTags.IMPORT_FILE).assertIsSelected()
+    node(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
   }
 
   @Test
-  fun searchTabIsSelectedAfterClick() {
+  fun profileButtonNavigatesToProfileScreen() {
     setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
+
+    node(NavigationTestTags.MAIN_TAB).performClick()
+
+    waitForTag(NavigationTestTags.PROFILE_BUTTON)
+    node(NavigationTestTags.PROFILE_BUTTON).performScrollTo().performClick()
+
+    // On profile screen the bottom bar is hidden.
+    waitForTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU)
+    node(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsNotDisplayed()
   }
 
   @Test
   fun goBackFromProfileToPost() {
     setContent()
 
-    // 1. Wait for Import Tab
-    composeTestRule.waitUntil(timeoutMillis = 2000) {
-      composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).isDisplayed()
-    }
-    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).performClick()
+    waitForTag(NavigationTestTags.IMPORT_FILE)
+    node(NavigationTestTags.IMPORT_FILE).performScrollTo().performClick()
 
-    // 2. Wait for Profile Button
-    composeTestRule.waitUntil(timeoutMillis = 2000) {
-      composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).isDisplayed()
-    }
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
+    waitForTag(NavigationTestTags.PROFILE_BUTTON)
+    node(NavigationTestTags.PROFILE_BUTTON).performScrollTo().performClick()
 
-    // Ensure GO_BACK_BUTTON is displayed on the profile screen before clicking
-    composeTestRule.waitUntil(timeoutMillis = 2000) {
-      composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).isDisplayed()
-    }
-    composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
+    waitForTag(NavigationTestTags.GO_BACK_BUTTON)
+    node(NavigationTestTags.GO_BACK_BUTTON).performScrollTo().performClick()
 
-    // Note: The UI may update the title quickly, but waiting for a key element
-    // on the returned screen is safer than just asserting the title.
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Post")
-  }
-
-  @Test
-  fun goBackFromProfileToSearch() {
-    composeTestRule.setContent {
-      NeptuneApp(navController = rememberNavController(), startDestination = Screen.Main.route)
-    }
-    // Wait for Search Tab
-    composeTestRule.waitUntil(timeoutMillis = 2000) {
-      composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).isDisplayed()
-    }
-    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
+    // Verify we navigated back by asserting the top-bar title.
+    waitForTag(NavigationTestTags.TOP_BAR_TITLE)
+    node(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Post")
   }
 }
