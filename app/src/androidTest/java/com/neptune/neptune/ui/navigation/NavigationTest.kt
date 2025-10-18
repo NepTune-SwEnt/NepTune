@@ -1,164 +1,154 @@
 package com.neptune.neptune.ui.navigation
 
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.printToLog
+import androidx.navigation.compose.rememberNavController
 import com.neptune.neptune.NeptuneApp
-import org.junit.After
-import org.junit.Before
+import com.neptune.neptune.ui.main.MainViewModel
 import org.junit.Rule
 import org.junit.Test
 
 class NavigationTest {
 
-  @get:Rule val composeRule = createAndroidComposeRule<ComponentActivity>()
+  @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
-  // ---------- Helpers ----------
-
-  /** Find a node by tag in the unmerged tree (more reliable on CI). */
-  private fun node(tag: String): SemanticsNodeInteraction =
-      composeRule.onNodeWithTag(tag, useUnmergedTree = true)
-
-  /** Wait until at least one node with [tag] exists (no assertions inside the wait). */
-  private fun waitForTag(tag: String, timeoutMs: Long = 10_000) {
-    composeRule.waitUntil(timeoutMs) {
-      composeRule.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+  private fun setContent(mainViewModel: MainViewModel = MainViewModel()) {
+    composeTestRule.setContent { NeptuneApp(startDestination = Screen.Main.route) }
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).isDisplayed()
     }
   }
-
-  /** Set content and wait for the bottom nav to appear. */
-  private fun setContent() {
-    composeRule.setContent {
-      // If you have a "testMode" or fake DI entrypoint, pass it here.
-      NeptuneApp(startDestination = Screen.Main.route)
-    }
-    waitForTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU)
-    node(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
-  }
-
-  @Before
-  fun before() {
-    // Keeps animations/timers from causing idle flakiness.
-    composeRule.mainClock.autoAdvance = true
-  }
-
-  @After
-  fun dumpTreeOnCI() {
-    // Handy when CI can’t find a node—check the run log.
-    composeRule.onRoot(useUnmergedTree = true).printToLog("ComposeTree")
-  }
-
-  // ---------- Tests ----------
 
   @Test
   fun testTagsAreCorrect() {
     setContent()
-
-    node(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
-    node(NavigationTestTags.PROJECTLIST_TAB).assertIsDisplayed()
-
-    waitForTag(NavigationTestTags.PROFILE_BUTTON)
-    node(NavigationTestTags.PROFILE_BUTTON).assertIsDisplayed()
-  }
-
-  @Test
-  fun mainTabIsSelectedByDefault() {
-    setContent()
-    node(NavigationTestTags.MAIN_TAB).assertIsSelected()
-    node(NavigationTestTags.PROJECTLIST_TAB).assertIsNotSelected()
-  }
-
-  @Test
-  fun editTabIsSelectedAfterClick() {
-    setContent()
-
-    node(NavigationTestTags.PROJECTLIST_TAB).performScrollTo().performClick()
-
-    composeRule.waitForIdle()
-
-    node(NavigationTestTags.PROJECTLIST_TAB).assertIsSelected()
-    node(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
-  }
-
-  @Test
-  fun mainTabIsSelectedAfterNavigatingBackFromEdit() {
-    setContent()
-
-    node(NavigationTestTags.PROJECTLIST_TAB).performScrollTo().performClick()
-
-    node(NavigationTestTags.PROJECTLIST_TAB).assertIsSelected()
-
-    node(NavigationTestTags.MAIN_TAB).performScrollTo().performClick()
-
-    node(NavigationTestTags.MAIN_TAB).assertIsSelected()
-    node(NavigationTestTags.PROJECTLIST_TAB).assertIsNotSelected()
-  }
-
-  @Test
-  fun navigationToSearchTabShowsSearchScreen() {
-    setContent()
-    waitForTag(NavigationTestTags.SEARCH_TAB)
-
-    node(NavigationTestTags.SEARCH_TAB).performScrollTo().performClick()
-
-    node(NavigationTestTags.SEARCH_TAB).assertIsSelected()
-  }
-
-  @Test
-  fun importTabIsSelectedAfterClick() {
-    setContent()
-
-    node(NavigationTestTags.MAIN_TAB).assertIsSelected()
-
-    waitForTag(NavigationTestTags.IMPORT_FILE)
-    node(NavigationTestTags.IMPORT_FILE).performScrollTo().performClick()
-
-    composeRule.waitForIdle()
-
-    node(NavigationTestTags.IMPORT_FILE).assertIsSelected()
-    node(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).assertIsDisplayed()
   }
 
   @Test
   fun profileButtonNavigatesToProfileScreen() {
     setContent()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
+  }
 
-    node(NavigationTestTags.MAIN_TAB).performClick()
+  @Test
+  fun goBackFromProfileToMain() {
+    setContent()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
+  }
 
-    waitForTag(NavigationTestTags.PROFILE_BUTTON)
-    node(NavigationTestTags.PROFILE_BUTTON).performScrollTo().performClick()
+  @Test
+  fun bottomBarIsHiddenOnProfileScreen() {
+    setContent()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsNotDisplayed()
+  }
 
-    // On profile screen the bottom bar is hidden.
-    waitForTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU)
-    node(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsNotDisplayed()
+  @Test
+  fun mainTabIsSelectedByDefault() {
+    setContent()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsNotSelected()
+  }
+
+  @Test
+  fun editTabIsSelectedAfterClick() {
+    setContent()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsSelected()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
+  }
+
+  @Test
+  fun mainTabIsSelectedAfterNavigatingBackFromEdit() {
+
+    setContent()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsSelected()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsNotSelected()
+  }
+
+  @Test
+  fun navigationToSearchTabShowsSearchScreen() {
+
+    setContent()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
+  }
+
+  @Test
+  fun importTabIsSelectedAfterClick() {
+
+    setContent()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).performClick()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).assertIsSelected()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
+  }
+
+  @Test
+  fun searchTabIsSelectedAfterClick() {
+
+    setContent()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsSelected()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
   }
 
   @Test
   fun goBackFromProfileToPost() {
+
     setContent()
 
-    waitForTag(NavigationTestTags.IMPORT_FILE)
-    node(NavigationTestTags.IMPORT_FILE).performScrollTo().performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).performClick()
 
-    waitForTag(NavigationTestTags.PROFILE_BUTTON)
-    node(NavigationTestTags.PROFILE_BUTTON).performScrollTo().performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
 
-    waitForTag(NavigationTestTags.GO_BACK_BUTTON)
-    node(NavigationTestTags.GO_BACK_BUTTON).performScrollTo().performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
 
-    // Verify we navigated back by asserting the top-bar title.
-    waitForTag(NavigationTestTags.TOP_BAR_TITLE)
-    node(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Post")
+    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Post")
+  }
+
+  @Test
+  fun goBackFromProfileToSearch() {
+
+    composeTestRule.setContent {
+      NeptuneApp(navController = rememberNavController(), startDestination = Screen.Main.route)
+    }
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
   }
 }
