@@ -21,6 +21,7 @@ class NavigationTest {
 
   private fun setContent(mainViewModel: MainViewModel = MainViewModel()) {
     composeTestRule.setContent { NeptuneApp(startDestination = Screen.Main.route) }
+    // Global Wait: Ensure the Bottom Navigation Menu is composed
     composeTestRule.waitUntil(timeoutMillis = 5000) {
       composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).isDisplayed()
     }
@@ -32,6 +33,11 @@ class NavigationTest {
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsDisplayed()
+
+    // Specific Wait for Top Bar Element
+    composeTestRule.waitUntil(timeoutMillis = 2000) {
+      composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).isDisplayed()
+    }
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).assertIsDisplayed()
   }
 
@@ -39,6 +45,11 @@ class NavigationTest {
   fun profileButtonNavigatesToProfileScreen() {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
+
+    // Wait for the Profile Button to be available before clicking
+    composeTestRule.waitUntil(timeoutMillis = 2000) {
+      composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).isDisplayed()
+    }
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
   }
 
@@ -52,6 +63,11 @@ class NavigationTest {
   fun bottomBarIsHiddenOnProfileScreen() {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
+
+    // Wait for the Profile Button to be available before clicking
+    composeTestRule.waitUntil(timeoutMillis = 2000) {
+      composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).isDisplayed()
+    }
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsNotDisplayed()
   }
@@ -92,6 +108,11 @@ class NavigationTest {
   fun importTabIsSelectedAfterClick() {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
+
+    // Wait for the Import tab specifically before interacting
+    composeTestRule.waitUntil(timeoutMillis = 2000) {
+      composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).isDisplayed()
+    }
     composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).assertIsSelected()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
@@ -109,9 +130,27 @@ class NavigationTest {
   @Test
   fun goBackFromProfileToPost() {
     setContent()
+
+    // 1. Wait for Import Tab
+    composeTestRule.waitUntil(timeoutMillis = 2000) {
+      composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).isDisplayed()
+    }
     composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).performClick()
+
+    // 2. Wait for Profile Button
+    composeTestRule.waitUntil(timeoutMillis = 2000) {
+      composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).isDisplayed()
+    }
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
+
+    // Ensure GO_BACK_BUTTON is displayed on the profile screen before clicking
+    composeTestRule.waitUntil(timeoutMillis = 2000) {
+      composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).isDisplayed()
+    }
     composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
+
+    // Note: The UI may update the title quickly, but waiting for a key element
+    // on the returned screen is safer than just asserting the title.
     composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Post")
   }
 
@@ -119,6 +158,10 @@ class NavigationTest {
   fun goBackFromProfileToSearch() {
     composeTestRule.setContent {
       NeptuneApp(navController = rememberNavController(), startDestination = Screen.Main.route)
+    }
+    // Wait for Search Tab
+    composeTestRule.waitUntil(timeoutMillis = 2000) {
+      composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).isDisplayed()
     }
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
   }
