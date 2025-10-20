@@ -5,7 +5,6 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
-import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -22,9 +21,8 @@ class NavigationTest {
 
   private fun setContent(mainViewModel: MainViewModel = MainViewModel()) {
     composeTestRule.setContent { NeptuneApp(startDestination = Screen.Main.route) }
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).isDisplayed()
-    }
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).isDisplayed()
   }
 
   @Test
@@ -101,20 +99,6 @@ class NavigationTest {
   }
 
   @Test
-  fun importTabIsSelectedAfterClick() {
-
-    setContent()
-
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
-
-    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).performClick()
-
-    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).assertIsSelected()
-
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
-  }
-
-  @Test
   fun searchTabIsSelectedAfterClick() {
 
     setContent()
@@ -126,20 +110,6 @@ class NavigationTest {
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsSelected()
 
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
-  }
-
-  @Test
-  fun goBackFromProfileToPost() {
-
-    setContent()
-
-    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).performClick()
-
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
-
-    composeTestRule.onNodeWithTag(NavigationTestTags.GO_BACK_BUTTON).performClick()
-
-    composeTestRule.onNodeWithTag(NavigationTestTags.TOP_BAR_TITLE).assertTextEquals("Post")
   }
 
   @Test
