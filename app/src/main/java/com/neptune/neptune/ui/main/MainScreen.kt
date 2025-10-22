@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -82,7 +83,11 @@ object MainScreenTestTags {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 // Implementation of the main screen
-fun MainScreen(mainViewModel: MainViewModel = viewModel(), navigateToProfile: () -> Unit = {}) {
+fun MainScreen(
+    mainViewModel: MainViewModel = viewModel(),
+    navigateToProfile: () -> Unit = {},
+    navigateToSettings: () -> Unit = {}
+) {
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
   Scaffold(
@@ -102,6 +107,17 @@ fun MainScreen(mainViewModel: MainViewModel = viewModel(), navigateToProfile: ()
                         ),
                     modifier = Modifier.padding(25.dp).testTag(MainScreenTestTags.TOP_BAR_TITLE),
                     textAlign = TextAlign.Center)
+              },
+              navigationIcon = {
+                IconButton(
+                    onClick = navigateToSettings,
+                    modifier = Modifier.padding(vertical = 30.dp, horizontal = 17.dp)) {
+                      Icon(
+                          imageVector = Icons.Default.Settings,
+                          contentDescription = "Settings",
+                          tint = NepTuneTheme.colors.onBackground,
+                          modifier = Modifier.size(57.dp))
+                    }
               },
               actions = {
                 IconButton(

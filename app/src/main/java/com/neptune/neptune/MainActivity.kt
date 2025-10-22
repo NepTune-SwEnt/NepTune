@@ -36,6 +36,7 @@ import com.neptune.neptune.ui.navigation.Screen
 import com.neptune.neptune.ui.profile.ProfileRoute
 import com.neptune.neptune.ui.projectlist.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
+import com.neptune.neptune.ui.settings.SettingsScreen
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.ui.theme.SampleAppTheme
 
@@ -83,7 +84,9 @@ fun NeptuneApp(
               modifier = Modifier.padding(innerPadding)) {
                 // TODO: Replace mock screens with actual app screens
                 composable(Screen.Main.route) {
-                  MainScreen(navigateToProfile = { navigationActions.navigateTo(Screen.Profile) })
+                  MainScreen(
+                      navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
+                      navigateToSettings = { navigationActions.navigateTo(Screen.Settings) })
                 }
                 composable(Screen.Profile.route) {
                   ProfileRoute(
@@ -105,6 +108,7 @@ fun NeptuneApp(
                   ProjectListScreen(
                       navigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
                 }
+                composable(Screen.Settings.route) { SettingsScreen { navigationActions.goBack() } }
               }
         })
   }
