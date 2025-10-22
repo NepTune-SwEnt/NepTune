@@ -1,4 +1,4 @@
-package com.neptune.neptune.model
+package com.neptune.neptune.model.profile
 
 data class Profile(
     val uid: String,

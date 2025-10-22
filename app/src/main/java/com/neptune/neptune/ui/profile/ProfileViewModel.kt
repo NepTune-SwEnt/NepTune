@@ -2,10 +2,10 @@ package com.neptune.neptune.ui.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.neptune.neptune.model.Profile
-import com.neptune.neptune.model.ProfileRepository
-import com.neptune.neptune.model.Repositories
-import com.neptune.neptune.model.UsernameTakenException
+import com.neptune.neptune.model.profile.Profile
+import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.model.profile.Repositories
+import com.neptune.neptune.model.profile.UsernameTakenException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

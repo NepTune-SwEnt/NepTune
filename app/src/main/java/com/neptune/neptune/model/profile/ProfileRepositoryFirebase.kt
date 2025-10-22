@@ -1,6 +1,7 @@
-package com.neptune.neptune.model
+package com.neptune.neptune.model.profile
 
 // import com.google.firebase.storage.FirebaseStorage
+import android.net.Uri
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.DocumentSnapshot
@@ -53,14 +54,15 @@ class ProfileRepositoryFirebase(
     return if (!exists()) {
       null
     } else {
-      Profile(
-          uid = id,
-          username = getString("username").orEmpty(),
-          name = getString("name"),
-          bio = getString("bio"),
-          subscriptions = getLong("subscriptions") ?: 0L,
-          subscribers = getLong("subscribers") ?: 0L,
-          avatarUrl = getString("avatarUrl").orEmpty())
+        Profile(
+            uid = id,
+            username = getString("username").orEmpty(),
+            name = getString("name"),
+            bio = getString("bio"),
+            subscriptions = getLong("subscriptions") ?: 0L,
+            subscribers = getLong("subscribers") ?: 0L,
+            avatarUrl = getString("avatarUrl").orEmpty()
+        )
     }
   }
 
@@ -193,7 +195,7 @@ class ProfileRepositoryFirebase(
     profiles.document(uid).update("bio", newBio).await()
   }
 
-  override suspend fun uploadAvatar(localUri: android.net.Uri): String {
+  override suspend fun uploadAvatar(localUri: Uri): String {
     val currentUser = Firebase.auth.currentUser
     val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
     // val ref = storage.reference.child("images/avatars/$uid.jpg")
@@ -226,7 +228,8 @@ class ProfileRepositoryFirebase(
         bio = bio,
         subscriptions = subscriptions,
         subscribers = subscribers,
-        avatarUrl = avatarUrl)
+        avatarUrl = avatarUrl
+    )
   }
 
   private fun toUsernameBase(s: String) = s.lowercase().replace("[^a-z0-9_]".toRegex(), "")

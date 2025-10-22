@@ -1,9 +1,9 @@
 package com.neptune.neptune.model.fakes
 
 import android.net.Uri
-import com.neptune.neptune.model.Profile
-import com.neptune.neptune.model.ProfileRepository
-import com.neptune.neptune.model.UsernameTakenException
+import com.neptune.neptune.model.profile.Profile
+import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.model.profile.UsernameTakenException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

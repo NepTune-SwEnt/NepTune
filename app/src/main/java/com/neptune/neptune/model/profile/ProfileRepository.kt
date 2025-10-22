@@ -1,4 +1,7 @@
-package com.neptune.neptune.model
+package com.neptune.neptune.model.profile
+
+import android.net.Uri
+import kotlinx.coroutines.flow.Flow
 
 interface ProfileRepository {
 
@@ -14,7 +17,7 @@ interface ProfileRepository {
    *
    * @return a flow emitting the profile, or null if missing *
    */
-  fun observeProfile(): kotlinx.coroutines.flow.Flow<Profile?>
+  fun observeProfile(): Flow<Profile?>
 
   /**
    * Creates profiles/{uid} if missing on first sign-in. Returns the created/loaded profile.
@@ -67,7 +70,7 @@ interface ProfileRepository {
    * @param localUri local Uri of the image to upload
    * @return the final URL.
    */
-  suspend fun uploadAvatar(localUri: android.net.Uri): String
+  suspend fun uploadAvatar(localUri: Uri): String
 
   /**
    * Clears photo (deletes storage object if present, sets avatarUrl="", uses placeholder picture).
