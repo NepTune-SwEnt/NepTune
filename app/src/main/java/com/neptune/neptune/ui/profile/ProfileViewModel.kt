@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
-import com.neptune.neptune.model.profile.Repositories
+import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.model.profile.UsernameTakenException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
  * Holds the current [ProfileUiState] and exposes update functions for UI-driven changes (name,
  * username, bio). Simulates save operations (to be replaced with repository calls).
  */
-class ProfileViewModel(private val repo: ProfileRepository = Repositories.profile) : ViewModel() {
+class ProfileViewModel(private val repo: ProfileRepository = ProfileRepositoryProvider.repository) : ViewModel() {
 
   private val _uiState = MutableStateFlow(ProfileUiState())
   val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
