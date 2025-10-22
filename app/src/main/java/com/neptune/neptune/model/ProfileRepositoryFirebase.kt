@@ -5,7 +5,7 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Transaction
-import com.google.firebase.storage.FirebaseStorage
+//import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -18,7 +18,7 @@ private const val DEFAULT_BIO = "Hello! New NepTune user here!"
 
 class ProfileRepositoryFirebase(
     private val db: FirebaseFirestore,
-    private val storage: FirebaseStorage
+    //private val storage: FirebaseStorage
 ): ProfileRepository {
 
     val profiles = db.collection(PROFILES_COLLECTION_PATH)
@@ -200,18 +200,18 @@ class ProfileRepositoryFirebase(
     override suspend fun uploadAvatar(localUri: android.net.Uri): String {
         val currentUser = Firebase.auth.currentUser
         val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
-        val ref = storage.reference.child("images/avatars/$uid.jpg")
-        ref.putFile(localUri).await()
-        val url = ref.downloadUrl.await().toString()
-        profiles.document(uid).update("avatarUrl", url).await()
-        return url
+        //val ref = storage.reference.child("images/avatars/$uid.jpg")
+        //ref.putFile(localUri).await()
+        //val url = ref.downloadUrl.await().toString()
+        profiles.document(uid).update("avatarUrl", ""/*url*/).await()
+        return ""//url
     }
 
     override suspend fun removeAvatar() {
         val currentUser = Firebase.auth.currentUser
         val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
-        val ref = storage.reference.child("images/avatars/$uid.jpg")
-        runCatching { ref.delete().await() }
+        //val ref = storage.reference.child("images/avatars/$uid.jpg")
+        //runCatching { ref.delete().await() }
         profiles.document(uid).update("avatarUrl", "").await()
     }
 
