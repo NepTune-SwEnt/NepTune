@@ -473,9 +473,7 @@ fun ProfileRoute(logout: () -> Unit = {}, goBack: () -> Unit = {}) {
   val viewModel: ProfileViewModel = viewModel()
   val state = viewModel.uiState.collectAsState().value
 
-    LaunchedEffect(Unit) {
-        viewModel.loadOrEnsure()
-    }
+  LaunchedEffect(Unit) { viewModel.loadOrEnsure() }
 
   ProfileScreen(
       uiState = state,

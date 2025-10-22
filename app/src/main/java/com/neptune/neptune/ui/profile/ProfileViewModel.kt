@@ -19,78 +19,75 @@ import kotlinx.coroutines.launch
  * Holds the current [ProfileUiState] and exposes update functions for UI-driven changes (name,
  * username, bio). Simulates save operations (to be replaced with repository calls).
  */
-class ProfileViewModel(
-    private val repo: ProfileRepository = Repositories.profile
-) : ViewModel() {
+class ProfileViewModel(private val repo: ProfileRepository = Repositories.profile) : ViewModel() {
 
   private val _uiState = MutableStateFlow(ProfileUiState())
   val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
+  /** Latest snapshot we saw from Firestore, used to detect changes on save. */
+  private var snapshot: Profile? = null
 
-    /** Latest snapshot we saw from Firestore, used to detect changes on save. */
-    private var snapshot: Profile? = null
+  /** Cancelable job for username availability checks. */
+  private var usernameCheckJob: Job? = null // suggested by ChatGPT
 
-    /** Cancelable job for username availability checks. */
-    private var usernameCheckJob: Job? = null // suggested by ChatGPT
+  init {
+    viewModelScope.launch {
+      repo.observeProfile().collectLatest { p ->
+        snapshot = p
 
-    init {
-        viewModelScope.launch {
-            repo.observeProfile().collectLatest { p ->
-                snapshot = p
-
-
-
-                if (p != null && _uiState.value.mode == ProfileMode.VIEW) {
-                    _uiState.value = _uiState.value.copy(
-                        name = p.name.orEmpty(),
-                        username = p.username,
-                        bio = p.bio.orEmpty(),
-                        avatarUrl = p.avatarUrl,
-                        followers = p.subscribers.toInt(),
-                        following = p.subscriptions.toInt(),
-                        error = null
-                    )
-                } else if (p != null && _uiState.value.mode == ProfileMode.EDIT) {
-                    _uiState.value = _uiState.value.copy(
-                        followers = p.subscribers.toInt(),
-                        following = p.subscriptions.toInt(),
-                        avatarUrl = p.avatarUrl,
-                    )
-                }
-            }
+        if (p != null && _uiState.value.mode == ProfileMode.VIEW) {
+          _uiState.value =
+              _uiState.value.copy(
+                  name = p.name.orEmpty(),
+                  username = p.username,
+                  bio = p.bio.orEmpty(),
+                  avatarUrl = p.avatarUrl,
+                  followers = p.subscribers.toInt(),
+                  following = p.subscriptions.toInt(),
+                  error = null)
+        } else if (p != null && _uiState.value.mode == ProfileMode.EDIT) {
+          _uiState.value =
+              _uiState.value.copy(
+                  followers = p.subscribers.toInt(),
+                  following = p.subscriptions.toInt(),
+                  avatarUrl = p.avatarUrl,
+              )
         }
+      }
     }
+  }
 
-    /** Call this once after auth to ensure profile exists (first login). */
-    fun loadOrEnsure(suggestedUsernameBase: String? = null, displayName: String? = null) {
-        viewModelScope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(isSaving = true, error = null)
-                val prof = repo.ensureProfile(suggestedUsernameBase, displayName)
-                snapshot = prof
-                _uiState.value = _uiState.value.copy(
-                    name = prof.name.orEmpty(),
-                    username = prof.username,
-                    bio = prof.bio.orEmpty(),
-                    avatarUrl = prof.avatarUrl,
-                    followers = prof.subscribers.toInt(),
-                    following = prof.subscriptions.toInt(),
-                    isSaving = false,
-                    error = null
-                )
-            } catch (t: Throwable) {
-                _uiState.value = _uiState.value.copy(isSaving = false, error = t.message)
-            }
-        }
+  /** Call this once after auth to ensure profile exists (first login). */
+  fun loadOrEnsure(suggestedUsernameBase: String? = null, displayName: String? = null) {
+    viewModelScope.launch {
+      try {
+        _uiState.value = _uiState.value.copy(isSaving = true, error = null)
+        val prof = repo.ensureProfile(suggestedUsernameBase, displayName)
+        snapshot = prof
+        _uiState.value =
+            _uiState.value.copy(
+                name = prof.name.orEmpty(),
+                username = prof.username,
+                bio = prof.bio.orEmpty(),
+                avatarUrl = prof.avatarUrl,
+                followers = prof.subscribers.toInt(),
+                following = prof.subscriptions.toInt(),
+                isSaving = false,
+                error = null)
+      } catch (t: Throwable) {
+        _uiState.value = _uiState.value.copy(isSaving = false, error = t.message)
+      }
     }
-
+  }
 
   /** Enters edit mode and restores current saved profile data for editing. */
   fun onEditClick() {
-    _uiState.value = _uiState.value.copy(
+    _uiState.value =
+        _uiState.value
+            .copy(
                 mode = ProfileMode.EDIT,
                 error = null,
-                )
+            )
             .validated()
   }
 
@@ -110,31 +107,31 @@ class ProfileViewModel(
    * @param newUsername The new username entered by the user.
    */
   fun onUsernameChange(newUsername: String) {
-      if (_uiState.value.mode != ProfileMode.EDIT) return
-      val updated = _uiState.value.copy(username = newUsername).validated()
-      _uiState.value = updated
+    if (_uiState.value.mode != ProfileMode.EDIT) return
+    val updated = _uiState.value.copy(username = newUsername).validated()
+    _uiState.value = updated
 
-      usernameCheckJob?.cancel() // This was suggested by ChatGPT
-      if (updated.usernameError == null && newUsername.isNotBlank()) {
-          usernameCheckJob = viewModelScope.launch {
-              try {
-                  val free = repo.isUsernameAvailable(newUsername.trim())
-                  // If user hasn’t typed further (still same username), apply result
-                  if (_uiState.value.username.trim() == newUsername.trim()) {
-                      _uiState.value = _uiState.value.copy(
-                          usernameError = if (free) null else "This username is already taken."
-                      )
-                  }
-              } catch (t: Throwable) {
-                  // Don’t block editing if network hiccups; show soft error
-                  if (_uiState.value.username.trim() == newUsername.trim()) {
-                      _uiState.value = _uiState.value.copy(
-                          error = "Couldn’t verify username. Check your connection."
-                      )
-                  }
+    usernameCheckJob?.cancel() // This was suggested by ChatGPT
+    if (updated.usernameError == null && newUsername.isNotBlank()) {
+      usernameCheckJob =
+          viewModelScope.launch {
+            try {
+              val free = repo.isUsernameAvailable(newUsername.trim())
+              // If user hasn’t typed further (still same username), apply result
+              if (_uiState.value.username.trim() == newUsername.trim()) {
+                _uiState.value =
+                    _uiState.value.copy(
+                        usernameError = if (free) null else "This username is already taken.")
               }
+            } catch (t: Throwable) {
+              // Don’t block editing if network hiccups; show soft error
+              if (_uiState.value.username.trim() == newUsername.trim()) {
+                _uiState.value =
+                    _uiState.value.copy(error = "Couldn’t verify username. Check your connection.")
+              }
+            }
           }
-      }
+    }
   }
 
   /**
@@ -154,7 +151,7 @@ class ProfileViewModel(
    * field is invalid, the corresponding error message is displayed.
    */
   fun onSaveClick() {
-      val currentState = _uiState.value
+    val currentState = _uiState.value
     if (currentState.mode != ProfileMode.EDIT || currentState.isSaving) return
 
     val validated = currentState.validated()
@@ -164,49 +161,45 @@ class ProfileViewModel(
     viewModelScope.launch {
       _uiState.value = validated.copy(isSaving = true, error = null)
 
-        try {
-            val prev = snapshot
-            val newName = currentState.name.trim()
-            val newUsername = currentState.username.trim()
-            val newBio = currentState.bio.trim()
+      try {
+        val prev = snapshot
+        val newName = currentState.name.trim()
+        val newUsername = currentState.username.trim()
+        val newBio = currentState.bio.trim()
 
-            if (prev == null) {
-                // Safety: if we don’t have a snapshot yet, update all fields
-                if (newUsername.isNotEmpty()) repo.setUsername(newUsername)
-                repo.updateName(newName)
-                repo.updateBio(newBio)
-            } else {
-                if (newUsername.isNotEmpty() && newUsername != prev.username) {
-                    repo.setUsername(newUsername)
-                }
-                if (newName != (prev.name.orEmpty())) {
-                    repo.updateName(newName)
-                }
-                if (newBio != (prev.bio.orEmpty())) {
-                    repo.updateBio(newBio)
-                }
-            }
+        if (prev == null) {
+          // Safety: if we don’t have a snapshot yet, update all fields
+          if (newUsername.isNotEmpty()) repo.setUsername(newUsername)
+          repo.updateName(newName)
+          repo.updateBio(newBio)
+        } else {
+          if (newUsername.isNotEmpty() && newUsername != prev.username) {
+            repo.setUsername(newUsername)
+          }
+          if (newName != (prev.name.orEmpty())) {
+            repo.updateName(newName)
+          }
+          if (newBio != (prev.bio.orEmpty())) {
+            repo.updateBio(newBio)
+          }
+        }
 
-            _uiState.value = _uiState.value.copy(
+        _uiState.value =
+            _uiState.value.copy(
                 isSaving = false,
                 mode = ProfileMode.VIEW,
                 error = null,
                 nameError = null,
                 usernameError = null,
-                bioError = null
-            )
-        } catch (e: UsernameTakenException) {
-            _uiState.value = _uiState.value.copy(
-                isSaving = false,
-                usernameError = "This username is already taken."
-            )
-        } catch (t: Throwable) {
-            android.util.Log.e("Profile", "Save failed", t)
-            _uiState.value = _uiState.value.copy(
-                isSaving = false,
-                error = t.message ?: "Couldn’t save changes."
-            )
-        }
+                bioError = null)
+      } catch (e: UsernameTakenException) {
+        _uiState.value =
+            _uiState.value.copy(isSaving = false, usernameError = "This username is already taken.")
+      } catch (t: Throwable) {
+        android.util.Log.e("Profile", "Save failed", t)
+        _uiState.value =
+            _uiState.value.copy(isSaving = false, error = t.message ?: "Couldn’t save changes.")
+      }
     }
   }
 
