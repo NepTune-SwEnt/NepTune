@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.neptune.neptune.model.Profile
 import com.neptune.neptune.model.ProfileRepository
+import com.neptune.neptune.model.Repositories
 import com.neptune.neptune.model.UsernameTakenException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +20,7 @@ import kotlinx.coroutines.launch
  * username, bio). Simulates save operations (to be replaced with repository calls).
  */
 class ProfileViewModel(
-    private val repo: ProfileRepository
+    private val repo: ProfileRepository = Repositories.profile
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(ProfileUiState())
