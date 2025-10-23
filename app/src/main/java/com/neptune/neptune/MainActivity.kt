@@ -80,11 +80,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun NeptuneApp(
     settingsViewModel: SettingsViewModel =
-        SettingsViewModel(
-            viewModel(
-                factory =
-                    SettingsViewModelFactory(
-                        ThemeDataStore(LocalContext.current.applicationContext)))),
+        SettingsViewModel(ThemeDataStore(LocalContext.current.applicationContext)),
     navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.SignIn.route,
 ) {
