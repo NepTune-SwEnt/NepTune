@@ -83,7 +83,9 @@ fun NeptuneApp(
               modifier = Modifier.padding(innerPadding)) {
                 // TODO: Replace mock screens with actual app screens
                 composable(Screen.Main.route) {
-                  MainScreen(navigateToProfile = { navigationActions.navigateTo(Screen.Profile) })
+                  MainScreen(
+                      navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
+                      navigateToProjectList = { navigationActions.navigateTo(Screen.ProjectList) })
                 }
                 composable(Screen.Profile.route) {
                   ProfileRoute(
