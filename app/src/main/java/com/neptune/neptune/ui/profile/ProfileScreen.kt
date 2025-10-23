@@ -15,10 +15,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -76,7 +76,7 @@ object ProfileScreenTestTags {
 
   const val EDIT_BUTTON = "profile/btn/edit"
   const val SAVE_BUTTON = "profile/btn/save"
-  const val LOGOUT_BUTTON = "profile/btn/logout"
+  const val SETTINGS_BUTTON = "profile/btn/settings"
   const val GOBACK_BUTTON = "profile/btn/goback"
 
   const val FIELD_NAME = "profile/field/name"
@@ -106,7 +106,7 @@ fun ProfileScreen(
     onNameChange: (String) -> Unit = {},
     onUsernameChange: (String) -> Unit = {},
     onBioChange: (String) -> Unit = {},
-    onLogoutClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
     goBackClick: () -> Unit = {}
 ) {
   // TODO: add profile picture, follower/following count and back button
@@ -114,7 +114,7 @@ fun ProfileScreen(
     when (uiState.mode) {
       ProfileMode.VIEW -> {
         ProfileViewContent(
-            state = uiState, onEdit = onEditClick, logout = onLogoutClick, goBack = goBackClick)
+            state = uiState, onEdit = onEditClick, settings = onSettingsClick, goBack = goBackClick)
       }
       ProfileMode.EDIT -> {
         ProfileEditContent(
@@ -142,7 +142,7 @@ private fun ProfileViewContent(
     state: ProfileUiState,
     onEdit: () -> Unit,
     goBack: () -> Unit,
-    logout: () -> Unit,
+    settings: () -> Unit,
 ) {
   Scaffold(
       modifier = Modifier.testTag(ProfileScreenTestTags.ROOT),
@@ -161,11 +161,11 @@ private fun ProfileViewContent(
                           tint = NepTuneTheme.colors.onBackground)
                     }
                 IconButton(
-                    modifier = Modifier.size(30.dp).testTag(ProfileScreenTestTags.LOGOUT_BUTTON),
-                    onClick = logout) {
+                    modifier = Modifier.size(30.dp).testTag(ProfileScreenTestTags.SETTINGS_BUTTON),
+                    onClick = settings) {
                       Icon(
                           modifier = Modifier.size(30.dp),
-                          imageVector = Icons.AutoMirrored.Filled.Logout,
+                          imageVector = Icons.Default.Settings,
                           contentDescription = "Logout",
                           tint = NepTuneTheme.colors.onBackground)
                     }
@@ -469,7 +469,7 @@ fun ProfileScreenEditModePreview() {
  * function is typically used as the entry point for navigation to the profile screen.
  */
 @Composable
-fun ProfileRoute(logout: () -> Unit = {}, goBack: () -> Unit = {}) {
+fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
   val viewModel: ProfileViewModel = viewModel()
   val state = viewModel.uiState.collectAsState().value
 
@@ -480,6 +480,6 @@ fun ProfileRoute(logout: () -> Unit = {}, goBack: () -> Unit = {}) {
       onNameChange = viewModel::onNameChange,
       onUsernameChange = viewModel::onUsernameChange,
       onBioChange = viewModel::onBioChange,
-      onLogoutClick = logout,
+      onSettingsClick = settings,
       goBackClick = goBack)
 }

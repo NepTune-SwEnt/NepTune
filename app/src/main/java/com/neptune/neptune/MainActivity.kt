@@ -115,10 +115,7 @@ fun NeptuneApp(
                 }
                 composable(Screen.Profile.route) {
                   ProfileRoute(
-                      logout = {
-                        signInViewModel.signOut()
-                        navigationActions.navigateTo(Screen.SignIn)
-                      },
+                      settings = { navigationActions.navigateTo(Screen.Settings) },
                       goBack = { navigationActions.goBack() })
                 }
                 composable(Screen.Edit.route) { SamplerScreen() }
