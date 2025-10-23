@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
@@ -155,7 +156,7 @@ private fun ProfileViewContent(
                     onClick = goBack,
                     modifier = Modifier.testTag(ProfileScreenTestTags.GOBACK_BUTTON)) {
                       Icon(
-                          painter = painterResource(id = android.R.drawable.ic_menu_revert),
+                          imageVector = Icons.Default.ArrowBackIosNew,
                           contentDescription = "Go Back",
                           tint = NepTuneTheme.colors.onBackground)
                     }

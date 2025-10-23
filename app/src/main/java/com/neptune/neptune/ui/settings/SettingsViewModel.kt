@@ -15,13 +15,15 @@ enum class ThemeSetting {
   DARK
 }
 
+private const val STOP_TIMEOUT_MILLIS = 5000L
+
 /** ViewModel for the Settings screen. */
 class SettingsViewModel(private val themeDataStore: ThemeDataStore) : ViewModel() {
 
   val theme: StateFlow<ThemeSetting> =
       themeDataStore.theme.stateIn(
           scope = viewModelScope,
-          started = SharingStarted.WhileSubscribed(5000),
+          started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
           initialValue = ThemeSetting.SYSTEM)
 
   fun updateTheme(newTheme: ThemeSetting) {

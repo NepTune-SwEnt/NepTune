@@ -6,12 +6,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -20,10 +21,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.neptune.neptune.R
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
 /**
@@ -53,19 +59,19 @@ fun SettingsScreen(
                     onClick = goBack,
                 ) {
                   Icon(
-                      painter = painterResource(id = android.R.drawable.ic_menu_revert),
+                      imageVector = Icons.Default.ArrowBackIosNew,
                       contentDescription = "Go Back",
                       tint = NepTuneTheme.colors.onBackground)
                 }
               }
-          HorizontalDivider(color = NepTuneTheme.colors.onBackground, thickness = 0.5.dp)
         }
       },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp)) {
-              ThemeSettingsSection(settingsViewModel)
-            }
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp),
+        ) {
+          item { ThemeSettingsSection(settingsViewModel) }
+        }
       }
 }
 
@@ -76,8 +82,13 @@ private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel) {
   Column(modifier = Modifier.padding(vertical = 16.dp)) {
     Text(
         text = "Theme",
-        style = MaterialTheme.typography.titleLarge,
-        color = NepTuneTheme.colors.onBackground,
+        style =
+            TextStyle(
+                fontSize = 37.sp,
+                fontFamily = FontFamily(Font(R.font.markazi_text)),
+                fontWeight = FontWeight(400),
+                color = NepTuneTheme.colors.onBackground,
+            ),
         modifier = Modifier.padding(bottom = 8.dp))
 
     Column(Modifier.selectableGroup()) {
@@ -96,12 +107,20 @@ private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel) {
                   )
               Text(
                   text =
-                      when (theme) {
-                        ThemeSetting.SYSTEM -> "System Default"
-                        ThemeSetting.LIGHT -> "Light"
-                        ThemeSetting.DARK -> "Dark"
-                      },
-                  style = MaterialTheme.typography.bodyLarge,
+                      {
+                        when (theme) {
+                          ThemeSetting.SYSTEM -> "System Default"
+                          ThemeSetting.LIGHT -> "Light"
+                          ThemeSetting.DARK -> "Dark"
+                        }
+                      }(),
+                  style =
+                      TextStyle(
+                          fontSize = 24.sp,
+                          fontFamily = FontFamily(Font(R.font.markazi_text)),
+                          fontWeight = FontWeight(400),
+                          color = NepTuneTheme.colors.onBackground,
+                      ),
                   color = NepTuneTheme.colors.onBackground,
                   modifier = Modifier.padding(start = 16.dp))
             }
