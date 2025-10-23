@@ -22,12 +22,12 @@ import org.junit.Rule
 import org.junit.Test
 
 // Top-level delegate to access DataStore in the test environment.
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings_test")
+private val Context.dataStore: DataStore<Preferences> by
+    preferencesDataStore(name = "settings_test")
 
 /**
- * UI tests for the [SettingsThemeScreen]. These tests use a real ViewModel and DataStore
- * to verify UI state and data persistence.
- * The tests where made with AI assistance.
+ * UI tests for the [SettingsThemeScreen]. These tests use a real ViewModel and DataStore to verify
+ * UI state and data persistence. The tests where made with AI assistance.
  */
 class SettingsThemeScreenTest {
 
@@ -44,9 +44,7 @@ class SettingsThemeScreenTest {
     themeDataStore = ThemeDataStore(context)
 
     // Clear DataStore before each test to ensure isolation
-    runBlocking {
-      context.dataStore.edit { it.clear() }
-    }
+    runBlocking { context.dataStore.edit { it.clear() } }
 
     settingsViewModel = SettingsViewModel(themeDataStore)
     goBackCalled = false
