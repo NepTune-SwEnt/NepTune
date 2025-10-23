@@ -37,7 +37,9 @@ import com.neptune.neptune.ui.navigation.Screen
 import com.neptune.neptune.ui.profile.ProfileRoute
 import com.neptune.neptune.ui.projectlist.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
+import com.neptune.neptune.ui.settings.SettingsAccountScreen
 import com.neptune.neptune.ui.settings.SettingsScreen
+import com.neptune.neptune.ui.settings.SettingsThemeScreen
 import com.neptune.neptune.ui.settings.SettingsViewModel
 import com.neptune.neptune.ui.settings.SettingsViewModelFactory
 import com.neptune.neptune.ui.settings.ThemeDataStore
@@ -133,8 +135,22 @@ fun NeptuneApp(
                 }
                 composable(Screen.Settings.route) {
                   SettingsScreen(
+                      goBack = { navigationActions.goBack() },
+                      goTheme = { navigationActions.navigateTo(Screen.SettingsTheme) },
+                      goAccount = { navigationActions.navigateTo(Screen.SettingsAccount) })
+                }
+                composable(Screen.SettingsTheme.route) {
+                  SettingsThemeScreen(
                       settingsViewModel = settingsViewModel,
                       goBack = { navigationActions.goBack() })
+                }
+                composable(Screen.SettingsAccount.route) {
+                  SettingsAccountScreen(
+                      goBack = { navigationActions.goBack() },
+                      logout = {
+                        signInViewModel.signOut()
+                        navigationActions.navigateTo(Screen.SignIn)
+                      })
                 }
               }
         })

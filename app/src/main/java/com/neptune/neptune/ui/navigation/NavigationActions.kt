@@ -25,6 +25,10 @@ sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
   object SignIn : Screen(route = "signIn", showBottomBar = false)
 
   object Settings : Screen(route = "setting", showBottomBar = false)
+
+  object SettingsTheme : Screen(route = "settings_theme", showBottomBar = false)
+
+  object SettingsAccount : Screen(route = "settings_account", showBottomBar = false)
 }
 
 /**
@@ -52,6 +56,8 @@ open class NavigationActions(
       Screen.SignIn.route -> Screen.SignIn
       Screen.ProjectList.route -> Screen.ProjectList
       Screen.Settings.route -> Screen.Settings
+      Screen.SettingsTheme.route -> Screen.SettingsTheme
+      Screen.SettingsAccount.route -> Screen.SettingsAccount
       else -> Screen.SignIn
     }
   }

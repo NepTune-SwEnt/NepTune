@@ -5,30 +5,32 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
@@ -38,93 +40,90 @@ import com.neptune.neptune.ui.theme.NepTuneTheme
  * This screen provides a top bar with a back navigation button and hosts various settings sections,
  * such as theme selection.
  *
- * @param settingsViewModel The [SettingsViewModel] instance used to observe and update settings
- *   state, such as the current theme. Defaults to the ViewModel provided by `viewModel()`.
  * @param goBack A lambda function to be invoked when the user clicks the back button, typically
  *   used for navigation.
+ * @param goTheme A lambda function to be invoked when the user selects the "Theme" settings item.
+ * @param goAccount A lambda function to be invoked when the user selects the "Account
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    settingsViewModel: SettingsViewModel = viewModel(),
     goBack: () -> Unit = {},
+    goTheme: () -> Unit = {},
+    goAccount: () -> Unit = {},
 ) {
   Scaffold(
       topBar = {
         Column {
-          Row(
-              modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-              horizontalArrangement = Arrangement.Start,
-              verticalAlignment = Alignment.CenterVertically) {
+          CenterAlignedTopAppBar(
+              modifier = Modifier.height(112.dp),
+              title = {
+                Text(
+                    text = "Settings",
+                    style =
+                        TextStyle(
+                            fontSize = 45.sp,
+                            fontFamily = FontFamily(Font(R.font.lily_script_one)),
+                            fontWeight = FontWeight(149),
+                            color = NepTuneTheme.colors.onBackground,
+                        ),
+                    modifier = Modifier.padding(25.dp),
+                    textAlign = TextAlign.Center)
+              },
+              navigationIcon = {
                 IconButton(
                     onClick = goBack,
-                ) {
-                  Icon(
-                      imageVector = Icons.Default.ArrowBackIosNew,
-                      contentDescription = "Go Back",
-                      tint = NepTuneTheme.colors.onBackground)
-                }
-              }
+                    modifier = Modifier.padding(vertical = 30.dp, horizontal = 17.dp)) {
+                      Icon(
+                          imageVector = Icons.Default.ArrowBackIosNew,
+                          contentDescription = "Go Back",
+                          tint = NepTuneTheme.colors.onBackground)
+                    }
+              },
+              colors =
+                  TopAppBarDefaults.centerAlignedTopAppBarColors(
+                      containerColor = NepTuneTheme.colors.background))
+          HorizontalDivider(
+              modifier = Modifier.fillMaxWidth(),
+              thickness = 0.75.dp,
+              color = NepTuneTheme.colors.onBackground)
         }
       },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-          item { ThemeSettingsSection(settingsViewModel) }
+          item { SettingItemCard(text = "Theme", onClick = goTheme) }
+          item { SettingItemCard(text = "Account", onClick = goAccount) }
         }
       }
 }
 
 @Composable
-private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel) {
-  val selectedTheme by settingsViewModel.theme.collectAsState()
-
-  Column(modifier = Modifier.padding(vertical = 16.dp)) {
-    Text(
-        text = "Theme",
-        style =
-            TextStyle(
-                fontSize = 37.sp,
-                fontFamily = FontFamily(Font(R.font.markazi_text)),
-                fontWeight = FontWeight(400),
-                color = NepTuneTheme.colors.onBackground,
-            ),
-        modifier = Modifier.padding(bottom = 8.dp))
-
-    Column(Modifier.selectableGroup()) {
-      ThemeSetting.entries.forEach { theme ->
-        Row(
-            Modifier.fillMaxWidth()
-                .selectable(
-                    selected = (selectedTheme == theme),
-                    onClick = { settingsViewModel.updateTheme(theme) },
-                    role = Role.RadioButton)
-                .padding(vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically) {
-              RadioButton(
-                  selected = (selectedTheme == theme),
-                  onClick = null // Null for accessibility, as Row handles the click
-                  )
-              Text(
-                  text =
-                      {
-                        when (theme) {
-                          ThemeSetting.SYSTEM -> "System Default"
-                          ThemeSetting.LIGHT -> "Light"
-                          ThemeSetting.DARK -> "Dark"
-                        }
-                      }(),
-                  style =
-                      TextStyle(
-                          fontSize = 24.sp,
-                          fontFamily = FontFamily(Font(R.font.markazi_text)),
-                          fontWeight = FontWeight(400),
-                          color = NepTuneTheme.colors.onBackground,
-                      ),
-                  color = NepTuneTheme.colors.onBackground,
-                  modifier = Modifier.padding(start = 16.dp))
-            }
-      }
-    }
+private fun SettingItemCard(text: String, onClick: () -> Unit) {
+  Card(
+      onClick = onClick,
+      modifier = Modifier.fillMaxWidth(),
+      colors = CardDefaults.cardColors(containerColor = NepTuneTheme.colors.cardBackground),
+  ) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically) {
+          Text(
+              text = text,
+              style =
+                  TextStyle(
+                      fontSize = 22.sp,
+                      fontFamily = FontFamily(Font(R.font.markazi_text)),
+                      fontWeight = FontWeight.Normal,
+                      color = NepTuneTheme.colors.onBackground,
+                  ))
+          Icon(
+              imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+              contentDescription = null, // Decorative
+              tint = NepTuneTheme.colors.onBackground)
+        }
   }
 }
