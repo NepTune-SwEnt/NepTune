@@ -16,6 +16,8 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -24,6 +26,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
+/**
+ * Displays the settings screen.
+ *
+ * This screen provides a top bar with a back navigation button and hosts various settings sections,
+ * such as theme selection.
+ *
+ * @param settingsViewModel The [SettingsViewModel] instance used to observe and update settings
+ *   state, such as the current theme. Defaults to the ViewModel provided by `viewModel()`.
+ * @param goBack A lambda function to be invoked when the user clicks the back button, typically
+ *   used for navigation.
+ */
 @Composable
 fun SettingsScreen(
     settingsViewModel: SettingsViewModel = viewModel(),
@@ -58,6 +71,7 @@ fun SettingsScreen(
 
 @Composable
 private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel) {
+  val selectedTheme by settingsViewModel.theme.collectAsState()
 
   Column(modifier = Modifier.padding(vertical = 16.dp)) {
     Text(
@@ -71,13 +85,13 @@ private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel) {
         Row(
             Modifier.fillMaxWidth()
                 .selectable(
-                    selected = (settingsViewModel.selectedTheme == theme),
-                    onClick = { settingsViewModel.selectedTheme = theme },
+                    selected = (selectedTheme == theme),
+                    onClick = { settingsViewModel.updateTheme(theme) },
                     role = Role.RadioButton)
                 .padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically) {
               RadioButton(
-                  selected = (settingsViewModel.selectedTheme == theme),
+                  selected = (selectedTheme == theme),
                   onClick = null // Null for accessibility, as Row handles the click
                   )
               Text(

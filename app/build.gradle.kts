@@ -176,6 +176,7 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.10")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 }
 
 tasks.withType<Test> {

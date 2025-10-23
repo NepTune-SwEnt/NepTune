@@ -10,6 +10,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -38,15 +39,33 @@ import com.neptune.neptune.ui.projectlist.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.settings.SettingsScreen
 import com.neptune.neptune.ui.settings.SettingsViewModel
+import com.neptune.neptune.ui.settings.SettingsViewModelFactory
+import com.neptune.neptune.ui.settings.ThemeDataStore
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.ui.theme.SampleAppTheme
 
 class MainActivity : ComponentActivity() {
+
+  // A handle to the DataStore instance that manages theme persistence.
+  private lateinit var themeDataStore: ThemeDataStore
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+
+    // Initialize the ThemeDataStore using the application-level context
+    themeDataStore = ThemeDataStore(applicationContext)
+
     setContent {
-      val settingsViewModel: SettingsViewModel = viewModel()
-      SampleAppTheme(themeSetting = settingsViewModel.selectedTheme) {
+      // Create the factory required to manually inject the themeDataStore
+      // into the SettingsViewModel.
+      val settingsViewModelFactory = SettingsViewModelFactory(themeDataStore)
+      // Get a reference to the SettingsViewModel, providing our custom factory
+      // so the ViewModel instance receives the DataStore dependency.
+      val settingsViewModel: SettingsViewModel = viewModel(factory = settingsViewModelFactory)
+
+      // Collect the current theme setting (SYSTEM, LIGHT, or DARK) as a Composable state.
+      val themeSetting by settingsViewModel.theme.collectAsState()
+      SampleAppTheme(themeSetting = themeSetting) {
         // A surface container using the 'background' color from the theme
         Surface(
             modifier = Modifier.fillMaxSize().semantics { testTag = C.Tag.main_screen_container },
@@ -60,7 +79,12 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun NeptuneApp(
-    settingsViewModel: SettingsViewModel,
+    settingsViewModel: SettingsViewModel =
+        SettingsViewModel(
+            viewModel(
+                factory =
+                    SettingsViewModelFactory(
+                        ThemeDataStore(LocalContext.current.applicationContext)))),
     navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.SignIn.route,
 ) {
