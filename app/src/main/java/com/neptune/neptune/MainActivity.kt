@@ -37,6 +37,7 @@ import com.neptune.neptune.ui.profile.ProfileRoute
 import com.neptune.neptune.ui.projectlist.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.settings.SettingsScreen
+import com.neptune.neptune.ui.settings.SettingsViewModel
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.ui.theme.SampleAppTheme
 
@@ -44,12 +45,13 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContent {
-      SampleAppTheme {
+      val settingsViewModel: SettingsViewModel = viewModel()
+      SampleAppTheme(themeSetting = settingsViewModel.selectedTheme) {
         // A surface container using the 'background' color from the theme
         Surface(
             modifier = Modifier.fillMaxSize().semantics { testTag = C.Tag.main_screen_container },
             color = MaterialTheme.colorScheme.background) {
-              NeptuneApp()
+              NeptuneApp(settingsViewModel = settingsViewModel)
             }
       }
     }
@@ -58,6 +60,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun NeptuneApp(
+    settingsViewModel: SettingsViewModel,
     navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.SignIn.route,
 ) {
@@ -108,7 +111,11 @@ fun NeptuneApp(
                   ProjectListScreen(
                       navigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
                 }
-                composable(Screen.Settings.route) { SettingsScreen { navigationActions.goBack() } }
+                composable(Screen.Settings.route) {
+                  SettingsScreen(
+                      settingsViewModel = settingsViewModel,
+                      goBack = { navigationActions.goBack() })
+                }
               }
         })
   }
