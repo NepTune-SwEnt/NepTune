@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.gms)
     alias(libs.plugins.composeCompiler)
     id("jacoco")
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
 }
 
 android {
@@ -176,6 +177,7 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.10")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 }
 
 tasks.withType<Test> {
