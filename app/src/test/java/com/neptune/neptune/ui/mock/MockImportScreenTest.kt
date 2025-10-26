@@ -85,4 +85,41 @@ class MockImportScreenTest {
 
     verify(exactly = 0) { vm.importFromSaf(any()) }
   }
+
+  @Test
+  fun whenLibraryIsNonEmptyShowsListBranchImmediately() {
+    // Start non-empty so the first composition goes straight to ProjectList branch
+    libraryFlow.value = listOf(mockk<MediaItem>(relaxed = true))
+    composeRule.setContent { MockImportScreen(vm = vm) }
+
+    // Empty-state texts should NOT be visible
+    composeRule.onNodeWithText("No projects yet.").assertIsNotDisplayed()
+    composeRule
+        .onNodeWithText(
+            "Tap “Import audio” to create a .neptune project (zip with config.json + audio).")
+        .assertIsNotDisplayed()
+
+    // App bar & FAB still present
+    composeRule.onNodeWithText("Neptune • placeholder").assertIsDisplayed()
+    composeRule.onNodeWithText("Import audio").assertIsDisplayed()
+  }
+
+  @Test
+  fun listBranchThenBackToEmptyRendersEmptyStateAgain() {
+    // Start non-empty -> list branch
+    libraryFlow.value = listOf(mockk<MediaItem>(relaxed = true))
+    composeRule.setContent { MockImportScreen(vm = vm) }
+
+    composeRule.onNodeWithText("No projects yet.").assertIsNotDisplayed()
+
+    // Flip to empty -> should recompose to empty branch
+    composeRule.runOnIdle { libraryFlow.value = emptyList() }
+    composeRule.waitForIdle()
+
+    composeRule.onNodeWithText("No projects yet.").assertIsDisplayed()
+    composeRule
+        .onNodeWithText(
+            "Tap “Import audio” to create a .neptune project (zip with config.json + audio).")
+        .assertIsDisplayed()
+  }
 }
