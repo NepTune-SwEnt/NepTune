@@ -63,6 +63,14 @@ class NavigationTest {
   }
 
   @Test
+  fun bottomBarIsHiddenOnImportScreen() {
+    setContent()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsNotDisplayed()
+  }
+
+  @Test
   fun editTabIsSelectedAfterClick() {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
