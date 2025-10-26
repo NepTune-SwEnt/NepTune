@@ -5,7 +5,6 @@ import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.neptune.neptune.domain.model.MediaItem
 import io.mockk.every
 import io.mockk.mockk
@@ -16,13 +15,14 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
  * Unit (Robolectric) Compose tests for MockImportScreen. written partially with help from ChatGPT.
  * These run in the JVM (no device/emulator) so JaCoCo 0.8.8 still works.
  */
-@RunWith(AndroidJUnit4::class)
+@RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33]) // Robolectric API level
 class MockImportScreenTest {
 
@@ -67,7 +67,7 @@ class MockImportScreenTest {
 
     composeRule.onNodeWithText("No projects yet.").assertIsDisplayed()
 
-    composeRule.runOnUiThread { libraryFlow.value = listOf(mockk<MediaItem>(relaxed = true)) }
+    composeRule.runOnIdle { libraryFlow.value = listOf(mockk<MediaItem>(relaxed = true)) }
     composeRule.waitForIdle()
 
     composeRule.onNodeWithText("No projects yet.").assertIsNotDisplayed()
