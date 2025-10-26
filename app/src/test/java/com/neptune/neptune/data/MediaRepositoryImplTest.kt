@@ -39,7 +39,7 @@ class MediaRepositoryImplTest {
   }
 
   @Test
-  fun upsert_and_observe_maps_domain_and_emits() = runBlocking {
+  fun upsertAndObserveMapsDomainAndEmits() = runBlocking {
     val dom = MediaItem(id = "x", projectUri = "file:///x.zip")
     repo.upsert(dom)
 
@@ -50,7 +50,7 @@ class MediaRepositoryImplTest {
   }
 
   @Test
-  fun upsert_with_same_id_replaces_existing() = runBlocking {
+  fun upsertWithSameIdReplacesExisting() = runBlocking {
     repo.upsert(MediaItem("a", "file:///1.zip"))
     repo.upsert(MediaItem("a", "file:///2.zip"))
 

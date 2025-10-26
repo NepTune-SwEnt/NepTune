@@ -19,7 +19,7 @@ import org.robolectric.RobolectricTestRunner
 class StoragePathsTest {
 
   @Test
-  fun project_workspace_and_file_are_under_app_externalFilesDir() {
+  fun projectWorkspaceAndFileAreUnderExternalFilesDir() {
     val ctx: Context = ApplicationProvider.getApplicationContext()
     val paths = StoragePaths(ctx)
 

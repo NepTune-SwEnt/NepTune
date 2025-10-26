@@ -11,6 +11,10 @@ import kotlin.math.round
  * Partially written with ChatGPT
  */
 class NeptunePackager(private val paths: StoragePaths) {
+  private val secondsDivisor = 1000.0
+  private val roundingFactor = 10.0
+  private val nullTime = 0.0
+
   fun createProjectZip(
       audioFile: File,
       durationMs: Long?,
@@ -22,8 +26,8 @@ class NeptunePackager(private val paths: StoragePaths) {
     }
     val base = audioFile.nameWithoutExtension
     val zipFile = paths.projectFile(base)
-    val durationSec = durationMs?.div(1000.0) ?: 0.0
-    val durationRounded = round(durationSec * 10.0) / 10.0
+    val durationSec = durationMs?.div(secondsDivisor) ?: nullTime
+    val durationRounded = round(durationSec * roundingFactor) / roundingFactor
     val configJson =
         """
             {

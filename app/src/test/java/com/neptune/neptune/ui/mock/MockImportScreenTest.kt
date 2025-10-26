@@ -39,7 +39,7 @@ class MockImportScreenTest {
   }
 
   @Test
-  fun topAppBar_and_fab_are_visible_in_empty_state() {
+  fun topAppBarAndFabAreVisibleInEmptyState() {
     composeRule.setContent { MockImportScreen(vm = vm) }
 
     composeRule.onNodeWithText("Neptune • placeholder").assertIsDisplayed()
@@ -52,7 +52,7 @@ class MockImportScreenTest {
   }
 
   @Test
-  fun fab_is_clickable_does_not_crash() {
+  fun fabIsClickableDoesNotCrash() {
     composeRule.setContent { MockImportScreen(vm = vm) }
 
     // Just verify the FAB is present and "clickable" logically.
@@ -62,7 +62,7 @@ class MockImportScreenTest {
   }
 
   @Test
-  fun when_library_is_not_empty_hides_empty_texts() {
+  fun whenLibraryIsEmptyHidesEmptyText() {
     composeRule.setContent { MockImportScreen(vm = vm) }
 
     composeRule.onNodeWithText("No projects yet.").assertIsDisplayed()
@@ -80,7 +80,7 @@ class MockImportScreenTest {
   }
 
   @Test
-  fun does_not_call_import_without_activity_result() {
+  fun doesNotCallImportWithoutActivityResult() {
     composeRule.setContent { MockImportScreen(vm = vm) }
 
     verify(exactly = 0) { vm.importFromSaf(any()) }

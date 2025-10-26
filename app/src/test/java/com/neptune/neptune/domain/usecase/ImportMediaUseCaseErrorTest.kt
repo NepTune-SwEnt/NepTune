@@ -43,7 +43,7 @@ private class CapturingRepo : MediaRepository {
 class ImportMediaUseCaseErrorTest {
 
   @Test
-  fun whenImporterFails_repositoryIsNotUpdated_andNoZipIsCreated() = runBlocking {
+  fun whenImporterFailsRepositoryIsNotUpdatedAndNoZipIsCreated() = runBlocking {
     val ctx: Context = ApplicationProvider.getApplicationContext()
     val paths = StoragePaths(ctx)
     val packager = NeptunePackager(paths)

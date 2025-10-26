@@ -20,7 +20,7 @@ import org.robolectric.RobolectricTestRunner
 class NeptunePackagerTest {
 
   @Test
-  fun createProjectZip_creates_unique_zip_inside_workspace() {
+  fun createProjectZipCreatesUniqueZipInsideWorkspace() {
     val ctx: Context = ApplicationProvider.getApplicationContext()
     val paths = StoragePaths(ctx)
     val packager = NeptunePackager(paths)
@@ -38,7 +38,7 @@ class NeptunePackagerTest {
   }
 
   @Test
-  fun projectFile_numbers_equal_existing_count_and_falls_back_if_taken() {
+  fun projectFileNumbersEqualExistingCountAndFallsBackIfTaken() {
     val ctx = ApplicationProvider.getApplicationContext<Context>()
     val paths = StoragePaths(ctx)
     val ws = paths.projectsWorkspace().apply { mkdirs() }
@@ -66,7 +66,7 @@ class NeptunePackagerTest {
   }
 
   @Test
-  fun creates_zip_with_config_and_audio() {
+  fun createsZipWithConfigAndAudio() {
     val ctx: Context = ApplicationProvider.getApplicationContext()
     val paths = StoragePaths(ctx)
     val packager = NeptunePackager(paths)

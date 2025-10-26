@@ -31,7 +31,7 @@ class MediaDaoTest {
   }
 
   @Test
-  fun order_is_desc_by_importedAt() = runBlocking {
+  fun orderIsDescByImportedAt() = runBlocking {
     dao.upsert(MediaItemEntity("a", "file:///a.zip", importedAt = 1))
     dao.upsert(MediaItemEntity("b", "file:///b.zip", importedAt = 3))
     dao.upsert(MediaItemEntity("c", "file:///c.zip", importedAt = 2))
@@ -41,7 +41,7 @@ class MediaDaoTest {
   }
 
   @Test
-  fun upsert_replaces_same_id() = runBlocking {
+  fun upsertReplacesSameId() = runBlocking {
     dao.upsert(MediaItemEntity("same", "file:///1.zip", 1))
     dao.upsert(MediaItemEntity("same", "file:///2.zip", 2))
     val list = dao.observeAll().first()
@@ -50,7 +50,7 @@ class MediaDaoTest {
   }
 
   @Test
-  fun insert_replace_and_order_by_importedAt_desc() = runBlocking {
+  fun insertReplaceAndOrderByImportedAtDesc() = runBlocking {
     // insert two, older first
     dao.upsert(MediaItemEntity("a", "file:///a.zip", importedAt = 10L))
     dao.upsert(MediaItemEntity("b", "file:///b.zip", importedAt = 20L))

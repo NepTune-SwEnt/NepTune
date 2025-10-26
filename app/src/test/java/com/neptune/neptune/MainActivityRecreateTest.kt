@@ -32,7 +32,7 @@ class MainActivityRecreateTest {
   }
 
   @Test
-  fun survives_configuration_change_recreate() {
+  fun survivesConfigurationChange() {
     val controller =
         Robolectric.buildActivity(MainActivity::class.java).setup() // create -> start -> resume
     val activity = controller.get()

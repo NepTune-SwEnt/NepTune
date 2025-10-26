@@ -30,7 +30,7 @@ class MainActivityRobolectricTest {
   }
 
   @Test
-  fun launches_and_sets_content() {
+  fun launchesAndSetsContent() {
     val controller =
         Robolectric.buildActivity(MainActivity::class.java).create().start().resume().visible()
     val activity = controller.get()

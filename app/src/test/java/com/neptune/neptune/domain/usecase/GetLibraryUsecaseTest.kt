@@ -27,7 +27,7 @@ private class RepoStub : MediaRepository {
 class GetLibraryUsecaseTest {
 
   @Test
-  fun emits_repository_items_and_updates_on_upsert() {
+  fun emitsRepositoryItemsAndUpdatesOnUpsert() {
     runTest {
       val repo = RepoStub()
       val uc = GetLibraryUseCase(repo)

@@ -74,7 +74,7 @@ class ImportPipelineTest {
   }
 
   @Test
-  fun import_deletesTempAudioCopy_ifUseCaseConfiguredToDoSo() = runBlocking {
+  fun importDeletesTempAudioCopyIfUseCaseConfiguredToDoSo() = runBlocking {
     // The fake importer writes to cacheDir. After import, ImportMediaUseCase deletes the temp
     // audio.
     val probeUri = URI("file://dummy")

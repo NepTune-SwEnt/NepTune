@@ -53,7 +53,7 @@ private class DisappearingImporter(private val dir: File) : FileImporter {
 class ImportMediaUseCasePackagerFailureTest {
 
   @Test
-  fun whenPackagerFails_repositoryRemainsUnchanged_and_noZipIsCreated() = runBlocking {
+  fun whenPackagerFailsRepositoryRemainsUnchangedAndNoZipIsCreated() = runBlocking {
     val ctx: Context = ApplicationProvider.getApplicationContext()
     val paths = StoragePaths(ctx)
     val packager = NeptunePackager(paths)

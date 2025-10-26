@@ -10,9 +10,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -33,6 +31,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+private const val MEDIA_DB = "media.db"
 
 class ImportViewModel(private val importMedia: ImportMediaUseCase, getLibrary: GetLibraryUseCase) :
     ViewModel() {
@@ -56,7 +56,7 @@ class ImportVMFactory(
 }
 
 private fun provideDb(context: Context): MediaDb =
-    Room.databaseBuilder(context.applicationContext, MediaDb::class.java, "media.db")
+    Room.databaseBuilder(context.applicationContext, MediaDb::class.java, MEDIA_DB)
         .fallbackToDestructiveMigration(false)
         .build()
 
@@ -64,8 +64,6 @@ private fun provideDb(context: Context): MediaDb =
 @Composable
 fun ImportAppRoot(): ImportVMFactory {
   val context = LocalContext.current
-
-  // --- infra singletons in composition ---
   val db = remember { provideDb(context) }
   val repo = remember { MediaRepositoryImpl(db.mediaDao()) }
   val paths = remember { StoragePaths(context) }
@@ -79,7 +77,7 @@ fun ImportAppRoot(): ImportVMFactory {
 
 @VisibleForTesting
 @Composable
-public fun ProjectList(items: List<MediaItem>, modifier: Modifier = Modifier) {
+fun ProjectList(items: List<MediaItem>, modifier: Modifier = Modifier) {
   LazyColumn(modifier = modifier.fillMaxSize().testTag("project_list")) {
     items(items) { item ->
       val fileName = item.projectUri.substringAfterLast('/')

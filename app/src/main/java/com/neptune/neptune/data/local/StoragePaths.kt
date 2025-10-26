@@ -4,16 +4,19 @@ import android.content.Context
 import java.io.File
 
 open class StoragePaths(private val context: Context) {
+  private val projects = "projects"
+  private val project = "project"
+  private val audioPath = "imports/audio"
 
   // /Android/data/<pkg>/files/imports/audio
   fun audioWorkspace(): File =
-      File(context.getExternalFilesDir(null), "imports/audio").also { it.mkdirs() }
+      File(context.getExternalFilesDir(null), audioPath).also { it.mkdirs() }
 
   // /Android/data/<pkg>/files/projects
   fun projectsWorkspace(): File =
-      File(context.getExternalFilesDir(null), "projects").also { it.mkdirs() }
+      File(context.getExternalFilesDir(null), projects).also { it.mkdirs() }
 
-  private val ZIP_SUFFIX = Regex("(?i)\\.zip$")
+  private val zip_suffix = Regex("(?i)\\.zip$")
 
   /** Turn an arbitrary baseName into a safe, simple file stem. */
   private fun sanitizeBaseName(raw: String): String {
@@ -29,7 +32,7 @@ open class StoragePaths(private val context: Context) {
     }
 
     // avoid empty/bad names
-    if (name.isBlank() || name == "." || name == "_") name = "project"
+    if (name.isBlank() || name == "." || name == "_") name = project
     return name
   }
 
@@ -39,10 +42,10 @@ open class StoragePaths(private val context: Context) {
 
     // sanitize + drop any ".zip" suffix(es)
     var stem = sanitizeBaseName(baseName)
-    while (ZIP_SUFFIX.containsMatchIn(stem)) {
-      stem = stem.replace(ZIP_SUFFIX, "")
+    while (zip_suffix.containsMatchIn(stem)) {
+      stem = stem.replace(zip_suffix, "")
     }
-    if (stem.isBlank()) stem = "project"
+    if (stem.isBlank()) stem = project
 
     // Find existing siblings: stem.zip, stem-1.zip, stem-2.zip, ...
     val pattern = Regex("^" + Regex.escape(stem) + "(?:-(\\d+))?\\.zip$", RegexOption.IGNORE_CASE)

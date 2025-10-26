@@ -91,16 +91,11 @@ class FileImporterImplCoverageTest {
         o: String?
     ) = null
 
-    override fun insert(u: Uri, v: android.content.ContentValues?) = null
+    override fun insert(u: Uri, v: ContentValues?) = null
 
     override fun delete(u: Uri, s: String?, a: Array<out String>?) = 0
 
-    override fun update(
-        u: Uri,
-        v: android.content.ContentValues?,
-        s: String?,
-        a: Array<out String>?
-    ) = 0
+    override fun update(u: Uri, v: ContentValues?, s: String?, a: Array<out String>?) = 0
   }
 
   private fun registerTestProvider(ctx: Context, file: File) {
@@ -163,7 +158,7 @@ class FileImporterImplCoverageTest {
 
   // --- importFile(): file:// success + uniqueFile() collision branch ---
   @Test
-  fun importFile_withFileUri_copies_and_handles_name_collision() = runBlocking {
+  fun importFileWithFileUriCopiesAndHandlesNameCollision() = runBlocking {
     val ctx = ApplicationProvider.getApplicationContext<Context>()
     val imp = importer(ctx)
 
@@ -187,7 +182,7 @@ class FileImporterImplCoverageTest {
 
   // --- importFile(): content:// happy path (exercises resolveAndValidateAudio for content scheme)
   @Test
-  fun importFile_withContentUri_reads_via_provider() = runBlocking {
+  fun importFileWithContentUriReadsViaProvider() = runBlocking {
     val ctx = ApplicationProvider.getApplicationContext<Context>()
     val imp = importer(ctx)
 
@@ -206,7 +201,7 @@ class FileImporterImplCoverageTest {
 
   // --- importFile(): unsupported scheme failure path ---
   @Test
-  fun importFile_withHttpUri_fails_fast() = runBlocking {
+  fun importFileWithHttpUriFailsFast() = runBlocking {
     val ctx = ApplicationProvider.getApplicationContext<Context>()
     val imp = importer(ctx)
 
@@ -221,7 +216,7 @@ class FileImporterImplCoverageTest {
   }
 
   @Test
-  fun fileUri_mp3_infers_audioMpeg_from_extension() = runBlocking {
+  fun fileUriMp3InfersAudioMpegFromExtension() = runBlocking {
     val ctx = ApplicationProvider.getApplicationContext<Context>()
     val imp = importer(ctx)
 
@@ -270,7 +265,7 @@ class FileImporterImplCoverageTest {
   }
 
   @Test
-  fun contentUri_unknown_mime_throws() = runBlocking {
+  fun contentUriUnknownMimeThrows() = runBlocking {
     val ctx = ApplicationProvider.getApplicationContext<Context>()
     val imp = importer(ctx)
 
@@ -288,21 +283,20 @@ class FileImporterImplCoverageTest {
   }
 
   @Test
-  fun contentUri_no_query_no_path_name_defaults_to_audio_base_and_duration_may_be_null() =
-      runBlocking {
-        val ctx = ApplicationProvider.getApplicationContext<Context>()
-        val imp = importer(ctx)
+  fun contentUriNoQueryNoPathNameDefaultsToAudioBaseAndDurationMayBeNull() = runBlocking {
+    val ctx = ApplicationProvider.getApplicationContext<Context>()
+    val imp = importer(ctx)
 
-        // Not a valid WAV payload; reported as audio/wav; duration extraction may fail → null
-        val backing = File(ctx.cacheDir, "backing.dat").apply { writeBytes(ByteArray(10)) }
-        registerConfigProvider(ctx, backing, mime = "audio/wav", queryName = null)
+    // Not a valid WAV payload; reported as audio/wav; duration extraction may fail → null
+    val backing = File(ctx.cacheDir, "backing.dat").apply { writeBytes(ByteArray(10)) }
+    registerConfigProvider(ctx, backing, mime = "audio/wav", queryName = null)
 
-        // trailing slash → lastPathSegment = null → base defaults to "audio"
-        val u = Uri.parse("content://${ConfigAudioProvider.AUTH}/")
-        val out = imp.importFile(URI(u.toString()))
+    // trailing slash → lastPathSegment = null → base defaults to "audio"
+    val u = Uri.parse("content://${ConfigAudioProvider.AUTH}/")
+    val out = imp.importFile(URI(u.toString()))
 
-        assertThat(out.displayName.lowercase()).startsWith("audio")
-        assertThat(out.displayName.lowercase()).endsWith(".wav")
-        assertThat(out.durationMs == null || out.durationMs!! >= 0).isTrue()
-      }
+    assertThat(out.displayName.lowercase()).startsWith("audio")
+    assertThat(out.displayName.lowercase()).endsWith(".wav")
+    assertThat(out.durationMs == null || out.durationMs >= 0).isTrue()
+  }
 }

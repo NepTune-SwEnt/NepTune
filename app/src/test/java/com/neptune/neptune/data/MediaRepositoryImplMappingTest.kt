@@ -13,7 +13,7 @@ import org.junit.Test
 class MediaRepositoryImplMappingTest {
 
   @Test
-  fun round_trip_entity_domain() {
+  fun roundTripEntityDomain() {
     val e =
         MediaItemEntity(id = "a", projectUri = "file:///storage/projects/a.zip", importedAt = 42L)
     val d = MediaItem(id = e.id, projectUri = e.projectUri)

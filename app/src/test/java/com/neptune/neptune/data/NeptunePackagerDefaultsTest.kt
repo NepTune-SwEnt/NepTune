@@ -22,7 +22,7 @@ import org.robolectric.RobolectricTestRunner
 class NeptunePackagerDefaultsTest {
 
   @Test
-  fun createProjectZip_uses_defaults_and_rounds_duration_to_1_decimal() {
+  fun createProjectZipUsesDefaultsAndRoundsDurationTo1Decimal() {
     val ctx: Context = ApplicationProvider.getApplicationContext()
     val packager = NeptunePackager(StoragePaths(ctx))
 

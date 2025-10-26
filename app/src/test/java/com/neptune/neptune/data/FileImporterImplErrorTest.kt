@@ -18,7 +18,7 @@ class FileImporterImplErrorTest {
       FileImporterImpl(context = ctx, cr = ctx.contentResolver, paths = StoragePaths(ctx))
 
   @Test
-  fun rejects_unsupported_uri_scheme() = runBlocking {
+  fun rejectsUnsupportedUriScheme() = runBlocking {
     val ctx = ApplicationProvider.getApplicationContext<Context>()
     val imp = importer(ctx)
 
@@ -34,7 +34,7 @@ class FileImporterImplErrorTest {
   }
 
   @Test
-  fun missing_local_file_throws_and_does_not_copy() = runBlocking {
+  fun missingLocalFileThrowsAndDoesNotcopy() = runBlocking {
     val ctx = ApplicationProvider.getApplicationContext<Context>()
     val imp = importer(ctx)
 

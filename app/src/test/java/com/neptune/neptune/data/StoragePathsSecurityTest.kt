@@ -17,7 +17,7 @@ import org.robolectric.RobolectricTestRunner
 class StoragePathsSecurityTest {
 
   @Test
-  fun projectFile_sanitizes_baseName_and_enforces_single_zip_extension() {
+  fun projectFileSanitizesBaseNameAndExportsZipExtension() {
     val ctx: Context = ApplicationProvider.getApplicationContext()
     val paths = StoragePaths(ctx)
     val base = requireNotNull(ctx.getExternalFilesDir(null)).canonicalFile

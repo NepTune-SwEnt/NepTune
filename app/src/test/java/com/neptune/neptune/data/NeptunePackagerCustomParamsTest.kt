@@ -16,7 +16,7 @@ import org.robolectric.RobolectricTestRunner
 class NeptunePackagerCustomParamsTest {
 
   @Test
-  fun createProjectZip_respectsVolumeAndStartSeconds() {
+  fun createProjectZipRespectsVolumeAndStartSeconds() {
     val ctx: Context = ApplicationProvider.getApplicationContext()
     val packager = NeptunePackager(StoragePaths(ctx))
 

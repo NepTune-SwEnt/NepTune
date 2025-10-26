@@ -21,7 +21,7 @@ import org.robolectric.RobolectricTestRunner
 class NeptunePackagerTinyDurationTest {
 
   @Test
-  fun tiny_duration_is_not_negative_and_rounds_to_zero_or_min_step() {
+  fun tinyDurationIsNotNegativeAndRoundsToZeroOrMinStep() {
     val ctx: Context = ApplicationProvider.getApplicationContext()
     val packager = NeptunePackager(StoragePaths(ctx))
 

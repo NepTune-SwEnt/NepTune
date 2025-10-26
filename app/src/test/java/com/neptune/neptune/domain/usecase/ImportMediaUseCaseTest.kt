@@ -53,7 +53,7 @@ private class FakeImporter(private val dir: File) : FileImporter {
 @RunWith(RobolectricTestRunner::class)
 class ImportMediaUseCaseTest {
   @Test
-  fun pipeline_produces_zip_and_repository_emits() = runBlocking {
+  fun pipelineProducesZipAndRepositoryEmits() = runBlocking {
     val ctx: Context = ApplicationProvider.getApplicationContext()
     val paths = StoragePaths(ctx)
     val packager = NeptunePackager(paths)

@@ -24,7 +24,7 @@ class FileImporterImpl(
     private val cr: ContentResolver,
     private val paths: StoragePaths
 ) : FileImporter {
-
+  private val audioString = "audio"
   private val allowedMimes = setOf("audio/mpeg", "audio/wav")
   private val allowedExts = setOf("mp3", "wav")
 
@@ -98,12 +98,12 @@ class FileImporterImpl(
         }
 
     // Normalize base name (without extension), robust fallback
-    val rawBase = (display ?: "audio").removeSuffix(if (ext.isNotEmpty()) ".$ext" else "")
+    val rawBase = (display ?: audioString).removeSuffix(if (ext.isNotEmpty()) ".$ext" else "")
     val base =
         rawBase
             .replace(Regex("[^A-Za-z0-9._-]+"), "_") // sanitize
             .trim('_', '.', ' ')
-            .ifEmpty { "audio" }
+            .ifEmpty { audioString }
 
     // Normalize/validate MIME from CR or from extension
     val normalizedMime: String? =

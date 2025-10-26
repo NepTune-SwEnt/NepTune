@@ -18,7 +18,7 @@ import org.robolectric.RobolectricTestRunner
 class AudioWorkspaceTest {
 
   @Test
-  fun audioWorkspace_is_under_imports_folder_and_writable() {
+  fun audioWorkspaceIsUnderImportsFolderAndWritable() {
     val ctx: Context = ApplicationProvider.getApplicationContext()
     val paths = StoragePaths(ctx)
 

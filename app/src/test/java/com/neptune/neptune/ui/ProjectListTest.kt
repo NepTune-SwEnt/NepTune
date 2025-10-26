@@ -38,7 +38,7 @@ class ProjectListTest {
   @get:Rule val compose = createComposeRule()
 
   @Test
-  fun shows_filename_and_full_uri_for_each_item() {
+  fun showsFilenameAndFullUriForEachItem() {
     val items =
         listOf(
             MediaItem(id = "1", projectUri = ProjectListTestTexts.URI_BASE_PATH + "a-1.zip"),
@@ -59,7 +59,7 @@ class ProjectListTest {
   }
 
   @Test
-  fun handles_many_items_scrolling_list() {
+  fun handlesManyItemsScrollingList() {
     val items =
         (1..30).map { i ->
           MediaItem(
