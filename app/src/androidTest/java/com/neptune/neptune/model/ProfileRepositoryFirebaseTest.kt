@@ -8,6 +8,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.neptune.neptune.model.profile.PROFILES_COLLECTION_PATH
 import com.neptune.neptune.model.profile.ProfileRepositoryFirebase
 import com.neptune.neptune.model.profile.USERNAMES_COLLECTION_PATH
+import com.neptune.neptune.model.profile.UsernameTakenException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
@@ -134,23 +135,61 @@ class ProfileRepositoryFirebaseTest {
     }
 
     @Test
-    fun isUsernameAvailable_and_setUsername_behaveCorrectly() = runBlocking {
-        assertTrue(repo.isUsernameAvailable("neptune"))
-        repo.ensureProfile("neptune", null)
-        assertTrue(repo.isUsernameAvailable("neptune"))
-
+    fun isUsernameAvailable_respectsOwnership_and_conflict() = runBlocking {
+        // Fresh user A
         auth.signOut()
-        Tasks.await(auth.signInAnonymously())
-        delay(50)
+        auth.signInAnonymously().await()
+
+        // Make sure "neptune" starts clean
+        val desired = "neptune"
+        db.collection(USERNAMES_COLLECTION_PATH).document(desired).delete().await()
+
+        assertTrue(repo.isUsernameAvailable(desired))
+        repo.ensureProfile(desired, null)
+        assertTrue(repo.isUsernameAvailable(desired))
+
+        // Check that new user B cannot take it
+        auth.signOut()
+        auth.signInAnonymously().await()
         repo.ensureProfile("x", null)
 
-        val taken = "neptune"
-        val thrown = runCatching { repo.setUsername(taken) }.exceptionOrNull()
-        if (thrown == null) {
-            assertTrue(repo.isUsernameAvailable(taken))
-        } else {
-            assertFalse(repo.isUsernameAvailable(taken))
-        }
+        val e = runCatching { repo.setUsername(desired) }.exceptionOrNull()
+        assertTrue(e is UsernameTakenException)
+        assertFalse(repo.isUsernameAvailable(desired))
+    }
+
+    @Test
+    fun setUsername_releasesOld_and_allowsOthersToClaim() = runBlocking {
+        // User A claims a unique name
+        auth.signOut()
+        auth.signInAnonymously().await()
+
+        val base = "abase_12345"
+        val aProfile = repo.ensureProfile(base, null)
+        val aOld = aProfile.username
+        assertTrue(repo.isUsernameAvailable(aOld)) // available to its owner
+
+        // A switches to a new username => old username should be released
+        val aNew = "z_123456"
+        repo.setUsername(aNew)
+
+        // Old doc should be gone now
+        val oldDoc = db.collection(USERNAMES_COLLECTION_PATH).document(aOld).get().await()
+        assertFalse("Old username doc should be deleted", oldDoc.exists())
+
+        // User B can claim A's old username
+        auth.signOut()
+        auth.signInAnonymously().await()
+        repo.ensureProfile("bbase_12345", null)
+
+        assertTrue(repo.isUsernameAvailable(aOld))
+        repo.setUsername(aOld)
+
+        // User C sees it as taken
+        auth.signOut()
+        auth.signInAnonymously().await()
+        repo.ensureProfile("cbase_12345", null)
+        assertFalse(repo.isUsernameAvailable(aOld))
     }
 
     @Test
