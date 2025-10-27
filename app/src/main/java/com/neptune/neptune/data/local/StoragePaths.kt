@@ -9,12 +9,10 @@ open class StoragePaths(private val context: Context) {
   private val audioPath = "imports/audio"
 
   // /Android/data/<pkg>/files/imports/audio
-  fun audioWorkspace(): File =
-      File(context.getExternalFilesDir(null), audioPath).also { it.mkdirs() }
+  fun audioWorkspace(): File = File(context.filesDir, audioPath).also { it.mkdirs() }
 
   // /Android/data/<pkg>/files/projects
-  fun projectsWorkspace(): File =
-      File(context.getExternalFilesDir(null), projects).also { it.mkdirs() }
+  fun projectsWorkspace(): File = File(context.filesDir, projects).also { it.mkdirs() }
 
   private val zip_suffix = Regex("(?i)\\.zip$")
 

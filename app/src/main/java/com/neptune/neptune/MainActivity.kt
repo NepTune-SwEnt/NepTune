@@ -33,8 +33,8 @@ import com.neptune.neptune.ui.mock.MockSearchScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
 import com.neptune.neptune.ui.navigation.Screen
-import com.neptune.neptune.ui.picker.ImportAppRoot
 import com.neptune.neptune.ui.picker.ImportViewModel
+import com.neptune.neptune.ui.picker.importAppRoot
 import com.neptune.neptune.ui.profile.ProfileRoute
 import com.neptune.neptune.ui.projectlist.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
@@ -66,7 +66,7 @@ fun NeptuneApp(
   val navigationActions = NavigationActions(navController)
   val navBackStackEntry by navController.currentBackStackEntryAsState()
   val currentRoute = navBackStackEntry?.destination?.route
-  val importViewModel: ImportViewModel = viewModel(factory = ImportAppRoot())
+  val importViewModel: ImportViewModel = viewModel(factory = importAppRoot())
   val currentScreen = navigationActions.currentScreen(currentRoute ?: startDestination)
 
   // Media Player values

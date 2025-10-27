@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.mock
 
+import android.annotation.SuppressLint
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -12,6 +13,7 @@ import com.neptune.neptune.ui.picker.ImportViewModel
 import com.neptune.neptune.ui.picker.ProjectList
 
 // TODO replace with real ImportScreen when ready
+@SuppressLint("VisibleForTests")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MockImportScreen(vm: ImportViewModel = viewModel()) {

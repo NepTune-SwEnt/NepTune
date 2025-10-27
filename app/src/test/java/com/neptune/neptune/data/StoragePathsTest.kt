@@ -19,20 +19,20 @@ import org.robolectric.RobolectricTestRunner
 class StoragePathsTest {
 
   @Test
-  fun projectWorkspaceAndFileAreUnderExternalFilesDir() {
+  fun projectWorkspaceAndFileAreUnderInternalFilesDir() {
     val ctx: Context = ApplicationProvider.getApplicationContext()
     val paths = StoragePaths(ctx)
 
-    // This is the base directory Android gives you for app-specific "external" storage:
-    // Real device:  /storage/emulated/0/Android/data/<pkg>/files
+    // This is the base directory Android gives you for app-specific "internal" storage:
+    // Real device:  /data/data/com.neptune.neptune/files
     // Robolectric:  /tmp/.../external-files
-    val expectedBase = requireNotNull(ctx.getExternalFilesDir(null)).absolutePath
+    val expectedBase = requireNotNull(ctx.filesDir).canonicalPath
 
     val ws = paths.projectsWorkspace()
     assertThat(ws.exists() || ws.mkdirs()).isTrue()
 
-    // workspace sits directly under externalFilesDir, named "projects"
-    assertThat(ws.parentFile!!.absolutePath).isEqualTo(expectedBase)
+    // workspace sits in internal files dir + "projects"
+    assertThat(ws.parentFile!!.canonicalPath).isEqualTo(expectedBase)
     assertThat(ws.name).isEqualTo("projects")
 
     val f = paths.projectFile("unit-test-zip")

@@ -33,7 +33,7 @@ class ImportAppRootTest {
     val lastSize = AtomicReference(-1)
 
     compose.setContent {
-      val factory = ImportAppRoot() // <-- subject under test
+      val factory = importAppRoot() // <-- subject under test
       val vm: ImportViewModel = viewModel(factory = factory)
 
       var size by remember { mutableStateOf(-1) }

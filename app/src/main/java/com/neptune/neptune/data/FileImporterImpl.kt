@@ -25,8 +25,13 @@ class FileImporterImpl(
     private val paths: StoragePaths
 ) : FileImporter {
   private val audioString = "audio"
-  private val allowedMimes = setOf("audio/mpeg", "audio/wav")
-  private val allowedExts = setOf("mp3", "wav")
+  private val mp3Ext = "mp3"
+  private val wavExt = "wav"
+  private val mp3Mime = "audio/mpeg"
+  private val wavMime = "audio/wav"
+  private val fileImporterTag = "FileImporter"
+  private val allowedMimes = setOf(mp3Mime, wavMime)
+  private val allowedExts = setOf(mp3Ext, wavExt)
 
   @RequiresApi(Build.VERSION_CODES.Q)
   override suspend fun importFile(sourceUri: URI): FileImporter.ImportedFile {
@@ -51,7 +56,7 @@ class FileImporterImpl(
               }
             }
             .getOrNull()
-    Log.v("FileImporter", "imported ${target.name} (${target.length()} bytes, $duration ms)")
+    Log.v(fileImporterTag, "imported ${target.name} (${target.length()} bytes, $duration ms)")
     return FileImporter.ImportedFile(
         displayName = target.name,
         mimeType = parsed.mime,
@@ -109,8 +114,8 @@ class FileImporterImpl(
     val normalizedMime: String? =
         when {
           crMime in allowedMimes -> crMime
-          ext == "mp3" -> "audio/mpeg"
-          ext == "wav" -> "audio/wav"
+          ext == mp3Ext -> mp3Mime
+          ext == wavExt -> wavMime
           // For file:// with no CR type, infer from path if possible
           isFile && ext.isNotEmpty() && "audio/$ext" in allowedMimes -> "audio/$ext"
           else -> null
@@ -123,9 +128,9 @@ class FileImporterImpl(
     // Final extension consistent with normalized MIME
     val finalExt =
         when (normalizedMime) {
-          "audio/mpeg" -> "mp3"
-          "audio/wav" -> "wav"
-          else -> ext.ifEmpty { "mp3" } // safe default; shouldn't happen after validation
+          mp3Mime -> mp3Ext
+          wavMime -> wavExt
+          else -> ext.ifEmpty { mp3Ext } // safe default; shouldn't happen after validation
         }
 
     return ParsedFromUri(normalizedMime, base, finalExt)

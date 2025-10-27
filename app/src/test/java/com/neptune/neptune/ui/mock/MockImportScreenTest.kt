@@ -122,4 +122,15 @@ class MockImportScreenTest {
             "Tap “Import audio” to create a .neptune project (zip with config.json + audio).")
         .assertIsDisplayed()
   }
+
+  @Test
+  fun importFromSafCallbackIsTriggered() {
+    val fakeUri = android.net.Uri.parse("content://some/audio.mp3")
+    composeRule.setContent { MockImportScreen(vm = vm) }
+
+    // Simulate that the picker returned a URI manually
+    fakeUri.let { vm.importFromSaf(it.toString()) }
+
+    verify(exactly = 1) { vm.importFromSaf("content://some/audio.mp3") }
+  }
 }

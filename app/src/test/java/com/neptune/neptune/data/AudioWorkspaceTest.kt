@@ -22,7 +22,7 @@ class AudioWorkspaceTest {
     val ctx: Context = ApplicationProvider.getApplicationContext()
     val paths = StoragePaths(ctx)
 
-    val externalBase = requireNotNull(ctx.getExternalFilesDir(null)).canonicalFile
+    val externalBase = requireNotNull(ctx.filesDir).canonicalFile
     val audioDir = paths.audioWorkspace().canonicalFile
 
     // The audio workspace must live inside "<external>/imports"

@@ -20,7 +20,7 @@ class StoragePathsSecurityTest {
   fun projectFileSanitizesBaseNameAndExportsZipExtension() {
     val ctx: Context = ApplicationProvider.getApplicationContext()
     val paths = StoragePaths(ctx)
-    val base = requireNotNull(ctx.getExternalFilesDir(null)).canonicalFile
+    val base = requireNotNull(ctx.filesDir).canonicalFile
     val ws = paths.projectsWorkspace().canonicalFile
 
     val evil = paths.projectFile("../evil..project.zip").canonicalFile

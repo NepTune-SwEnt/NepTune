@@ -3,7 +3,7 @@ package com.neptune.neptune.domain.port
 import java.net.URI
 
 // Port interface for importing files from external URIs into the app's local storage
-interface FileImporter {
+fun interface FileImporter {
   data class ImportedFile(
       val displayName: String,
       val mimeType: String?,

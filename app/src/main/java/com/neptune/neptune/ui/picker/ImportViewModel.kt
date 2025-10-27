@@ -62,7 +62,7 @@ private fun provideDb(context: Context): MediaDb =
 
 // Sets up singletons and provides the ImportViewModel factory
 @Composable
-fun ImportAppRoot(): ImportVMFactory {
+fun importAppRoot(): ImportVMFactory {
   val context = LocalContext.current
   val db = remember { provideDb(context) }
   val repo = remember { MediaRepositoryImpl(db.mediaDao()) }
