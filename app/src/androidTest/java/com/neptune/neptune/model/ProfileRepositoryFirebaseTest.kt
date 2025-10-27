@@ -42,11 +42,18 @@ class ProfileRepositoryFirebaseTest {
     @Before
     fun setUp() {
         runBlocking {
-            db = FirebaseFirestore.getInstance().apply {
-                useEmulator(host, firestorePort)
+            db = FirebaseFirestore.getInstance()
+            auth = FirebaseAuth.getInstance()
+            try {
+                db.useEmulator(host, firestorePort)
+            } catch (e: IllegalStateException) {
+                "database emulator not running?"
             }
-            auth = FirebaseAuth.getInstance().apply {
-                useEmulator(host, authPort)
+
+            try {
+                auth.useEmulator(host, authPort)
+            } catch (e: IllegalStateException) {
+                "auth emulator not running?"
             }
 
             runCatching { auth.signOut() }
@@ -63,24 +70,30 @@ class ProfileRepositoryFirebaseTest {
     fun tearDown() {
         runBlocking {
             cleanupCurrentUserDocs()
-            runCatching { auth.signOut() }
+            if (this@ProfileRepositoryFirebaseTest::auth.isInitialized) {
+                runCatching { auth.signOut() }
+            }
         }
     }
 
-    private fun currentUid(): String = auth.currentUser?.uid
-        ?: throw IllegalStateException("No authenticated user")
+    private fun currentUid(): String {
+        check(this::auth.isInitialized) { "Auth not initialized" }
+        return auth.currentUser?.uid ?: error("No authenticated user")
+    }
 
     private fun await(task: com.google.android.gms.tasks.Task<out Any?>): Any? =
         Tasks.await(task)
 
     private fun cleanupCurrentUserDocs() {
+        if (!this::auth.isInitialized || !this::db.isInitialized) return
         val uid = auth.currentUser?.uid ?: return
         val profiles = db.collection(PROFILES_COLLECTION_PATH)
         val usernames = db.collection(USERNAMES_COLLECTION_PATH)
 
         runCatching { await(profiles.document(uid).delete()) }
 
-        val mine = Tasks.await(usernames.whereEqualTo("uid", uid).get())
+        val mine = runCatching { Tasks.await(usernames.whereEqualTo("uid", uid).get()) }.getOrNull()
+            ?: return
         for (doc in mine.documents) {
             runCatching { await(usernames.document(doc.id).delete()) }
         }
