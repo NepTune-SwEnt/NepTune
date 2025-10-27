@@ -54,15 +54,14 @@ class ProfileRepositoryFirebase(
     return if (!exists()) {
       null
     } else {
-        Profile(
-            uid = id,
-            username = getString("username").orEmpty(),
-            name = getString("name"),
-            bio = getString("bio"),
-            subscriptions = getLong("subscriptions") ?: 0L,
-            subscribers = getLong("subscribers") ?: 0L,
-            avatarUrl = getString("avatarUrl").orEmpty()
-        )
+      Profile(
+          uid = id,
+          username = getString("username").orEmpty(),
+          name = getString("name"),
+          bio = getString("bio"),
+          subscriptions = getLong("subscriptions") ?: 0L,
+          subscribers = getLong("subscribers") ?: 0L,
+          avatarUrl = getString("avatarUrl").orEmpty())
     }
   }
 
@@ -228,8 +227,7 @@ class ProfileRepositoryFirebase(
         bio = bio,
         subscriptions = subscriptions,
         subscribers = subscribers,
-        avatarUrl = avatarUrl
-    )
+        avatarUrl = avatarUrl)
   }
 
   private fun toUsernameBase(s: String) = s.lowercase().replace("[^a-z0-9_]".toRegex(), "")

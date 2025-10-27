@@ -9,7 +9,9 @@ import com.google.firebase.firestore.firestore
  * @author Arianna Baur
  */
 object ProfileRepositoryProvider {
-    private val _repository: ProfileRepository by lazy { ProfileRepositoryFirebase(Firebase.firestore) }
+  private val _repository: ProfileRepository by lazy {
+    ProfileRepositoryFirebase(Firebase.firestore)
+  }
 
-    var repository: ProfileRepository = _repository
+  var repository: ProfileRepository = _repository
 }

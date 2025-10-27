@@ -19,7 +19,8 @@ import kotlinx.coroutines.launch
  * Holds the current [ProfileUiState] and exposes update functions for UI-driven changes (name,
  * username, bio). Simulates save operations (to be replaced with repository calls).
  */
-class ProfileViewModel(private val repo: ProfileRepository = ProfileRepositoryProvider.repository) : ViewModel() {
+class ProfileViewModel(private val repo: ProfileRepository = ProfileRepositoryProvider.repository) :
+    ViewModel() {
 
   private val _uiState = MutableStateFlow(ProfileUiState())
   val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
