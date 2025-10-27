@@ -1,6 +1,7 @@
 package com.neptune.neptune.ui.picker
 
 import android.content.Context
+import androidx.lifecycle.ViewModel
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import com.neptune.neptune.data.NeptunePackager
@@ -10,10 +11,12 @@ import com.neptune.neptune.domain.port.FileImporter
 import com.neptune.neptune.domain.port.MediaRepository
 import com.neptune.neptune.domain.usecase.GetLibraryUseCase
 import com.neptune.neptune.domain.usecase.ImportMediaUseCase
+import io.mockk.mockk
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URI
 import java.util.zip.ZipFile
+import kotlin.test.assertFailsWith
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -108,5 +111,18 @@ class ImportViewModelTest {
       val list = vm.library.first()
       assertThat(list).hasSize(2)
     }
+  }
+
+  private class NotImportViewModel : ViewModel()
+
+  @Test
+  fun create_unknownViewModelClass_throwsIllegalStateException() {
+    val importUC = mockk<ImportMediaUseCase>(relaxed = true)
+    val libraryUC = mockk<GetLibraryUseCase>(relaxed = true)
+    val factory = ImportVMFactory(importUC, libraryUC)
+
+    val ex =
+        assertFailsWith<IllegalStateException> { factory.create(NotImportViewModel::class.java) }
+    assertThat(ex).hasMessageThat().isEqualTo("Unknown ViewModel class")
   }
 }

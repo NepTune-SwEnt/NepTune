@@ -88,4 +88,49 @@ class ProjectListTest {
         .performScrollToNode(hasText(middleFullUri))
     compose.onNodeWithText(middleFullUri).assertExists()
   }
+
+  @Test
+  fun showsEmptyList_whenNoItems() {
+    compose.setContent { MaterialTheme { ProjectList(emptyList()) } }
+
+    // The LazyColumn exists…
+    compose.onNodeWithTag(ProjectListTestTags.PROJECT_LIST).assertExists()
+
+    // …but no rows (filenames) should be found.
+    compose
+        .onAllNodesWithText(ProjectListTestTexts.URI_EXTENSION, substring = true)
+        .assertCountEquals(0)
+  }
+
+  @Test
+  fun headlineUsesWholeString_whenNoSlashInUri() {
+    // substringAfterLast('/') should return the whole string when there is no '/'
+    val bare = "bare-name.zip"
+    val item = MediaItem(id = "x", projectUri = bare)
+
+    compose.setContent { MaterialTheme { ProjectList(listOf(item)) } }
+
+    // Headline shows the filename (the whole string in this case)
+    compose.onNodeWithText(bare).assertExists()
+    // Supporting content shows the full "URI" we passed (same string)
+    compose.onNodeWithText(bare).assertExists()
+  }
+
+  @Test
+  fun headlineBecomesEmpty_whenUriEndsWithSlash_butUriStillShown() {
+    // Edge case: substringAfterLast('/') == "" if the URI ends with '/'
+    val base = ProjectListTestTexts.URI_BASE_PATH + "folder/"
+    val item = MediaItem(id = "x", projectUri = base)
+
+    compose.setContent { MaterialTheme { ProjectList(listOf(item)) } }
+
+    // Supporting content (full URI) should still be present
+    compose.onNodeWithText(base).assertExists()
+
+    // Headline text is empty string. Compose won't surface an empty Text node for querying,
+    // so we assert that no ".zip" filename nodes exist (i.e., we did NOT falsely derive one).
+    compose
+        .onAllNodesWithText(ProjectListTestTexts.URI_EXTENSION, substring = true)
+        .assertCountEquals(0)
+  }
 }
