@@ -10,6 +10,7 @@ import com.neptune.neptune.model.profile.ProfileRepositoryFirebase
 import com.neptune.neptune.model.profile.USERNAMES_COLLECTION_PATH
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.tasks.await
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -166,11 +167,25 @@ class ProfileRepositoryFirebaseTest {
     }
 
     @Test
-    fun generateRandomFreeUsername_returnsUnique() = runBlocking {
-        val a = repo.generateRandomFreeUsername("rnd")
-        val b = repo.generateRandomFreeUsername("rnd")
-        assertNotEquals(a, b)
+    fun generateRandomFreeUsername_returnsDifferent_whenTakenByAnotherUser() = runBlocking {
+        val usernames = db.collection(USERNAMES_COLLECTION_PATH)
+
+        // Simulation of user A taking username "rnd"
+        auth.signOut()
+        val b = auth.signInAnonymously().await().user!!.uid
+        val desired = normalizeUsername("rnd")
+        // Username "rnd" is taken by user A
+        usernames.document(desired).set(mapOf("uid" to b)).await()
+
+        // User B signs in and tries to get "rnd"
+        auth.signOut()
+        auth.signInAnonymously().await()
+        val second = repo.generateRandomFreeUsername("rnd")
+
+        assertNotEquals(desired, second)
     }
+
+    fun normalizeUsername(u: String) = u.trim().lowercase().replace(Regex("[^a-z0-9_]"), "")
 
     @Test
     fun updateName_and_updateBio_onlyChangeThoseFields() = runBlocking {
