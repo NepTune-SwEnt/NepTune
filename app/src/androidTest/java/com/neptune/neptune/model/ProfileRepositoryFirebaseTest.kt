@@ -28,6 +28,10 @@ import org.junit.runner.RunWith
  * - Start them: firebase emulators:start --only firestore,auth
  *
  * On Android emulator, host is 10.0.2.2
+ *
+ * Partially implemented by ChatGPT
+ *
+ * @author Arianna Baur
  */
 @RunWith(AndroidJUnit4::class)
 class ProfileRepositoryFirebaseTest {

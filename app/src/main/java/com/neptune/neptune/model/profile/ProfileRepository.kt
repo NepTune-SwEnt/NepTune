@@ -3,6 +3,14 @@ package com.neptune.neptune.model.profile
 import android.net.Uri
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * Repository interface for managing user profiles stored in Firestore.
+ *
+ * Provides suspend functions to create, read, and update user profiles, handle username claiming
+ * and availability checks, and manage basic profile metadata such as name, bio, and avatar.
+ *
+ * @author Arianna Baur
+ */
 interface ProfileRepository {
 
   /**

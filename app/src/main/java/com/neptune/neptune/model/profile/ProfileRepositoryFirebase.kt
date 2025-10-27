@@ -1,6 +1,5 @@
 package com.neptune.neptune.model.profile
 
-// import com.google.firebase.storage.FirebaseStorage
 import android.net.Uri
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -16,14 +15,22 @@ const val PROFILES_COLLECTION_PATH = "profiles"
 const val USERNAMES_COLLECTION_PATH = "usernames"
 private const val DEFAULT_BIO = "Hello! New NepTune user here!"
 
+/**
+ * Firebase-backed implementation of [ProfileRepository] using Firestore.
+ *
+ * Manages creation, updates, and username reservations for user profiles stored under
+ * `profiles/{uid}` and `usernames/{username}`.
+ *
+ * @author Arianna Baur
+ */
 class ProfileRepositoryFirebase(
     private val db: FirebaseFirestore,
-    // private val storage: FirebaseStorage
 ) : ProfileRepository {
 
   val profiles = db.collection(PROFILES_COLLECTION_PATH)
   val usernames = db.collection(USERNAMES_COLLECTION_PATH)
 
+  /** Returns the current authenticated user's profile, or null if none exists. */
   override suspend fun getProfile(): Profile? {
     val currentUser = Firebase.auth.currentUser
     val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
@@ -34,6 +41,7 @@ class ProfileRepositoryFirebase(
     return documentToProfile(profile)
   }
 
+  /** Observes real-time updates to the current user's profile as a [Flow]. */
   override fun observeProfile(): Flow<Profile?> = callbackFlow {
     val currentUser = Firebase.auth.currentUser
     val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
@@ -50,6 +58,7 @@ class ProfileRepositoryFirebase(
     // =====================================================
   }
 
+  /** Converts a Firestore [DocumentSnapshot] to a [Profile] instance, or null if missing. */
   private fun DocumentSnapshot.toProfileOrNull(): Profile? {
     return if (!exists()) {
       null
@@ -65,6 +74,10 @@ class ProfileRepositoryFirebase(
     }
   }
 
+  /**
+   * Ensures a profile document exists for the current user. Creates a new one if missing, assigning
+   * a free username and default fields.
+   */
   override suspend fun ensureProfile(suggestedUsernameBase: String?, name: String?): Profile {
     val currentUser = Firebase.auth.currentUser
     val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
@@ -96,6 +109,10 @@ class ProfileRepositoryFirebase(
     return getProfile()!!
   }
 
+  /**
+   * Claims the first available username derived from the given base string. Used internally within
+   * Firestore transactions.
+   */
   private fun claimFreeUsername(tx: Transaction, base: String, uid: String): String {
     val b = toUsernameBase(base).ifBlank { "user" }
     if (!tx.get(usernames.document(b)).exists()) {
@@ -112,8 +129,13 @@ class ProfileRepositoryFirebase(
     error("no-username")
   }
 
+  /** Normalizes a username by lowercasing and removing invalid characters. */
   private fun normalizeUsername(u: String) = u.trim().lowercase().replace(Regex("[^a-z0-9_]"), "")
 
+  /**
+   * Checks if a username is available for the current user. Returns true if it doesn't exist or is
+   * already owned by this user.
+   */
   override suspend fun isUsernameAvailable(username: String): Boolean {
     val uid = Firebase.auth.currentUser?.uid ?: error("No authenticated user")
     val desired = normalizeUsername(username)
@@ -123,6 +145,12 @@ class ProfileRepositoryFirebase(
     return owner == uid
   }
 
+  /**
+   * Atomically sets a new username for the current user via Firestore transaction. Updates
+   * `profiles/{uid}` and reserves/releases entries in `usernames/{username}`.
+   *
+   * @throws UsernameTakenException if the username is owned by another user.
+   */
   @Throws(UsernameTakenException::class)
   override suspend fun setUsername(newUsername: String) {
     val uid = Firebase.auth.currentUser?.uid ?: error("No authenticated user")
@@ -131,7 +159,7 @@ class ProfileRepositoryFirebase(
     db.runTransaction { tx ->
           val profileRef = profiles.document(uid)
 
-          // READS — all before any writes
+          // Reads all before any writes
           val profileSnap = tx.get(profileRef)
           val oldUsername =
               profileSnap
@@ -150,14 +178,14 @@ class ProfileRepositoryFirebase(
           val oldRef = if (oldUsername.isNotBlank()) usernames.document(oldUsername) else null
           val oldDoc = oldRef?.let { tx.get(it) } // read (if present)
 
-          // DECIDE based on reads, still no writes so far
+          // Decide based on reads, still no writes so far
           if (newDoc.exists()) {
             val owner = newDoc.getString("uid")
             if (owner != uid) throw UsernameTakenException(desired)
-            // already mine → no need to set() again (avoids update-in-place)
+            // already mine, so no need to set again
           }
 
-          // WRITES — only after all reads are done
+          // Writes only after all reads are done
           if (!newDoc.exists()) {
             tx.set(newRef, mapOf("uid" to uid)) // create reservation
           }
@@ -172,6 +200,10 @@ class ProfileRepositoryFirebase(
         .await()
   }
 
+  /**
+   * Generates a random username derived from the given base that is free for the current user.
+   * Appends a numeric suffix if needed.
+   */
   override suspend fun generateRandomFreeUsername(base: String): String {
     val b = toUsernameBase(base).ifBlank { "user" }
     if (isUsernameAvailable(b)) return b
@@ -182,36 +214,39 @@ class ProfileRepositoryFirebase(
     throw IllegalStateException("Could not generate a free username")
   }
 
+  /** Updates only the `name` field of the current user's profile. */
   override suspend fun updateName(newName: String) {
     val currentUser = Firebase.auth.currentUser
     val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
     profiles.document(uid).update("name", newName).await()
   }
 
+  /** Updates only the `bio` field of the current user's profile. */
   override suspend fun updateBio(newBio: String) {
     val currentUser = Firebase.auth.currentUser
     val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
     profiles.document(uid).update("bio", newBio).await()
   }
 
+  /**
+   * Uploads a profile image (stub implementation). Updates `avatarUrl` in the profile document and
+   * returns the uploaded URL (currently empty).
+   */
   override suspend fun uploadAvatar(localUri: Uri): String {
     val currentUser = Firebase.auth.currentUser
     val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
-    // val ref = storage.reference.child("images/avatars/$uid.jpg")
-    // ref.putFile(localUri).await()
-    // val url = ref.downloadUrl.await().toString()
-    profiles.document(uid).update("avatarUrl", "" /*url*/).await()
-    return "" // url
+    profiles.document(uid).update("avatarUrl", "").await()
+    return ""
   }
 
+  /** Removes the current user's avatar and clears `avatarUrl`. */
   override suspend fun removeAvatar() {
     val currentUser = Firebase.auth.currentUser
     val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
-    // val ref = storage.reference.child("images/avatars/$uid.jpg")
-    // runCatching { ref.delete().await() }
     profiles.document(uid).update("avatarUrl", "").await()
   }
 
+  /** Converts a Firestore [DocumentSnapshot] to a [Profile] instance. */
   private fun documentToProfile(document: DocumentSnapshot): Profile? {
     val uid = document.id
     val username = document.getString("username") ?: ""
@@ -230,5 +265,6 @@ class ProfileRepositoryFirebase(
         avatarUrl = avatarUrl)
   }
 
+  /** Converts an input string to a valid username base (lowercase, alphanumeric + underscores). */
   private fun toUsernameBase(s: String) = s.lowercase().replace("[^a-z0-9_]".toRegex(), "")
 }
