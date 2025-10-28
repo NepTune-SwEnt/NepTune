@@ -8,30 +8,25 @@ plugins {
     id("jacoco")
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
 }
-
 android {
     namespace = "com.neptune.neptune"
     compileSdk = 34
-
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1,LICENSE.md,LICENSE-notice.md}"
         }
     }
-
     defaultConfig {
         applicationId = "com.neptune.neptune"
         minSdk = 28
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
     }
-
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -40,66 +35,54 @@ android {
                 "proguard-rules.pro"
             )
         }
-
         debug {
             enableUnitTestCoverage = true
             enableAndroidTestCoverage = true
         }
     }
-
     testCoverage {
         jacocoVersion = "0.8.8"
     }
-
     buildFeatures {
         compose = true
     }
-
     composeOptions {
         kotlinCompilerExtensionVersion = "1.4.2"
     }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-
     kotlinOptions {
         jvmTarget = "11"
     }
-
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
             isReturnDefaultValues = true
         }
     }
-
     // Robolectric needs to be run only in debug. But its tests are placed in the shared source set (test)
     // The next lines transfers the src/test/* from shared to the testDebug one
     //
     // This prevent errors from occurring during unit tests
     sourceSets.getByName("testDebug") {
         val test = sourceSets.getByName("test")
-
         java.setSrcDirs(test.java.srcDirs)
         res.setSrcDirs(test.res.srcDirs)
         resources.setSrcDirs(test.resources.srcDirs)
     }
-
     sourceSets.getByName("test") {
         java.setSrcDirs(emptyList<File>())
         res.setSrcDirs(emptyList<File>())
         resources.setSrcDirs(emptyList<File>())
     }
 }
-
 sonar {
     properties {
         property("sonar.projectKey", "NepTune-SwEnt_NepTune")
@@ -114,13 +97,11 @@ sonar {
         property("sonar.coverage.jacoco.xmlReportPaths", "${project.layout.buildDirectory.get()}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
     }
 }
-
 // When a library is used both by robolectric and connected tests, use this function
 fun DependencyHandlerScope.globalTestImplementation(dep: Any) {
     androidTestImplementation(dep)
     testImplementation(dep)
 }
-
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -133,12 +114,10 @@ dependencies {
     globalTestImplementation(libs.androidx.junit)
     globalTestImplementation(libs.androidx.espresso.core)
     implementation(libs.androidx.navigation.compose)
-
     // ------------- Jetpack Compose ------------------
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
     globalTestImplementation(composeBom)
-
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)
     // Material Design 3
@@ -151,27 +130,23 @@ dependencies {
     implementation(libs.compose.preview)
     implementation("androidx.compose.material:material-icons-extended:1.6.7")
     debugImplementation(libs.compose.tooling)
+
     // UI Tests
     globalTestImplementation(libs.compose.test.junit)
     debugImplementation(libs.compose.test.manifest)
-
     // --------- Kaspresso test framework ----------
     globalTestImplementation(libs.kaspresso)
     globalTestImplementation(libs.kaspresso.compose)
-
     // ----------       Robolectric     ------------
     testImplementation(libs.robolectric)
     testImplementation(kotlin("test"))
-
     // ----------        Firebase       ------------
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
-
     // ---------- Credential Manager ------------
     implementation(libs.credentials)
     implementation(libs.credentials.play.services.auth)
     implementation(libs.googleid)
-
     androidTestImplementation("io.mockk:mockk-android:1.13.10")
     testImplementation("junit:junit:4.13.2")
     testImplementation("io.mockk:mockk:1.13.10")
@@ -179,7 +154,6 @@ dependencies {
     testImplementation("androidx.arch.core:core-testing:2.2.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 }
-
 tasks.withType<Test> {
     // Configure Jacoco for each tests
     configure<JacocoTaskExtension> {
@@ -187,15 +161,12 @@ tasks.withType<Test> {
         excludes = listOf("jdk.internal.*")
     }
 }
-
 tasks.register("jacocoTestReport", JacocoReport::class) {
     mustRunAfter("testDebugUnitTest", "connectedDebugAndroidTest")
-
     reports {
         xml.required = true
         html.required = true
     }
-
     val fileFilter = listOf(
         // Android/generated
         "**/R.class",
@@ -204,7 +175,6 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         "**/Manifest*.*",
         "**/*Test*.*",
         "android/**/*.*",
-
         // I want to add those lines
         "**/*\$Lambda*",
         "**/*\$ExternalSynthetic*",
@@ -215,11 +185,9 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         "**/*_Factory*",
         // To here
     )
-
     val debugTree = fileTree("${project.layout.buildDirectory.get()}/tmp/kotlin-classes/debug") {
         exclude(fileFilter)
     }
-
     val mainSrc = "${project.layout.projectDirectory}/src/main/java"
     sourceDirectories.setFrom(files(mainSrc))
     classDirectories.setFrom(files(debugTree))
@@ -227,7 +195,6 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
         include("outputs/code_coverage/debugAndroidTest/connected/*/coverage.ec")
     })
-
     doLast {
         val reportFile = reports.xml.outputLocation.asFile.get()
         val newContent = reportFile.readText().replace("<line[^>]+nr=\"65535\"[^>]*>".toRegex(), "")

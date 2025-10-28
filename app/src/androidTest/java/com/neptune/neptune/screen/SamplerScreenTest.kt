@@ -201,10 +201,14 @@ class SamplerScreenTest {
   fun setup() {
     fakeViewModel = FakeSamplerViewModel()
     val factory = SamplerViewModelFactory(fakeViewModel)
+
     composeTestRule.activity.setContent {
       SampleAppTheme {
         Surface(color = MaterialTheme.colorScheme.background) {
-          SamplerScreen(viewModel = viewModel(factory = factory))
+          SamplerScreen(
+            viewModel = viewModel(factory = factory),
+            zipFilePath = null
+          )
         }
       }
     }

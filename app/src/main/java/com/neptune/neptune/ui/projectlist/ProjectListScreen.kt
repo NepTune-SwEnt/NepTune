@@ -69,6 +69,8 @@ import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepositoryProvider
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import kotlinx.coroutines.runBlocking
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 object ProjectListScreenTestTags {
   const val PROJECT_LIST_SCREEN = "ProjectListScreen"
@@ -94,7 +96,7 @@ private const val SEARCHBAR_FONT_SIZE = 21
 @Composable
 fun ProjectListScreen(
     credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
-    navigateToSampler: () -> Unit = {},
+    navigateToSampler: (zipFilePath: String) -> Unit = {},
     projectListViewModel: ProjectListViewModel = viewModel(),
 ) {
   val uiState by projectListViewModel.uiState.collectAsState()
@@ -148,7 +150,7 @@ fun ProjectList(
     selectedProject: String? = null,
     modifier: Modifier = Modifier,
     projectListViewModel: ProjectListViewModel,
-    navigateToSampler: () -> Unit = {},
+    navigateToSampler: (zipFilePath: String) -> Unit = {},
 ) {
   val colorSearchBar = NepTuneTheme.colors.searchBar
   Column(
@@ -189,7 +191,7 @@ fun ProjectList(
 fun ProjectListItem(
     project: ProjectItem,
     selectedProject: String? = null,
-    openProject: () -> Unit = {},
+    openProject: (zipFilePath: String) -> Unit = {},
     projectListViewModel: ProjectListViewModel,
 ) {
   val backGroundColor =
@@ -203,7 +205,9 @@ fun ProjectListItem(
               .clickable(
                   onClick = {
                     projectListViewModel.selectProject(project)
-                    openProject()
+                      val pathToSend = project.filePath ?: project.id
+                      val encodedFilePath = URLEncoder.encode(pathToSend, StandardCharsets.UTF_8.name())
+                      openProject(encodedFilePath)
                   })
               .drawBehind {
                 drawLine(
@@ -461,7 +465,7 @@ fun SearchBar(value: String, onValueChange: (String) -> Unit) {
 @Composable
 fun ProjectListScreenPreview(
     navigateBack: () -> Unit = {},
-    navigateToSampler: () -> Unit = {},
+    navigateToSampler: (zipFilePath: String) -> Unit = {},
 ) {
   val repo = ProjectItemsRepositoryProvider.repository
   runBlocking {
