@@ -13,62 +13,83 @@ import com.neptune.neptune.domain.port.FileImporter
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URI
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-/*
- * Implementation of FileImporter interface that imports audio files (MP3/WAV) from SAF URIs
- */
 class UnsupportedAudioFormat(msg: String) : IllegalArgumentException(msg)
 
+/*
+ * Implementation of FileImporter interface that imports audio files from SAF/file URIs.
+ * Formats are defined in a single source of truth: `supportedFormats`.
+ * Validates MIME and extension, derives a sane file name, copies the file locally,
+ * and retrieves duration metadata.
+ * written with help from ChatGPT
+ */
 class FileImporterImpl(
     private val context: Context,
     private val cr: ContentResolver,
-    private val paths: StoragePaths
+    private val paths: StoragePaths,
+    private val io: CoroutineDispatcher = Dispatchers.IO
 ) : FileImporter {
-  private val audioString = "audio"
-  private val mp3Ext = "mp3"
-  private val wavExt = "wav"
-  private val mp3Mime = "audio/mpeg"
-  private val wavMime = "audio/wav"
+
   private val fileImporterTag = "FileImporter"
-  private val allowedMimes = setOf(mp3Mime, wavMime)
-  private val allowedExts = setOf(mp3Ext, wavExt)
+  private val defaultBaseName = "audio"
+
+  // Single source of truth: add new formats here (one line)
+  private val supportedFormats: Map<String, String> =
+      mapOf(
+          "mp3" to "audio/mpeg",
+          "wav" to "audio/wav",
+      )
+  private val allowedExts = supportedFormats.keys
+  private val allowedMimes = supportedFormats.values.toSet()
+  private val supportedLabel = supportedFormats.keys.joinToString("/") { it.uppercase() }
 
   @RequiresApi(Build.VERSION_CODES.Q)
-  override suspend fun importFile(sourceUri: URI): FileImporter.ImportedFile {
-    val safUri = sourceUri.toString().toUri()
-    val parsed: ParsedFromUri = resolveAndValidateAudio(safUri)
+  override suspend fun importFile(sourceUri: URI): FileImporter.ImportedFile =
+      withContext(io) {
+        val safUri = sourceUri.toString().toUri()
+        val parsed = resolveAndValidateAudio(safUri)
 
-    // Single audio workspace
-    val dir = paths.audioWorkspace()
-    // Create unique file in workspace
-    val target = uniqueFile(dir, "${parsed.base}.${parsed.ext}")
+        val dir = paths.audioWorkspace()
+        val target = uniqueFile(dir, "${parsed.base}.${parsed.ext}")
 
-    val inputStream =
-        cr.openInputStream(safUri)
-            ?: throw IllegalArgumentException("Cannot open input stream for URI: $safUri")
-    inputStream.use { input -> FileOutputStream(target).use { output -> input.copyTo(output) } }
-    // Try to get duration (may fail for some formats/encodings)
-    val duration =
-        runCatching {
-              MediaMetadataRetriever().use { mmr ->
-                mmr.setDataSource(context, safUri)
-                mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong()
-              }
-            }
-            .getOrNull()
-    Log.v(fileImporterTag, "imported ${target.name} (${target.length()} bytes, $duration ms)")
-    return FileImporter.ImportedFile(
-        displayName = target.name,
-        mimeType = parsed.mime,
-        sourceUri = sourceUri,
-        localUri = target.toURI(), // file://... in audio workspace
-        sizeBytes = target.length(),
-        durationMs = duration ?: 0L)
-  }
+        val inputStream =
+            cr.openInputStream(safUri)
+                ?: throw IllegalArgumentException("Cannot open input stream for URI: $safUri")
 
-  // Ensures the file is MP3 or WAV by MIME and/or extension; derives a sane name.
+        inputStream.use { input -> FileOutputStream(target).use { output -> input.copyTo(output) } }
+
+        val duration =
+            runCatching {
+                  MediaMetadataRetriever().use { mmr ->
+                    mmr.setDataSource(context, safUri)
+                    mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong()
+                  }
+                }
+                .getOrNull()
+
+        Log.v(fileImporterTag, "imported ${target.name} (${target.length()} bytes, $duration ms)")
+
+        return@withContext FileImporter.ImportedFile(
+            displayName = target.name,
+            mimeType = parsed.mime,
+            sourceUri = sourceUri,
+            localUri = target.toURI(),
+            sizeBytes = target.length(),
+            durationMs = duration ?: 0L)
+      }
+
+  // Pick extension for a given MIME (ex : "audio/mpeg" -> "mp3")
+  private fun extFromMime(mime: String?): String? =
+      mime?.let { m -> supportedFormats.entries.firstOrNull { it.value == m }?.key }
+
+  // Pick MIME for a given extension (ex : "mp3" -> "audio/mpeg")
+  private fun mimeFromExt(ext: String?): String? = ext?.let { supportedFormats[it] }
+
+  // Ensures the file is one of the supported formats by MIME and/or extension; derives a sane name.
   private fun resolveAndValidateAudio(uri: Uri): ParsedFromUri {
-    // 1) Pull display + mime, with robust fallbacks for file:// URIs
     val isFile = uri.scheme == ContentResolver.SCHEME_FILE
     val crMime = if (!isFile) cr.getType(uri) else null
 
@@ -81,59 +102,39 @@ class FileImporterImpl(
 
     val displayFromPath: String? =
         uri.lastPathSegment?.substringAfterLast('/')?.takeIf { it.isNotBlank() }
+
     val display = displayFromQuery ?: displayFromPath
 
-    // Resolve extensions from name and MIME (both may be null)
     val extFromName = display?.substringAfterLast('.', "")?.lowercase().orEmpty()
-    val extFromMime =
-        android.webkit.MimeTypeMap.getSingleton()
-            .getExtensionFromMimeType(crMime ?: "")
-            ?.lowercase()
-            .orEmpty()
-
-    // If both are empty, try path suffix once more
     val extFromPath = displayFromPath?.substringAfterLast('.', "")?.lowercase().orEmpty()
+    val extFromMime = extFromMime(crMime).orEmpty()
 
     val ext =
-        when {
-          extFromName in allowedExts -> extFromName
-          extFromMime in allowedExts -> extFromMime
-          extFromPath in allowedExts -> extFromPath
-          else -> ""
+        sequenceOf(extFromName, extFromMime, extFromPath)
+            .firstOrNull { it in allowedExts }
+            .orEmpty()
+
+    val rawBase = (display ?: defaultBaseName).removeSuffix(if (ext.isNotEmpty()) ".$ext" else "")
+    val base =
+        rawBase.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_', '.', ' ').ifEmpty {
+          defaultBaseName
         }
 
-    // Normalize base name (without extension), robust fallback
-    val rawBase = (display ?: audioString).removeSuffix(if (ext.isNotEmpty()) ".$ext" else "")
-    val base =
-        rawBase
-            .replace(Regex("[^A-Za-z0-9._-]+"), "_") // sanitize
-            .trim('_', '.', ' ')
-            .ifEmpty { audioString }
-
-    // Normalize/validate MIME from CR or from extension
     val normalizedMime: String? =
         when {
           crMime in allowedMimes -> crMime
-          ext == mp3Ext -> mp3Mime
-          ext == wavExt -> wavMime
-          // For file:// with no CR type, infer from path if possible
-          isFile && ext.isNotEmpty() && "audio/$ext" in allowedMimes -> "audio/$ext"
+          ext.isNotEmpty() -> mimeFromExt(ext)
           else -> null
         }
 
     if (normalizedMime !in allowedMimes) {
-      throw UnsupportedAudioFormat("Only MP3/WAV are supported. Got mime=$crMime name=$display")
+      throw UnsupportedAudioFormat(
+          "Only $supportedLabel are supported. Got mime=$crMime name=$display")
     }
 
-    // Final extension consistent with normalized MIME
-    val finalExt =
-        when (normalizedMime) {
-          mp3Mime -> mp3Ext
-          wavMime -> wavExt
-          else -> ext.ifEmpty { mp3Ext } // safe default; shouldn't happen after validation
-        }
+    val finalExt = extFromMime(normalizedMime) ?: ext.ifEmpty { allowedExts.first() }
 
-    return ParsedFromUri(normalizedMime, base, finalExt)
+    return ParsedFromUri(normalizedMime!!, base, finalExt)
   }
 
   // If file exists, appends (2), (3) etc. to base name to make it unique
@@ -150,5 +151,5 @@ class FileImporterImpl(
     return f
   }
 
-  private data class ParsedFromUri(val mime: String?, val base: String, val ext: String)
+  private data class ParsedFromUri(val mime: String, val base: String, val ext: String)
 }

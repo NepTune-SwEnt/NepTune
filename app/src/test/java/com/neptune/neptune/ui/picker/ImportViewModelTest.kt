@@ -11,6 +11,7 @@ import com.neptune.neptune.domain.port.FileImporter
 import com.neptune.neptune.domain.port.MediaRepository
 import com.neptune.neptune.domain.usecase.GetLibraryUseCase
 import com.neptune.neptune.domain.usecase.ImportMediaUseCase
+import com.neptune.neptune.utils.MainDispatcherRule
 import io.mockk.mockk
 import java.io.File
 import java.io.FileOutputStream
@@ -20,21 +21,17 @@ import kotlin.test.assertFailsWith
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-/*
-Fakes with minimal implementation to support ImportViewModelTest.
-More extensive tests of the individual components are in their own
-test files (NeptunePackagerTest, FileImporterImplCoverageTest, etc).
-Written with help from ChatGPT.
-*/
-
+/* fakes */
 private class FakeRepo : MediaRepository {
   private val flow = MutableStateFlow<List<MediaItem>>(emptyList())
 
@@ -65,6 +62,10 @@ private class FakeImporter(private val dir: File) : FileImporter {
 @OptIn(ExperimentalCoroutinesApi::class)
 class ImportViewModelTest {
 
+  @get:Rule val mainRule = MainDispatcherRule() // sets Dispatchers.Main to a TestDispatcher
+  private val testDispatcher
+    get() = mainRule.dispatcher
+
   private lateinit var vm: ImportViewModel
   private lateinit var repo: FakeRepo
   private lateinit var importer: FakeImporter
@@ -74,44 +75,50 @@ class ImportViewModelTest {
     val ctx: Context = ApplicationProvider.getApplicationContext()
     repo = FakeRepo()
     importer = FakeImporter(ctx.cacheDir)
-    val packager = NeptunePackager(StoragePaths(ctx))
+
+    // inject the SAME test dispatcher into NeptunePackager, so IO is controlled by runTest
+    val packager = NeptunePackager(StoragePaths(ctx), io = testDispatcher)
+
     val importUC = ImportMediaUseCase(importer, repo, packager)
     val libraryUC = GetLibraryUseCase(repo)
     vm = ImportViewModel(importUC, libraryUC)
   }
 
   @Test
-  fun import_updates_list_with_zip_project() {
-    runTest {
-      val before = vm.library.first()
-      assertThat(before).isEmpty()
+  fun importUpdatesListWithZipProject() =
+      runTest(testDispatcher) {
+        val before = vm.library.first()
+        assertThat(before).isEmpty()
 
-      vm.importFromSaf("content://any-audio")
-      advanceUntilIdle() // flush launched coroutines
+        vm.importFromSaf("content://any-audio")
+        advanceUntilIdle() // drains viewModelScope + IO (because both use testDispatcher)
 
-      val after = vm.library.first()
-      assertThat(after).hasSize(1)
-      val item = after.first()
-      assertThat(item.projectUri).endsWith(".zip")
+        val after = vm.library.first()
+        assertThat(after).hasSize(1)
+        val item = after.first()
+        assertThat(item.projectUri).endsWith(".zip")
 
-      // verify the produced zip has the expected entries
-      val zipFile = File(URI(item.projectUri))
-      val names = ZipFile(zipFile).use { z -> z.entries().toList().map { it.name } }
-      assertThat(names).containsAtLeast("config.json", "picked.wav")
-    }
-  }
+        val zipFile = File(URI(item.projectUri))
+        val names = ZipFile(zipFile).use { z -> z.entries().toList().map { it.name } }
+        assertThat(names).containsAtLeast("config.json", "picked.wav")
+      }
 
   @Test
-  fun multiple_imports_append_list() {
-    runTest {
-      vm.importFromSaf("content://a")
-      vm.importFromSaf("content://b")
-      advanceUntilIdle()
+  fun multipleImportsAppendList() =
+      runTest(testDispatcher) {
+        vm.importFromSaf("content://a")
+        vm.importFromSaf("content://b")
+        advanceUntilIdle()
+        val list =
+            vm.library
+                .drop(1) // Skips the initial empty list []
+                .first { it.size == 2 } // Waits until the state is updated to contain 2 items
 
-      val list = vm.library.first()
-      assertThat(list).hasSize(2)
-    }
-  }
+        // advanceUntilIdle() is still fine, but the above line does the heavy lifting
+        advanceUntilIdle()
+
+        assertThat(list).hasSize(2)
+      }
 
   private class NotImportViewModel : ViewModel()
 

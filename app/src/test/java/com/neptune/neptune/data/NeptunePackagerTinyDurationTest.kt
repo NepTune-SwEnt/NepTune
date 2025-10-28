@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import java.io.File
 import java.util.zip.ZipFile
+import kotlinx.coroutines.test.StandardTestDispatcher
 import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,25 +19,28 @@ import org.robolectric.RobolectricTestRunner
    Written with help from ChatGPT.
 */
 @RunWith(RobolectricTestRunner::class)
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class NeptunePackagerTinyDurationTest {
+  private val testDispatcher = StandardTestDispatcher()
 
   @Test
-  fun tinyDurationIsNotNegativeAndRoundsToZeroOrMinStep() {
-    val ctx: Context = ApplicationProvider.getApplicationContext()
-    val packager = NeptunePackager(StoragePaths(ctx))
+  fun tinyDurationIsNotNegativeAndRoundsToZeroOrMinStep() =
+      kotlinx.coroutines.test.runTest(testDispatcher) {
+        val ctx: Context = ApplicationProvider.getApplicationContext()
+        val packager = NeptunePackager(StoragePaths(ctx))
 
-    val audio = File(ctx.cacheDir, "blip.wav").apply { writeBytes(ByteArray(8) { 0x01 }) }
+        val audio = File(ctx.cacheDir, "blip.wav").apply { writeBytes(ByteArray(8) { 0x01 }) }
 
-    val zip = packager.createProjectZip(audioFile = audio, durationMs = 1L)
-    ZipFile(zip).use { z ->
-      val cfg = z.getInputStream(z.getEntry("config.json")).bufferedReader().readText()
-      val f0 = JSONObject(cfg).getJSONArray("files").getJSONObject(0)
-      val dur = f0.getDouble("duration")
+        val zip = packager.createProjectZip(audioFile = audio, durationMs = 1L)
+        ZipFile(zip).use { z ->
+          val cfg = z.getInputStream(z.getEntry("config.json")).bufferedReader().readText()
+          val f0 = JSONObject(cfg).getJSONArray("files").getJSONObject(0)
+          val dur = f0.getDouble("duration")
 
-      // We don't assert an exact value (impl-specific), but ensure it's valid and not negative.
-      assertThat(dur).isAtLeast(0.0)
-      // and "reasonable" (if you round to 0.0 or 0.1); this line makes the branch observable.
-      assertThat(dur).isAtMost(0.1)
-    }
-  }
+          // We don't assert an exact value (impl-specific), but ensure it's valid and not negative.
+          assertThat(dur).isAtLeast(0.0)
+          // and "reasonable" (if you round to 0.0 or 0.1); this line makes the branch observable.
+          assertThat(dur).isAtMost(0.1)
+        }
+      }
 }

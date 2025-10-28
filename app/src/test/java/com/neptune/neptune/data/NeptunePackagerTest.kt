@@ -6,6 +6,8 @@ import com.google.common.truth.Truth.assertThat
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipFile
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -17,25 +19,28 @@ import org.robolectric.RobolectricTestRunner
    Written with help from ChatGPT.
 */
 @RunWith(RobolectricTestRunner::class)
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class NeptunePackagerTest {
+  private val testDispatcher = StandardTestDispatcher()
 
   @Test
-  fun createProjectZipCreatesUniqueZipInsideWorkspace() {
-    val ctx: Context = ApplicationProvider.getApplicationContext()
-    val paths = StoragePaths(ctx)
-    val packager = NeptunePackager(paths)
+  fun createProjectZipCreatesUniqueZipInsideWorkspace() =
+      runTest(testDispatcher) {
+        val ctx: Context = ApplicationProvider.getApplicationContext()
+        val paths = StoragePaths(ctx)
+        val packager = NeptunePackager(paths)
 
-    val input = File(ctx.cacheDir, "a.wav").apply { writeBytes(ByteArray(4)) }
+        val input = File(ctx.cacheDir, "a.wav").apply { writeBytes(ByteArray(4)) }
 
-    val z1 = packager.createProjectZip(input, durationMs = 500L)
-    val z2 = packager.createProjectZip(input, durationMs = 600L)
+        val z1 = packager.createProjectZip(input, durationMs = 500L)
+        val z2 = packager.createProjectZip(input, durationMs = 600L)
 
-    assertThat(z1.exists()).isTrue()
-    assertThat(z2.exists()).isTrue()
-    assertThat(z1.parentFile!!.canonicalPath).isEqualTo(paths.projectsWorkspace().canonicalPath)
-    assertThat(z2.parentFile!!.canonicalPath).isEqualTo(paths.projectsWorkspace().canonicalPath)
-    assertThat(z1.name).isNotEqualTo(z2.name) // uniqueness branch
-  }
+        assertThat(z1.exists()).isTrue()
+        assertThat(z2.exists()).isTrue()
+        assertThat(z1.parentFile!!.canonicalPath).isEqualTo(paths.projectsWorkspace().canonicalPath)
+        assertThat(z2.parentFile!!.canonicalPath).isEqualTo(paths.projectsWorkspace().canonicalPath)
+        assertThat(z1.name).isNotEqualTo(z2.name) // uniqueness branch
+      }
 
   @Test
   fun projectFileNumbersEqualExistingCountAndFallsBackIfTaken() {
@@ -66,32 +71,33 @@ class NeptunePackagerTest {
   }
 
   @Test
-  fun createsZipWithConfigAndAudio() {
-    val ctx: Context = ApplicationProvider.getApplicationContext()
-    val paths = StoragePaths(ctx)
-    val packager = NeptunePackager(paths)
+  fun createsZipWithConfigAndAudio() =
+      runTest(testDispatcher) {
+        val ctx: Context = ApplicationProvider.getApplicationContext()
+        val paths = StoragePaths(ctx)
+        val packager = NeptunePackager(paths)
 
-    // create an input wav
-    val input =
-        File(ctx.cacheDir, "in.wav").apply {
-          outputStream().use { FileOutputStream(this).write(ByteArray(48) { 0x55 }) }
+        // create an input wav
+        val input =
+            File(ctx.cacheDir, "in.wav").apply {
+              outputStream().use { FileOutputStream(this).write(ByteArray(48) { 0x55 }) }
+            }
+
+        val out = packager.createProjectZip(audioFile = input, durationMs = 1200L)
+
+        assertThat(out.exists()).isTrue()
+        assertThat(out.extension).isEqualTo("zip")
+
+        ZipFile(out).use { zip ->
+          val names = zip.entries().toList().map { it.name }
+          assertThat(names).containsAtLeast("config.json", "in.wav")
+
+          val cfg = zip.getInputStream(zip.getEntry("config.json")).bufferedReader().readText()
+          // Basic shape checks
+          assertThat(cfg).contains("\"files\"")
+          assertThat(cfg).contains("\"filename\":\"in.wav\"")
+          assertThat(cfg).contains("\"duration\"")
+          assertThat(cfg).contains("\"filters\"")
         }
-
-    val out = packager.createProjectZip(audioFile = input, durationMs = 1200L)
-
-    assertThat(out.exists()).isTrue()
-    assertThat(out.extension).isEqualTo("zip")
-
-    ZipFile(out).use { zip ->
-      val names = zip.entries().toList().map { it.name }
-      assertThat(names).containsAtLeast("config.json", "in.wav")
-
-      val cfg = zip.getInputStream(zip.getEntry("config.json")).bufferedReader().readText()
-      // Basic shape checks
-      assertThat(cfg).contains("\"files\"")
-      assertThat(cfg).contains("\"filename\":\"in.wav\"")
-      assertThat(cfg).contains("\"duration\"")
-      assertThat(cfg).contains("\"filters\"")
-    }
-  }
+      }
 }
