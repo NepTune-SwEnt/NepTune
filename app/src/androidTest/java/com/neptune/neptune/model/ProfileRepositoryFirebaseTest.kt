@@ -266,11 +266,7 @@ class ProfileRepositoryFirebaseTest {
 
     val emissions = mutableListOf<Profile?>()
 
-    val job = launch {
-      repo.observeProfile()
-        .take(3)
-        .collect { emissions.add(it) }
-    }
+    val job = launch { repo.observeProfile().take(3).collect { emissions.add(it) } }
 
     // Give the listener a moment to attach and emit current (missing) snapshot
     delay(150)
@@ -322,8 +318,10 @@ class ProfileRepositoryFirebaseTest {
     val profile = repo.ensureProfile(suggestedUsernameBase = base, name = null)
 
     assertTrue("Username should start with base", profile.username.startsWith(base))
-    assertTrue("Username should be suffixed (base was taken)", profile.username.length > base.length)
-    assertFalse("Chosen username should not be one of the blocked ones", blocked.contains(profile.username))
+    assertTrue(
+        "Username should be suffixed (base was taken)", profile.username.length > base.length)
+    assertFalse(
+        "Chosen username should not be one of the blocked ones", blocked.contains(profile.username))
 
     // The reservation doc for the chosen username should exist and be owned by me
     val chosenDoc = usernamesCol.document(profile.username).get().await()
