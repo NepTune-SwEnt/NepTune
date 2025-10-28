@@ -102,7 +102,17 @@ jobs:
           ./gradlew check --parallel --build-cache
 
       # Run connected tests on the emulator
-      - name: run tests
+      - name: Setup Node (for firebase-tools)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install firebase-tools
+        run: |
+          npm i -g firebase-tools
+
+      # Run connected tests with emulators up
+      - name: Run connected tests against Firebase emulators
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -111,7 +121,11 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: ./gradlew connectedCheck --parallel --build-cache
+          script: |
+            # Ensure your repo has firebase.json with firestore/auth configured on 8080/9099
+            firebase emulators:exec --only firestore,auth \
+              --project demo-test \
+              "./gradlew connectedCheck --parallel --build-cache"
 
       # This step generates the coverage report which will be uploaded to sonar
       - name: Generate Coverage Report
