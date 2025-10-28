@@ -6,11 +6,14 @@ import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.neptune.neptune.model.profile.PROFILES_COLLECTION_PATH
+import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepositoryFirebase
 import com.neptune.neptune.model.profile.USERNAMES_COLLECTION_PATH
 import com.neptune.neptune.model.profile.UsernameTakenException
 import kotlin.random.Random
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import org.junit.After
@@ -252,5 +255,79 @@ class ProfileRepositoryFirebaseTest {
     assertEquals("", returned)
     val p2 = repo.getProfile()!!
     assertEquals("", p2.avatarUrl)
+  }
+
+  @Test
+  fun observeProfile_emitsNull_thenProfile_thenUpdatedProfile() = runBlocking {
+    // Make sure we're clean and authenticated
+    cleanupCurrentUserDocs()
+    runCatching { auth.signOut() }
+    auth.signInAnonymously().await()
+
+    val emissions = mutableListOf<Profile?>()
+
+    val job = launch {
+      repo.observeProfile()
+        .take(3)
+        .collect { emissions.add(it) }
+    }
+
+    // Give the listener a moment to attach and emit current (missing) snapshot
+    delay(150)
+
+    // Create the profile
+    val created = repo.ensureProfile(suggestedUsernameBase = "obsbase", name = null)
+
+    // Small pause to allow the create emission to flush distinctly
+    delay(150)
+
+    // Update the name
+    repo.updateName("New Name From Test")
+
+    // Wait for the 3 emissions to complete the 'take(3)'
+    job.join()
+
+    assertEquals(3, emissions.size)
+    assertNull("First emission should be null when doc is missing", emissions[0])
+
+    val afterCreate = emissions[1]!!
+    assertEquals(created.uid, afterCreate.uid)
+    assertEquals(created.username, afterCreate.username)
+
+    val afterUpdate = emissions[2]!!
+    assertEquals("New Name From Test", afterUpdate.name)
+    assertEquals(created.username, afterUpdate.username) // unchanged
+  }
+
+  @Test
+  fun ensureProfile_usesNumericSuffix_whenBaseAndFirstSuffixesTaken() = runBlocking {
+    runCatching { auth.signOut() }
+    auth.signInAnonymously().await()
+    val myUid = auth.currentUser!!.uid
+
+    val base = "loopbase"
+    val blocked = buildSet {
+      add(base)
+      // Block a few early suffixes to force the loop to iterate
+      addAll((1000..1003).map { "$base$it" })
+    }
+
+    // Pre-reserve with a different uid so they count as taken
+    val otherUid = "someone-else-${Random.nextInt(100000)}"
+    val usernamesCol = db.collection(USERNAMES_COLLECTION_PATH)
+    for (u in blocked) {
+      usernamesCol.document(u).set(mapOf("uid" to otherUid)).await()
+    }
+
+    val profile = repo.ensureProfile(suggestedUsernameBase = base, name = null)
+
+    assertTrue("Username should start with base", profile.username.startsWith(base))
+    assertTrue("Username should be suffixed (base was taken)", profile.username.length > base.length)
+    assertFalse("Chosen username should not be one of the blocked ones", blocked.contains(profile.username))
+
+    // The reservation doc for the chosen username should exist and be owned by me
+    val chosenDoc = usernamesCol.document(profile.username).get().await()
+    assertTrue(chosenDoc.exists())
+    assertEquals(myUid, chosenDoc.getString("uid"))
   }
 }
