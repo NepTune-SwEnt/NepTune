@@ -205,10 +205,7 @@ class SamplerScreenTest {
     composeTestRule.activity.setContent {
       SampleAppTheme {
         Surface(color = MaterialTheme.colorScheme.background) {
-          SamplerScreen(
-            viewModel = viewModel(factory = factory),
-            zipFilePath = null
-          )
+          SamplerScreen(viewModel = viewModel(factory = factory), zipFilePath = null)
         }
       }
     }

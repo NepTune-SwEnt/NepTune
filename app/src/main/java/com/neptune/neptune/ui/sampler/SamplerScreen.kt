@@ -108,17 +108,19 @@ enum class KnobUnit {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SamplerScreen(viewModel: SamplerViewModel = viewModel(),
-                  zipFilePath: String?,
-                  onBack: () -> Unit = {}) {
+fun SamplerScreen(
+    viewModel: SamplerViewModel = viewModel(),
+    zipFilePath: String?,
+    onBack: () -> Unit = {}
+) {
   val uiState by viewModel.uiState.collectAsState()
   var selectedItem by remember { mutableIntStateOf(2) }
 
-    LaunchedEffect(Unit) {
-        if (zipFilePath != null) {
-            viewModel.loadProjectData(zipFilePath)
-        }
+  LaunchedEffect(Unit) {
+    if (zipFilePath != null) {
+      viewModel.loadProjectData(zipFilePath)
     }
+  }
 
   Scaffold(
       containerColor = NepTuneTheme.colors.background,

@@ -68,9 +68,9 @@ import com.neptune.neptune.R
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepositoryProvider
 import com.neptune.neptune.ui.theme.NepTuneTheme
-import kotlinx.coroutines.runBlocking
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import kotlinx.coroutines.runBlocking
 
 object ProjectListScreenTestTags {
   const val PROJECT_LIST_SCREEN = "ProjectListScreen"
@@ -205,9 +205,10 @@ fun ProjectListItem(
               .clickable(
                   onClick = {
                     projectListViewModel.selectProject(project)
-                      val pathToSend = project.filePath ?: project.id
-                      val encodedFilePath = URLEncoder.encode(pathToSend, StandardCharsets.UTF_8.name())
-                      openProject(encodedFilePath)
+                    val pathToSend = project.filePath ?: project.id
+                    val encodedFilePath =
+                        URLEncoder.encode(pathToSend, StandardCharsets.UTF_8.name())
+                    openProject(encodedFilePath)
                   })
               .drawBehind {
                 drawLine(

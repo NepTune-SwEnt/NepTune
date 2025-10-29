@@ -1,9 +1,12 @@
-package com.neptune.neptune.data.project
+package com.neptune.neptune.model
 
-
+import android.content.res.AssetManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.neptune.neptune.model.project.ProjectExtractor
 import com.neptune.neptune.model.project.SamplerProjectMetadata
+import java.io.File
+import java.io.FileOutputStream
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertThrows
@@ -13,15 +16,12 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
-import java.io.File
-import java.io.FileOutputStream
-
 
 @RunWith(AndroidJUnit4::class)
 class ProjectExtractorTest {
 
-
-    private val validJson = """
+  private val validJson =
+      """
         {
           "audioFiles": [
             { "name": "kick.wav", "volume": 0.8, "durationSeconds": 3.5 },
@@ -32,9 +32,11 @@ class ProjectExtractorTest {
             { "type": "compRatio", "value": 4.0, "targetAudioFile": "master" }
           ]
         }
-    """.trimIndent()
+    """
+          .trimIndent()
 
-    private val invalidJson = """
+  private val invalidJson =
+      """
         {
           "audioFiles": [
             { "name": "kick.wav" }
@@ -42,107 +44,104 @@ class ProjectExtractorTest {
           "parameters": [        { "type": "attack", "value": "INVALID_FLOAT", "targetAudioFile": "kick.wav" }
           ]
         }
-    """.trimIndent()
+    """
+          .trimIndent()
 
-    private val missingFieldJson = """
+  private val missingFieldJson =
+      """
         {
           "audioFiles": [],
           "unknown_field": "data" 
         }
-    """.trimIndent()
+    """
+          .trimIndent()
 
-    @get:Rule
-    val tempFolder = TemporaryFolder()
+  @get:Rule val tempFolder = TemporaryFolder()
 
-    private lateinit var extractor: ProjectExtractor
-    private lateinit var assetManager: android.content.res.AssetManager
-    private lateinit var zipFile: File
+  private lateinit var extractor: ProjectExtractor
+  private lateinit var assetManager: AssetManager
+  private lateinit var zipFile: File
 
-    private val ASSET_ZIP_PATH = "fakeProject.zip"
+  private val ASSET_ZIP_PATH = "fakeProject.zip"
 
-    @Before
-    fun setup() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        assetManager = context.assets
+  @Before
+  fun setup() {
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    assetManager = context.assets
 
-        zipFile = File(tempFolder.root, "temp_project.zip")
-        copyAssetToTempFile(ASSET_ZIP_PATH, zipFile)
+    zipFile = File(tempFolder.root, "temp_project.zip")
+    copyAssetToTempFile(ASSET_ZIP_PATH, zipFile)
 
-        extractor = ProjectExtractor()
+    extractor = ProjectExtractor()
+  }
+
+  private fun copyAssetToTempFile(assetPath: String, targetFile: File) {
+    assetManager.open(assetPath).use { inputStream ->
+      FileOutputStream(targetFile).use { outputStream -> inputStream.copyTo(outputStream) }
     }
-    private fun copyAssetToTempFile(assetPath: String, targetFile: File) {
-        assetManager.open(assetPath).use { inputStream ->
-            FileOutputStream(targetFile).use { outputStream ->
-                inputStream.copyTo(outputStream)
-            }
-        }
+  }
+
+  @Test
+  fun deserialization_withValidJson_returnsCorrectMetadata() {
+    val metadata = extractor.json.decodeFromString<SamplerProjectMetadata>(validJson)
+    assertEquals(2, metadata.audioFiles.size)
+    assertEquals("kick.wav", metadata.audioFiles.first().name)
+    assertEquals(2, metadata.parameters.size)
+    assertEquals(0.5f, metadata.parameters.first().value)
+  }
+
+  @Test
+  fun deserialization_withInvalidJson_throwsException() {
+    assertThrows(Exception::class.java) {
+      extractor.json.decodeFromString<SamplerProjectMetadata>(invalidJson)
     }
+  }
 
+  @Test
+  fun getAudioFileUri_returnsCorrectPlaceholderUri() {
+    val metadata = extractor.json.decodeFromString<SamplerProjectMetadata>(validJson)
+    val expectedFileName = "kick.wav"
+    val resultUri = extractor.getAudioFileUri(metadata, expectedFileName)
 
-    @Test
-    fun deserialization_withValidJson_returnsCorrectMetadata() {
-        val metadata = extractor.json.decodeFromString<SamplerProjectMetadata>(validJson)
-        assertEquals(2, metadata.audioFiles.size)
-        assertEquals("kick.wav", metadata.audioFiles.first().name)
-        assertEquals(2, metadata.parameters.size)
-        assertEquals(0.5f, metadata.parameters.first().value)
+    assertTrue("URI must contain the expected filename.", resultUri.contains(expectedFileName))
+    assertTrue(
+        "URI should start with the expected temporary path.",
+        resultUri.startsWith("file:///tmp/neptune/extracted/"))
+  }
+
+  @Test
+  fun getAudioFileUri_throwsException_whenFileNotFound() {
+    val metadata = extractor.json.decodeFromString<SamplerProjectMetadata>(validJson)
+    assertThrows(IllegalArgumentException::class.java) {
+      extractor.getAudioFileUri(metadata, "nonexistent.wav")
     }
+  }
 
-    @Test
-    fun deserialization_withInvalidJson_throwsException() {
-        assertThrows(Exception::class.java) {
-            extractor.json.decodeFromString<SamplerProjectMetadata>(invalidJson)
-        }
-    }
+  @Test
+  fun extractMetadata_fromRealAssetZip_returnsCorrectMetadata() {
+    val metadata: SamplerProjectMetadata = extractor.extractMetadata(zipFile)
 
+    assertNotNull("Metadata should not be null", metadata)
+    assertEquals(1, metadata.audioFiles.size)
+    assertEquals(13, metadata.parameters.size)
+    assertEquals("soft-piano-chord_E_major.wav", metadata.audioFiles.first().name)
 
-    @Test
-    fun getAudioFileUri_returnsCorrectPlaceholderUri() {
-        val metadata = extractor.json.decodeFromString<SamplerProjectMetadata>(validJson)
-        val expectedFileName = "kick.wav"
-        val resultUri = extractor.getAudioFileUri(metadata, expectedFileName)
+    val parameters = metadata.parameters
 
-        assertTrue("URI must contain the expected filename.", resultUri.contains(expectedFileName))
-        assertTrue("URI should start with the expected temporary path.", resultUri.startsWith("file:///tmp/neptune/extracted/"))
-    }
+    val attackParam = parameters.find { it.type == "attack" }
+    assertNotNull("Attack parameter must be present.", attackParam)
+    assertEquals(0.35f, attackParam!!.value, 0.001f)
 
-    @Test
-    fun getAudioFileUri_throwsException_whenFileNotFound() {
-        val metadata = extractor.json.decodeFromString<SamplerProjectMetadata>(validJson)
-        assertThrows(IllegalArgumentException::class.java) {
-            extractor.getAudioFileUri(metadata, "nonexistent.wav")
-        }
-    }
+    val sustainParam = parameters.find { it.type == "sustain" }
+    assertNotNull("Sustain parameter must be present.", sustainParam)
+    assertEquals(0.6f, sustainParam!!.value, 0.001f)
 
+    val ratioParam = parameters.find { it.type == "compRatio" }
+    assertNotNull("CompRatio parameter must be present.", ratioParam)
+    assertEquals(4.0f, ratioParam!!.value, 0.001f)
 
-
-    @Test
-    fun extractMetadata_fromRealAssetZip_returnsCorrectMetadata() {
-        val metadata: SamplerProjectMetadata = extractor.extractMetadata(zipFile)
-
-        assertNotNull("Metadata should not be null", metadata)
-        assertEquals(1, metadata.audioFiles.size)
-        assertEquals(13, metadata.parameters.size)
-        assertEquals("soft-piano-chord_E_major.wav", metadata.audioFiles.first().name)
-
-
-        val parameters = metadata.parameters
-
-        val attackParam = parameters.find { it.type == "attack" }
-        assertNotNull("Attack parameter must be present.", attackParam)
-        assertEquals(0.35f, attackParam!!.value, 0.001f)
-
-        val sustainParam = parameters.find { it.type == "sustain" }
-        assertNotNull("Sustain parameter must be present.", sustainParam)
-        assertEquals(0.6f, sustainParam!!.value, 0.001f)
-
-        val ratioParam = parameters.find { it.type == "compRatio" }
-        assertNotNull("CompRatio parameter must be present.", ratioParam)
-        assertEquals(4.0f, ratioParam!!.value, 0.001f)
-
-        val eqParam = parameters.find { it.type == "eq_band_0" }
-        assertNotNull("EQ band 0 parameter must be present.", eqParam)
-        assertEquals(6.0f, eqParam!!.value, 0.001f)
-    }
-
+    val eqParam = parameters.find { it.type == "eq_band_0" }
+    assertNotNull("EQ band 0 parameter must be present.", eqParam)
+    assertEquals(6.0f, eqParam!!.value, 0.001f)
+  }
 }

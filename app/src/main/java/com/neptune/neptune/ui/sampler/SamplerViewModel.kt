@@ -3,14 +3,14 @@ package com.neptune.neptune.ui.sampler
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.neptune.neptune.data.project.ProjectExtractor
+import com.neptune.neptune.model.project.ProjectExtractor
 import com.neptune.neptune.model.project.SamplerProjectMetadata
+import java.io.File
 import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.File
 
 enum class SamplerTab {
   BASICS,
@@ -228,28 +228,54 @@ open class SamplerViewModel : ViewModel() {
         _uiState.update { current ->
           var newState = current.copy()
 
-          paramMap["attack"]?.let { newState = newState.copy(attack = it.coerceIn(0f, ADSR_MAX_TIME)) }
-          paramMap["decay"]?.let { newState = newState.copy(decay = it.coerceIn(0f, ADSR_MAX_TIME)) }
-          paramMap["sustain"]?.let { newState = newState.copy(sustain = it.coerceIn(0f, ADSR_MAX_SUSTAIN)) }
-          paramMap["release"]?.let { newState = newState.copy(release = it.coerceIn(0f, ADSR_MAX_TIME)) }
+          paramMap["attack"]?.let {
+            newState = newState.copy(attack = it.coerceIn(0f, ADSR_MAX_TIME))
+          }
+          paramMap["decay"]?.let {
+            newState = newState.copy(decay = it.coerceIn(0f, ADSR_MAX_TIME))
+          }
+          paramMap["sustain"]?.let {
+            newState = newState.copy(sustain = it.coerceIn(0f, ADSR_MAX_SUSTAIN))
+          }
+          paramMap["release"]?.let {
+            newState = newState.copy(release = it.coerceIn(0f, ADSR_MAX_TIME))
+          }
 
           paramMap["reverbWet"]?.let { newState = newState.copy(reverbWet = it.coerceIn(0f, 1f)) }
-          paramMap["reverbSize"]?.let { newState = newState.copy(reverbSize = it.coerceIn(0.1f, REVERB_SIZE_MAX)) }
-          paramMap["reverbWidth"]?.let { newState = newState.copy(reverbWidth = it.coerceIn(0f, 1f)) }
-          paramMap["reverbDepth"]?.let { newState = newState.copy(reverbDepth = it.coerceIn(0f, 1f)) }
-          paramMap["reverbPredelay"]?.let { newState = newState.copy(reverbPredelay = it.coerceIn(0f, PREDELAY_MAX_MS)) }
+          paramMap["reverbSize"]?.let {
+            newState = newState.copy(reverbSize = it.coerceIn(0.1f, REVERB_SIZE_MAX))
+          }
+          paramMap["reverbWidth"]?.let {
+            newState = newState.copy(reverbWidth = it.coerceIn(0f, 1f))
+          }
+          paramMap["reverbDepth"]?.let {
+            newState = newState.copy(reverbDepth = it.coerceIn(0f, 1f))
+          }
+          paramMap["reverbPredelay"]?.let {
+            newState = newState.copy(reverbPredelay = it.coerceIn(0f, PREDELAY_MAX_MS))
+          }
 
-          paramMap["compThreshold"]?.let { newState = newState.copy(compThreshold = it.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)) }
+          paramMap["compThreshold"]?.let {
+            newState = newState.copy(compThreshold = it.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX))
+          }
 
           paramMap["compRatio"]?.let { ratioFloat ->
             val ratioInt = ratioFloat.roundToInt().coerceIn(1, 20)
             newState = newState.copy(compRatio = ratioInt)
           }
 
-          paramMap["compKnee"]?.let { newState = newState.copy(compKnee = it.coerceIn(0f, COMP_KNEE_MAX)) }
-          paramMap["compGain"]?.let { newState = newState.copy(compGain = it.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)) }
-          paramMap["compAttack"]?.let { newState = newState.copy(compAttack = it.coerceIn(0f, COMP_TIME_MAX)) }
-          paramMap["compDecay"]?.let { newState = newState.copy(compDecay = it.coerceIn(0f, COMP_TIME_MAX)) }
+          paramMap["compKnee"]?.let {
+            newState = newState.copy(compKnee = it.coerceIn(0f, COMP_KNEE_MAX))
+          }
+          paramMap["compGain"]?.let {
+            newState = newState.copy(compGain = it.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX))
+          }
+          paramMap["compAttack"]?.let {
+            newState = newState.copy(compAttack = it.coerceIn(0f, COMP_TIME_MAX))
+          }
+          paramMap["compDecay"]?.let {
+            newState = newState.copy(compDecay = it.coerceIn(0f, COMP_TIME_MAX))
+          }
 
           val newEqBands = current.eqBands.toMutableList()
           EQ_FREQUENCIES.forEachIndexed { index, _ ->

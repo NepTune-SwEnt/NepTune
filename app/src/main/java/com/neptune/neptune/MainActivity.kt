@@ -1,6 +1,5 @@
 package com.neptune.neptune
 
-import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -25,12 +24,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.google.firebase.Timestamp
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
-import com.neptune.neptune.model.project.ProjectItem
-import com.neptune.neptune.model.project.ProjectItemsRepositoryProvider
-import com.neptune.neptune.model.project.ProjectItemsRepositoryVar
 import com.neptune.neptune.resources.C
 import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInViewModel
@@ -44,13 +39,9 @@ import com.neptune.neptune.ui.picker.ImportViewModel
 import com.neptune.neptune.ui.picker.importAppRoot
 import com.neptune.neptune.ui.profile.ProfileRoute
 import com.neptune.neptune.ui.projectlist.ProjectListScreen
-import com.neptune.neptune.ui.projectlist.ProjectListViewModel
 import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.ui.theme.SampleAppTheme
-import kotlinx.coroutines.runBlocking
-import java.io.File
-import java.io.FileOutputStream
 
 private const val ASSET_ZIP_PATH = "fakeProject.zip"
 private const val TARGET_PROJECT_ID = "42"
@@ -63,13 +54,12 @@ class MainActivity : ComponentActivity() {
         Surface(
             modifier = Modifier.fillMaxSize().semantics { testTag = C.Tag.main_screen_container },
             color = MaterialTheme.colorScheme.background) {
-                NeptuneApp()
+              NeptuneApp()
             }
       }
     }
   }
 }
-
 
 @Composable
 fun NeptuneApp(
@@ -112,13 +102,15 @@ fun NeptuneApp(
                 }
                 composable(
                     route = Screen.Edit.route,
-                    arguments = listOf(
-                        navArgument("zipFilePath") { type = NavType.StringType; nullable = true }
-                    )
-                  ) { backStackEntry ->
+                    arguments =
+                        listOf(
+                            navArgument("zipFilePath") {
+                              type = NavType.StringType
+                              nullable = true
+                            })) { backStackEntry ->
                       val zipFilePath = backStackEntry.arguments?.getString("zipFilePath")
                       SamplerScreen(zipFilePath = zipFilePath)
-                  }
+                    }
                 composable(Screen.Search.route) { MockSearchScreen() }
                 composable(Screen.ImportFile.route) { MockImportScreen(importViewModel) }
                 composable(Screen.SignIn.route) {
@@ -126,11 +118,12 @@ fun NeptuneApp(
                       signInViewModel = signInViewModel,
                       navigateMain = { navigationActions.navigateTo(Screen.Main) })
                 }
-              composable(Screen.ProjectList.route) {
+                composable(Screen.ProjectList.route) {
                   ProjectListScreen(
-                      navigateToSampler = { filePath -> navigationActions.navigateTo(Screen.Edit.createRoute(filePath)) }
-                  )
-              }
+                      navigateToSampler = { filePath ->
+                        navigationActions.navigateTo(Screen.Edit.createRoute(filePath))
+                      })
+                }
               }
         })
   }
