@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -56,14 +55,13 @@ fun SettingsScreen(
       topBar = {
         Column {
           CenterAlignedTopAppBar(
-              modifier = Modifier.height(112.dp),
               title = {
                 Text(
                     text = "Settings",
                     style =
                         TextStyle(
                             fontSize = 45.sp,
-                            fontFamily = FontFamily(Font(R.font.lily_script_one)),
+                            fontFamily = FontFamily(Font(R.font.markazi_text)),
                             fontWeight = FontWeight(149),
                             color = NepTuneTheme.colors.onBackground,
                         ),
