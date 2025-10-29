@@ -85,7 +85,6 @@ object MainScreenTestTags {
 fun MainScreen(
     mainViewModel: MainViewModel = viewModel(),
     navigateToProfile: () -> Unit = {},
-    navigateToSettings: () -> Unit = {}
 ) {
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
