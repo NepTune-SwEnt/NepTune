@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material3.Button
@@ -31,23 +33,51 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
 import com.neptune.neptune.Sample
+import com.neptune.neptune.media.LocalMediaPlayer
+import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.ui.theme.NepTuneTheme
+
+object PostScreenTestTags {
+  // General
+  const val POST_SCREEN = "postScreen"
+
+  const val DURATION_TEXT = "durationText"
+  const val AUDIENCE_ROW = "audienceRow"
+  const val AUDIO_PREVIEW = "audioPreview"
+  // Fields
+  const val TITLE_FIELD = "textField"
+  const val DESCRIPTION_FIELD = "descriptionField"
+  const val TAGS_FIELD = "tagsField"
+  // Button
+  const val BACK_BUTTON = "backButton"
+  const val SELECT_PROJECT_BUTTON = "selectProjectButton"
+  const val CHANGE_IMAGE_BUTTON = "changeImageButton"
+  const val POST_BUTTON = "postButton"
+}
 
 /**
  * Composable function representing the Post Screen. This has been written with the help of LLMs.
@@ -63,19 +93,29 @@ fun PostScreen(
     postViewModel: PostViewModel = viewModel()
 ) {
   val uiState by postViewModel.uiState.collectAsState()
-  // val mediaPlayer = LocalMediaPlayer.current
+  var tagText by remember { mutableStateOf("") }
+  var selectionTagText by remember { mutableStateOf(TextRange(0)) }
+  LaunchedEffect(uiState.sample.tags) {
+    // add a # at the beginning
+    val text = uiState.sample.tags.joinToString(" ") { "#$it" }
+    tagText = text
+    selectionTagText = TextRange(text.length)
+  }
+  val mediaPlayer = LocalMediaPlayer.current
 
   Scaffold(
       topBar = {
         TopAppBar(
             title = {
-              // Nothing to display
+              // Nothing to display, but needed for the color param
             },
             // Back Button
             navigationIcon = {
               IconButton(
                   onClick = goBack,
-                  modifier = Modifier.padding(vertical = 31.dp, horizontal = 7.dp),
+                  modifier =
+                      Modifier.padding(vertical = 31.dp, horizontal = 7.dp)
+                          .testTag(PostScreenTestTags.BACK_BUTTON),
               ) {
                 Icon(
                     modifier = Modifier.size(36.dp),
@@ -94,7 +134,11 @@ fun PostScreen(
                           contentColor = NepTuneTheme.colors.searchBar),
                   shape = RoundedCornerShape(8.dp),
                   contentPadding = PaddingValues(start = 10.dp),
-                  modifier = Modifier.height(40.dp).width(320.dp).padding(end = 20.dp)) {
+                  modifier =
+                      Modifier.height(40.dp)
+                          .width(320.dp)
+                          .padding(end = 20.dp)
+                          .testTag(PostScreenTestTags.SELECT_PROJECT_BUTTON)) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Start,
@@ -114,8 +158,14 @@ fun PostScreen(
                     containerColor = NepTuneTheme.colors.background))
       },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
+        val scrollState = rememberScrollState()
         Column(
-            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp),
+            modifier =
+                Modifier.fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = 16.dp)
+                    .verticalScroll(scrollState)
+                    .testTag(PostScreenTestTags.POST_SCREEN),
             verticalArrangement = Arrangement.spacedBy(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally) {
               // Audio Preview
@@ -125,9 +175,13 @@ fun PostScreen(
                           .background(NepTuneTheme.colors.cardBackground)
                           .fillMaxWidth()
                           .clickable(
-                              onClick = { /*mediaPlayer.togglePlay(mediaPlayer.getUriFromSampleId(uiState.sample.id)) */})
+                              onClick = {
+                                mediaPlayer.togglePlay(
+                                    mediaPlayer.getUriFromSampleId(uiState.sample.id))
+                              })
                           .aspectRatio(1.6f)
-                          .border(1.dp, NepTuneTheme.colors.onBackground, RoundedCornerShape(8.dp)),
+                          .border(1.dp, NepTuneTheme.colors.onBackground, RoundedCornerShape(8.dp))
+                          .testTag(PostScreenTestTags.AUDIO_PREVIEW),
                   contentAlignment = Alignment.Center) {
 
                     // Waveform image
@@ -150,7 +204,8 @@ fun PostScreen(
                         modifier =
                             Modifier.align(Alignment.BottomStart)
                                 .padding(start = 8.dp, bottom = 6.dp)
-                                .height(28.dp)) {
+                                .height(28.dp)
+                                .testTag(PostScreenTestTags.CHANGE_IMAGE_BUTTON)) {
                           Icon(
                               painter = painterResource(id = R.drawable.changeicon),
                               contentDescription = "Change sample's image",
@@ -179,7 +234,9 @@ fun PostScreen(
                                 fontWeight = FontWeight(200),
                                 fontSize = 36.sp),
                         modifier =
-                            Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 6.dp))
+                            Modifier.align(Alignment.BottomEnd)
+                                .padding(end = 8.dp, bottom = 6.dp)
+                                .testTag(PostScreenTestTags.DURATION_TEXT))
                   }
 
               // Title Field
@@ -202,7 +259,7 @@ fun PostScreen(
                           fontSize = 24.sp,
                           fontFamily = FontFamily(Font(R.font.markazi_text)),
                           fontWeight = FontWeight(200)),
-                  modifier = Modifier.fillMaxWidth(),
+                  modifier = Modifier.fillMaxWidth().testTag(PostScreenTestTags.TITLE_FIELD),
                   singleLine = true,
                   colors =
                       TextFieldDefaults.colors(
@@ -236,7 +293,7 @@ fun PostScreen(
                           fontSize = 24.sp,
                           fontFamily = FontFamily(Font(R.font.markazi_text)),
                           fontWeight = FontWeight(200)),
-                  modifier = Modifier.fillMaxWidth(),
+                  modifier = Modifier.fillMaxWidth().testTag(PostScreenTestTags.DESCRIPTION_FIELD),
                   singleLine = false,
                   colors =
                       TextFieldDefaults.colors(
@@ -252,8 +309,23 @@ fun PostScreen(
 
               // Tags
               TextField(
-                  value = uiState.sample.tags.joinToString(" ") { "#$it" },
-                  onValueChange = { postViewModel.updateTags(it) },
+                  value = TextFieldValue(tagText, selectionTagText),
+                  onValueChange = { newTagValue ->
+                    // Split by spaces and ensure each tag starts with #
+                    val fixedTags =
+                        newTagValue.text.split(" ").joinToString(" ") { tag ->
+                          if (tag.isBlank()) "" else if (!tag.startsWith("#")) "#$tag" else tag
+                        }
+
+                    // Update the text and the position
+                    tagText = fixedTags
+                    val newCursor =
+                        newTagValue.selection.end + (fixedTags.length - newTagValue.text.length)
+                    selectionTagText = TextRange(newCursor.coerceIn(0, fixedTags.length))
+
+                    // Pass tags without # to ViewModel
+                    postViewModel.updateTags(fixedTags)
+                  },
                   label = {
                     Text(
                         text = "Tags",
@@ -270,7 +342,7 @@ fun PostScreen(
                           fontSize = 24.sp,
                           fontFamily = FontFamily(Font(R.font.markazi_text)),
                           fontWeight = FontWeight(200)),
-                  modifier = Modifier.fillMaxWidth(),
+                  modifier = Modifier.fillMaxWidth().testTag(PostScreenTestTags.TAGS_FIELD),
                   singleLine = true,
                   colors =
                       TextFieldDefaults.colors(
@@ -288,7 +360,7 @@ fun PostScreen(
 
               // Audience
               Row(
-                  modifier = Modifier.fillMaxWidth(),
+                  modifier = Modifier.fillMaxWidth().testTag(PostScreenTestTags.AUDIENCE_ROW),
                   horizontalArrangement = Arrangement.SpaceBetween,
                   verticalAlignment = Alignment.CenterVertically) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -325,7 +397,8 @@ fun PostScreen(
                     postViewModel.submitPost()
                     navigateToMainScreen()
                   },
-                  modifier = Modifier.fillMaxWidth().height(55.dp),
+                  modifier =
+                      Modifier.fillMaxWidth().height(55.dp).testTag(PostScreenTestTags.POST_BUTTON),
                   shape = RoundedCornerShape(8.dp),
                   colors =
                       ButtonDefaults.buttonColors(
@@ -353,7 +426,7 @@ fun ProjectListScreenPreview() {
       PostViewModel().apply {
         loadSample(
             Sample(
-                id = 1,
+                id = 0,
                 name = "Grilled Banana",
                 description = "Be careful not to grill your bananas",
                 durationSeconds = 21,
@@ -364,9 +437,14 @@ fun ProjectListScreenPreview() {
                 uriString = "mock_uri"))
       }
 
-  PostScreen(
-      goBack = {},
-      navigateToProjectList = {},
-      navigateToMainScreen = {},
-      postViewModel = previewViewModel)
+  val context = androidx.compose.ui.platform.LocalContext.current
+  val fakeMediaPlayer = NeptuneMediaPlayer(context)
+
+  CompositionLocalProvider(LocalMediaPlayer provides fakeMediaPlayer) {
+    PostScreen(
+        goBack = {},
+        navigateToProjectList = {},
+        navigateToMainScreen = {},
+        postViewModel = previewViewModel)
+  }
 }

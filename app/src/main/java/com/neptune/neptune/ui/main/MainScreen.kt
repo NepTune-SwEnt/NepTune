@@ -62,6 +62,7 @@ import com.neptune.neptune.ui.theme.NepTuneTheme
 object MainScreenTestTags {
   // General
   const val MAIN_SCREEN = "mainScreen"
+  const val POST_BUTTON = "postButton"
 
   // Top Bar
   const val TOP_BAR = "topBar"
@@ -146,7 +147,8 @@ fun MainScreen(
                         spotColor = NepTuneTheme.colors.shadow,
                         ambientColor = NepTuneTheme.colors.shadow,
                         shape = CircleShape)
-                    .size(52.dp)) {
+                    .size(52.dp)
+                    .testTag(MainScreenTestTags.POST_BUTTON)) {
               Icon(
                   imageVector = Icons.Default.Add,
                   contentDescription = "Create a Post",
