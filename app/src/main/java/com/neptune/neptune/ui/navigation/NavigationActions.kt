@@ -29,6 +29,7 @@ sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
   object SettingsTheme : Screen(route = "settings_theme", showBottomBar = false)
 
   object SettingsAccount : Screen(route = "settings_account", showBottomBar = false)
+  object ImportFile : Screen(route = "import_file", showBottomBar = false)
 }
 
 /**
@@ -58,6 +59,7 @@ open class NavigationActions(
       Screen.Settings.route -> Screen.Settings
       Screen.SettingsTheme.route -> Screen.SettingsTheme
       Screen.SettingsAccount.route -> Screen.SettingsAccount
+      Screen.ImportFile.route -> Screen.ImportFile
       else -> Screen.SignIn
     }
   }

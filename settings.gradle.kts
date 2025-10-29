@@ -5,10 +5,14 @@ pluginManagement {
                 includeGroupByRegex("com\\.android.*")
                 includeGroupByRegex("com\\.google.*")
                 includeGroupByRegex("androidx.*")
+
             }
         }
         mavenCentral()
         gradlePluginPortal()
+    }
+    plugins {
+        id ("org.jetbrains.kotlin.android") version "2.1.20" apply false
     }
 }
 dependencyResolutionManagement {
