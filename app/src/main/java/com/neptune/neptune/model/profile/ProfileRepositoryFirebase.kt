@@ -38,7 +38,7 @@ class ProfileRepositoryFirebase(
     if (!profile.exists()) {
       return null
     }
-    return documentToProfile(profile)
+    return profile.toProfileOrNull()
   }
 
   /** Observes real-time updates to the current user's profile as a [Flow]. */
@@ -154,7 +154,7 @@ class ProfileRepositoryFirebase(
   @Throws(UsernameTakenException::class)
   override suspend fun setUsername(newUsername: String) {
     val uid = Firebase.auth.currentUser?.uid ?: error("No authenticated user")
-    val desired = newUsername.trim().lowercase().replace(Regex("[^a-z0-9_]"), "")
+    val desired = normalizeUsername(newUsername)
 
     db.runTransaction { tx ->
           val profileRef = profiles.document(uid)
@@ -162,12 +162,7 @@ class ProfileRepositoryFirebase(
           // Reads all before any writes
           val profileSnap = tx.get(profileRef)
           val oldUsername =
-              profileSnap
-                  .getString("username")
-                  ?.trim()
-                  .orEmpty()
-                  .lowercase()
-                  .replace(Regex("[^a-z0-9_]"), "")
+              profileSnap.getString("username")?.let { normalizeUsername(it) }.orEmpty()
 
           // No-op if unchanged
           if (desired == oldUsername) return@runTransaction
@@ -244,25 +239,6 @@ class ProfileRepositoryFirebase(
     val currentUser = Firebase.auth.currentUser
     val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
     profiles.document(uid).update("avatarUrl", "").await()
-  }
-
-  /** Converts a Firestore [DocumentSnapshot] to a [Profile] instance. */
-  private fun documentToProfile(document: DocumentSnapshot): Profile? {
-    val uid = document.id
-    val username = document.getString("username") ?: ""
-    val name = document.getString("name")
-    val bio = document.getString("bio")
-    val subscriptions = document.getLong("subscriptions") ?: 0L
-    val subscribers = document.getLong("subscribers") ?: 0L
-    val avatarUrl = document.getString("avatarUrl") ?: ""
-    return Profile(
-        uid = uid,
-        username = username,
-        name = name,
-        bio = bio,
-        subscriptions = subscriptions,
-        subscribers = subscribers,
-        avatarUrl = avatarUrl)
   }
 
   /** Converts an input string to a valid username base (lowercase, alphanumeric + underscores). */
