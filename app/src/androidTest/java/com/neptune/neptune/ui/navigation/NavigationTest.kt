@@ -10,6 +10,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextReplacement
 import androidx.navigation.compose.rememberNavController
 import com.neptune.neptune.NeptuneApp
 import com.neptune.neptune.model.FakeProfileRepository
@@ -163,7 +164,9 @@ class NavigationTest {
     composeTestRule.setContent {
       NeptuneApp(navController = rememberNavController(), startDestination = Screen.Post.route)
     }
-
+    composeTestRule
+        .onNodeWithTag(PostScreenTestTags.TITLE_FIELD)
+        .performTextReplacement("Sweetie Banana")
     composeTestRule.onNodeWithTag(PostScreenTestTags.POST_BUTTON).performScrollTo().performClick()
     composeTestRule.onNodeWithTag(MainScreenTestTags.MAIN_SCREEN).assertIsDisplayed()
   }

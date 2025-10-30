@@ -397,6 +397,7 @@ fun PostScreen(
                     postViewModel.submitPost()
                     navigateToMainScreen()
                   },
+                  enabled = uiState.sample.name.isNotBlank(),
                   modifier =
                       Modifier.fillMaxWidth().height(55.dp).testTag(PostScreenTestTags.POST_BUTTON),
                   shape = RoundedCornerShape(8.dp),
