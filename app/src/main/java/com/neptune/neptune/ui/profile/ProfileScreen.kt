@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -472,6 +473,8 @@ fun ProfileScreenEditModePreview() {
 fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
   val viewModel: ProfileViewModel = viewModel()
   val state = viewModel.uiState.collectAsState().value
+
+  LaunchedEffect(Unit) { viewModel.loadOrEnsure() }
 
   ProfileScreen(
       uiState = state,

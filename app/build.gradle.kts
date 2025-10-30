@@ -166,6 +166,7 @@ dependencies {
     // ----------        Firebase       ------------
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
 
     // ---------- Credential Manager ------------
     implementation(libs.credentials)
@@ -179,12 +180,23 @@ dependencies {
     ksp(libs.room.compiler)
 
     androidTestImplementation("io.mockk:mockk-android:1.13.10")
+    androidTestImplementation(libs.firebase.auth)
+    androidTestImplementation(libs.firebase.firestore)
+
+    androidTestImplementation("androidx.test:runner:1.5.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.google.truth:truth:1.4.4")
     testImplementation("io.mockk:mockk:1.13.10")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
+    globalTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    testImplementation("app.cash.turbine:turbine:0.12.3")
+    androidTestImplementation("app.cash.turbine:turbine:0.12.3")
+
 }
 
 tasks.withType<Test> {
@@ -244,4 +256,10 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         val newContent = reportFile.readText().replace("<line[^>]+nr=\"65535\"[^>]*>".toRegex(), "")
         reportFile.writeText(newContent)
     }
+}
+
+configurations.forEach { configuration ->
+    // Exclude protobuf-lite from all configurations
+    // This fixes a fatal exception for tests interacting with Cloud Firestore
+    configuration.exclude("com.google.protobuf", "protobuf-lite")
 }
