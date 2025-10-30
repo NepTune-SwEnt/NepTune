@@ -70,13 +70,14 @@ class NavigationTest {
     composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsNotDisplayed()
   }
+
   @Test
   fun otherUsersProfileScreenFromSearchTab() {
     val testTags = SearchScreenTestTagsPerSampleCard(1)
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsSelected()
     composeTestRule.onNodeWithTag(testTags.SAMPLE_PROFILE_ICON).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.OTHER_USER).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsNotDisplayed()
