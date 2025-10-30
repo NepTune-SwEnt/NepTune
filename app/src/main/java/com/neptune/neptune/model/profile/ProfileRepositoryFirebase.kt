@@ -35,9 +35,6 @@ class ProfileRepositoryFirebase(
     val currentUser = Firebase.auth.currentUser
     val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
     val profile = profiles.document(uid).get().await()
-    if (!profile.exists()) {
-      return null
-    }
     return profile.toProfileOrNull()
   }
 
