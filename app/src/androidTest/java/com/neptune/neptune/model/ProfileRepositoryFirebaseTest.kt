@@ -2,18 +2,15 @@ package com.neptune.neptune.model
 
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.cash.turbine.test
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.neptune.neptune.model.profile.PROFILES_COLLECTION_PATH
-import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepositoryFirebase
 import com.neptune.neptune.model.profile.USERNAMES_COLLECTION_PATH
 import com.neptune.neptune.model.profile.UsernameTakenException
 import kotlin.random.Random
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.take
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import org.junit.After
@@ -65,9 +62,7 @@ class ProfileRepositoryFirebaseTest {
       }
 
       runCatching { auth.signOut() }
-      Tasks.await(auth.signInAnonymously())
-
-      delay(100)
+      auth.signInAnonymously().await()
 
       repo = ProfileRepositoryFirebase(db)
       cleanupCurrentUserDocs()
@@ -110,7 +105,7 @@ class ProfileRepositoryFirebaseTest {
       Tasks.await(db.collection(PROFILES_COLLECTION_PATH).document(currentUid()).get())
 
   @Test
-  fun ensureProfile_createsWithDefaults_whenMissing() = runBlocking {
+  fun ensureProfileCreatesWithDefaultsWhenMissing() = runBlocking {
     val created = repo.ensureProfile(suggestedUsernameBase = "user", name = null)
 
     assertEquals(currentUid(), created.uid)
@@ -128,7 +123,7 @@ class ProfileRepositoryFirebaseTest {
   }
 
   @Test
-  fun ensureProfile_isIdempotent() = runBlocking {
+  fun ensureProfileIsIdempotent() = runBlocking {
     val first = repo.ensureProfile("one", null)
     val second = repo.ensureProfile("two", "Someone")
     assertEquals(first.uid, second.uid)
@@ -138,7 +133,7 @@ class ProfileRepositoryFirebaseTest {
   }
 
   @Test
-  fun isUsernameAvailable_respectsOwnership_and_conflict() = runBlocking {
+  fun isUsernameAvailableRespectsOwnershipAndConflict() = runBlocking {
     // Fresh user A
     auth.signOut()
     auth.signInAnonymously().await()
@@ -162,7 +157,7 @@ class ProfileRepositoryFirebaseTest {
   }
 
   @Test
-  fun setUsername_releasesOld_and_allowsOthersToClaim() = runBlocking {
+  fun setUsernameReleasesOldAndAllowsOthersToClaim() = runBlocking {
     // User A claims a unique name
     auth.signOut()
     auth.signInAnonymously().await()
@@ -196,7 +191,7 @@ class ProfileRepositoryFirebaseTest {
   }
 
   @Test
-  fun setUsername_claimsNew_andReleasesOld_ifOwned() = runBlocking {
+  fun setUsernameClaimsNewAndReleasesOldIfOwned() = runBlocking {
     val profile = repo.ensureProfile("tester", null)
     val original = profile.username
     val newDesired = "zz_${Random.nextInt(10000, 99999)}"
@@ -209,7 +204,7 @@ class ProfileRepositoryFirebaseTest {
   }
 
   @Test
-  fun generateRandomFreeUsername_returnsDifferent_whenTakenByAnotherUser() = runBlocking {
+  fun generateDifferentUsernameWhenTaken() = runBlocking {
     val usernames = db.collection(USERNAMES_COLLECTION_PATH)
 
     // Simulation of user A taking username "rnd"
@@ -230,7 +225,7 @@ class ProfileRepositoryFirebaseTest {
   fun normalizeUsername(u: String) = u.trim().lowercase().replace(Regex("[^a-z0-9_]"), "")
 
   @Test
-  fun updateName_and_updateBio_onlyChangeThoseFields() = runBlocking {
+  fun updateNameAndBioOnlyChangeThoseFields() = runBlocking {
     val profile = repo.ensureProfile("bob", null)
     val originalUsername = profile.username
     assertEquals(originalUsername, profile.name)
@@ -245,7 +240,7 @@ class ProfileRepositoryFirebaseTest {
   }
 
   @Test
-  fun removeAvatar_and_uploadAvatar_stubs_doNotThrow() = runBlocking {
+  fun removeAvatarAndUploadAvatarStubsDoNotThrow() = runBlocking {
     repo.ensureProfile("pic", null)
     runCatching { repo.removeAvatar() }.getOrThrow()
     val p1 = repo.getProfile()!!
@@ -258,45 +253,34 @@ class ProfileRepositoryFirebaseTest {
   }
 
   @Test
-  fun observeProfile_emitsNull_thenProfile_thenUpdatedProfile() = runBlocking {
+  fun observeProfileEmitsNullThenProfileThenUpdatedProfile() = runBlocking {
     // Make sure we're clean and authenticated
     cleanupCurrentUserDocs()
     runCatching { auth.signOut() }
     auth.signInAnonymously().await()
 
-    val emissions = mutableListOf<Profile?>()
+    repo.observeProfile().test {
+      // first emission: should be null (no doc)
+      assertNull("fist emission should be null when doc is missing", awaitItem())
 
-    val job = launch { repo.observeProfile().take(3).collect { emissions.add(it) } }
+      // create the profile: next emission
+      val created = repo.ensureProfile(suggestedUsernameBase = "obstest", name = null)
+      val afterCreate = awaitItem()!!
+      assertEquals(created.uid, afterCreate.uid)
+      assertEquals(created.username, afterCreate.username)
 
-    // Give the listener a moment to attach and emit current (missing) snapshot
-    delay(150)
+      // update name: next emission
+      repo.updateName("New Name")
+      val afterUpdate = awaitItem()!!
+      assertEquals("New Name", afterUpdate.name)
+      assertEquals(created.username, afterUpdate.username)
 
-    // Create the profile
-    val created = repo.ensureProfile(suggestedUsernameBase = "obsbase", name = null)
-
-    // Small pause to allow the create emission to flush distinctly
-    delay(150)
-
-    // Update the name
-    repo.updateName("New Name From Test")
-
-    // Wait for the 3 emissions to complete the 'take(3)'
-    job.join()
-
-    assertEquals(3, emissions.size)
-    assertNull("First emission should be null when doc is missing", emissions[0])
-
-    val afterCreate = emissions[1]!!
-    assertEquals(created.uid, afterCreate.uid)
-    assertEquals(created.username, afterCreate.username)
-
-    val afterUpdate = emissions[2]!!
-    assertEquals("New Name From Test", afterUpdate.name)
-    assertEquals(created.username, afterUpdate.username) // unchanged
+      cancelAndIgnoreRemainingEvents()
+    }
   }
 
   @Test
-  fun ensureProfile_usesNumericSuffix_whenBaseAndFirstSuffixesTaken() = runBlocking {
+  fun ensureProfileUsesNumericSuffixWhenBaseAndFirstSuffixesTaken() = runBlocking {
     runCatching { auth.signOut() }
     auth.signInAnonymously().await()
     val myUid = auth.currentUser!!.uid
