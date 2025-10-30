@@ -21,7 +21,7 @@ interface ProfileRepository {
   suspend fun getProfile(): Profile?
 
   /**
-   * Observes the profile of the given uid. Ensures real-time updates.
+   * Observes the profile of the currently signed in user. Ensures real-time updates.
    *
    * @return a flow emitting the profile, or null if missing *
    */
