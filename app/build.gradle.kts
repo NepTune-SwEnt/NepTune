@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.sonar)
     alias(libs.plugins.gms)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.ksp)
     id("jacoco")
 }
 
@@ -172,6 +173,12 @@ dependencies {
     implementation(libs.credentials.play.services.auth)
     implementation(libs.googleid)
 
+    // ----------       Room Database    ------------
+    implementation(libs.room)
+    implementation(libs.room.runtime)
+    annotationProcessor(libs.room.compiler)
+    ksp(libs.room.compiler)
+
     androidTestImplementation("io.mockk:mockk-android:1.13.10")
     androidTestImplementation(libs.firebase.auth)
     androidTestImplementation(libs.firebase.firestore)
@@ -180,6 +187,7 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("com.google.truth:truth:1.4.4")
     testImplementation("io.mockk:mockk:1.13.10")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
     globalTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
@@ -196,6 +204,10 @@ tasks.withType<Test> {
         isIncludeNoLocationClasses = true
         excludes = listOf("jdk.internal.*")
     }
+    jvmArgs(
+        "--add-opens=java.base/java.io=ALL-UNNAMED",
+        "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+    )
 }
 
 tasks.register("jacocoTestReport", JacocoReport::class) {
