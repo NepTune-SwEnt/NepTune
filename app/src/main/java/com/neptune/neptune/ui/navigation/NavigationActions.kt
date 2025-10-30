@@ -21,6 +21,7 @@ sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
   object ProjectList : Screen(route = "project_list")
 
   object Profile : Screen(route = "profile", showBottomBar = false)
+  object OtherUserProfile : Screen(route = "other_user_profile", showBottomBar = false)
 
   object SignIn : Screen(route = "signIn", showBottomBar = false)
 
@@ -52,6 +53,7 @@ open class NavigationActions(
       Screen.SignIn.route -> Screen.SignIn
       Screen.ProjectList.route -> Screen.ProjectList
       Screen.ImportFile.route -> Screen.ImportFile
+      Screen.OtherUserProfile.route -> Screen.OtherUserProfile
       else -> Screen.SignIn
     }
   }

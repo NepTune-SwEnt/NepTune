@@ -29,7 +29,7 @@ import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInViewModel
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.mock.MockImportScreen
-import com.neptune.neptune.ui.mock.MockSearchScreen
+import com.neptune.neptune.ui.mock.MockProfileScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
 import com.neptune.neptune.ui.navigation.Screen
@@ -38,6 +38,7 @@ import com.neptune.neptune.ui.picker.importAppRoot
 import com.neptune.neptune.ui.profile.ProfileRoute
 import com.neptune.neptune.ui.projectlist.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
+import com.neptune.neptune.ui.search.SearchScreen
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.ui.theme.SampleAppTheme
 
@@ -97,7 +98,8 @@ fun NeptuneApp(
                       goBack = { navigationActions.goBack() })
                 }
                 composable(Screen.Edit.route) { SamplerScreen() }
-                composable(Screen.Search.route) { MockSearchScreen() }
+                composable(Screen.Search.route) { SearchScreen(onProfilePicClick =
+                    {navigationActions.navigateTo(Screen.OtherUserProfile)}) }
                 composable(Screen.ImportFile.route) { MockImportScreen(importViewModel) }
                 composable(Screen.SignIn.route) {
                   SignInScreen(
@@ -108,6 +110,7 @@ fun NeptuneApp(
                   ProjectListScreen(
                       navigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
                 }
+                composable(Screen.OtherUserProfile.route) {MockProfileScreen()}
               }
         })
   }

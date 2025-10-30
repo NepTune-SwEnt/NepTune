@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,6 +35,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,6 +45,8 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -52,10 +58,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
 import com.neptune.neptune.Sample
 import com.neptune.neptune.media.LocalMediaPlayer
+import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.theme.NepTuneTheme
+import kotlinx.coroutines.flow.MutableStateFlow
 
-object MainScreenTestTags {
+object MainScreenTestTags : BaseSampleTestTags {
+  override val prefix = "MainScreen"
+
   // General
   const val MAIN_SCREEN = "mainScreen"
 
@@ -64,16 +74,16 @@ object MainScreenTestTags {
   const val TOP_BAR_TITLE = "topBarTitle"
 
   // Sample Card
-  const val SAMPLE_CARD = "sampleCard"
-  const val SAMPLE_PROFILE_ICON = "sampleProfileIcon"
-  const val SAMPLE_USERNAME = "sampleUsername"
-  const val SAMPLE_NAME = "sampleName"
-  const val SAMPLE_DURATION = "sampleDuration"
-  const val SAMPLE_TAGS = "sampleTags"
+  override val SAMPLE_CARD = tag("sampleCard")
+  override val SAMPLE_PROFILE_ICON = tag("sampleProfileIcon")
+  override val SAMPLE_USERNAME = tag("sampleUsername")
+  override val SAMPLE_NAME = tag("sampleName")
+  override val SAMPLE_DURATION = tag("sampleDuration")
+  override val SAMPLE_TAGS = tag("sampleTags")
 
-  const val SAMPLE_LIKES = "sampleLikes"
-  const val SAMPLE_COMMENTS = "sampleComments"
-  const val SAMPLE_DOWNLOADS = "sampleDownloads"
+  override val SAMPLE_LIKES = tag("sampleLikes")
+  override val SAMPLE_COMMENTS = tag("sampleComments")
+  override val SAMPLE_DOWNLOADS = tag("sampleDownloads")
 
   // Lazy column
   const val LAZY_COLUMN_SAMPLE_LIST = "sampleList"
@@ -182,16 +192,20 @@ fun SampleCardRow(samples: List<Sample>) {
 }
 
 // ----------------Sample Card-----------------
+// TO DO: Decide whether when liking or commenting the online repo is notified,
+// updates the value online first and gives it locally or if it changes it locally and notifies the online repo later
 @Composable
-fun SampleCard(sample: Sample) {
+fun SampleCard(sample: Sample, width: Int = 150, height: Int = 166, testTags: BaseSampleTestTags = MainScreenTestTags,
+               onProfileClick: () -> Unit = {}, onCommentClick: () -> Unit = {}, onDownloadClick: () -> Unit = {}, onLikeClick: () -> Unit = {}) {
   val mediaPlayer = LocalMediaPlayer.current
+  var isLiked by remember { mutableStateOf(false) }
   Card(
       modifier =
-          Modifier.width(150.dp)
-              .height(166.dp)
+          Modifier.width(width.dp)
+              .height(height.dp)
               .clickable(
                   onClick = { mediaPlayer.togglePlay(mediaPlayer.getUriFromSampleId(sample.id)) })
-              .testTag(MainScreenTestTags.SAMPLE_CARD),
+              .testTag(testTags.SAMPLE_CARD),
       colors = CardDefaults.cardColors(containerColor = NepTuneTheme.colors.cardBackground),
       shape = RoundedCornerShape(12.dp),
       border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground)) {
@@ -204,13 +218,13 @@ fun SampleCard(sample: Sample) {
                     painter = painterResource(R.drawable.profile),
                     contentDescription = "Profile",
                     tint = Color.Unspecified,
-                    modifier = Modifier.size(22.dp).testTag(MainScreenTestTags.SAMPLE_PROFILE_ICON))
+                    modifier = Modifier.clickable(onClick = onProfileClick).size(22.dp).testTag(testTags.SAMPLE_PROFILE_ICON))
                 Spacer(Modifier.width(6.dp))
                 Text(
                     /*Todo: Replace the hardCoded "Name" with the one provided by the Profile ViewModel*/
                     text = "Name",
                     color = NepTuneTheme.colors.onBackground,
-                    modifier = Modifier.testTag(MainScreenTestTags.SAMPLE_USERNAME),
+                    modifier = Modifier.testTag(testTags.SAMPLE_USERNAME),
                     style =
                         TextStyle(
                             fontSize = 19.sp,
@@ -239,7 +253,7 @@ fun SampleCard(sample: Sample) {
                     sample.name,
                     color = NepTuneTheme.colors.onBackground,
                     modifier =
-                        Modifier.padding(start = 6.dp).testTag(MainScreenTestTags.SAMPLE_NAME),
+                        Modifier.padding(start = 6.dp).testTag(testTags.SAMPLE_NAME),
                     style =
                         TextStyle(
                             fontSize = 10.sp,
@@ -252,7 +266,7 @@ fun SampleCard(sample: Sample) {
                     durationText,
                     color = NepTuneTheme.colors.onBackground,
                     modifier =
-                        Modifier.padding(end = 8.dp).testTag(MainScreenTestTags.SAMPLE_DURATION),
+                        Modifier.padding(end = 8.dp).testTag(testTags.SAMPLE_DURATION),
                     style =
                         TextStyle(
                             fontSize = 10.sp,
@@ -271,7 +285,7 @@ fun SampleCard(sample: Sample) {
                       Text(
                           sample.tags.joinToString(", "),
                           color = NepTuneTheme.colors.background,
-                          modifier = Modifier.testTag(MainScreenTestTags.SAMPLE_TAGS),
+                          modifier = Modifier.testTag(testTags.SAMPLE_TAGS),
                           style =
                               TextStyle(
                                   fontSize = 10.sp,
@@ -291,20 +305,27 @@ fun SampleCard(sample: Sample) {
                     modifier = Modifier.fillMaxSize(),
                     horizontalArrangement = Arrangement.SpaceBetween) {
                       IconWithText(
-                          icon = Icons.Default.FavoriteBorder,
+                          icon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                           iconDescription = "Like",
                           text = sample.likes.toString(),
-                          modifier = Modifier.testTag(MainScreenTestTags.SAMPLE_LIKES))
-                      IconWithTextPainter(
+                          modifier = Modifier.testTag(testTags.SAMPLE_LIKES).semantics{
+                              stateDescription = if (isLiked) "liked" else "not liked"
+                          }.clickable(onClick ={
+                            isLiked = !isLiked
+                            onLikeClick()
+                          } ),
+                          tint = if (isLiked) Color.Red else NepTuneTheme.colors.background)
+
+                    IconWithTextPainter(
                           icon = painterResource(R.drawable.comments),
                           iconDescription = "Comments",
                           text = sample.comments.toString(),
-                          modifier = Modifier.testTag(MainScreenTestTags.SAMPLE_COMMENTS))
+                          modifier = Modifier.testTag(testTags.SAMPLE_COMMENTS).clickable(onClick = onCommentClick))
                       IconWithTextPainter(
                           icon = painterResource(R.drawable.download),
                           iconDescription = "Downloads",
                           text = sample.downloads.toString(),
-                          modifier = Modifier.testTag(MainScreenTestTags.SAMPLE_DOWNLOADS))
+                          modifier = Modifier.testTag(testTags.SAMPLE_DOWNLOADS).clickable(onClick = onDownloadClick))
                     }
               }
         }
@@ -317,13 +338,14 @@ fun IconWithText(
     icon: ImageVector,
     iconDescription: String,
     text: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    tint: Color = NepTuneTheme.colors.background
 ) {
   Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
     Icon(
         icon,
         contentDescription = iconDescription,
-        tint = NepTuneTheme.colors.background,
+        tint = tint,
         modifier = Modifier.size(16.dp))
     Spacer(Modifier.width(3.dp))
     Text(text, color = NepTuneTheme.colors.background, fontSize = 10.sp)
