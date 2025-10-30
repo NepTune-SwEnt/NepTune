@@ -182,7 +182,7 @@ fun MainScreen(mainViewModel: MainViewModel = viewModel(), navigateToProfile: ()
                         items(columns) { samplesColumn ->
                           Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
                             samplesColumn.forEach { samples ->
-                              SampleCard(samples, cardWidth = cardWidth)
+                              SampleCard(samples, width = cardWidth)
                             }
                           }
                         }
@@ -230,7 +230,7 @@ fun SampleCardRow(samples: List<Sample>, cardWidth: Dp) {
   Row(
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
       horizontalArrangement = Arrangement.spacedBy(25.dp)) {
-        samples.forEach { sample -> SampleCard(sample, cardWidth = cardWidth) }
+        samples.forEach { sample -> SampleCard(sample, width = cardWidth) }
       }
 }
 
@@ -241,8 +241,8 @@ fun SampleCardRow(samples: List<Sample>, cardWidth: Dp) {
 @Composable
 fun SampleCard(
     sample: Sample,
-    width: Int = 150,
-    height: Int = 166,
+    width: Dp = 150.dp,
+    height: Dp = 166.dp,
     testTags: BaseSampleTestTags = MainScreenTestTags,
     onProfileClick: () -> Unit = {},
     onCommentClick: () -> Unit = {},
@@ -253,8 +253,8 @@ fun SampleCard(
   var isLiked by remember { mutableStateOf(false) }
   Card(
       modifier =
-          Modifier.width(width.dp)
-              .height(height.dp)
+          Modifier.width(width)
+              .height(height)
               .clickable(
                   onClick = { mediaPlayer.togglePlay(mediaPlayer.getUriFromSampleId(sample.id)) })
               .testTag(testTags.SAMPLE_CARD),

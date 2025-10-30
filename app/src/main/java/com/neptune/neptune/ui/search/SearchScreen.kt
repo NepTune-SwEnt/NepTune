@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.Sample
 import com.neptune.neptune.media.LocalMediaPlayer
@@ -128,7 +129,7 @@ fun ScrollableColumnOfSamples(
               .fillMaxSize()
               .background(NepTuneTheme.colors.listBackground),
       horizontalAlignment = Alignment.CenterHorizontally) {
-        val width = 300
+        val width = 300.dp
         items(samples) { sample ->
           // change height and width if necessary
           val testTags = SearchScreenTestTagsPerSampleCard(idInColumn = sample.id)
