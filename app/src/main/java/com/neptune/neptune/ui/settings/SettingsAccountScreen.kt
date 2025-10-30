@@ -1,6 +1,5 @@
 package com.neptune.neptune.ui.settings
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,8 +9,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -78,34 +75,10 @@ private fun AccountSettingsSection(signOut: () -> Unit) {
                 color = NepTuneTheme.colors.onBackground,
             ),
         modifier = Modifier.padding(bottom = 8.dp))
-    SettingItem(text = "Log Out", onClick = signOut)
-  }
-}
-
-@Composable
-private fun SettingItem(text: String, onClick: () -> Unit) {
-  Card(
-      onClick = onClick,
-      modifier = Modifier.fillMaxWidth(),
-      colors = CardDefaults.cardColors(containerColor = NepTuneTheme.colors.cardBackground),
-  ) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically) {
-          Text(
-              text = text,
-              style =
-                  TextStyle(
-                      fontSize = 22.sp,
-                      fontFamily = FontFamily(Font(R.font.markazi_text)),
-                      fontWeight = FontWeight.Normal,
-                      color = NepTuneTheme.colors.onBackground,
-                  ))
-          Icon(
-              imageVector = Icons.AutoMirrored.Filled.Logout,
-              contentDescription = "log out",
-              tint = NepTuneTheme.colors.onBackground)
-        }
+    SettingItemCard(
+        text = "Log Out",
+        imageVector = Icons.AutoMirrored.Filled.Logout,
+        contentDescription = "log out",
+        onClick = signOut)
   }
 }

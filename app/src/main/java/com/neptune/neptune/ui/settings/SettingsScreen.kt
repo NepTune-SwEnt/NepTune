@@ -2,7 +2,6 @@ package com.neptune.neptune.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -11,8 +10,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -22,7 +19,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -94,36 +90,20 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-          item { SettingItemCard(text = "Theme", onClick = goTheme) }
-          item { SettingItemCard(text = "Account", onClick = goAccount) }
+          item {
+            SettingItemCard(
+                text = "Theme",
+                imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                contentDescription = "go to theme settings",
+                onClick = goTheme)
+          }
+          item {
+            SettingItemCard(
+                text = "Account",
+                imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                contentDescription = "go to account settings",
+                onClick = goAccount)
+          }
         }
       }
-}
-
-@Composable
-private fun SettingItemCard(text: String, onClick: () -> Unit) {
-  Card(
-      onClick = onClick,
-      modifier = Modifier.fillMaxWidth(),
-      colors = CardDefaults.cardColors(containerColor = NepTuneTheme.colors.cardBackground),
-  ) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically) {
-          Text(
-              text = text,
-              style =
-                  TextStyle(
-                      fontSize = 22.sp,
-                      fontFamily = FontFamily(Font(R.font.markazi_text)),
-                      fontWeight = FontWeight.Normal,
-                      color = NepTuneTheme.colors.onBackground,
-                  ))
-          Icon(
-              imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-              contentDescription = null, // Decorative
-              tint = NepTuneTheme.colors.onBackground)
-        }
-  }
 }
