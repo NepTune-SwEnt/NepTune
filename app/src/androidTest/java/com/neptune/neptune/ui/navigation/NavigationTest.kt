@@ -5,20 +5,42 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.navigation.compose.rememberNavController
 import com.neptune.neptune.NeptuneApp
+import com.neptune.neptune.model.FakeProfileRepository
+import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.ui.main.MainViewModel
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
 class NavigationTest {
+
   @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
   private fun setContent(mainViewModel: MainViewModel = MainViewModel()) {
     composeTestRule.setContent { NeptuneApp(startDestination = Screen.Main.route) }
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).isDisplayed()
+  }
+
+  private lateinit var previousRepo: ProfileRepository
+
+  @Before
+  fun setUp() {
+    previousRepo = ProfileRepositoryProvider.repository
+    ProfileRepositoryProvider.repository = FakeProfileRepository(initial = null)
+  }
+
+  @After
+  fun tearDown() {
+    ProfileRepositoryProvider.repository = previousRepo
   }
 
   @Test
@@ -59,65 +81,70 @@ class NavigationTest {
   }
 
   @Test
+  fun bottomBarIsHiddenOnImportScreen() {
+    setContent()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsNotDisplayed()
+  }
+
+  @Test
   fun editTabIsSelectedAfterClick() {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsSelected()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
   }
 
   @Test
   fun mainTabIsSelectedAfterNavigatingBackFromEdit() {
+
     setContent()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsSelected()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsNotSelected()
   }
 
   @Test
-  fun navigationToPostTabShowsPostScreen() {
-    setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).performClick()
-  }
-
-  @Test
   fun navigationToSearchTabShowsSearchScreen() {
-    setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
-  }
 
-  @Test
-  fun postTabIsSelectedAfterClick() {
     setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).assertIsSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
   }
 
   @Test
   fun searchTabIsSelectedAfterClick() {
+
     setContent()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsSelected()
+
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
   }
 
   @Test
-  fun goBackFromProfileToPost() {
-    setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).performClick()
-  }
-
-  @Test
   fun goBackFromProfileToSearch() {
+
     composeTestRule.setContent {
       NeptuneApp(navController = rememberNavController(), startDestination = Screen.Main.route)
     }
+
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
   }
 }
