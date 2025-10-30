@@ -82,31 +82,44 @@ class ProfileRepositoryFirebase(
     val currentUser = Firebase.auth.currentUser
     val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
     // Transaction: if profile missing, create it with a free username
-    db.runTransaction { tx ->
+    return db.runTransaction<Profile> { tx ->
           val profile = profiles.document(uid)
           val snap = tx.get(profile)
-          if (!snap.exists()) {
+          if (snap.exists()) {
+            // Return the profile; if malformed, fail loudly
+            snap.toProfileOrNull() ?: throw IllegalStateException("Corrupted profile for uid=$uid")
+          } else {
             val base = toUsernameBase(suggestedUsernameBase?.takeIf { it.isNotBlank() } ?: "user")
             val username = claimFreeUsername(tx, base, uid)
-
             val initialName = name?.takeIf { it.isNotBlank() } ?: username
-            val initialBio = DEFAULT_BIO
 
+            // Build the object that will persist and return
+            val created =
+                Profile(
+                    uid = uid,
+                    username = username,
+                    name = initialName,
+                    bio = DEFAULT_BIO,
+                    avatarUrl = "",
+                    subscribers = 0L,
+                    subscriptions = 0L)
+
+            // Persist exactly what we’re returning
             tx.set(
                 profile,
                 mapOf(
-                    "uid" to uid,
-                    "username" to username,
-                    "name" to initialName,
-                    "bio" to initialBio,
-                    "avatarUrl" to "",
+                    "uid" to created.uid,
+                    "username" to created.username,
+                    "name" to created.name,
+                    "bio" to created.bio,
+                    "avatarUrl" to created.avatarUrl,
                     "subscribers" to 0L,
                     "subscriptions" to 0L))
-            return@runTransaction
+
+            created
           }
         }
         .await()
-    return getProfile()!!
   }
 
   /**
