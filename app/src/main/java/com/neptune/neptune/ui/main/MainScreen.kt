@@ -58,10 +58,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
 import com.neptune.neptune.Sample
 import com.neptune.neptune.media.LocalMediaPlayer
+import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.theme.NepTuneTheme
-import kotlinx.coroutines.flow.MutableStateFlow
 
 object MainScreenTestTags : BaseSampleTestTags {
   override val prefix = "MainScreen"
@@ -74,16 +74,16 @@ object MainScreenTestTags : BaseSampleTestTags {
   const val TOP_BAR_TITLE = "topBarTitle"
 
   // Sample Card
-  override val SAMPLE_CARD = tag("sampleCard")
-  override val SAMPLE_PROFILE_ICON = tag("sampleProfileIcon")
-  override val SAMPLE_USERNAME = tag("sampleUsername")
-  override val SAMPLE_NAME = tag("sampleName")
-  override val SAMPLE_DURATION = tag("sampleDuration")
-  override val SAMPLE_TAGS = tag("sampleTags")
+  override val SAMPLE_CARD get() = tag("sampleCard")
+    override val SAMPLE_PROFILE_ICON get() = tag("sampleProfileIcon")
+    override val SAMPLE_USERNAME get() = tag("sampleUsername")
+  override val SAMPLE_NAME get() = tag("sampleName")
+  override val SAMPLE_DURATION get() = tag("sampleDuration")
+  override val SAMPLE_TAGS get() = tag("sampleTags")
 
-  override val SAMPLE_LIKES = tag("sampleLikes")
-  override val SAMPLE_COMMENTS = tag("sampleComments")
-  override val SAMPLE_DOWNLOADS = tag("sampleDownloads")
+  override val SAMPLE_LIKES get() = tag("sampleLikes")
+  override val SAMPLE_COMMENTS get() = tag("sampleComments")
+  override val SAMPLE_DOWNLOADS get() = tag("sampleDownloads")
 
   // Lazy column
   const val LAZY_COLUMN_SAMPLE_LIST = "sampleList"
@@ -196,8 +196,8 @@ fun SampleCardRow(samples: List<Sample>) {
 // updates the value online first and gives it locally or if it changes it locally and notifies the online repo later
 @Composable
 fun SampleCard(sample: Sample, width: Int = 150, height: Int = 166, testTags: BaseSampleTestTags = MainScreenTestTags,
-               onProfileClick: () -> Unit = {}, onCommentClick: () -> Unit = {}, onDownloadClick: () -> Unit = {}, onLikeClick: () -> Unit = {}) {
-  val mediaPlayer = LocalMediaPlayer.current
+               onProfileClick: () -> Unit = {}, onCommentClick: () -> Unit = {},
+               onDownloadClick: () -> Unit = {}, onLikeClick: () -> Unit = {}, mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current) {
   var isLiked by remember { mutableStateOf(false) }
   Card(
       modifier =

@@ -2,7 +2,7 @@ package com.neptune.neptune.data
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.espresso.matcher.ViewMatchers.assertThat
+import com.google.common.truth.Truth.assertThat
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipFile

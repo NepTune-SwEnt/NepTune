@@ -1,15 +1,12 @@
 package com.neptune.neptune.ui.search
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -23,10 +20,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.Sample
 import com.neptune.neptune.media.LocalMediaPlayer
+import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.main.SampleCard
-import com.neptune.neptune.ui.navigation.BottomNavigationMenu
-import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.projectlist.SearchBar
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import kotlinx.coroutines.delay
@@ -40,23 +36,23 @@ Clicking on like puts it in red
 object SearchScreenTestTags {
     const val SEARCH_SCREEN = "searchScreen"
     const val SEARCH_BAR = "searchBar"
+    const val SAMPLE_LIST = "sampleList"
 
 }
-class SearchScreenTestTagsPerSampleCard(idInColumn: Int = 0) : BaseSampleTestTags {
+class SearchScreenTestTagsPerSampleCard(private val idInColumn: Int = 0) : BaseSampleTestTags {
     override val prefix = "SearchScreen"
+    override fun tag(name: String) = "${prefix}/${name}_$idInColumn"
 
-    //Sample Cards
-    override val SAMPLE_CARD = "${tag("sampleCard")}_$idInColumn"
-    override val SAMPLE_PROFILE_ICON = "${tag("sampleProfileIcon")}_$idInColumn"
-    override val SAMPLE_USERNAME = "${tag("sampleUsername")}_$idInColumn"
-    override val SAMPLE_NAME = "${tag("sampleName")}_$idInColumn"
-    override val SAMPLE_DURATION = "${tag("sampleDuration")}_$idInColumn"
-    override val SAMPLE_TAGS = "${tag("sampleTags")}_$idInColumn"
-
-    override val SAMPLE_LIKES = "${tag("sampleLikes")}_$idInColumn"
-    override val SAMPLE_COMMENTS = "${tag("sampleComments")}_$idInColumn"
-    override val SAMPLE_DOWNLOADS = "${tag("sampleDownloads")}_$idInColumn"
-
+    // All tags use computed getters (evaluated to a String)
+    override val SAMPLE_CARD get() = tag("sampleCard")
+    override val SAMPLE_PROFILE_ICON get() = tag("sampleProfileIcon")
+    override val SAMPLE_USERNAME get() = tag("sampleUsername")
+    override val SAMPLE_NAME get() = tag("sampleName")
+    override val SAMPLE_DURATION get() = tag("sampleDuration")
+    override val SAMPLE_TAGS get() = tag("sampleTags")
+    override val SAMPLE_LIKES get() = tag("sampleLikes")
+    override val SAMPLE_COMMENTS get() = tag("sampleComments")
+    override val SAMPLE_DOWNLOADS get() = tag("sampleDownloads")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,11 +64,12 @@ fun SearchScreen(
     onDownloadClick : () -> Unit = {},
     onLikeClick : () -> Unit = {},
     onCommentClick : () -> Unit = {},
+    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
 ) {
     val samples by searchViewModel.samples.collectAsState()
     var searchText by remember{ mutableStateOf("") }
     LaunchedEffect(searchText) {
-        delay(300L) // debounce time
+        delay(400L) // debounce time
         searchViewModel.search(searchText)
     }
     val samplesStr = "Samples"
@@ -91,7 +88,8 @@ fun SearchScreen(
                  onDownloadClick = onDownloadClick,
                 onLikeClick = onLikeClick,
                 onCommentClick = onCommentClick,
-                modifier = Modifier.padding(pd)
+                modifier = Modifier.padding(pd),
+                mediaPlayer = mediaPlayer
             )
         }
     )
@@ -104,10 +102,12 @@ fun ScrollableColumnOfSamples(
     onDownloadClick : () -> Unit = {},
     onLikeClick : () -> Unit = {},
     onCommentClick : () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
 ) {
     LazyColumn(
         modifier = modifier
+            .testTag(SearchScreenTestTags.SAMPLE_LIST)
             .fillMaxSize()
             .background(NepTuneTheme.colors.listBackground),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -115,16 +115,19 @@ fun ScrollableColumnOfSamples(
     )
      {
         val width = 300
-        itemsIndexed(samples) { index, sample ->
+        items(samples) {sample ->
             //change height and width if necessary
-            val testTags = SearchScreenTestTagsPerSampleCard(idInColumn = index)
+            val testTags = SearchScreenTestTagsPerSampleCard(idInColumn = sample.id)
+            println(testTags.SAMPLE_CARD)
             SampleCard(
                 sample = sample,
                 width = width,
                 onProfileClick = onProfilePicClick,
+                onLikeClick = onLikeClick,
                 onDownloadClick = onDownloadClick,
                 onCommentClick = onCommentClick,
-                testTags = testTags
+                testTags = testTags,
+                mediaPlayer = mediaPlayer
             )
         }
     }

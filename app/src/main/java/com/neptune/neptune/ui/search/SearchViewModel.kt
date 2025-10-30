@@ -16,15 +16,18 @@ open class SearchViewModel() : ViewModel(){
                     1, "Sample 1", "This is a sample description 1", 21, listOf("#nature"), 21, 21, 21),
                 Sample(2, "Sample 2", "This is a sample description 2", 42, listOf("#sea"), 42, 42, 42),
                 Sample(
-                    3, "Sample 3", "This is a sample description 3", 12, listOf("#relax", "#nature"), 12, 12, 12),
+                    3, "Sample 3", "sea", 12, listOf("#relax", "#nature"), 12, 12, 12),
                 Sample(
-                    4, "Sample 4", "This is a sample description 4", 2, listOf("#takeItEasy"), 1, 2, 1),
+                    4, "nature", "This is a sample description 4", 2, listOf("#takeItEasy"), 1, 2, 1),
                 Sample(5, "Sample 5", "This is a sample description 5", 75, listOf("#nature", "#forest"), 210, 210, 210)
             )
     }
     open fun search(query: String) {
         loadData()
         val normalizedQuery = normalize(query)
+        if (normalizedQuery.isEmpty()) {
+            return
+        }
         _samples.value = _samples.value.filter {
             normalize(it.name).contains(normalizedQuery, ignoreCase = true) ||
             normalize(it.description).contains(normalizedQuery, ignoreCase = true) ||
