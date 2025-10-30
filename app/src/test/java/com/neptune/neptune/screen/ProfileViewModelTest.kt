@@ -1,11 +1,12 @@
 package com.neptune.neptune.screen
 
+import com.neptune.neptune.model.fakes.FakeProfileRepository
 import com.neptune.neptune.ui.profile.ProfileMode
 import com.neptune.neptune.ui.profile.ProfileViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -18,7 +19,7 @@ import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class MainDispatcherRule(val dispatcher: TestDispatcher = StandardTestDispatcher()) :
+class MainDispatcherRule(val dispatcher: TestDispatcher = UnconfinedTestDispatcher()) :
     TestWatcher() {
 
   override fun starting(description: Description) {
@@ -36,10 +37,12 @@ class ProfileViewModelTest {
   @get:Rule val mainRule = MainDispatcherRule()
 
   private lateinit var viewModel: ProfileViewModel
+  private lateinit var fakeRepo: FakeProfileRepository
 
   @Before
   fun setup() {
-    viewModel = ProfileViewModel()
+    fakeRepo = FakeProfileRepository()
+    viewModel = ProfileViewModel(fakeRepo)
   }
 
   @Test
