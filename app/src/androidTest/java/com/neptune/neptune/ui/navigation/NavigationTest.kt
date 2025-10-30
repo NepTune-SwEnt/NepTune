@@ -12,7 +12,6 @@ import androidx.compose.ui.test.performClick
 import androidx.navigation.compose.rememberNavController
 import com.neptune.neptune.NeptuneApp
 import com.neptune.neptune.ui.main.MainViewModel
-import com.neptune.neptune.ui.search.SearchScreenTestTags
 import com.neptune.neptune.ui.search.SearchScreenTestTagsPerSampleCard
 import org.junit.Rule
 import org.junit.Test
@@ -71,7 +70,7 @@ class NavigationTest {
     composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsNotDisplayed()
   }
-
+  @Test
   fun otherUsersProfileScreenFromSearchTab() {
     val testTags = SearchScreenTestTagsPerSampleCard(1)
     setContent()

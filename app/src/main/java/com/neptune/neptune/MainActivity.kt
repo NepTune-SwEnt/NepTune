@@ -98,8 +98,10 @@ fun NeptuneApp(
                       goBack = { navigationActions.goBack() })
                 }
                 composable(Screen.Edit.route) { SamplerScreen() }
-                composable(Screen.Search.route) { SearchScreen(onProfilePicClick =
-                    {navigationActions.navigateTo(Screen.OtherUserProfile)}) }
+                composable(Screen.Search.route) {
+                  SearchScreen(
+                      onProfilePicClick = { navigationActions.navigateTo(Screen.OtherUserProfile) })
+                }
                 composable(Screen.ImportFile.route) { MockImportScreen(importViewModel) }
                 composable(Screen.SignIn.route) {
                   SignInScreen(
@@ -110,7 +112,7 @@ fun NeptuneApp(
                   ProjectListScreen(
                       navigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
                 }
-                composable(Screen.OtherUserProfile.route) {MockProfileScreen()}
+                composable(Screen.OtherUserProfile.route) { MockProfileScreen() }
               }
         })
   }
