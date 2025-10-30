@@ -166,7 +166,6 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
-    //implementation(libs.firebase.storage)
 
     // ---------- Credential Manager ------------
     implementation(libs.credentials)
@@ -185,6 +184,10 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
     globalTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
+
+    testImplementation("app.cash.turbine:turbine:0.12.3")
+    androidTestImplementation("app.cash.turbine:turbine:0.12.3")
+
 }
 
 tasks.withType<Test> {
