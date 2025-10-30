@@ -1,11 +1,35 @@
 rules_version = '2';
-
-// TODO: WARNING - INSECURE DEVELOPMENT RULES
-// They MUST be replaced with secure rules before launching to production.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Each user can read/write ONLY their own profile document
+    match /profiles/{uid} {
+      allow read, create, update, delete:
+        if signedIn() && uid == request.auth.uid;
+    }
+
+    // Username lock docs: usernames/{username}
+    match /usernames/{uname} {
+      // Needed for isUsernameAvailable()
+      allow read: if signedIn();
+
+      // Allow claiming a free username in a transaction
+      // Create only if not existing, and bind it to the caller's uid
+      allow create: if signedIn()
+                    && !exists(/databases/$(database)/documents/usernames/$(uname))
+                    && request.resource.data.uid == request.auth.uid;
+
+      // Allow deleting ONLY the username doc owned by the caller
+      allow delete: if signedIn()
+                    && resource.data.uid == request.auth.uid;
+
+      // Never allow updates-in-place (we create or delete)
+      allow update: if false;
     }
   }
 }
+
