@@ -1,6 +1,7 @@
 package com.neptune.neptune.ui.search
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -128,12 +129,12 @@ fun ScrollableColumnOfSamples(
               .testTag(SearchScreenTestTags.SAMPLE_LIST)
               .fillMaxSize()
               .background(NepTuneTheme.colors.listBackground),
+      verticalArrangement = Arrangement.spacedBy(12.dp),
       horizontalAlignment = Alignment.CenterHorizontally) {
         val width = 300.dp
         items(samples) { sample ->
           // change height and width if necessary
           val testTags = SearchScreenTestTagsPerSampleCard(idInColumn = sample.id)
-          println(testTags.SAMPLE_CARD)
           SampleCard(
               sample = sample,
               width = width,

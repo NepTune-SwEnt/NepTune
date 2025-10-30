@@ -106,6 +106,7 @@ fun NeptuneApp(
                 composable(Screen.Search.route) {
                   SearchScreen(
                       onProfilePicClick = { navigationActions.navigateTo(Screen.OtherUserProfile) })
+                }
                 composable(Screen.Post.route) {
                   PostScreen(
                       goBack = { navigationActions.goBack() },

@@ -18,8 +18,8 @@ import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
-import com.neptune.neptune.ui.search.SearchScreenTestTagsPerSampleCard
 import com.neptune.neptune.ui.post.PostScreenTestTags
+import com.neptune.neptune.ui.search.SearchScreenTestTagsPerSampleCard
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
