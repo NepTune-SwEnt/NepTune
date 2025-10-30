@@ -11,8 +11,13 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.navigation.compose.rememberNavController
 import com.neptune.neptune.NeptuneApp
+import com.neptune.neptune.model.FakeProfileRepository
+import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.ui.main.MainViewModel
-import com.neptune.neptune.ui.search.SearchScreenTestTagsPerSampleCard
+import com.neptune.neptune.ui.search.SearchScreenTestTagsPerSampleCard  
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
@@ -24,6 +29,19 @@ class NavigationTest {
     composeTestRule.setContent { NeptuneApp(startDestination = Screen.Main.route) }
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).isDisplayed()
+  }
+
+  private lateinit var previousRepo: ProfileRepository
+
+  @Before
+  fun setUp() {
+    previousRepo = ProfileRepositoryProvider.repository
+    ProfileRepositoryProvider.repository = FakeProfileRepository(initial = null)
+  }
+
+  @After
+  fun tearDown() {
+    ProfileRepositoryProvider.repository = previousRepo
   }
 
   @Test

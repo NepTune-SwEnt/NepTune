@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -43,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
@@ -52,6 +54,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -111,6 +114,14 @@ object MainScreenTestTags : BaseSampleTestTags {
 fun MainScreen(mainViewModel: MainViewModel = viewModel(), navigateToProfile: () -> Unit = {}) {
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
+
+  val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+  val horizontalPadding = 30.dp
+  val spacing = 25.dp
+  // Depends on the size of the screen
+  val maxColumns = if (screenWidth < 360.dp) 1 else 2
+  val cardWidth = (screenWidth - horizontalPadding * 2 - spacing) / 2
+
   Scaffold(
       topBar = {
         Column {
@@ -162,11 +173,27 @@ fun MainScreen(mainViewModel: MainViewModel = viewModel(), navigateToProfile: ()
                       .testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
                 // ----------------Discover Section-----------------
                 item { SectionHeader(title = "Discover") }
-                items(discoverSamples.chunked(2)) { samples -> SampleCardRow(samples) }
-
+                item {
+                  LazyRow(
+                      horizontalArrangement = Arrangement.spacedBy(spacing),
+                      modifier = Modifier.fillMaxWidth()) {
+                        // As this element is horizontally scrollable,we can let 2
+                        val columns = discoverSamples.chunked(2)
+                        items(columns) { samplesColumn ->
+                          Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
+                            samplesColumn.forEach { samples ->
+                              SampleCard(samples, cardWidth = cardWidth)
+                            }
+                          }
+                        }
+                      }
+                }
                 // ----------------Followed Section-----------------
                 item { SectionHeader(title = "Followed") }
-                items(followedSamples.chunked(2)) { samples -> SampleCardRow(samples) }
+                // If the screen is too small, it will display 1 Card instead of 2
+                items(followedSamples.chunked(maxColumns)) { samples ->
+                  SampleCardRow(samples, cardWidth = cardWidth)
+                }
               }
         }
       }
@@ -199,11 +226,11 @@ fun SectionHeader(title: String) {
 
 // ----------------Sample Card in Row (2 per row)-----------------
 @Composable
-fun SampleCardRow(samples: List<Sample>) {
+fun SampleCardRow(samples: List<Sample>, cardWidth: Dp) {
   Row(
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-      horizontalArrangement = Arrangement.SpaceBetween) {
-        samples.forEach { sample -> SampleCard(sample) }
+      horizontalArrangement = Arrangement.spacedBy(25.dp)) {
+        samples.forEach { sample -> SampleCard(sample, cardWidth = cardWidth) }
       }
 }
 
@@ -401,10 +428,3 @@ fun IconWithTextPainter(
     Text(text, color = NepTuneTheme.colors.background, fontSize = 10.sp)
   }
 }
-
-/*
-@Preview
-@Composable
-fun MainScreenPreview() {
-  MainScreen()
-}*/
