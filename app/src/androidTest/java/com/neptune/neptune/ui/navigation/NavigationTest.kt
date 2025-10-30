@@ -9,12 +9,16 @@ import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextReplacement
 import androidx.navigation.compose.rememberNavController
 import com.neptune.neptune.NeptuneApp
 import com.neptune.neptune.model.FakeProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
+import com.neptune.neptune.ui.post.PostScreenTestTags
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -146,5 +150,24 @@ class NavigationTest {
     }
 
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
+  }
+
+  @Test
+  fun postButtonNavigateToPostScreen() {
+    setContent()
+    composeTestRule.onNodeWithTag(MainScreenTestTags.POST_BUTTON).performClick()
+    composeTestRule.onNodeWithTag(PostScreenTestTags.POST_SCREEN).assertIsDisplayed()
+  }
+
+  @Test
+  fun postButtonNavigateToMainScreen() {
+    composeTestRule.setContent {
+      NeptuneApp(navController = rememberNavController(), startDestination = Screen.Post.route)
+    }
+    composeTestRule
+        .onNodeWithTag(PostScreenTestTags.TITLE_FIELD)
+        .performTextReplacement("Sweetie Banana")
+    composeTestRule.onNodeWithTag(PostScreenTestTags.POST_BUTTON).performScrollTo().performClick()
+    composeTestRule.onNodeWithTag(MainScreenTestTags.MAIN_SCREEN).assertIsDisplayed()
   }
 }

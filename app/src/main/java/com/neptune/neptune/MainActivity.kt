@@ -35,6 +35,7 @@ import com.neptune.neptune.ui.navigation.NavigationActions
 import com.neptune.neptune.ui.navigation.Screen
 import com.neptune.neptune.ui.picker.ImportViewModel
 import com.neptune.neptune.ui.picker.importAppRoot
+import com.neptune.neptune.ui.post.PostScreen
 import com.neptune.neptune.ui.profile.ProfileRoute
 import com.neptune.neptune.ui.projectlist.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
@@ -86,7 +87,11 @@ fun NeptuneApp(
               modifier = Modifier.padding(innerPadding)) {
                 // TODO: Replace mock screens with actual app screens
                 composable(Screen.Main.route) {
-                  MainScreen(navigateToProfile = { navigationActions.navigateTo(Screen.Profile) })
+                  MainScreen(
+                      navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
+                      // TODO: Change back to ProjectList when navigation from
+                      // Main->ProjectList->PostScreen is implemented
+                      navigateToProjectList = { navigationActions.navigateTo(Screen.Post) })
                 }
                 composable(Screen.Profile.route) {
                   ProfileRoute(
@@ -98,6 +103,11 @@ fun NeptuneApp(
                 }
                 composable(Screen.Edit.route) { SamplerScreen() }
                 composable(Screen.Search.route) { MockSearchScreen() }
+                composable(Screen.Post.route) {
+                  PostScreen(
+                      goBack = { navigationActions.goBack() },
+                      navigateToMainScreen = { navigationActions.navigateTo(Screen.Main) })
+                }
                 composable(Screen.ImportFile.route) { MockImportScreen(importViewModel) }
                 composable(Screen.SignIn.route) {
                   SignInScreen(

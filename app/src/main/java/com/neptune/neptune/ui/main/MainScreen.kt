@@ -18,14 +18,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,6 +40,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -61,6 +65,7 @@ import com.neptune.neptune.ui.theme.NepTuneTheme
 object MainScreenTestTags {
   // General
   const val MAIN_SCREEN = "mainScreen"
+  const val POST_BUTTON = "postButton"
 
   // Top Bar
   const val TOP_BAR = "topBar"
@@ -85,7 +90,11 @@ object MainScreenTestTags {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 // Implementation of the main screen
-fun MainScreen(mainViewModel: MainViewModel = viewModel(), navigateToProfile: () -> Unit = {}) {
+fun MainScreen(
+    mainViewModel: MainViewModel = viewModel(),
+    navigateToProfile: () -> Unit = {},
+    navigateToProjectList: () -> Unit = {}
+) {
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
 
@@ -136,6 +145,26 @@ fun MainScreen(mainViewModel: MainViewModel = viewModel(), navigateToProfile: ()
               thickness = 0.75.dp,
               color = NepTuneTheme.colors.onBackground)
         }
+      },
+      floatingActionButton = {
+        FloatingActionButton(
+            onClick = navigateToProjectList,
+            containerColor = NepTuneTheme.colors.postButton,
+            contentColor = NepTuneTheme.colors.onBackground,
+            shape = CircleShape,
+            modifier =
+                Modifier.shadow(
+                        elevation = 4.dp,
+                        spotColor = NepTuneTheme.colors.shadow,
+                        ambientColor = NepTuneTheme.colors.shadow,
+                        shape = CircleShape)
+                    .size(52.dp)
+                    .testTag(MainScreenTestTags.POST_BUTTON)) {
+              Icon(
+                  imageVector = Icons.Default.Add,
+                  contentDescription = "Create a Post",
+                  modifier = Modifier.size(70.dp))
+            }
       },
       modifier = Modifier.testTag(MainScreenTestTags.MAIN_SCREEN),
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
