@@ -9,6 +9,7 @@ object NavigationTestTags {
   const val PROJECTLIST_TAB = "ProjectListTab"
   const val SEARCH_TAB = "SearchTab"
   const val POST_TAB = "PostTab"
+  const val OTHER_USER = "OtherUser"
   const val PROFILE_BUTTON = "ProfileButton"
   const val IMPORT_FILE = "ImportFile"
 }
