@@ -47,15 +47,6 @@ class ProjectExtractorTest {
     """
           .trimIndent()
 
-  private val missingFieldJson =
-      """
-        {
-          "audioFiles": [],
-          "unknown_field": "data" 
-        }
-    """
-          .trimIndent()
-
   @get:Rule val tempFolder = TemporaryFolder()
 
   private lateinit var extractor: ProjectExtractor

@@ -226,65 +226,40 @@ open class SamplerViewModel : ViewModel() {
         val paramMap = metadata.parameters.associate { it.type to it.value }
 
         _uiState.update { current ->
-          var newState = current.copy()
-
-          paramMap["attack"]?.let {
-            newState = newState.copy(attack = it.coerceIn(0f, ADSR_MAX_TIME))
-          }
-          paramMap["decay"]?.let {
-            newState = newState.copy(decay = it.coerceIn(0f, ADSR_MAX_TIME))
-          }
-          paramMap["sustain"]?.let {
-            newState = newState.copy(sustain = it.coerceIn(0f, ADSR_MAX_SUSTAIN))
-          }
-          paramMap["release"]?.let {
-            newState = newState.copy(release = it.coerceIn(0f, ADSR_MAX_TIME))
-          }
-
-          paramMap["reverbWet"]?.let { newState = newState.copy(reverbWet = it.coerceIn(0f, 1f)) }
-          paramMap["reverbSize"]?.let {
-            newState = newState.copy(reverbSize = it.coerceIn(0.1f, REVERB_SIZE_MAX))
-          }
-          paramMap["reverbWidth"]?.let {
-            newState = newState.copy(reverbWidth = it.coerceIn(0f, 1f))
-          }
-          paramMap["reverbDepth"]?.let {
-            newState = newState.copy(reverbDepth = it.coerceIn(0f, 1f))
-          }
-          paramMap["reverbPredelay"]?.let {
-            newState = newState.copy(reverbPredelay = it.coerceIn(0f, PREDELAY_MAX_MS))
-          }
-
-          paramMap["compThreshold"]?.let {
-            newState = newState.copy(compThreshold = it.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX))
-          }
-
-          paramMap["compRatio"]?.let { ratioFloat ->
-            val ratioInt = ratioFloat.roundToInt().coerceIn(1, 20)
-            newState = newState.copy(compRatio = ratioInt)
-          }
-
-          paramMap["compKnee"]?.let {
-            newState = newState.copy(compKnee = it.coerceIn(0f, COMP_KNEE_MAX))
-          }
-          paramMap["compGain"]?.let {
-            newState = newState.copy(compGain = it.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX))
-          }
-          paramMap["compAttack"]?.let {
-            newState = newState.copy(compAttack = it.coerceIn(0f, COMP_TIME_MAX))
-          }
-          paramMap["compDecay"]?.let {
-            newState = newState.copy(compDecay = it.coerceIn(0f, COMP_TIME_MAX))
-          }
-
           val newEqBands = current.eqBands.toMutableList()
           EQ_FREQUENCIES.forEachIndexed { index, _ ->
             paramMap["eq_band_$index"]?.let { gain ->
               newEqBands[index] = gain.coerceIn(EQ_GAIN_MIN, EQ_GAIN_MAX)
             }
           }
-          newState = newState.copy(eqBands = newEqBands)
-          newState
+
+          current.copy(
+              attack = paramMap["attack"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.attack,
+              decay = paramMap["decay"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.decay,
+              sustain = paramMap["sustain"]?.coerceIn(0f, ADSR_MAX_SUSTAIN) ?: current.sustain,
+              release = paramMap["release"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.release,
+              reverbWet = paramMap["reverbWet"]?.coerceIn(0f, 1f) ?: current.reverbWet,
+              reverbSize =
+                  paramMap["reverbSize"]?.coerceIn(0.1f, REVERB_SIZE_MAX) ?: current.reverbSize,
+              reverbWidth = paramMap["reverbWidth"]?.coerceIn(0f, 1f) ?: current.reverbWidth,
+              reverbDepth = paramMap["reverbDepth"]?.coerceIn(0f, 1f) ?: current.reverbDepth,
+              reverbPredelay =
+                  paramMap["reverbPredelay"]?.coerceIn(0f, PREDELAY_MAX_MS)
+                      ?: current.reverbPredelay,
+              compThreshold =
+                  paramMap["compThreshold"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)
+                      ?: current.compThreshold,
+              compRatio =
+                  paramMap["compRatio"]?.let { ratioFloat ->
+                    ratioFloat.roundToInt().coerceIn(1, 20)
+                  } ?: current.compRatio,
+              compKnee = paramMap["compKnee"]?.coerceIn(0f, COMP_KNEE_MAX) ?: current.compKnee,
+              compGain =
+                  paramMap["compGain"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX) ?: current.compGain,
+              compAttack =
+                  paramMap["compAttack"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compAttack,
+              compDecay = paramMap["compDecay"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compDecay,
+              eqBands = newEqBands.toList())
         }
       } catch (e: Exception) {
         Log.e("SamplerViewModel", "Échec du chargement du projet ZIP: ${e.message}", e)

@@ -1,6 +1,7 @@
 package com.neptune.neptune.model.project
 
 import java.io.File
+import java.io.IOException
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import kotlinx.serialization.json.Json
@@ -28,7 +29,15 @@ class ProjectExtractor {
 
       zip.getInputStream(entry).use { inputStream ->
         val jsonContent = inputStream.bufferedReader().readText()
-        return json.decodeFromString(jsonContent)
+        try {
+          return json.decodeFromString(jsonContent)
+        } catch (e: Exception) {
+          throw IOException(
+              "Failed to parse config.json in ZIP file '${zipFile.name}'. " +
+                  "JSON content error: ${e.message}",
+              e)
+              as Throwable
+        }
       }
     }
   }

@@ -78,9 +78,11 @@ open class NavigationActions(
   }
 
   open fun navigateTo(route: String) {
-    navController.navigate(route) {
-      launchSingleTop = true
-      restoreState = true
+    if (currentRoute() != route) {
+      navController.navigate(route) {
+        launchSingleTop = true
+        restoreState = true
+      }
     }
   }
 

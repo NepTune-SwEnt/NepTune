@@ -41,6 +41,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.ui.sampler.SamplerTestTags.CURVE_EDITOR_SCROLL_CONTAINER
 import com.neptune.neptune.ui.sampler.SamplerTestTags.FADER_60HZ_TAG
 import com.neptune.neptune.ui.theme.NepTuneTheme
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -111,14 +113,21 @@ enum class KnobUnit {
 fun SamplerScreen(
     viewModel: SamplerViewModel = viewModel(),
     zipFilePath: String?,
-    onBack: () -> Unit = {}
 ) {
   val uiState by viewModel.uiState.collectAsState()
-  var selectedItem by remember { mutableIntStateOf(2) }
+
+  val decodedZipPath =
+      remember(zipFilePath) {
+        if (zipFilePath.isNullOrEmpty()) {
+          null
+        } else {
+          URLDecoder.decode(zipFilePath, StandardCharsets.UTF_8.name())
+        }
+      }
 
   LaunchedEffect(Unit) {
-    if (zipFilePath != null) {
-      viewModel.loadProjectData(zipFilePath)
+    if (decodedZipPath != null) {
+      viewModel.loadProjectData(decodedZipPath)
     }
   }
 
