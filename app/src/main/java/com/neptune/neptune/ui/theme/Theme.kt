@@ -11,6 +11,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import com.neptune.neptune.ui.settings.ThemeSetting
 
 private val DarkColorScheme =
     darkColorScheme(primary = LightPurple, secondary = PurpleGrey80, tertiary = Pink80)
@@ -36,7 +37,16 @@ object NepTuneTheme {
 }
 
 @Composable
-fun SampleAppTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+fun SampleAppTheme(
+    themeSetting: ThemeSetting = ThemeSetting.SYSTEM,
+    content: @Composable () -> Unit
+) {
+  val darkTheme =
+      when (themeSetting) {
+        ThemeSetting.SYSTEM -> isSystemInDarkTheme()
+        ThemeSetting.LIGHT -> false
+        ThemeSetting.DARK -> true
+      }
   val extendedColors = if (darkTheme) DarkExtendedColors else LightExtendedColors
   val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
   CompositionLocalProvider(LocalExtendedColors provides extendedColors) {

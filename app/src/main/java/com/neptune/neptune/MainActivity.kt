@@ -10,6 +10,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -42,6 +43,12 @@ import com.neptune.neptune.ui.profile.ProfileRoute
 import com.neptune.neptune.ui.projectlist.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.search.SearchScreen
+import com.neptune.neptune.ui.settings.SettingsAccountScreen
+import com.neptune.neptune.ui.settings.SettingsScreen
+import com.neptune.neptune.ui.settings.SettingsThemeScreen
+import com.neptune.neptune.ui.settings.SettingsViewModel
+import com.neptune.neptune.ui.settings.SettingsViewModelFactory
+import com.neptune.neptune.ui.settings.ThemeDataStore
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.ui.theme.SampleAppTheme
 
@@ -49,14 +56,32 @@ private const val ASSET_ZIP_PATH = "fakeProject.zip"
 private const val TARGET_PROJECT_ID = "42"
 
 class MainActivity : ComponentActivity() {
+
+  // A handle to the DataStore instance that manages theme persistence.
+  private lateinit var themeDataStore: ThemeDataStore
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+
+    // Initialize the ThemeDataStore using the application-level context
+    themeDataStore = ThemeDataStore(applicationContext)
+
     setContent {
-      SampleAppTheme {
+      // Create the factory required to manually inject the themeDataStore
+      // into the SettingsViewModel.
+      val settingsViewModelFactory = SettingsViewModelFactory(themeDataStore)
+      // Get a reference to the SettingsViewModel, providing our custom factory
+      // so the ViewModel instance receives the DataStore dependency.
+      val settingsViewModel: SettingsViewModel = viewModel(factory = settingsViewModelFactory)
+
+      // Collect the current theme setting (SYSTEM, LIGHT, or DARK) as a Composable state.
+      val themeSetting by settingsViewModel.theme.collectAsState()
+      // A surface container using the 'background' color from the theme
+      SampleAppTheme(themeSetting = themeSetting) {
         Surface(
             modifier = Modifier.fillMaxSize().semantics { testTag = C.Tag.main_screen_container },
             color = MaterialTheme.colorScheme.background) {
-              NeptuneApp()
+              NeptuneApp(settingsViewModel = settingsViewModel)
             }
       }
     }
@@ -65,6 +90,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun NeptuneApp(
+    settingsViewModel: SettingsViewModel =
+        SettingsViewModel(ThemeDataStore(LocalContext.current.applicationContext)),
     navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.SignIn.route,
 ) {
@@ -100,10 +127,7 @@ fun NeptuneApp(
                 }
                 composable(Screen.Profile.route) {
                   ProfileRoute(
-                      logout = {
-                        signInViewModel.signOut()
-                        navigationActions.navigateTo(Screen.SignIn)
-                      },
+                      settings = { navigationActions.navigateTo(Screen.Settings) },
                       goBack = { navigationActions.goBack() })
                 }
                 composable(
@@ -136,6 +160,25 @@ fun NeptuneApp(
                   ProjectListScreen(
                       navigateToSampler = { filePath ->
                         navigationActions.navigateTo(Screen.Edit.createRoute(filePath))
+                      })
+                }
+                composable(Screen.Settings.route) {
+                  SettingsScreen(
+                      goBack = { navigationActions.goBack() },
+                      goTheme = { navigationActions.navigateTo(Screen.SettingsTheme) },
+                      goAccount = { navigationActions.navigateTo(Screen.SettingsAccount) })
+                }
+                composable(Screen.SettingsTheme.route) {
+                  SettingsThemeScreen(
+                      settingsViewModel = settingsViewModel,
+                      goBack = { navigationActions.goBack() })
+                }
+                composable(Screen.SettingsAccount.route) {
+                  SettingsAccountScreen(
+                      goBack = { navigationActions.goBack() },
+                      logout = {
+                        signInViewModel.signOut()
+                        navigationActions.navigateTo(Screen.SignIn)
                       })
                 }
                 composable(Screen.OtherUserProfile.route) { MockProfileScreen() }
