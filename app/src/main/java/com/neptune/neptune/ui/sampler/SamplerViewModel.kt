@@ -1,10 +1,16 @@
 package com.neptune.neptune.ui.sampler
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.neptune.neptune.model.project.ProjectExtractor
+import com.neptune.neptune.model.project.SamplerProjectMetadata
+import java.io.File
 import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 enum class SamplerTab {
   BASICS,
@@ -62,6 +68,8 @@ open class SamplerViewModel : ViewModel() {
   val maxOctave = 7
 
   val minOctave = 1
+
+  val extractor = ProjectExtractor()
 
   open fun selectTab(tab: SamplerTab) {
     _uiState.update { it.copy(currentTab = tab) }
@@ -206,5 +214,56 @@ open class SamplerViewModel : ViewModel() {
 
   open fun updateCompDecay(value: Float) {
     _uiState.update { it.copy(compDecay = value.coerceIn(0.0f, COMP_TIME_MAX)) }
+  }
+
+  fun loadProjectData(zipFilePath: String) {
+    viewModelScope.launch {
+      try {
+        val zipFile = File(zipFilePath)
+
+        val metadata: SamplerProjectMetadata = extractor.extractMetadata(zipFile)
+
+        val paramMap = metadata.parameters.associate { it.type to it.value }
+
+        _uiState.update { current ->
+          val newEqBands = current.eqBands.toMutableList()
+          EQ_FREQUENCIES.forEachIndexed { index, _ ->
+            paramMap["eq_band_$index"]?.let { gain ->
+              newEqBands[index] = gain.coerceIn(EQ_GAIN_MIN, EQ_GAIN_MAX)
+            }
+          }
+
+          current.copy(
+              attack = paramMap["attack"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.attack,
+              decay = paramMap["decay"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.decay,
+              sustain = paramMap["sustain"]?.coerceIn(0f, ADSR_MAX_SUSTAIN) ?: current.sustain,
+              release = paramMap["release"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.release,
+              reverbWet = paramMap["reverbWet"]?.coerceIn(0f, 1f) ?: current.reverbWet,
+              reverbSize =
+                  paramMap["reverbSize"]?.coerceIn(0.1f, REVERB_SIZE_MAX) ?: current.reverbSize,
+              reverbWidth = paramMap["reverbWidth"]?.coerceIn(0f, 1f) ?: current.reverbWidth,
+              reverbDepth = paramMap["reverbDepth"]?.coerceIn(0f, 1f) ?: current.reverbDepth,
+              reverbPredelay =
+                  paramMap["reverbPredelay"]?.coerceIn(0f, PREDELAY_MAX_MS)
+                      ?: current.reverbPredelay,
+              compThreshold =
+                  paramMap["compThreshold"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)
+                      ?: current.compThreshold,
+              compRatio =
+                  paramMap["compRatio"]?.let { ratioFloat ->
+                    ratioFloat.roundToInt().coerceIn(1, 20)
+                  } ?: current.compRatio,
+              compKnee = paramMap["compKnee"]?.coerceIn(0f, COMP_KNEE_MAX) ?: current.compKnee,
+              compGain =
+                  paramMap["compGain"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX) ?: current.compGain,
+              compAttack =
+                  paramMap["compAttack"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compAttack,
+              compDecay = paramMap["compDecay"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compDecay,
+              eqBands = newEqBands.toList())
+        }
+      } catch (e: Exception) {
+        Log.e("SamplerViewModel", "Échec du chargement du projet ZIP: ${e.message}", e)
+      }
+    }
   }
 }

@@ -12,7 +12,11 @@ import androidx.navigation.NavHostController
 sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
   object Main : Screen(route = "main")
 
-  object Edit : Screen(route = "edit")
+  object Edit : Screen("edit_screen/{zipFilePath}") {
+    fun createRoute(encodedZipFilePath: String): String {
+      return "edit_screen/$encodedZipFilePath"
+    }
+  }
 
   object Search : Screen(route = "search")
 
@@ -72,6 +76,15 @@ open class NavigationActions(
         }
         launchSingleTop = true
         restoreState = screen.route != Screen.SignIn.route
+      }
+    }
+  }
+
+  open fun navigateTo(route: String) {
+    if (currentRoute() != route) {
+      navController.navigate(route) {
+        launchSingleTop = true
+        restoreState = true
       }
     }
   }

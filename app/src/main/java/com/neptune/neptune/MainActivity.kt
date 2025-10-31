@@ -18,10 +18,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.resources.C
@@ -43,12 +45,14 @@ import com.neptune.neptune.ui.search.SearchScreen
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.ui.theme.SampleAppTheme
 
+private const val ASSET_ZIP_PATH = "fakeProject.zip"
+private const val TARGET_PROJECT_ID = "42"
+
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContent {
       SampleAppTheme {
-        // A surface container using the 'background' color from the theme
         Surface(
             modifier = Modifier.fillMaxSize().semantics { testTag = C.Tag.main_screen_container },
             color = MaterialTheme.colorScheme.background) {
@@ -102,7 +106,17 @@ fun NeptuneApp(
                       },
                       goBack = { navigationActions.goBack() })
                 }
-                composable(Screen.Edit.route) { SamplerScreen() }
+                composable(
+                    route = Screen.Edit.route,
+                    arguments =
+                        listOf(
+                            navArgument("zipFilePath") {
+                              type = NavType.StringType
+                              nullable = true
+                            })) { backStackEntry ->
+                      val zipFilePath = backStackEntry.arguments?.getString("zipFilePath")
+                      SamplerScreen(zipFilePath = zipFilePath)
+                    }
                 composable(Screen.Search.route) {
                   SearchScreen(
                       onProfilePicClick = { navigationActions.navigateTo(Screen.OtherUserProfile) })
@@ -120,7 +134,9 @@ fun NeptuneApp(
                 }
                 composable(Screen.ProjectList.route) {
                   ProjectListScreen(
-                      navigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
+                      navigateToSampler = { filePath ->
+                        navigationActions.navigateTo(Screen.Edit.createRoute(filePath))
+                      })
                 }
                 composable(Screen.OtherUserProfile.route) { MockProfileScreen() }
               }
