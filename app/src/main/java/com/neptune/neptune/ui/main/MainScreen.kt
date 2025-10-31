@@ -16,15 +16,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,9 +40,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -46,6 +52,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -58,6 +65,7 @@ import com.neptune.neptune.ui.theme.NepTuneTheme
 object MainScreenTestTags {
   // General
   const val MAIN_SCREEN = "mainScreen"
+  const val POST_BUTTON = "postButton"
 
   // Top Bar
   const val TOP_BAR = "topBar"
@@ -82,9 +90,21 @@ object MainScreenTestTags {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 // Implementation of the main screen
-fun MainScreen(mainViewModel: MainViewModel = viewModel(), navigateToProfile: () -> Unit = {}) {
+fun MainScreen(
+    mainViewModel: MainViewModel = viewModel(),
+    navigateToProfile: () -> Unit = {},
+    navigateToProjectList: () -> Unit = {}
+) {
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
+
+  val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+  val horizontalPadding = 30.dp
+  val spacing = 25.dp
+  // Depends on the size of the screen
+  val maxColumns = if (screenWidth < 360.dp) 1 else 2
+  val cardWidth = (screenWidth - horizontalPadding * 2 - spacing) / 2
+
   Scaffold(
       topBar = {
         Column {
@@ -126,6 +146,26 @@ fun MainScreen(mainViewModel: MainViewModel = viewModel(), navigateToProfile: ()
               color = NepTuneTheme.colors.onBackground)
         }
       },
+      floatingActionButton = {
+        FloatingActionButton(
+            onClick = navigateToProjectList,
+            containerColor = NepTuneTheme.colors.postButton,
+            contentColor = NepTuneTheme.colors.onBackground,
+            shape = CircleShape,
+            modifier =
+                Modifier.shadow(
+                        elevation = 4.dp,
+                        spotColor = NepTuneTheme.colors.shadow,
+                        ambientColor = NepTuneTheme.colors.shadow,
+                        shape = CircleShape)
+                    .size(52.dp)
+                    .testTag(MainScreenTestTags.POST_BUTTON)) {
+              Icon(
+                  imageVector = Icons.Default.Add,
+                  contentDescription = "Create a Post",
+                  modifier = Modifier.size(70.dp))
+            }
+      },
       modifier = Modifier.testTag(MainScreenTestTags.MAIN_SCREEN),
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
@@ -136,11 +176,27 @@ fun MainScreen(mainViewModel: MainViewModel = viewModel(), navigateToProfile: ()
                       .testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
                 // ----------------Discover Section-----------------
                 item { SectionHeader(title = "Discover") }
-                items(discoverSamples.chunked(2)) { samples -> SampleCardRow(samples) }
-
+                item {
+                  LazyRow(
+                      horizontalArrangement = Arrangement.spacedBy(spacing),
+                      modifier = Modifier.fillMaxWidth()) {
+                        // As this element is horizontally scrollable,we can let 2
+                        val columns = discoverSamples.chunked(2)
+                        items(columns) { samplesColumn ->
+                          Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
+                            samplesColumn.forEach { samples ->
+                              SampleCard(samples, cardWidth = cardWidth)
+                            }
+                          }
+                        }
+                      }
+                }
                 // ----------------Followed Section-----------------
                 item { SectionHeader(title = "Followed") }
-                items(followedSamples.chunked(2)) { samples -> SampleCardRow(samples) }
+                // If the screen is too small, it will display 1 Card instead of 2
+                items(followedSamples.chunked(maxColumns)) { samples ->
+                  SampleCardRow(samples, cardWidth = cardWidth)
+                }
               }
         }
       }
@@ -173,21 +229,21 @@ fun SectionHeader(title: String) {
 
 // ----------------Sample Card in Row (2 per row)-----------------
 @Composable
-fun SampleCardRow(samples: List<Sample>) {
+fun SampleCardRow(samples: List<Sample>, cardWidth: Dp) {
   Row(
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-      horizontalArrangement = Arrangement.SpaceBetween) {
-        samples.forEach { sample -> SampleCard(sample) }
+      horizontalArrangement = Arrangement.spacedBy(25.dp)) {
+        samples.forEach { sample -> SampleCard(sample, cardWidth = cardWidth) }
       }
 }
 
 // ----------------Sample Card-----------------
 @Composable
-fun SampleCard(sample: Sample) {
+fun SampleCard(sample: Sample, cardWidth: Dp) {
   val mediaPlayer = LocalMediaPlayer.current
   Card(
       modifier =
-          Modifier.width(150.dp)
+          Modifier.width(cardWidth)
               .height(166.dp)
               .clickable(
                   onClick = { mediaPlayer.togglePlay(mediaPlayer.getUriFromSampleId(sample.id)) })
@@ -348,10 +404,3 @@ fun IconWithTextPainter(
     Text(text, color = NepTuneTheme.colors.background, fontSize = 10.sp)
   }
 }
-
-/*
-@Preview
-@Composable
-fun MainScreenPreview() {
-  MainScreen()
-}*/
