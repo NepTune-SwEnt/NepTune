@@ -15,7 +15,7 @@ class ScreenTest {
   @Test
   fun testEditScreenProperties() {
     val screen = Screen.Edit
-    assertEquals("edit", screen.route)
+    assertEquals("edit_screen/{zipFilePath}", screen.route)
     assertTrue(screen.showBottomBar)
   }
 
