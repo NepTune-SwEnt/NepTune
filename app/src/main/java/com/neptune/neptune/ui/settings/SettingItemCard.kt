@@ -28,33 +28,28 @@ fun SettingItemCard(
     contentDescription: String,
     onClick: () -> Unit
 ) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = NepTuneTheme.colors.cardBackground),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = text,
-                style =
-                TextStyle(
-                    fontSize = 22.sp,
-                    fontFamily = FontFamily(Font(R.font.markazi_text)),
-                    fontWeight = FontWeight.Normal,
-                    color = NepTuneTheme.colors.onBackground,
-                )
-            )
-            Icon(
-                imageVector = imageVector,
-                contentDescription = contentDescription,
-                tint = NepTuneTheme.colors.onBackground
-            )
+  Card(
+      onClick = onClick,
+      modifier = Modifier.fillMaxWidth(),
+      colors = CardDefaults.cardColors(containerColor = NepTuneTheme.colors.cardBackground),
+  ) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically) {
+          Text(
+              text = text,
+              style =
+                  TextStyle(
+                      fontSize = 22.sp,
+                      fontFamily = FontFamily(Font(R.font.markazi_text)),
+                      fontWeight = FontWeight.Normal,
+                      color = NepTuneTheme.colors.onBackground,
+                  ))
+          Icon(
+              imageVector = imageVector,
+              contentDescription = contentDescription,
+              tint = NepTuneTheme.colors.onBackground)
         }
-    }
+  }
 }

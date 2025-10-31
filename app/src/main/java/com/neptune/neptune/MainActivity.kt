@@ -42,13 +42,13 @@ import com.neptune.neptune.ui.post.PostScreen
 import com.neptune.neptune.ui.profile.ProfileRoute
 import com.neptune.neptune.ui.projectlist.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
+import com.neptune.neptune.ui.search.SearchScreen
 import com.neptune.neptune.ui.settings.SettingsAccountScreen
 import com.neptune.neptune.ui.settings.SettingsScreen
 import com.neptune.neptune.ui.settings.SettingsThemeScreen
 import com.neptune.neptune.ui.settings.SettingsViewModel
 import com.neptune.neptune.ui.settings.SettingsViewModelFactory
 import com.neptune.neptune.ui.settings.ThemeDataStore
-import com.neptune.neptune.ui.search.SearchScreen
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.ui.theme.SampleAppTheme
 
