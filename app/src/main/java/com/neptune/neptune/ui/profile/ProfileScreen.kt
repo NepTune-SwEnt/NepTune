@@ -373,7 +373,7 @@ private fun ProfileEditContent(
  * @param modifier Optional [Modifier] for layout customization.
  */
 @Composable
-private fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, testTag: String) {
+fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, testTag: String) {
   Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
     Text(
         text = label,

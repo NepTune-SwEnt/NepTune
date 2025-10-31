@@ -14,7 +14,7 @@ import androidx.core.view.WindowCompat
 import com.neptune.neptune.ui.settings.ThemeSetting
 
 private val DarkColorScheme =
-    darkColorScheme(primary = Purple80, secondary = PurpleGrey80, tertiary = Pink80)
+    darkColorScheme(primary = LightPurple, secondary = PurpleGrey80, tertiary = Pink80)
 
 private val LightColorScheme =
     lightColorScheme(

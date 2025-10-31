@@ -19,10 +19,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.resources.C
@@ -30,12 +32,13 @@ import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInViewModel
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.mock.MockImportScreen
-import com.neptune.neptune.ui.mock.MockSearchScreen
+import com.neptune.neptune.ui.mock.MockProfileScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
 import com.neptune.neptune.ui.navigation.Screen
 import com.neptune.neptune.ui.picker.ImportViewModel
 import com.neptune.neptune.ui.picker.importAppRoot
+import com.neptune.neptune.ui.post.PostScreen
 import com.neptune.neptune.ui.profile.ProfileRoute
 import com.neptune.neptune.ui.projectlist.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
@@ -45,8 +48,12 @@ import com.neptune.neptune.ui.settings.SettingsThemeScreen
 import com.neptune.neptune.ui.settings.SettingsViewModel
 import com.neptune.neptune.ui.settings.SettingsViewModelFactory
 import com.neptune.neptune.ui.settings.ThemeDataStore
+import com.neptune.neptune.ui.search.SearchScreen
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.ui.theme.SampleAppTheme
+
+private const val ASSET_ZIP_PATH = "fakeProject.zip"
+private const val TARGET_PROJECT_ID = "42"
 
 class MainActivity : ComponentActivity() {
 
@@ -69,8 +76,8 @@ class MainActivity : ComponentActivity() {
 
       // Collect the current theme setting (SYSTEM, LIGHT, or DARK) as a Composable state.
       val themeSetting by settingsViewModel.theme.collectAsState()
+      // A surface container using the 'background' color from the theme
       SampleAppTheme(themeSetting = themeSetting) {
-        // A surface container using the 'background' color from the theme
         Surface(
             modifier = Modifier.fillMaxSize().semantics { testTag = C.Tag.main_screen_container },
             color = MaterialTheme.colorScheme.background) {
@@ -112,15 +119,37 @@ fun NeptuneApp(
               modifier = Modifier.padding(innerPadding)) {
                 // TODO: Replace mock screens with actual app screens
                 composable(Screen.Main.route) {
-                  MainScreen(navigateToProfile = { navigationActions.navigateTo(Screen.Profile) })
+                  MainScreen(
+                      navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
+                      // TODO: Change back to ProjectList when navigation from
+                      // Main->ProjectList->PostScreen is implemented
+                      navigateToProjectList = { navigationActions.navigateTo(Screen.Post) })
                 }
                 composable(Screen.Profile.route) {
                   ProfileRoute(
                       settings = { navigationActions.navigateTo(Screen.Settings) },
                       goBack = { navigationActions.goBack() })
                 }
-                composable(Screen.Edit.route) { SamplerScreen() }
-                composable(Screen.Search.route) { MockSearchScreen() }
+                composable(
+                    route = Screen.Edit.route,
+                    arguments =
+                        listOf(
+                            navArgument("zipFilePath") {
+                              type = NavType.StringType
+                              nullable = true
+                            })) { backStackEntry ->
+                      val zipFilePath = backStackEntry.arguments?.getString("zipFilePath")
+                      SamplerScreen(zipFilePath = zipFilePath)
+                    }
+                composable(Screen.Search.route) {
+                  SearchScreen(
+                      onProfilePicClick = { navigationActions.navigateTo(Screen.OtherUserProfile) })
+                }
+                composable(Screen.Post.route) {
+                  PostScreen(
+                      goBack = { navigationActions.goBack() },
+                      navigateToMainScreen = { navigationActions.navigateTo(Screen.Main) })
+                }
                 composable(Screen.ImportFile.route) { MockImportScreen(importViewModel) }
                 composable(Screen.SignIn.route) {
                   SignInScreen(
@@ -129,7 +158,9 @@ fun NeptuneApp(
                 }
                 composable(Screen.ProjectList.route) {
                   ProjectListScreen(
-                      navigateToSampler = { navigationActions.navigateTo(Screen.Edit) })
+                      navigateToSampler = { filePath ->
+                        navigationActions.navigateTo(Screen.Edit.createRoute(filePath))
+                      })
                 }
                 composable(Screen.Settings.route) {
                   SettingsScreen(
@@ -150,6 +181,7 @@ fun NeptuneApp(
                         navigationActions.navigateTo(Screen.SignIn)
                       })
                 }
+                composable(Screen.OtherUserProfile.route) { MockProfileScreen() }
               }
         })
   }

@@ -18,14 +18,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,14 +39,20 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -55,28 +65,49 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
 import com.neptune.neptune.Sample
 import com.neptune.neptune.media.LocalMediaPlayer
+import com.neptune.neptune.media.NeptuneMediaPlayer
+import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
-object MainScreenTestTags {
+object MainScreenTestTags : BaseSampleTestTags {
+  override val prefix = "MainScreen"
+
   // General
   const val MAIN_SCREEN = "mainScreen"
+  const val POST_BUTTON = "postButton"
 
   // Top Bar
   const val TOP_BAR = "topBar"
   const val TOP_BAR_TITLE = "topBarTitle"
 
   // Sample Card
-  const val SAMPLE_CARD = "sampleCard"
-  const val SAMPLE_PROFILE_ICON = "sampleProfileIcon"
-  const val SAMPLE_USERNAME = "sampleUsername"
-  const val SAMPLE_NAME = "sampleName"
-  const val SAMPLE_DURATION = "sampleDuration"
-  const val SAMPLE_TAGS = "sampleTags"
+  override val SAMPLE_CARD
+    get() = tag("sampleCard")
 
-  const val SAMPLE_LIKES = "sampleLikes"
-  const val SAMPLE_COMMENTS = "sampleComments"
-  const val SAMPLE_DOWNLOADS = "sampleDownloads"
+  override val SAMPLE_PROFILE_ICON
+    get() = tag("sampleProfileIcon")
+
+  override val SAMPLE_USERNAME
+    get() = tag("sampleUsername")
+
+  override val SAMPLE_NAME
+    get() = tag("sampleName")
+
+  override val SAMPLE_DURATION
+    get() = tag("sampleDuration")
+
+  override val SAMPLE_TAGS
+    get() = tag("sampleTags")
+
+  override val SAMPLE_LIKES
+    get() = tag("sampleLikes")
+
+  override val SAMPLE_COMMENTS
+    get() = tag("sampleComments")
+
+  override val SAMPLE_DOWNLOADS
+    get() = tag("sampleDownloads")
 
   // Lazy column
   const val LAZY_COLUMN_SAMPLE_LIST = "sampleList"
@@ -88,6 +119,7 @@ object MainScreenTestTags {
 fun MainScreen(
     mainViewModel: MainViewModel = viewModel(),
     navigateToProfile: () -> Unit = {},
+    navigateToProjectList: () -> Unit = {}
 ) {
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
@@ -140,6 +172,26 @@ fun MainScreen(
               color = NepTuneTheme.colors.onBackground)
         }
       },
+      floatingActionButton = {
+        FloatingActionButton(
+            onClick = navigateToProjectList,
+            containerColor = NepTuneTheme.colors.postButton,
+            contentColor = NepTuneTheme.colors.onBackground,
+            shape = CircleShape,
+            modifier =
+                Modifier.shadow(
+                        elevation = 4.dp,
+                        spotColor = NepTuneTheme.colors.shadow,
+                        ambientColor = NepTuneTheme.colors.shadow,
+                        shape = CircleShape)
+                    .size(52.dp)
+                    .testTag(MainScreenTestTags.POST_BUTTON)) {
+              Icon(
+                  imageVector = Icons.Default.Add,
+                  contentDescription = "Create a Post",
+                  modifier = Modifier.size(70.dp))
+            }
+      },
       modifier = Modifier.testTag(MainScreenTestTags.MAIN_SCREEN),
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
@@ -159,7 +211,7 @@ fun MainScreen(
                         items(columns) { samplesColumn ->
                           Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
                             samplesColumn.forEach { samples ->
-                              SampleCard(samples, cardWidth = cardWidth)
+                              SampleCard(samples, width = cardWidth)
                             }
                           }
                         }
@@ -207,21 +259,34 @@ fun SampleCardRow(samples: List<Sample>, cardWidth: Dp) {
   Row(
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
       horizontalArrangement = Arrangement.spacedBy(25.dp)) {
-        samples.forEach { sample -> SampleCard(sample, cardWidth = cardWidth) }
+        samples.forEach { sample -> SampleCard(sample, width = cardWidth) }
       }
 }
 
 // ----------------Sample Card-----------------
+// TO DO: Decide whether when liking or commenting the online repo is notified,
+// updates the value online first and gives it locally or if it changes it locally and notifies the
+// online repo later
 @Composable
-fun SampleCard(sample: Sample, cardWidth: Dp) {
-  val mediaPlayer = LocalMediaPlayer.current
+fun SampleCard(
+    sample: Sample,
+    width: Dp = 150.dp,
+    height: Dp = 166.dp,
+    testTags: BaseSampleTestTags = MainScreenTestTags,
+    onProfileClick: () -> Unit = {},
+    onCommentClick: () -> Unit = {},
+    onDownloadClick: () -> Unit = {},
+    onLikeClick: () -> Unit = {},
+    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
+) {
+  var isLiked by remember { mutableStateOf(false) }
   Card(
       modifier =
-          Modifier.width(cardWidth)
-              .height(166.dp)
+          Modifier.width(width)
+              .height(height)
               .clickable(
                   onClick = { mediaPlayer.togglePlay(mediaPlayer.getUriFromSampleId(sample.id)) })
-              .testTag(MainScreenTestTags.SAMPLE_CARD),
+              .testTag(testTags.SAMPLE_CARD),
       colors = CardDefaults.cardColors(containerColor = NepTuneTheme.colors.cardBackground),
       shape = RoundedCornerShape(12.dp),
       border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground)) {
@@ -234,13 +299,16 @@ fun SampleCard(sample: Sample, cardWidth: Dp) {
                     painter = painterResource(R.drawable.profile),
                     contentDescription = "Profile",
                     tint = Color.Unspecified,
-                    modifier = Modifier.size(22.dp).testTag(MainScreenTestTags.SAMPLE_PROFILE_ICON))
+                    modifier =
+                        Modifier.clickable(onClick = onProfileClick)
+                            .size(22.dp)
+                            .testTag(testTags.SAMPLE_PROFILE_ICON))
                 Spacer(Modifier.width(6.dp))
                 Text(
                     /*Todo: Replace the hardCoded "Name" with the one provided by the Profile ViewModel*/
                     text = "Name",
                     color = NepTuneTheme.colors.onBackground,
-                    modifier = Modifier.testTag(MainScreenTestTags.SAMPLE_USERNAME),
+                    modifier = Modifier.testTag(testTags.SAMPLE_USERNAME),
                     style =
                         TextStyle(
                             fontSize = 19.sp,
@@ -268,8 +336,7 @@ fun SampleCard(sample: Sample, cardWidth: Dp) {
                 Text(
                     sample.name,
                     color = NepTuneTheme.colors.onBackground,
-                    modifier =
-                        Modifier.padding(start = 6.dp).testTag(MainScreenTestTags.SAMPLE_NAME),
+                    modifier = Modifier.padding(start = 6.dp).testTag(testTags.SAMPLE_NAME),
                     style =
                         TextStyle(
                             fontSize = 10.sp,
@@ -281,8 +348,7 @@ fun SampleCard(sample: Sample, cardWidth: Dp) {
                 Text(
                     durationText,
                     color = NepTuneTheme.colors.onBackground,
-                    modifier =
-                        Modifier.padding(end = 8.dp).testTag(MainScreenTestTags.SAMPLE_DURATION),
+                    modifier = Modifier.padding(end = 8.dp).testTag(testTags.SAMPLE_DURATION),
                     style =
                         TextStyle(
                             fontSize = 10.sp,
@@ -301,7 +367,7 @@ fun SampleCard(sample: Sample, cardWidth: Dp) {
                       Text(
                           sample.tags.joinToString(", "),
                           color = NepTuneTheme.colors.background,
-                          modifier = Modifier.testTag(MainScreenTestTags.SAMPLE_TAGS),
+                          modifier = Modifier.testTag(testTags.SAMPLE_TAGS),
                           style =
                               TextStyle(
                                   fontSize = 10.sp,
@@ -321,20 +387,36 @@ fun SampleCard(sample: Sample, cardWidth: Dp) {
                     modifier = Modifier.fillMaxSize(),
                     horizontalArrangement = Arrangement.SpaceBetween) {
                       IconWithText(
-                          icon = Icons.Default.FavoriteBorder,
+                          icon =
+                              if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                           iconDescription = "Like",
                           text = sample.likes.toString(),
-                          modifier = Modifier.testTag(MainScreenTestTags.SAMPLE_LIKES))
+                          modifier =
+                              Modifier.testTag(testTags.SAMPLE_LIKES)
+                                  .semantics {
+                                    stateDescription = if (isLiked) "liked" else "not liked"
+                                  }
+                                  .clickable(
+                                      onClick = {
+                                        isLiked = !isLiked
+                                        onLikeClick()
+                                      }),
+                          tint = if (isLiked) Color.Red else NepTuneTheme.colors.background)
+
                       IconWithTextPainter(
                           icon = painterResource(R.drawable.comments),
                           iconDescription = "Comments",
                           text = sample.comments.toString(),
-                          modifier = Modifier.testTag(MainScreenTestTags.SAMPLE_COMMENTS))
+                          modifier =
+                              Modifier.testTag(testTags.SAMPLE_COMMENTS)
+                                  .clickable(onClick = onCommentClick))
                       IconWithTextPainter(
                           icon = painterResource(R.drawable.download),
                           iconDescription = "Downloads",
                           text = sample.downloads.toString(),
-                          modifier = Modifier.testTag(MainScreenTestTags.SAMPLE_DOWNLOADS))
+                          modifier =
+                              Modifier.testTag(testTags.SAMPLE_DOWNLOADS)
+                                  .clickable(onClick = onDownloadClick))
                     }
               }
         }
@@ -347,14 +429,11 @@ fun IconWithText(
     icon: ImageVector,
     iconDescription: String,
     text: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    tint: Color = NepTuneTheme.colors.background
 ) {
   Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
-    Icon(
-        icon,
-        contentDescription = iconDescription,
-        tint = NepTuneTheme.colors.background,
-        modifier = Modifier.size(16.dp))
+    Icon(icon, contentDescription = iconDescription, tint = tint, modifier = Modifier.size(16.dp))
     Spacer(Modifier.width(3.dp))
     Text(text, color = NepTuneTheme.colors.background, fontSize = 10.sp)
   }

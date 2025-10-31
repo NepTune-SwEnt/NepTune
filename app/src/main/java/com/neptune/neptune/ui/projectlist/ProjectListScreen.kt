@@ -7,14 +7,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -68,6 +66,8 @@ import com.neptune.neptune.R
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepositoryProvider
 import com.neptune.neptune.ui.theme.NepTuneTheme
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import kotlinx.coroutines.runBlocking
 
 object ProjectListScreenTestTags {
@@ -94,7 +94,7 @@ private const val SEARCHBAR_FONT_SIZE = 21
 @Composable
 fun ProjectListScreen(
     credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
-    navigateToSampler: () -> Unit = {},
+    navigateToSampler: (zipFilePath: String) -> Unit = {},
     projectListViewModel: ProjectListViewModel = viewModel(),
 ) {
   val uiState by projectListViewModel.uiState.collectAsState()
@@ -148,7 +148,7 @@ fun ProjectList(
     selectedProject: String? = null,
     modifier: Modifier = Modifier,
     projectListViewModel: ProjectListViewModel,
-    navigateToSampler: () -> Unit = {},
+    navigateToSampler: (zipFilePath: String) -> Unit = {},
 ) {
   val colorSearchBar = NepTuneTheme.colors.searchBar
   Column(
@@ -189,7 +189,7 @@ fun ProjectList(
 fun ProjectListItem(
     project: ProjectItem,
     selectedProject: String? = null,
-    openProject: () -> Unit = {},
+    openProject: (zipFilePath: String) -> Unit = {},
     projectListViewModel: ProjectListViewModel,
 ) {
   val backGroundColor =
@@ -203,7 +203,10 @@ fun ProjectListItem(
               .clickable(
                   onClick = {
                     projectListViewModel.selectProject(project)
-                    openProject()
+                    val pathToSend = project.filePath ?: project.id
+                    val encodedFilePath =
+                        URLEncoder.encode(pathToSend, StandardCharsets.UTF_8.name())
+                    openProject(encodedFilePath)
                   })
               .drawBehind {
                 drawLine(
@@ -402,18 +405,22 @@ fun ChangeDescriptionDialog(
  * @author Uri Jaquet
  */
 @Composable
-fun SearchBar(value: String, onValueChange: (String) -> Unit) {
+fun SearchBar(
+    value: String,
+    onValueChange: (String) -> Unit,
+    testTag: String = ProjectListScreenTestTags.SEARCH_BAR,
+    whatToSearchFor: String? = "a Project"
+) {
   Row(
       verticalAlignment = Alignment.CenterVertically,
-      modifier = Modifier.fillMaxWidth().testTag(ProjectListScreenTestTags.SEARCH_BAR),
+      modifier = Modifier.fillMaxWidth().testTag(testTag),
       horizontalArrangement = Arrangement.Center) {
         TextField(
             value = value,
             onValueChange = onValueChange,
             placeholder = {
               Text(
-                  modifier = Modifier.fillMaxHeight().wrapContentHeight(Alignment.CenterVertically),
-                  text = "Search for a Project",
+                  text = "Search for $whatToSearchFor",
                   color = NepTuneTheme.colors.searchBar,
                   style =
                       TextStyle(
@@ -437,8 +444,8 @@ fun SearchBar(value: String, onValueChange: (String) -> Unit) {
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
                     disabledIndicatorColor = Color.Transparent,
-                    focusedTextColor = NepTuneTheme.colors.onBackground,
-                    unfocusedTextColor = NepTuneTheme.colors.onBackground),
+                    focusedTextColor = NepTuneTheme.colors.searchBar,
+                    unfocusedTextColor = NepTuneTheme.colors.searchBar),
             leadingIcon = {
               Icon(
                   imageVector = Icons.Default.Search,
@@ -461,7 +468,7 @@ fun SearchBar(value: String, onValueChange: (String) -> Unit) {
 @Composable
 fun ProjectListScreenPreview(
     navigateBack: () -> Unit = {},
-    navigateToSampler: () -> Unit = {},
+    navigateToSampler: (zipFilePath: String) -> Unit = {},
 ) {
   val repo = ProjectItemsRepositoryProvider.repository
   runBlocking {
