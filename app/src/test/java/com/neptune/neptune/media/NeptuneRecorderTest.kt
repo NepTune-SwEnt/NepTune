@@ -120,4 +120,11 @@ class NeptuneRecorderTest {
     // Verify state is reset, so another stop throws exception
     assertThrows(IllegalStateException::class.java) { recorder.stop() }
   }
+
+  @Test
+  fun startWithNegativeSampleRateThrowsIllegalArgumentException() {
+    assertThrows(IllegalArgumentException::class.java) {
+      recorder.start("test.m4a", sampleRate = -44100)
+    }
+  }
 }
