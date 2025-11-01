@@ -1,11 +1,23 @@
 package com.neptune.neptune.ui.main
 
 import androidx.lifecycle.ViewModel
-import com.neptune.neptune.Sample
+import androidx.lifecycle.viewModelScope
+import com.neptune.neptune.model.sample.Sample
+import com.neptune.neptune.model.sample.SampleRepository
+import com.neptune.neptune.model.sample.SampleRepositoryProvider
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
-class MainViewModel() : ViewModel() {
-  // No real data for now
+/**
+ * ViewModel for managing the state and operations related to the samples. This has been written
+ * with the help of LLMs.
+ *
+ * @property SampleRepository Repository for accessing and manipulating samples.
+ * @author Angéline Bignens
+ */
+class MainViewModel(private val repo: SampleRepository = SampleRepositoryProvider.repository) :
+    ViewModel() {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
   val discoverSamples: MutableStateFlow<List<Sample>> = _discoverSamples
 
@@ -13,10 +25,22 @@ class MainViewModel() : ViewModel() {
   val followedSamples: MutableStateFlow<List<Sample>> = _followedSamples
 
   init {
-    loadData()
+    loadSamplesFromFirebase()
   }
 
-  // Todo: Replace with actual data from the repository
+  private fun loadSamplesFromFirebase() {
+    viewModelScope.launch {
+      repo.observeSamples().collectLatest { samples ->
+        _discoverSamples.value = samples
+        _followedSamples.value = samples
+      }
+    }
+  }
+
+  fun onLikeClicked(sample: Sample, isLiked: Boolean) {
+    viewModelScope.launch { repo.toggleLike(sample.id, isLiked) }
+  }
+  // Mock Data
   private fun loadData() {
     _discoverSamples.value =
         listOf(
