@@ -772,7 +772,8 @@ fun UniversalKnob(
     modifier: Modifier = Modifier
 ) {
   val accentColor = NepTuneTheme.colors.accentPrimary
-  val lightText = Color.White
+  val knobColor = Color.White
+  val lightText = NepTuneTheme.colors.smallText
 
   val displayValue =
       when (unit) {
@@ -829,12 +830,12 @@ fun UniversalKnob(
             val indicatorX = center.x + radius * cos(adjustedAngleRad).toFloat()
             val indicatorY = center.y + radius * sin(adjustedAngleRad).toFloat()
             drawLine(
-                color = lightText,
+                color = knobColor,
                 start = center,
                 end = Offset(indicatorX, indicatorY),
                 strokeWidth = 1.5.dp.toPx())
             drawCircle(
-                color = lightText, radius = 3.dp.toPx(), center = Offset(indicatorX, indicatorY))
+                color = knobColor, radius = 3.dp.toPx(), center = Offset(indicatorX, indicatorY))
           }
         }
     Spacer(modifier = Modifier.height(8.dp))
