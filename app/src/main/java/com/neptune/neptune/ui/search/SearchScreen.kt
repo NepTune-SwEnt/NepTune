@@ -128,7 +128,7 @@ fun ScrollableColumnOfSamples(
           modifier
               .testTag(SearchScreenTestTags.SAMPLE_LIST)
               .fillMaxSize()
-              .background(NepTuneTheme.colors.listBackground),
+              .background(NepTuneTheme.colors.background),
       verticalArrangement = Arrangement.spacedBy(12.dp),
       horizontalAlignment = Alignment.CenterHorizontally) {
         val width = 300.dp
