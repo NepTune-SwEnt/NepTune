@@ -1,7 +1,7 @@
 package com.neptune.neptune.ui.search
 
 import androidx.lifecycle.ViewModel
-import com.neptune.neptune.Sample
+import com.neptune.neptune.model.sample.Sample
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
