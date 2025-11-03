@@ -12,6 +12,8 @@ package com.neptune.neptune.model.profile
  * @property bio Short user description or status message.
  * @property subscriptions Number of other users this profile follows.
  * @property subscribers Number of users following this profile.
+ * @property likes Total number of likes received across all posts.
+ * @property posts Total number of posted samples.
  * @property avatarUrl URL of the profile picture (empty string if not set).
  * @author Arianna Baur
  */
@@ -22,6 +24,8 @@ data class Profile(
     val bio: String? = null,
     val subscriptions: Long = 0,
     val subscribers: Long = 0,
+    val likes: Long = 0,
+    val posts: Long = 0,
     val avatarUrl: String = ""
 )
 

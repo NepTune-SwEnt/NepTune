@@ -30,6 +30,8 @@ data class ProfileUiState(
     val avatarUrl: String? = null,
     val followers: Int = 0,
     val following: Int = 0,
+    val likes: Int = 0,
+    val posts: Int = 0,
     val mode: ProfileMode = ProfileMode.VIEW,
     val isSaving: Boolean = false,
     val error: String? = null,

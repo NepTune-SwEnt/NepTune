@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
@@ -40,10 +41,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
 import com.neptune.neptune.ui.theme.NepTuneTheme
+import com.neptune.neptune.ui.theme.SampleAppTheme
 
 /**
  * Centralized constants defining all `testTag` identifiers used in [ProfileScreen] UI tests.
@@ -83,8 +86,6 @@ object ProfileScreenTestTags {
   const val FIELD_NAME = "profile/field/name"
   const val FIELD_USERNAME = "profile/field/username"
   const val FIELD_BIO = "profile/field/bio"
-
-  fun statBlockTag(label: String) = "profile/stat/$label"
 }
 
 /**
@@ -110,7 +111,6 @@ fun ProfileScreen(
     onSettingsClick: () -> Unit = {},
     goBackClick: () -> Unit = {}
 ) {
-  // TODO: add profile picture, follower/following count and back button
   Column(modifier = Modifier.padding(16.dp).testTag(ProfileScreenTestTags.ROOT)) {
     when (uiState.mode) {
       ProfileMode.VIEW -> {
@@ -180,7 +180,6 @@ private fun ProfileViewContent(
                     .padding(innerPadding)
                     .testTag(ProfileScreenTestTags.VIEW_CONTENT),
             horizontalAlignment = Alignment.CenterHorizontally,
-            // verticalArrangement = Arrangement.Center
         ) {
           Spacer(Modifier.height(15.dp))
           Avatar(modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR), showEditPencil = false)
@@ -199,28 +198,44 @@ private fun ProfileViewContent(
               style = MaterialTheme.typography.bodyMedium,
               modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
 
-          Spacer(Modifier.height(100.dp))
+            Spacer(Modifier.height(50.dp))
+
+            Row(Modifier.fillMaxWidth()) {
+                StatBlock(
+                    label = "Posts",
+                    value = state.posts,
+                    modifier = Modifier.weight(1f),
+                    testTag = "profile/stat/posts"
+                )
+                StatBlock(
+                    label = "Likes",
+                    value = state.likes,
+                    modifier = Modifier.weight(1f),
+                    testTag = "profile/stat/likes"
+                )
+                StatBlock(
+                    label = "Followers",
+                    value = state.followers,
+                    modifier = Modifier.weight(1f),
+                    testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
+                StatBlock(
+                    label = "Following",
+                    value = state.following,
+                    modifier = Modifier.weight(1f),
+                    testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
+            }
+
+          Spacer(Modifier.height(150.dp))
 
           Text(
-              text = if (state.bio != "") "“ ${state.bio} ”" else "",
+              text = if (state.bio != "") "“${state.bio}”" else "",
               color = NepTuneTheme.colors.onBackground,
               style = MaterialTheme.typography.titleLarge,
               textAlign = TextAlign.Center,
-              modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
-          Spacer(Modifier.height(150.dp))
-          Row(Modifier.fillMaxWidth()) {
-            StatBlock(
-                label = "Followers",
-                value = state.followers,
-                modifier = Modifier.weight(1f),
-                testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
-            StatBlock(
-                label = "Following",
-                value = state.following,
-                modifier = Modifier.weight(1f),
-                testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
-          }
-          Spacer(Modifier.height(80.dp))
+              modifier = Modifier.testTag(ProfileScreenTestTags.BIO)
+          )
+
+          Spacer(Modifier.height(200.dp))
 
           Button(
               onClick = onEdit,
@@ -430,7 +445,7 @@ fun Avatar(
   }
 }
 
-/*
+
 /**
  * Previews the [ProfileScreen] in either view or edit mode.
  *
@@ -439,12 +454,14 @@ fun Avatar(
 @Composable
 fun ProfileScreenPreview(mode: ProfileMode) {
   SampleAppTheme {
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-      ProfileScreen(
-          uiState =
-              ProfileUiState(
-                  name = "John Doe", username = "johndoe", bio = "I'm awesome", mode = mode))
-    }
+      Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+          ProfileScreen(
+              uiState =
+                  ProfileUiState(
+                      name = "John Doe", username = "johndoe", bio = "I make awesome beats on NepTune", mode = mode
+                  )
+          )
+      }
   }
 }
 
@@ -461,7 +478,7 @@ fun ProfileScreenViewModePreview() {
 fun ProfileScreenEditModePreview() {
   ProfileScreenPreview(ProfileMode.EDIT)
 }
-*/
+
 
 /**
  * Composable route for the Profile feature.

@@ -45,12 +45,16 @@ class ProfileViewModel(private val repo: ProfileRepository = ProfileRepositoryPr
                   avatarUrl = p.avatarUrl,
                   followers = p.subscribers.toInt(),
                   following = p.subscriptions.toInt(),
+                  likes = p.likes.toInt(),
+                  posts = p.posts.toInt(),
                   error = null)
         } else if (p != null && _uiState.value.mode == ProfileMode.EDIT) {
           _uiState.value =
               _uiState.value.copy(
                   followers = p.subscribers.toInt(),
                   following = p.subscriptions.toInt(),
+                  likes = p.likes.toInt(),
+                  posts = p.posts.toInt(),
                   avatarUrl = p.avatarUrl,
               )
         }
@@ -73,6 +77,8 @@ class ProfileViewModel(private val repo: ProfileRepository = ProfileRepositoryPr
                 avatarUrl = prof.avatarUrl,
                 followers = prof.subscribers.toInt(),
                 following = prof.subscriptions.toInt(),
+                likes = prof.likes.toInt(),
+                posts = prof.posts.toInt(),
                 isSaving = false,
                 error = null)
       } catch (t: Throwable) {
