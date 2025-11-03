@@ -67,7 +67,8 @@ class ProfileRepositoryFirebase(
           bio = getString("bio"),
           subscriptions = getLong("subscriptions") ?: 0L,
           subscribers = getLong("subscribers") ?: 0L,
-          avatarUrl = getString("avatarUrl").orEmpty())
+          avatarUrl = getString("avatarUrl").orEmpty(),
+          following = (get("following") as? List<*>)?.filterIsInstance<String>() ?: emptyList())
     }
   }
 
@@ -99,7 +100,8 @@ class ProfileRepositoryFirebase(
                     bio = DEFAULT_BIO,
                     avatarUrl = "",
                     subscribers = 0L,
-                    subscriptions = 0L)
+                    subscriptions = 0L,
+                    following = emptyList())
 
             // Persist exactly what we’re returning
             tx.set(
@@ -111,7 +113,8 @@ class ProfileRepositoryFirebase(
                     "bio" to created.bio,
                     "avatarUrl" to created.avatarUrl,
                     "subscribers" to 0L,
-                    "subscriptions" to 0L))
+                    "subscriptions" to 0L,
+                    "following" to emptyList<String>()))
 
             created
           }

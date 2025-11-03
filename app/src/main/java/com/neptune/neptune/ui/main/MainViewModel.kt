@@ -2,6 +2,7 @@ package com.neptune.neptune.ui.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
@@ -30,9 +31,12 @@ class MainViewModel(private val repo: SampleRepository = SampleRepositoryProvide
 
   private fun loadSamplesFromFirebase() {
     viewModelScope.launch {
+      // Get current user's profile
+      val profile = ProfileRepositoryProvider.repository.getProfile()
+      val following = profile?.following.orEmpty()
       repo.observeSamples().collectLatest { samples ->
-        _discoverSamples.value = samples
-        _followedSamples.value = samples
+        _discoverSamples.value = samples.filter { it.ownerId !in following }
+        _followedSamples.value = samples.filter { it.ownerId in following }
       }
     }
   }

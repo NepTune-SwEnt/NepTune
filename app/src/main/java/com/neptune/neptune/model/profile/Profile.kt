@@ -22,7 +22,8 @@ data class Profile(
     val bio: String? = null,
     val subscriptions: Long = 0,
     val subscribers: Long = 0,
-    val avatarUrl: String = ""
+    val avatarUrl: String = "",
+    val following: List<String> = emptyList()
 )
 
 /**

@@ -61,6 +61,7 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
     if (!exists()) return null
     val id = (get("id") as? Number)?.toInt() ?: return null
     val tags = (get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+    val ownerId = getString("ownerId") ?: return null
     return Sample(
         id = id,
         name = getString("name").orEmpty(),
@@ -70,7 +71,8 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
         likes = (get("likes") as? Number)?.toInt() ?: 0,
         comments = (get("comments") as? Number)?.toInt() ?: 0,
         downloads = (get("downloads") as? Number)?.toInt() ?: 0,
-        uriString = getString("uriString").orEmpty())
+        uriString = getString("uriString").orEmpty(),
+        ownerId = ownerId)
   }
 
   private fun Sample.toMap(): Map<String, Any> =
@@ -83,5 +85,6 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
           "likes" to likes,
           "comments" to comments,
           "downloads" to downloads,
-          "uriString" to uriString)
+          "uriString" to uriString,
+          "ownerId" to ownerId)
 }

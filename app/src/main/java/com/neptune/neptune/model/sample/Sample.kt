@@ -9,5 +9,6 @@ data class Sample(
     val likes: Int,
     val comments: Int,
     val downloads: Int,
-    val uriString: String = ""
+    val uriString: String = "",
+    val ownerId: String = ""
 )
