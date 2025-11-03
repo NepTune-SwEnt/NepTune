@@ -77,6 +77,8 @@ object ProfileScreenTestTags {
 
   const val FOLLOWERS_BLOCK = "profile/stat/followers"
   const val FOLLOWING_BLOCK = "profile/stat/following"
+    const val POSTS_BLOCK = "profile/stat/posts"
+    const val LIKES_BLOCK = "profile/stat/likes"
 
   const val EDIT_BUTTON = "profile/btn/edit"
   const val SAVE_BUTTON = "profile/btn/save"
@@ -205,13 +207,13 @@ private fun ProfileViewContent(
                     label = "Posts",
                     value = state.posts,
                     modifier = Modifier.weight(1f),
-                    testTag = "profile/stat/posts"
+                    testTag = ProfileScreenTestTags.POSTS_BLOCK
                 )
                 StatBlock(
                     label = "Likes",
                     value = state.likes,
                     modifier = Modifier.weight(1f),
-                    testTag = "profile/stat/likes"
+                    testTag = ProfileScreenTestTags.LIKES_BLOCK
                 )
                 StatBlock(
                     label = "Followers",

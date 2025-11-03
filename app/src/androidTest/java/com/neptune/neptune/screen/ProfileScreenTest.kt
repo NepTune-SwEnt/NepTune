@@ -32,25 +32,19 @@ class ProfileScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()
 
-  // ---------- helpers (test-only, no app/CI changes) ----------
-
-  // Click even if the node isn't visibly on-screen.
   private fun ComposeContentTestRule.safeClick(tag: String) {
     bringIntoView(tag)
     val node = onNodeWithTag(tag, useUnmergedTree = true)
-    // Try to scroll the node itself; ignore if not supported.
     runCatching { node.performScrollTo() }
-    // Prefer semantics click (doesn't require layout visibility like touch input can).
     runCatching { node.performSemanticsAction(SemanticsActions.OnClick) }
-        .onFailure { node.performClick() } // fallback
+        .onFailure { node.performClick() }
   }
 
-  // Type even if the field isn't visibly on-screen.
   private fun ComposeContentTestRule.safeType(tag: String, text: String) {
     bringIntoView(tag)
     val node = onNodeWithTag(tag, useUnmergedTree = true)
     runCatching { node.performScrollTo() }
-    node.performTextInput(text) // uses semantics SetText; doesn't need visible pixels
+    node.performTextInput(text)
   }
 
   private fun ComposeContentTestRule.waitForTag(tag: String, timeoutMs: Long = 5_000) {
@@ -72,17 +66,13 @@ class ProfileScreenTest {
   /** Best-effort “bring into view” that works whether the node or its parent is scrollable. */
   private fun ComposeContentTestRule.bringIntoView(tag: String) {
     val node = onNodeWithTag(tag, useUnmergedTree = true)
-    // Try node-level scroll first (works if the node exposes ScrollTo)
     try {
       node.performScrollTo()
       return
     } catch (_: AssertionError) {
-      // ignore and try parent scrollable
     }
     scrollAnyScrollableTo(hasTestTag(tag))
   }
-
-  // ---------- content setters ----------
 
   private fun setContentViewMode(
       state: ProfileUiState =
@@ -92,6 +82,8 @@ class ProfileScreenTest {
               bio = "I make sounds and share samples on NepTune.",
               followers = 1234,
               following = 56,
+              likes = 3,
+              posts = 10,
               mode = ProfileMode.VIEW),
       onEditClick: () -> Unit = {},
   ) {
@@ -109,6 +101,8 @@ class ProfileScreenTest {
               bio = "I make sounds and share samples on NepTune.",
               followers = 1234,
               following = 56,
+              likes = 3,
+              posts = 10,
               mode = ProfileMode.EDIT),
       onSaveClick: (String, String, String) -> Unit = { _, _, _ -> },
       onNameChange: (String) -> Unit = {},
@@ -127,8 +121,6 @@ class ProfileScreenTest {
     }
     composeTestRule.waitForIdle()
   }
-
-  // ---------- tests ----------
 
   @Test
   fun testTagsCorrectlySetInViewMode() {
@@ -149,11 +141,11 @@ class ProfileScreenTest {
             ProfileScreenTestTags.BIO,
             ProfileScreenTestTags.FOLLOWERS_BLOCK,
             ProfileScreenTestTags.FOLLOWING_BLOCK,
+            ProfileScreenTestTags.LIKES_BLOCK,
+            ProfileScreenTestTags.POSTS_BLOCK,
             ProfileScreenTestTags.EDIT_BUTTON)
         .forEach { tag ->
           composeTestRule.bringIntoView(tag)
-          // Presence is enough here; being slightly off-screen on a tiny emulator shouldn't fail
-          // the test.
           composeTestRule.onNodeWithTag(tag, useUnmergedTree = true).assertExists()
         }
   }
@@ -167,6 +159,8 @@ class ProfileScreenTest {
             bio = "Hello world",
             followers = 42,
             following = 7,
+            likes = 3,
+            posts = 10,
             mode = ProfileMode.VIEW)
     setContentViewMode(state)
 
@@ -187,7 +181,19 @@ class ProfileScreenTest {
     composeTestRule
         .onNodeWithTag(ProfileScreenTestTags.BIO, useUnmergedTree = true)
         .assertExists()
-        .assert(hasText("“ Hello world ”"))
+        .assert(hasText("“Hello world”"))
+
+      composeTestRule.bringIntoView(ProfileScreenTestTags.LIKES_BLOCK)
+      composeTestRule
+          .onNodeWithTag(ProfileScreenTestTags.LIKES_BLOCK, useUnmergedTree = true)
+          .assertExists()
+          .assert(hasText("3"))
+
+      composeTestRule.bringIntoView(ProfileScreenTestTags.POSTS_BLOCK)
+      composeTestRule
+          .onNodeWithTag(ProfileScreenTestTags.POSTS_BLOCK, useUnmergedTree = true)
+          .assertExists()
+          .assert(hasText("10"))
 
     composeTestRule.bringIntoView(ProfileScreenTestTags.FOLLOWERS_BLOCK)
     composeTestRule
@@ -269,7 +275,7 @@ class ProfileScreenTest {
         mutableStateOf(
             ProfileUiState(
                 name = "Ok Name",
-                username = "aa", // invalid: too short
+                username = "aa",
                 bio = "Ok bio",
                 mode = ProfileMode.EDIT,
                 usernameError =
@@ -278,8 +284,6 @@ class ProfileScreenTest {
     setContentEditMode(state = state.value)
 
     composeTestRule.bringIntoView(ProfileScreenTestTags.SAVE_BUTTON)
-    // We only need presence here to verify the UI rendered the button; enabled/disabled is VM
-    // logic.
     composeTestRule
         .onNodeWithTag(ProfileScreenTestTags.SAVE_BUTTON, useUnmergedTree = true)
         .assertExists()
@@ -315,7 +319,6 @@ class ProfileScreenTest {
             bioError = null)
     setContentEditMode(state = state)
 
-    // Bring field into view and assert the counter "5/160" exists.
     composeTestRule.bringIntoView(ProfileScreenTestTags.FIELD_BIO)
     composeTestRule.scrollAnyScrollableTo(hasText("5/160"))
     composeTestRule.onNode(hasText("5/160"), useUnmergedTree = true).assertExists()
@@ -330,11 +333,10 @@ class ProfileScreenTest {
             username = "ok_user",
             bio = "X".repeat(200),
             mode = ProfileMode.EDIT,
-            bioError = errorMsg // <- triggers the 'err != null' branch
+            bioError = errorMsg
             )
     setContentEditMode(state = state)
 
-    // Scroll to the error text and assert it exists.
     composeTestRule.scrollAnyScrollableTo(hasText(errorMsg))
     composeTestRule.onNode(hasText(errorMsg), useUnmergedTree = true).assertExists()
   }
@@ -357,7 +359,7 @@ class ProfileScreenTest {
 
   @Test
   fun nameCounter_showsLengthWhenNoError() {
-    val name = "John" // length = 4 (adjust if your UI shows a counter for name)
+    val name = "John"
     val state =
         ProfileUiState(
             name = name,
@@ -366,8 +368,6 @@ class ProfileScreenTest {
             mode = ProfileMode.EDIT,
             nameError = null)
     setContentEditMode(state = state)
-
-    // If your UI shows a name counter like "4/30", assert it; otherwise skip this test.
     val expected = "4/30"
     composeTestRule.scrollAnyScrollableTo(hasText(expected))
     composeTestRule.onNode(hasText(expected), useUnmergedTree = true).assertExists()
