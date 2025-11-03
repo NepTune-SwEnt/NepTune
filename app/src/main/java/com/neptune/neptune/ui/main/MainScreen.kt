@@ -211,7 +211,12 @@ fun MainScreen(
                         items(columns) { samplesColumn ->
                           Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
                             samplesColumn.forEach { samples ->
-                              SampleCard(samples, width = cardWidth)
+                              SampleCard(
+                                  samples,
+                                  width = cardWidth,
+                                  onLikeClick = { isLiked ->
+                                    mainViewModel.onLikeClicked(samples, isLiked)
+                                  })
                             }
                           }
                         }
@@ -221,7 +226,12 @@ fun MainScreen(
                 item { SectionHeader(title = "Followed") }
                 // If the screen is too small, it will display 1 Card instead of 2
                 items(followedSamples.chunked(maxColumns)) { samples ->
-                  SampleCardRow(samples, cardWidth = cardWidth)
+                  SampleCardRow(
+                      samples,
+                      cardWidth = cardWidth,
+                      onLikeClick = { sample, isLiked ->
+                        mainViewModel.onLikeClicked(sample, isLiked)
+                      })
                 }
               }
         }
@@ -255,18 +265,23 @@ fun SectionHeader(title: String) {
 
 // ----------------Sample Card in Row (2 per row)-----------------
 @Composable
-fun SampleCardRow(samples: List<Sample>, cardWidth: Dp) {
+fun SampleCardRow(
+    samples: List<Sample>,
+    cardWidth: Dp,
+    onLikeClick: (Sample, Boolean) -> Unit = { _, _ -> }
+) {
   Row(
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
       horizontalArrangement = Arrangement.spacedBy(25.dp)) {
-        samples.forEach { sample -> SampleCard(sample, width = cardWidth) }
+        samples.forEach { sample ->
+          SampleCard(
+              sample, width = cardWidth, onLikeClick = { isLiked -> onLikeClick(sample, isLiked) })
+        }
       }
 }
 
 // ----------------Sample Card-----------------
-// TO DO: Decide whether when liking or commenting the online repo is notified,
-// updates the value online first and gives it locally or if it changes it locally and notifies the
-// online repo later
+// TO DO: Decide whether when commenting the online repo is notified,
 @Composable
 fun SampleCard(
     sample: Sample,
@@ -276,7 +291,7 @@ fun SampleCard(
     onProfileClick: () -> Unit = {},
     onCommentClick: () -> Unit = {},
     onDownloadClick: () -> Unit = {},
-    onLikeClick: () -> Unit = {},
+    onLikeClick: (Boolean) -> Unit = {},
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
 ) {
   var isLiked by remember { mutableStateOf(false) }
@@ -399,7 +414,7 @@ fun SampleCard(
                                   .clickable(
                                       onClick = {
                                         isLiked = !isLiked
-                                        onLikeClick()
+                                        onLikeClick(isLiked)
                                       }),
                           tint = if (isLiked) Color.Red else NepTuneTheme.colors.background)
 

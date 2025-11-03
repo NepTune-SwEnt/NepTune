@@ -84,7 +84,7 @@ fun SearchScreen(
     onProfilePicClick: () -> Unit = {},
     onSampleClick: () -> Unit = {},
     onDownloadClick: () -> Unit = {},
-    onLikeClick: () -> Unit = {},
+    onLikeClick: (Boolean) -> Unit = {},
     onCommentClick: () -> Unit = {},
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
 ) {
@@ -118,7 +118,7 @@ fun ScrollableColumnOfSamples(
     samples: List<Sample>,
     onProfilePicClick: () -> Unit = {},
     onDownloadClick: () -> Unit = {},
-    onLikeClick: () -> Unit = {},
+    onLikeClick: (Boolean) -> Unit = {},
     onCommentClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current

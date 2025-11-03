@@ -1,7 +1,7 @@
 package com.neptune.neptune.model.sample
 
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -23,7 +23,7 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
   /** Returns a list of all samples in Firestore. */
   override suspend fun getSamples(): List<Sample> {
     val snap = samples.get().await()
-    return snap.toSamples()
+    return snap.documents.mapNotNull { it.toSampleOrNull() }
   }
 
   /** Observe samples in real time */
@@ -34,7 +34,7 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
             trySend(emptyList())
             return@addSnapshotListener
           }
-          trySend(snap?.toSamples().orEmpty())
+          trySend(snap?.documents?.mapNotNull { it.toSampleOrNull() }.orEmpty())
         }
     awaitClose { reg.remove() }
   }
@@ -56,24 +56,22 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
     samples.document(sample.id.toString()).set(sample.toMap()).await()
   }
 
-  /** Converts a Firestore QuerySnapshot into a list of Sample */
-  private fun QuerySnapshot.toSamples(): List<Sample> =
-      documents.mapNotNull { doc ->
-        try {
-          Sample(
-              id = doc.getLong("id")?.toInt() ?: return@mapNotNull null,
-              name = doc.getString("name").orEmpty(),
-              description = doc.getString("description").orEmpty(),
-              durationSeconds = (doc.getLong("durationSeconds") ?: 0L).toInt(),
-              tags = doc.get("tags") as? List<String> ?: emptyList(),
-              likes = (doc.getLong("likes") ?: 0L).toInt(),
-              comments = (doc.getLong("comments") ?: 0L).toInt(),
-              downloads = (doc.getLong("downloads") ?: 0L).toInt(),
-              uriString = doc.getString("uriString").orEmpty())
-        } catch (e: Exception) {
-          null
-        }
-      }
+  /** Converts a Firestore [DocumentSnapshot] to a [Sample] instance, or null if missing. */
+  private fun DocumentSnapshot.toSampleOrNull(): Sample? {
+    if (!exists()) return null
+    val id = (get("id") as? Number)?.toInt() ?: return null
+    val tags = (get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+    return Sample(
+        id = id,
+        name = getString("name").orEmpty(),
+        description = getString("description").orEmpty(),
+        durationSeconds = (get("durationSeconds") as? Number)?.toInt() ?: 0,
+        tags = tags,
+        likes = (get("likes") as? Number)?.toInt() ?: 0,
+        comments = (get("comments") as? Number)?.toInt() ?: 0,
+        downloads = (get("downloads") as? Number)?.toInt() ?: 0,
+        uriString = getString("uriString").orEmpty())
+  }
 
   private fun Sample.toMap(): Map<String, Any> =
       mapOf(
