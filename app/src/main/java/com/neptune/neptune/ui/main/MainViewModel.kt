@@ -2,6 +2,7 @@ package com.neptune.neptune.ui.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
@@ -15,10 +16,15 @@ import kotlinx.coroutines.launch
  * with the help of LLMs.
  *
  * @property SampleRepository Repository for accessing and manipulating samples.
+ * @property ProfileRepository Repository for accessing and manipulating profile.
+ * @property useMockData false by default; true if we want to test with some MockData
  * @author Angéline Bignens
  */
-class MainViewModel(private val repo: SampleRepository = SampleRepositoryProvider.repository) :
-    ViewModel() {
+class MainViewModel(
+    private val repo: SampleRepository = SampleRepositoryProvider.repository,
+    private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
+    private val useMockData: Boolean = false
+) : ViewModel() {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
   val discoverSamples: MutableStateFlow<List<Sample>> = _discoverSamples
 
@@ -26,13 +32,18 @@ class MainViewModel(private val repo: SampleRepository = SampleRepositoryProvide
   val followedSamples: MutableStateFlow<List<Sample>> = _followedSamples
 
   init {
-    loadSamplesFromFirebase()
+    if (useMockData) {
+      // If we are testing we load mock data
+      loadData()
+    } else {
+      loadSamplesFromFirebase()
+    }
   }
 
   private fun loadSamplesFromFirebase() {
     viewModelScope.launch {
       // Get current user's profile
-      val profile = ProfileRepositoryProvider.repository.getProfile()
+      val profile = profileRepo.getProfile()
       val following = profile?.following.orEmpty()
       repo.observeSamples().collectLatest { samples ->
         _discoverSamples.value = samples.filter { it.ownerId !in following }
