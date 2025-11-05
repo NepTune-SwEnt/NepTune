@@ -3,7 +3,6 @@ package com.neptune.neptune.media
 import android.content.Context
 import android.media.MediaRecorder
 import android.media.MediaScannerConnection
-import android.util.Log
 import java.io.File
 import java.io.IOException
 
@@ -56,17 +55,13 @@ class NeptuneRecorder(private val context: Context) {
       outputFile = null
 
       recordedFile?.let { f ->
-        Log.d("NeptuneRecorder", "Stopped recording -> ${f.absolutePath}")
         try {
           MediaScannerConnection.scanFile(context, arrayOf(f.absolutePath), null, null)
-        } catch (e: Exception) {
-          Log.w("NeptuneRecorder", "MediaScanner failed", e)
-        }
+        } catch (_: Exception) {}
       }
 
       recordedFile
-    } catch (e: RuntimeException) {
-      Log.e("NeptuneRecorder", "Failed to stop recorder", e)
+    } catch (_: RuntimeException) {
       null
     } finally {
       recorder = null
