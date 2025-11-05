@@ -5,6 +5,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,16 +15,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -110,6 +117,9 @@ fun ProfileScreen(
     onNameChange: (String) -> Unit = {},
     onUsernameChange: (String) -> Unit = {},
     onBioChange: (String) -> Unit = {},
+    onTagInputFieldChange: (String) -> Unit = {},
+    onTagSubmit: () -> Unit = {},
+    onRemoveTag: (String) -> Unit = {},
     onSettingsClick: () -> Unit = {},
     goBackClick: () -> Unit = {}
 ) {
@@ -125,7 +135,11 @@ fun ProfileScreen(
             onSave = { onSaveClick(uiState.name, uiState.username, uiState.bio) },
             onNameChange = onNameChange,
             onUsernameChange = onUsernameChange,
-            onBioChange = onBioChange)
+            onBioChange = onBioChange,
+            onTagInputFieldChange = onTagInputFieldChange,
+            onTagSubmit = onTagSubmit,
+            onRemoveTag = onRemoveTag
+        )
       }
     }
   }
@@ -140,6 +154,7 @@ fun ProfileScreen(
  * @param state The [ProfileUiState] containing the displayed user information.
  * @param onEdit Callback triggered when the Edit button is clicked.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ProfileViewContent(
     state: ProfileUiState,
@@ -152,7 +167,7 @@ private fun ProfileViewContent(
       topBar = {
         Column {
           Row(
-              modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+              modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp).verticalScroll(rememberScrollState()),
               horizontalArrangement = Arrangement.SpaceBetween,
               verticalAlignment = Alignment.CenterVertically) {
                 IconButton(
@@ -237,9 +252,30 @@ private fun ProfileViewContent(
               modifier = Modifier.testTag(ProfileScreenTestTags.BIO)
           )
 
-          Spacer(Modifier.height(200.dp))
+            // under the bio (before Edit button)
+            if (state.tags.isNotEmpty()) {
+                Spacer(Modifier.height(16.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    state.tags.forEach { tag ->
+                        InputChip(
+                            selected = false,
+                            onClick = {}, enabled = false,
+                            label = { Text(tag) },
+                            colors = InputChipDefaults.inputChipColors(
+                                disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                disabledLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            ),
+                            border = InputChipDefaults.inputChipBorder(borderWidth = 0.dp, enabled = false, selected = false)
+                        )
+                    }
+                }
+            }
 
-          Button(
+
+            Button(
               onClick = onEdit,
               enabled = true,
               modifier = Modifier.testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
@@ -279,7 +315,7 @@ val TextFieldColors: @Composable () -> TextFieldColors = {
  * @param onUsernameChange Called on text change in the username field.
  * @param onBioChange Called on text change in the bio field.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun ProfileEditContent(
     uiState: ProfileUiState,
@@ -287,9 +323,12 @@ private fun ProfileEditContent(
     onNameChange: (String) -> Unit,
     onUsernameChange: (String) -> Unit,
     onBioChange: (String) -> Unit,
+    onTagInputFieldChange: (String) -> Unit,
+    onTagSubmit: () -> Unit,
+    onRemoveTag: (String) -> Unit
 ) {
   Column(
-      modifier = Modifier.fillMaxSize().testTag(ProfileScreenTestTags.EDIT_CONTENT),
+      modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).testTag(ProfileScreenTestTags.EDIT_CONTENT),
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.Center) {
         Spacer(modifier = Modifier.height(40.dp))
@@ -371,6 +410,44 @@ private fun ProfileEditContent(
             })
 
         Spacer(modifier = Modifier.height(40.dp))
+
+      OutlinedTextField(
+          value = uiState.inputTag,
+          onValueChange = onTagInputFieldChange,
+          label = { Text("Add a tag") },
+          colors = TextFieldColors(),
+          modifier = Modifier
+              .fillMaxWidth()
+              .testTag("profile/field/add_tag"),
+          supportingText = {
+              Text(
+                  text = buildString {
+                      append("${uiState.inputTag.trim().length}/20")
+                      if (uiState.tagError != null) append(" • ${uiState.tagError}")
+                  },
+                  color = if (uiState.tagError != null) MaterialTheme.colorScheme.error
+                  else NepTuneTheme.colors.onBackground,
+                  style = MaterialTheme.typography.bodySmall
+              )
+          }
+      )
+
+      Spacer(Modifier.height(12.dp))
+
+      Button(onClick = onTagSubmit) { Text("+ Add") }
+
+      Spacer(Modifier.height(12.dp))
+
+      FlowRow(
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+          verticalArrangement = Arrangement.spacedBy(8.dp)
+      ) {
+          uiState.tags.forEach { tag ->
+              EditableTagChip(tagText = tag, onRemove = onRemoveTag)
+          }
+      }
+
+
         Button(
             onClick = onSave,
             enabled = !uiState.isSaving && uiState.isValid,
@@ -460,7 +537,11 @@ fun ProfileScreenPreview(mode: ProfileMode) {
           ProfileScreen(
               uiState =
                   ProfileUiState(
-                      name = "John Doe", username = "johndoe", bio = "I make awesome beats on NepTune", mode = mode
+                      name = "John Doe",
+                      username = "johndoe",
+                      bio = "I make awesome beats on NepTune",
+                      inputTag = "tag_example",
+                      mode = mode
                   )
           )
       }
@@ -502,6 +583,30 @@ fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
       onNameChange = viewModel::onNameChange,
       onUsernameChange = viewModel::onUsernameChange,
       onBioChange = viewModel::onBioChange,
+      onTagInputFieldChange = viewModel::onTagInputFieldChange,
+      onTagSubmit = viewModel::onTagAddition,
+      onRemoveTag = viewModel::onTagDeletion,
       onSettingsClick = settings,
       goBackClick = goBack)
+}
+
+@Composable
+fun EditableTagChip(tagText: String, onRemove: (String) -> Unit) {
+  InputChip(
+      selected = false,
+      onClick = { },
+      label = { Text(text = tagText) },
+      trailingIcon = {
+        IconButton(onClick = { onRemove(tagText) }) {
+          Icon(
+              imageVector = Icons.Default.Close,
+              contentDescription = "Remove tag",
+              tint = NepTuneTheme.colors.onBackground)
+        }
+      },
+      colors =
+          InputChipDefaults.inputChipColors(
+              containerColor = NepTuneTheme.colors.background,
+              labelColor = NepTuneTheme.colors.onBackground,
+          ))
 }
