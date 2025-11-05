@@ -4,6 +4,7 @@ import android.net.Uri
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Transaction
 import kotlinx.coroutines.channels.awaitClose
@@ -69,6 +70,7 @@ class ProfileRepositoryFirebase(
           subscribers = getLong("subscribers") ?: 0L,
           likes = getLong("likes") ?: 0L,
           posts = getLong("posts") ?: 0L,
+          tags = get("tags") as? List<String> ?: emptyList(),
           avatarUrl = getString("avatarUrl").orEmpty())
     }
   }
@@ -118,7 +120,8 @@ class ProfileRepositoryFirebase(
                     "subscribers" to 0L,
                     "subscriptions" to 0L,
                     "likes" to 0L,
-                    "posts" to 0L
+                    "posts" to 0L,
+                    "tags" to emptyList<String>()
                 )
             )
 
@@ -241,6 +244,23 @@ class ProfileRepositoryFirebase(
     val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
     profiles.document(uid).update("bio", newBio).await()
   }
+
+    /** Adds a new tag to the current user's profile. */
+    override suspend fun addNewTag(tag: String) {
+        val currentUser = Firebase.auth.currentUser
+        val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
+        val normalizedTag = tag.trim().lowercase().replace(Regex("\\s+"), " ")
+        // no check for existence needed: we rely on Firestore’s built-in atomic behavior
+        profiles.document(uid).update("tags", FieldValue.arrayUnion(normalizedTag)).await()
+
+    }
+
+    /** Removes a tag from the current user's profile. */
+    override suspend fun removeTag(tag: String) {
+        val currentUser = Firebase.auth.currentUser
+        val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
+        profiles.document(uid).update("tags", FieldValue.arrayRemove(tag)).await()
+    }
 
   /**
    * Uploads a profile image (stub implementation). Updates `avatarUrl` in the profile document and
