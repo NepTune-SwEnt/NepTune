@@ -36,7 +36,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
@@ -50,12 +49,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
 import com.neptune.neptune.ui.theme.NepTuneTheme
-import com.neptune.neptune.ui.theme.SampleAppTheme
 
 /**
  * Centralized constants defining all `testTag` identifiers used in [ProfileScreen] UI tests.
@@ -545,39 +542,27 @@ fun Avatar(
   }
 }
 
-/**
- * Previews the [ProfileScreen] in either view or edit mode.
- *
- * @param mode The [ProfileMode] to preview.
- */
 @Composable
-fun ProfileScreenPreview(mode: ProfileMode) {
-  SampleAppTheme {
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-      ProfileScreen(
-          uiState =
-              ProfileUiState(
-                  name = "John Doe",
-                  username = "johndoe",
-                  bio = "I make awesome beats on NepTune",
-                  inputTag = "tag_example",
-                  mode = mode))
-    }
-  }
-}
-
-/** Preview of the profile screen in view-only mode. */
-@Preview
-@Composable
-fun ProfileScreenViewModePreview() {
-  ProfileScreenPreview(ProfileMode.VIEW)
-}
-
-/** Preview of the profile screen in editable mode. */
-@Preview
-@Composable
-fun ProfileScreenEditModePreview() {
-  ProfileScreenPreview(ProfileMode.EDIT)
+fun EditableTagChip(tagText: String, onRemove: (String) -> Unit) {
+  InputChip(
+      selected = false,
+      onClick = {},
+      label = { Text(text = tagText) },
+      trailingIcon = {
+        IconButton(
+            onClick = { onRemove(tagText) },
+            modifier = Modifier.testTag("profile/tag/remove/$tagText")) {
+              Icon(
+                  imageVector = Icons.Default.Close,
+                  contentDescription = "Remove tag",
+                  tint = NepTuneTheme.colors.onBackground)
+            }
+      },
+      colors =
+          InputChipDefaults.inputChipColors(
+              containerColor = NepTuneTheme.colors.background,
+              labelColor = NepTuneTheme.colors.onBackground,
+          ))
 }
 
 /**
@@ -605,27 +590,4 @@ fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
       onRemoveTag = viewModel::onTagDeletion,
       onSettingsClick = settings,
       goBackClick = goBack)
-}
-
-@Composable
-fun EditableTagChip(tagText: String, onRemove: (String) -> Unit) {
-  InputChip(
-      selected = false,
-      onClick = {},
-      label = { Text(text = tagText) },
-      trailingIcon = {
-        IconButton(
-            onClick = { onRemove(tagText) },
-            modifier = Modifier.testTag("profile/tag/remove/$tagText")) {
-              Icon(
-                  imageVector = Icons.Default.Close,
-                  contentDescription = "Remove tag",
-                  tint = NepTuneTheme.colors.onBackground)
-            }
-      },
-      colors =
-          InputChipDefaults.inputChipColors(
-              containerColor = NepTuneTheme.colors.background,
-              labelColor = NepTuneTheme.colors.onBackground,
-          ))
 }
