@@ -6,12 +6,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasTextExactly
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onFirst
@@ -443,10 +445,21 @@ class ProfileScreenTest {
     }
 
     // Click the "X" for the "rock" chip
-    composeTestRule.onNodeWithTag("profile/tag/remove/rock", useUnmergedTree = true).performClick()
+      composeTestRule
+          .onAllNodes(hasTextExactly("rock", includeEditableText = false), useUnmergedTree = false)
+          .assertCountEquals(1)
 
-    // "rock" should be gone
-    composeTestRule.onNode(hasText("rock"), useUnmergedTree = true).assertDoesNotExist()
+      // Click the "X" of the "rock" chip (give that icon a stable testTag in your UI: "profile/tag/remove/rock")
+      composeTestRule.onNodeWithTag("profile/tag/remove/rock", useUnmergedTree = true).performClick()
+
+      // Let recomposition/animations finish
+      composeTestRule.waitForIdle()
+      composeTestRule.mainClock.advanceTimeBy(500) // adjust if you have animations; remove if none
+
+      // Now "rock" should be gone
+      composeTestRule
+          .onAllNodes(hasTextExactly("rock", includeEditableText = false), useUnmergedTree = false)
+          .assertCountEquals(0)
   }
 
   @Test
