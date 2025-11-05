@@ -31,6 +31,7 @@ import com.neptune.neptune.resources.C
 import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInViewModel
 import com.neptune.neptune.ui.main.MainScreen
+import com.neptune.neptune.ui.main.onClickFunctions
 import com.neptune.neptune.ui.mock.MockImportScreen
 import com.neptune.neptune.ui.mock.MockProfileScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
@@ -51,9 +52,6 @@ import com.neptune.neptune.ui.settings.SettingsViewModelFactory
 import com.neptune.neptune.ui.settings.ThemeDataStore
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.ui.theme.SampleAppTheme
-
-private const val ASSET_ZIP_PATH = "fakeProject.zip"
-private const val TARGET_PROJECT_ID = "42"
 
 class MainActivity : ComponentActivity() {
 
@@ -143,7 +141,11 @@ fun NeptuneApp(
                     }
                 composable(Screen.Search.route) {
                   SearchScreen(
-                      onProfilePicClick = { navigationActions.navigateTo(Screen.OtherUserProfile) })
+                      clickHandlers =
+                          onClickFunctions(
+                              onProfileClick = {
+                                navigationActions.navigateTo(Screen.OtherUserProfile)
+                              }))
                 }
                 composable(Screen.Post.route) {
                   PostScreen(

@@ -211,7 +211,8 @@ fun MainScreen(
                         items(columns) { samplesColumn ->
                           Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
                             samplesColumn.forEach { samples ->
-                              SampleCard(samples, width = cardWidth)
+                              SampleCard(
+                                  samples, width = cardWidth, clickHandlers = onClickFunctions())
                             }
                           }
                         }
@@ -259,8 +260,31 @@ fun SampleCardRow(samples: List<Sample>, cardWidth: Dp) {
   Row(
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
       horizontalArrangement = Arrangement.spacedBy(25.dp)) {
-        samples.forEach { sample -> SampleCard(sample, width = cardWidth) }
+        samples.forEach { sample ->
+          SampleCard(sample, width = cardWidth, clickHandlers = onClickFunctions())
+        }
       }
+}
+// ----------------Click Handlers for Sample Card-----------------
+// Placeholder for click handlers
+data class clickHandlers(
+    val onProfileClick: () -> Unit,
+    val onCommentClick: () -> Unit,
+    val onDownloadClick: () -> Unit,
+    val onLikeClick: () -> Unit
+)
+// Function to create click handlers with default empty implementations
+fun onClickFunctions(
+    onProfileClick: () -> Unit = {},
+    onCommentClick: () -> Unit = {},
+    onDownloadClick: () -> Unit = {},
+    onLikeClick: () -> Unit = {}
+): clickHandlers {
+  return clickHandlers(
+      onProfileClick = onProfileClick,
+      onCommentClick = onCommentClick,
+      onDownloadClick = onDownloadClick,
+      onLikeClick = onLikeClick)
 }
 
 // ----------------Sample Card-----------------
@@ -273,13 +297,14 @@ fun SampleCard(
     width: Dp = 150.dp,
     height: Dp = 166.dp,
     testTags: BaseSampleTestTags = MainScreenTestTags,
-    onProfileClick: () -> Unit = {},
-    onCommentClick: () -> Unit = {},
-    onDownloadClick: () -> Unit = {},
-    onLikeClick: () -> Unit = {},
+    clickHandlers: clickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
 ) {
+
   var isLiked by remember { mutableStateOf(false) }
+  val likeDescription = if (isLiked) "liked" else "not liked"
+  val heartColor = if (isLiked) Color.Red else NepTuneTheme.colors.background
+  val heartIcon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder
   Card(
       modifier =
           Modifier.width(width)
@@ -300,13 +325,13 @@ fun SampleCard(
                     contentDescription = "Profile",
                     tint = Color.Unspecified,
                     modifier =
-                        Modifier.clickable(onClick = onProfileClick)
+                        Modifier.clickable(onClick = clickHandlers.onProfileClick)
                             .size(22.dp)
                             .testTag(testTags.SAMPLE_PROFILE_ICON))
                 Spacer(Modifier.width(6.dp))
                 Text(
                     /*Todo: Replace the hardCoded "Name" with the one provided by the Profile ViewModel*/
-                    text = "Name",
+                    text = sample.name,
                     color = NepTuneTheme.colors.onBackground,
                     modifier = Modifier.testTag(testTags.SAMPLE_USERNAME),
                     style =
@@ -387,21 +412,18 @@ fun SampleCard(
                     modifier = Modifier.fillMaxSize(),
                     horizontalArrangement = Arrangement.SpaceBetween) {
                       IconWithText(
-                          icon =
-                              if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                          icon = heartIcon,
                           iconDescription = "Like",
                           text = sample.likes.toString(),
                           modifier =
                               Modifier.testTag(testTags.SAMPLE_LIKES)
-                                  .semantics {
-                                    stateDescription = if (isLiked) "liked" else "not liked"
-                                  }
+                                  .semantics { stateDescription = likeDescription }
                                   .clickable(
                                       onClick = {
                                         isLiked = !isLiked
-                                        onLikeClick()
+                                        clickHandlers.onLikeClick()
                                       }),
-                          tint = if (isLiked) Color.Red else NepTuneTheme.colors.background)
+                          tint = heartColor)
 
                       IconWithTextPainter(
                           icon = painterResource(R.drawable.comments),
@@ -409,14 +431,14 @@ fun SampleCard(
                           text = sample.comments.toString(),
                           modifier =
                               Modifier.testTag(testTags.SAMPLE_COMMENTS)
-                                  .clickable(onClick = onCommentClick))
+                                  .clickable(onClick = clickHandlers.onCommentClick))
                       IconWithTextPainter(
                           icon = painterResource(R.drawable.download),
                           iconDescription = "Downloads",
                           text = sample.downloads.toString(),
                           modifier =
                               Modifier.testTag(testTags.SAMPLE_DOWNLOADS)
-                                  .clickable(onClick = onDownloadClick))
+                                  .clickable(onClick = clickHandlers.onDownloadClick))
                     }
               }
         }

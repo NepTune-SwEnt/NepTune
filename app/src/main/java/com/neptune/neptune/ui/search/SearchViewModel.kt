@@ -12,17 +12,28 @@ Uses: MutableStateFlow to hold the list of samples
 Provides: search function to filter samples based on query
 Written with assistance from ChatGPT
  */
+
+const val NATURE_TAG = "#nature"
+
 open class SearchViewModel() : ViewModel() {
   private val _samples = MutableStateFlow<List<Sample>>(emptyList())
   val samples: StateFlow<List<Sample>> = _samples
+
   // TO DO : Load data from real source
   private fun loadData() {
     _samples.value =
         listOf(
             Sample(
-                1, "Sample 1", "This is a sample description 1", 21, listOf("#nature"), 21, 21, 21),
+                1,
+                "Sample 1",
+                "This is a sample description 1",
+                21,
+                listOf(NATURE_TAG),
+                21,
+                21,
+                21),
             Sample(2, "Sample 2", "This is a sample description 2", 42, listOf("#sea"), 42, 42, 42),
-            Sample(3, "Sample 3", "sea", 12, listOf("#relax", "#nature"), 12, 12, 12),
+            Sample(3, "Sample 3", "sea", 12, listOf("#relax", NATURE_TAG), 12, 12, 12),
             Sample(
                 4, "nature", "This is a sample description 4", 2, listOf("#takeItEasy"), 1, 2, 1),
             Sample(
@@ -30,7 +41,7 @@ open class SearchViewModel() : ViewModel() {
                 "Sample 5",
                 "This is a sample description 5",
                 75,
-                listOf("#nature", "#forest"),
+                listOf(NATURE_TAG, "#forest"),
                 210,
                 210,
                 210))

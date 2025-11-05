@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import com.neptune.neptune.media.NeptuneMediaPlayer
+import com.neptune.neptune.ui.main.onClickFunctions
 import com.neptune.neptune.ui.projectlist.ProjectListScreenTestTags
 import com.neptune.neptune.ui.search.SearchScreenTestTags.SAMPLE_LIST
 import org.junit.Rule
@@ -138,7 +139,7 @@ class SearchScreenAllTests {
     composeRule.setContent {
       SearchScreen(
           searchViewModel = SearchViewModel(),
-          onProfilePicClick = { profileClicks++ },
+          clickHandlers = onClickFunctions(onProfileClick = { profileClicks++ }),
           mediaPlayer = fakeMediaPlayer)
     }
     advanceDebounce()
@@ -192,9 +193,11 @@ class SearchScreenAllTests {
     composeRule.setContent {
       SearchScreen(
           searchViewModel = SearchViewModel(),
-          onLikeClick = { likeClicks++ },
-          onCommentClick = { commentClicks++ },
-          onDownloadClick = { downloadClicks++ },
+          clickHandlers =
+              onClickFunctions(
+                  onLikeClick = { likeClicks++ },
+                  onCommentClick = { commentClicks++ },
+                  onDownloadClick = { downloadClicks++ }),
           mediaPlayer = fakeMediaPlayer)
     }
     advanceDebounce()
