@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.hasClickAction
@@ -447,14 +448,14 @@ class ProfileScreenTest {
 
     composeTestRule.onNodeWithTag(chipTag, useUnmergedTree = true).assertExists()
 
-    composeTestRule.onNodeWithTag(removeTag, useUnmergedTree = true).performClick()
+    composeTestRule.bringIntoView(removeTag)
+    composeTestRule
+        .onNodeWithTag(removeTag, useUnmergedTree = true)
+        .performSemanticsAction(SemanticsActions.OnClick)
 
-    composeTestRule.waitUntil(5_000L) {
-      composeTestRule
-          .onAllNodes(hasTestTag(chipTag), useUnmergedTree = true)
-          .fetchSemanticsNodes()
-          .isEmpty()
-    }
+    composeTestRule.waitUntil(5_000) { "rock" !in state.value.tags }
+
+    composeTestRule.onAllNodes(hasTestTag(chipTag), useUnmergedTree = true).assertCountEquals(0)
   }
 
   @Test
