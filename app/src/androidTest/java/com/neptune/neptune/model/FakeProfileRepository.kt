@@ -51,7 +51,7 @@ class FakeProfileRepository(initial: Profile? = null) : ProfileRepository {
 
   override suspend fun uploadAvatar(localUri: Uri): String = ""
 
-  override suspend fun addNewTag(tag: String) { }
+  override suspend fun addNewTag(tag: String) {}
 
   override suspend fun removeTag(tag: String) {}
 
