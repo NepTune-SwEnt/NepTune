@@ -315,7 +315,7 @@ class ProfileScreenTest {
   }
 
   @Test
-  fun bioCounter_showsLengthWhenNoError() {
+  fun bioCounterShowsLengthWhenNoError() {
     val state =
         ProfileUiState(
             name = "Ok",
@@ -331,7 +331,7 @@ class ProfileScreenTest {
   }
 
   @Test
-  fun bioError_showsErrorSupportingText() {
+  fun bioErrorShowsErrorSupportingText() {
     val errorMsg = "Bio is too long"
     val state =
         ProfileUiState(
@@ -347,7 +347,7 @@ class ProfileScreenTest {
   }
 
   @Test
-  fun nameError_showsErrorSupportingText() {
+  fun nameErrorShowsErrorSupportingText() {
     val err = "Name is invalid"
     val state =
         ProfileUiState(
@@ -363,7 +363,7 @@ class ProfileScreenTest {
   }
 
   @Test
-  fun nameCounter_showsLengthWhenNoError() {
+  fun nameCounterShowsLengthWhenNoError() {
     val name = "John"
     val state =
         ProfileUiState(
@@ -379,7 +379,7 @@ class ProfileScreenTest {
   }
 
   @Test
-  fun editMode_addsTagAndDisplaysIt() {
+  fun editModeAddsTagAndDisplaysIt() {
     val state =
         mutableStateOf(
             ProfileUiState(name = "John", username = "john", bio = "", mode = ProfileMode.EDIT))
@@ -416,7 +416,7 @@ class ProfileScreenTest {
   }
 
   @Test
-  fun editMode_removeTagHidesIt() {
+  fun editModeRemoveTagHidesIt() {
     val state =
         mutableStateOf(
             ProfileUiState(
@@ -450,7 +450,7 @@ class ProfileScreenTest {
   }
 
   @Test
-  fun viewMode_displaysTagsReadOnly() {
+  fun viewModeDisplaysTagsReadOnly() {
     val state =
         ProfileUiState(
             name = "Arianna",
@@ -471,7 +471,7 @@ class ProfileScreenTest {
   }
 
   @Test
-  fun viewMode_tagsAreViewOnly() {
+  fun viewModeTagsAreViewOnly() {
     setContentViewMode(
         state =
             ProfileUiState(
