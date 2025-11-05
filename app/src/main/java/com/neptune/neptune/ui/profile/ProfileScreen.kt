@@ -193,99 +193,102 @@ private fun ProfileViewContent(
         }
       },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
-        Column(
-            modifier =
-                Modifier.fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .testTag(ProfileScreenTestTags.VIEW_CONTENT),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-          Spacer(Modifier.height(15.dp))
-          Avatar(modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR), showEditPencil = false)
-          Spacer(Modifier.height(15.dp))
+      Box(Modifier.fillMaxSize().padding(innerPadding)) {
+          Column(
+              modifier =
+                  Modifier.fillMaxSize()
+                      .padding(bottom = 88.dp)
+                      .verticalScroll(rememberScrollState())
+                      .testTag(ProfileScreenTestTags.VIEW_CONTENT),
+              horizontalAlignment = Alignment.CenterHorizontally,
+          ) {
+              Spacer(Modifier.height(15.dp))
+              Avatar(modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR), showEditPencil = false)
+              Spacer(Modifier.height(15.dp))
 
-          Text(
-              text = state.name,
-              color = NepTuneTheme.colors.onBackground,
-              style = MaterialTheme.typography.headlineMedium,
-              textAlign = TextAlign.Center,
-              modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
+              Text(
+                  text = state.name,
+                  color = NepTuneTheme.colors.onBackground,
+                  style = MaterialTheme.typography.headlineMedium,
+                  textAlign = TextAlign.Center,
+                  modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
 
-          Text(
-              text = "@${state.username}",
-              color = NepTuneTheme.colors.onBackground,
-              style = MaterialTheme.typography.bodyMedium,
-              modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
+              Text(
+                  text = "@${state.username}",
+                  color = NepTuneTheme.colors.onBackground,
+                  style = MaterialTheme.typography.bodyMedium,
+                  modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
 
-            Spacer(Modifier.height(40.dp))
+              Spacer(Modifier.height(40.dp))
 
-            Row(Modifier.fillMaxWidth()) {
-                StatBlock(
-                    label = "Posts",
-                    value = state.posts,
-                    modifier = Modifier.weight(1f),
-                    testTag = ProfileScreenTestTags.POSTS_BLOCK
-                )
-                StatBlock(
-                    label = "Likes",
-                    value = state.likes,
-                    modifier = Modifier.weight(1f),
-                    testTag = ProfileScreenTestTags.LIKES_BLOCK
-                )
-                StatBlock(
-                    label = "Followers",
-                    value = state.followers,
-                    modifier = Modifier.weight(1f),
-                    testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
-                StatBlock(
-                    label = "Following",
-                    value = state.following,
-                    modifier = Modifier.weight(1f),
-                    testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
-            }
+              Row(Modifier.fillMaxWidth()) {
+                  StatBlock(
+                      label = "Posts",
+                      value = state.posts,
+                      modifier = Modifier.weight(1f),
+                      testTag = ProfileScreenTestTags.POSTS_BLOCK
+                  )
+                  StatBlock(
+                      label = "Likes",
+                      value = state.likes,
+                      modifier = Modifier.weight(1f),
+                      testTag = ProfileScreenTestTags.LIKES_BLOCK
+                  )
+                  StatBlock(
+                      label = "Followers",
+                      value = state.followers,
+                      modifier = Modifier.weight(1f),
+                      testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
+                  StatBlock(
+                      label = "Following",
+                      value = state.following,
+                      modifier = Modifier.weight(1f),
+                      testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
+              }
 
-          Spacer(Modifier.height(50.dp))
+              Spacer(Modifier.height(100.dp))
 
-          Text(
-              text = if (state.bio != "") "“${state.bio}”" else "",
-              color = NepTuneTheme.colors.onBackground,
-              style = MaterialTheme.typography.titleLarge,
-              textAlign = TextAlign.Center,
-              modifier = Modifier.testTag(ProfileScreenTestTags.BIO)
-          )
-            Spacer(Modifier.height(50.dp))
+              Text(
+                  text = if (state.bio != "") "“${state.bio}”" else "",
+                  color = NepTuneTheme.colors.onBackground,
+                  style = MaterialTheme.typography.titleLarge,
+                  textAlign = TextAlign.Center,
+                  modifier = Modifier.testTag(ProfileScreenTestTags.BIO)
+              )
+              Spacer(Modifier.height(100.dp))
 
-            if (state.tags.isNotEmpty()) {
-                Spacer(Modifier.height(16.dp))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    state.tags.forEach { tag ->
-                        InputChip(
-                            selected = false,
-                            onClick = {}, enabled = false,
-                            label = { Text(tag) },
-                            colors = InputChipDefaults.inputChipColors(
-                                disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                disabledLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
-                            ),
-                            border = InputChipDefaults.inputChipBorder(borderWidth = 0.dp, enabled = false, selected = false)
-                        )
-                    }
-                }
-            }
+              if (state.tags.isNotEmpty()) {
+                  Spacer(Modifier.height(16.dp))
+                  FlowRow(
+                      horizontalArrangement = Arrangement.spacedBy(8.dp),
+                      verticalArrangement = Arrangement.spacedBy(8.dp)
+                  ) {
+                      state.tags.forEach { tag ->
+                          InputChip(
+                              selected = false,
+                              onClick = {}, enabled = false,
+                              label = { Text(tag) },
+                              colors = InputChipDefaults.inputChipColors(
+                                  disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                  disabledLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                              ),
+                              border = InputChipDefaults.inputChipBorder(borderWidth = 0.dp, enabled = false, selected = false)
+                          )
+                      }
+                  }
+              }
 
-            Spacer(Modifier.height(50.dp))
-            Button(
+              Spacer(Modifier.height(50.dp))
+          }
+
+          Button(
               onClick = onEdit,
               enabled = true,
-              modifier = Modifier.testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
-                Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
-                Spacer(Modifier.width(8.dp))
-                Text("Edit")
-              }
+              modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp).testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
+              Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
+              Spacer(Modifier.width(8.dp))
+              Text("Edit")
+          }
         }
       }
 }
