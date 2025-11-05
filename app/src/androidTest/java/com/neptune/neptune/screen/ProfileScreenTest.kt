@@ -445,21 +445,22 @@ class ProfileScreenTest {
     }
 
     // Click the "X" for the "rock" chip
-      composeTestRule
-          .onAllNodes(hasTextExactly("rock", includeEditableText = false), useUnmergedTree = false)
-          .assertCountEquals(1)
+    composeTestRule
+        .onAllNodes(hasTextExactly("rock", includeEditableText = false), useUnmergedTree = false)
+        .assertCountEquals(1)
 
-      // Click the "X" of the "rock" chip (give that icon a stable testTag in your UI: "profile/tag/remove/rock")
-      composeTestRule.onNodeWithTag("profile/tag/remove/rock", useUnmergedTree = true).performClick()
+    // Click the "X" of the "rock" chip (give that icon a stable testTag in your UI:
+    // "profile/tag/remove/rock")
+    composeTestRule.onNodeWithTag("profile/tag/remove/rock", useUnmergedTree = true).performClick()
 
-      // Let recomposition/animations finish
-      composeTestRule.waitForIdle()
-      composeTestRule.mainClock.advanceTimeBy(500) // adjust if you have animations; remove if none
+    // Let recomposition/animations finish
+    composeTestRule.waitForIdle()
+    composeTestRule.mainClock.advanceTimeBy(500) // adjust if you have animations; remove if none
 
-      // Now "rock" should be gone
-      composeTestRule
-          .onAllNodes(hasTextExactly("rock", includeEditableText = false), useUnmergedTree = false)
-          .assertCountEquals(0)
+    // Now "rock" should be gone
+    composeTestRule
+        .onAllNodes(hasTextExactly("rock", includeEditableText = false), useUnmergedTree = false)
+        .assertCountEquals(0)
   }
 
   @Test
