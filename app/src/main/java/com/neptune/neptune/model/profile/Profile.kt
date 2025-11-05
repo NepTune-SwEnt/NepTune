@@ -26,6 +26,7 @@ data class Profile(
     val subscribers: Long = 0,
     val likes: Long = 0,
     val posts: Long = 0,
+    val tags: List<String> = emptyList(),
     val avatarUrl: String = ""
 )
 

@@ -32,12 +32,15 @@ data class ProfileUiState(
     val following: Int = 0,
     val likes: Int = 0,
     val posts: Int = 0,
+    val tags: List<String> = emptyList(),
+    val inputTag: String = "",
     val mode: ProfileMode = ProfileMode.VIEW,
     val isSaving: Boolean = false,
     val error: String? = null,
     val nameError: String? = null,
     val usernameError: String? = null,
-    val bioError: String? = null
+    val bioError: String? = null,
+    val tagError: String? = null
 ) {
   val isValid: Boolean
     get() = nameError == null && usernameError == null && bioError == null
