@@ -51,9 +51,23 @@ class FakeProfileRepository(initial: Profile? = null) : ProfileRepository {
 
   override suspend fun uploadAvatar(localUri: Uri): String = ""
 
-  override suspend fun addNewTag(tag: String) {}
+  override suspend fun addNewTag(tag: String) {
+    val currentTags = profile?.tags ?: arrayListOf()
+    if (!currentTags.contains(tag)) {
+      val updatedTags = ArrayList(currentTags)
+      updatedTags.add(tag)
+      profile = profile?.copy(tags = updatedTags)
+    }
+  }
 
-  override suspend fun removeTag(tag: String) {}
+  override suspend fun removeTag(tag: String) {
+    val currentTags = profile?.tags ?: arrayListOf()
+    if (currentTags.contains(tag)) {
+      val updatedTags = ArrayList(currentTags)
+      updatedTags.remove(tag)
+      profile = profile?.copy(tags = updatedTags)
+    }
+  }
 
   override suspend fun removeAvatar() {}
 }
