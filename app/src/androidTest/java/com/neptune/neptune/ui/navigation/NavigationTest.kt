@@ -1,6 +1,7 @@
 package com.neptune.neptune.ui.navigation
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
@@ -182,5 +183,37 @@ class NavigationTest {
         .performTextReplacement("Sweetie Banana")
     composeTestRule.onNodeWithTag(PostScreenTestTags.POST_BUTTON).performScrollTo().performClick()
     composeTestRule.onNodeWithTag(MainScreenTestTags.MAIN_SCREEN).assertIsDisplayed()
+  }
+
+  /** Test that the main screen has a bottom bar */
+  @Test
+  fun mainScreen_displaysBottomNav() {
+    setContent()
+    composeTestRule.onNodeWithTag(MainScreenTestTags.MAIN_SCREEN).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
+  }
+
+  /** Test that the bottom bar has all the button displayed */
+  @Test
+  fun mainScreen_bottomNavigationBar_hasAllButton() {
+    setContent()
+    // Original order: MAIN, SEARCH, PROJECTLIST, POST (now IMPORT_FILE)
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsDisplayed()
+    // The changed/new tab
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).assertIsDisplayed()
+  }
+
+  /** Test that we can click on all of the bottom bar buttons */
+  @Test
+  fun mainScreen_bottomNavigationBar_canClickAllButtons() {
+    setContent()
+    listOf(
+            NavigationTestTags.MAIN_TAB,
+            NavigationTestTags.SEARCH_TAB,
+            NavigationTestTags.PROJECTLIST_TAB, // Retained original position (3rd)
+            NavigationTestTags.IMPORT_FILE) // Replaces POST_TAB (4th)
+        .forEach { tag -> composeTestRule.onNodeWithTag(tag).assertHasClickAction().performClick() }
   }
 }
