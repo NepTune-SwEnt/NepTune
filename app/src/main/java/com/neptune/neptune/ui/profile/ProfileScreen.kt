@@ -86,17 +86,22 @@ object ProfileScreenTestTags {
 
   const val FOLLOWERS_BLOCK = "profile/stat/followers"
   const val FOLLOWING_BLOCK = "profile/stat/following"
-    const val POSTS_BLOCK = "profile/stat/posts"
-    const val LIKES_BLOCK = "profile/stat/likes"
+  const val POSTS_BLOCK = "profile/stat/posts"
+  const val LIKES_BLOCK = "profile/stat/likes"
+
+  const val TAGS_VIEW_SECTION = "profile/view/tags"
+  const val TAGS_EDIT_SECTION = "profile/edit/tags"
 
   const val EDIT_BUTTON = "profile/btn/edit"
   const val SAVE_BUTTON = "profile/btn/save"
+  const val ADD_TAG_BUTTON = "profile/btn/add_tag"
   const val SETTINGS_BUTTON = "profile/btn/settings"
   const val GOBACK_BUTTON = "profile/btn/goback"
 
   const val FIELD_NAME = "profile/field/name"
   const val FIELD_USERNAME = "profile/field/username"
   const val FIELD_BIO = "profile/field/bio"
+  const val FIELD_ADD_TAG = "profile/field/add_tag"
 }
 
 /**
@@ -140,8 +145,7 @@ fun ProfileScreen(
             onBioChange = onBioChange,
             onTagInputFieldChange = onTagInputFieldChange,
             onTagSubmit = onTagSubmit,
-            onRemoveTag = onRemoveTag
-        )
+            onRemoveTag = onRemoveTag)
       }
     }
   }
@@ -193,7 +197,7 @@ private fun ProfileViewContent(
         }
       },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
-      Box(Modifier.fillMaxSize().padding(innerPadding)) {
+        Box(Modifier.fillMaxSize().padding(innerPadding)) {
           Column(
               modifier =
                   Modifier.fillMaxSize()
@@ -202,93 +206,98 @@ private fun ProfileViewContent(
                       .testTag(ProfileScreenTestTags.VIEW_CONTENT),
               horizontalAlignment = Alignment.CenterHorizontally,
           ) {
-              Spacer(Modifier.height(15.dp))
-              Avatar(modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR), showEditPencil = false)
-              Spacer(Modifier.height(15.dp))
+            Spacer(Modifier.height(15.dp))
+            Avatar(
+                modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR), showEditPencil = false)
+            Spacer(Modifier.height(15.dp))
 
-              Text(
-                  text = state.name,
-                  color = NepTuneTheme.colors.onBackground,
-                  style = MaterialTheme.typography.headlineMedium,
-                  textAlign = TextAlign.Center,
-                  modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
+            Text(
+                text = state.name,
+                color = NepTuneTheme.colors.onBackground,
+                style = MaterialTheme.typography.headlineMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
 
-              Text(
-                  text = "@${state.username}",
-                  color = NepTuneTheme.colors.onBackground,
-                  style = MaterialTheme.typography.bodyMedium,
-                  modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
+            Text(
+                text = "@${state.username}",
+                color = NepTuneTheme.colors.onBackground,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
 
-              Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(40.dp))
 
-              Row(Modifier.fillMaxWidth()) {
-                  StatBlock(
-                      label = "Posts",
-                      value = state.posts,
-                      modifier = Modifier.weight(1f),
-                      testTag = ProfileScreenTestTags.POSTS_BLOCK
-                  )
-                  StatBlock(
-                      label = "Likes",
-                      value = state.likes,
-                      modifier = Modifier.weight(1f),
-                      testTag = ProfileScreenTestTags.LIKES_BLOCK
-                  )
-                  StatBlock(
-                      label = "Followers",
-                      value = state.followers,
-                      modifier = Modifier.weight(1f),
-                      testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
-                  StatBlock(
-                      label = "Following",
-                      value = state.following,
-                      modifier = Modifier.weight(1f),
-                      testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
-              }
+            Row(Modifier.fillMaxWidth()) {
+              StatBlock(
+                  label = "Posts",
+                  value = state.posts,
+                  modifier = Modifier.weight(1f),
+                  testTag = ProfileScreenTestTags.POSTS_BLOCK)
+              StatBlock(
+                  label = "Likes",
+                  value = state.likes,
+                  modifier = Modifier.weight(1f),
+                  testTag = ProfileScreenTestTags.LIKES_BLOCK)
+              StatBlock(
+                  label = "Followers",
+                  value = state.followers,
+                  modifier = Modifier.weight(1f),
+                  testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
+              StatBlock(
+                  label = "Following",
+                  value = state.following,
+                  modifier = Modifier.weight(1f),
+                  testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
+            }
 
-              Spacer(Modifier.height(100.dp))
+            Spacer(Modifier.height(100.dp))
 
-              Text(
-                  text = if (state.bio != "") "“${state.bio}”" else "",
-                  color = NepTuneTheme.colors.onBackground,
-                  style = MaterialTheme.typography.titleLarge,
-                  textAlign = TextAlign.Center,
-                  modifier = Modifier.testTag(ProfileScreenTestTags.BIO)
-              )
-              Spacer(Modifier.height(100.dp))
+            Text(
+                text = if (state.bio != "") "“${state.bio}”" else "",
+                color = NepTuneTheme.colors.onBackground,
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
+            Spacer(Modifier.height(100.dp))
 
-              if (state.tags.isNotEmpty()) {
-                  Spacer(Modifier.height(16.dp))
-                  FlowRow(
-                      horizontalArrangement = Arrangement.spacedBy(8.dp),
-                      verticalArrangement = Arrangement.spacedBy(8.dp)
-                  ) {
-                      state.tags.forEach { tag ->
-                          InputChip(
-                              selected = false,
-                              onClick = {}, enabled = false,
-                              label = { Text(tag) },
-                              colors = InputChipDefaults.inputChipColors(
-                                  disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                  disabledLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
-                              ),
-                              border = InputChipDefaults.inputChipBorder(borderWidth = 0.dp, enabled = false, selected = false)
-                          )
-                      }
+            if (state.tags.isNotEmpty()) {
+              Spacer(Modifier.height(16.dp))
+              FlowRow(
+                  horizontalArrangement = Arrangement.spacedBy(8.dp),
+                  verticalArrangement = Arrangement.spacedBy(8.dp),
+                  modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_VIEW_SECTION)) {
+                    state.tags.forEach { tag ->
+                      InputChip(
+                          selected = false,
+                          onClick = {},
+                          enabled = false,
+                          label = { Text(tag) },
+                          colors =
+                              InputChipDefaults.inputChipColors(
+                                  disabledContainerColor =
+                                      MaterialTheme.colorScheme.secondaryContainer,
+                                  disabledLabelColor =
+                                      MaterialTheme.colorScheme.onSecondaryContainer),
+                          border =
+                              InputChipDefaults.inputChipBorder(
+                                  borderWidth = 0.dp, enabled = false, selected = false))
+                    }
                   }
-              }
+            }
 
-              Spacer(Modifier.height(50.dp))
+            Spacer(Modifier.height(50.dp))
           }
 
           Button(
               onClick = onEdit,
               enabled = true,
-              modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp).testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
-              Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
-              Spacer(Modifier.width(8.dp))
-              Text("Edit")
-          }
+              modifier =
+                  Modifier.align(Alignment.BottomCenter)
+                      .padding(bottom = 24.dp)
+                      .testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
+                Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
+                Spacer(Modifier.width(8.dp))
+                Text("Edit")
+              }
         }
       }
 }
@@ -334,7 +343,10 @@ private fun ProfileEditContent(
     onRemoveTag: (String) -> Unit
 ) {
   Column(
-      modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).testTag(ProfileScreenTestTags.EDIT_CONTENT),
+      modifier =
+          Modifier.fillMaxSize()
+              .verticalScroll(rememberScrollState())
+              .testTag(ProfileScreenTestTags.EDIT_CONTENT),
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.Center) {
         Spacer(modifier = Modifier.height(40.dp))
@@ -417,51 +429,45 @@ private fun ProfileEditContent(
 
         Spacer(modifier = Modifier.height(40.dp))
 
-      Row(
+        Row(
             verticalAlignment = Alignment.CenterVertically,
-      ) {
+        ) {
           OutlinedTextField(
               value = uiState.inputTag,
               onValueChange = onTagInputFieldChange,
               label = { Text("My music genre") },
               colors = TextFieldColors(),
               singleLine = true,
-              modifier = Modifier
-                  .weight(1f)
-                  .testTag("profile/field/add_tag"),
+              modifier = Modifier.weight(1f).testTag(ProfileScreenTestTags.FIELD_ADD_TAG),
               supportingText = {
-                  Text(
-                      text = buildString {
+                Text(
+                    text =
+                        buildString {
                           append("${uiState.inputTag.trim().length}/20")
                           if (uiState.tagError != null) append(" • ${uiState.tagError}")
-                      },
-                      color = if (uiState.tagError != null) MaterialTheme.colorScheme.error
-                      else NepTuneTheme.colors.onBackground,
-                      style = MaterialTheme.typography.bodySmall
-                  )
-              }
-          )
+                        },
+                    color =
+                        if (uiState.tagError != null) MaterialTheme.colorScheme.error
+                        else NepTuneTheme.colors.onBackground,
+                    style = MaterialTheme.typography.bodySmall)
+              })
           Spacer(Modifier.width(12.dp))
           Button(
               onClick = onTagSubmit,
-              modifier = Modifier.fillMaxHeight()
-          ) {
-              Icon(imageVector = Icons.Default.Add, contentDescription = "Add")
-          }
+              modifier = Modifier.fillMaxHeight().testTag(ProfileScreenTestTags.ADD_TAG_BUTTON)) {
+                Icon(imageVector = Icons.Default.Add, contentDescription = "Add")
+              }
+        }
 
-      }
+        Spacer(Modifier.height(12.dp))
 
-      Spacer(Modifier.height(12.dp))
-
-      FlowRow(
-          horizontalArrangement = Arrangement.spacedBy(8.dp),
-          verticalArrangement = Arrangement.spacedBy(8.dp)
-      ) {
-          uiState.tags.forEach { tag ->
-              EditableTagChip(tagText = tag, onRemove = onRemoveTag)
-          }
-      }
-      Spacer(modifier = Modifier.height(40.dp))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_EDIT_SECTION)) {
+              uiState.tags.forEach { tag -> EditableTagChip(tagText = tag, onRemove = onRemoveTag) }
+            }
+        Spacer(modifier = Modifier.height(40.dp))
 
         Button(
             onClick = onSave,
@@ -539,7 +545,6 @@ fun Avatar(
   }
 }
 
-
 /**
  * Previews the [ProfileScreen] in either view or edit mode.
  *
@@ -548,18 +553,16 @@ fun Avatar(
 @Composable
 fun ProfileScreenPreview(mode: ProfileMode) {
   SampleAppTheme {
-      Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-          ProfileScreen(
-              uiState =
-                  ProfileUiState(
-                      name = "John Doe",
-                      username = "johndoe",
-                      bio = "I make awesome beats on NepTune",
-                      inputTag = "tag_example",
-                      mode = mode
-                  )
-          )
-      }
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+      ProfileScreen(
+          uiState =
+              ProfileUiState(
+                  name = "John Doe",
+                  username = "johndoe",
+                  bio = "I make awesome beats on NepTune",
+                  inputTag = "tag_example",
+                  mode = mode))
+    }
   }
 }
 
@@ -576,7 +579,6 @@ fun ProfileScreenViewModePreview() {
 fun ProfileScreenEditModePreview() {
   ProfileScreenPreview(ProfileMode.EDIT)
 }
-
 
 /**
  * Composable route for the Profile feature.
@@ -609,15 +611,17 @@ fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
 fun EditableTagChip(tagText: String, onRemove: (String) -> Unit) {
   InputChip(
       selected = false,
-      onClick = { },
+      onClick = {},
       label = { Text(text = tagText) },
       trailingIcon = {
-        IconButton(onClick = { onRemove(tagText) }) {
-          Icon(
-              imageVector = Icons.Default.Close,
-              contentDescription = "Remove tag",
-              tint = NepTuneTheme.colors.onBackground)
-        }
+        IconButton(
+            onClick = { onRemove(tagText) },
+            modifier = Modifier.testTag("profile/tag/remove/$tagText")) {
+              Icon(
+                  imageVector = Icons.Default.Close,
+                  contentDescription = "Remove tag",
+                  tint = NepTuneTheme.colors.onBackground)
+            }
       },
       colors =
           InputChipDefaults.inputChipColors(

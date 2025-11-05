@@ -105,8 +105,7 @@ class ProfileRepositoryFirebase(
                     subscribers = 0L,
                     subscriptions = 0L,
                     likes = 0L,
-                    posts = 0L
-                )
+                    posts = 0L)
 
             // Persist exactly what we’re returning
             tx.set(
@@ -121,9 +120,7 @@ class ProfileRepositoryFirebase(
                     "subscriptions" to 0L,
                     "likes" to 0L,
                     "posts" to 0L,
-                    "tags" to emptyList<String>()
-                )
-            )
+                    "tags" to emptyList<String>()))
 
             created
           }
@@ -245,22 +242,21 @@ class ProfileRepositoryFirebase(
     profiles.document(uid).update("bio", newBio).await()
   }
 
-    /** Adds a new tag to the current user's profile. */
-    override suspend fun addNewTag(tag: String) {
-        val currentUser = Firebase.auth.currentUser
-        val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
-        val normalizedTag = tag.trim().lowercase().replace(Regex("\\s+"), " ")
-        // no check for existence needed: we rely on Firestore’s built-in atomic behavior
-        profiles.document(uid).update("tags", FieldValue.arrayUnion(normalizedTag)).await()
+  /** Adds a new tag to the current user's profile. */
+  override suspend fun addNewTag(tag: String) {
+    val currentUser = Firebase.auth.currentUser
+    val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
+    val normalizedTag = tag.trim().lowercase().replace(Regex("\\s+"), " ")
+    // no check for existence needed: we rely on Firestore’s built-in atomic behavior
+    profiles.document(uid).update("tags", FieldValue.arrayUnion(normalizedTag)).await()
+  }
 
-    }
-
-    /** Removes a tag from the current user's profile. */
-    override suspend fun removeTag(tag: String) {
-        val currentUser = Firebase.auth.currentUser
-        val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
-        profiles.document(uid).update("tags", FieldValue.arrayRemove(tag)).await()
-    }
+  /** Removes a tag from the current user's profile. */
+  override suspend fun removeTag(tag: String) {
+    val currentUser = Firebase.auth.currentUser
+    val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
+    profiles.document(uid).update("tags", FieldValue.arrayRemove(tag)).await()
+  }
 
   /**
    * Uploads a profile image (stub implementation). Updates `avatarUrl` in the profile document and

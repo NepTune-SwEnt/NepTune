@@ -8,6 +8,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -69,8 +70,7 @@ class ProfileScreenTest {
     try {
       node.performScrollTo()
       return
-    } catch (_: AssertionError) {
-    }
+    } catch (_: AssertionError) {}
     scrollAnyScrollableTo(hasTestTag(tag))
   }
 
@@ -143,11 +143,14 @@ class ProfileScreenTest {
             ProfileScreenTestTags.FOLLOWING_BLOCK,
             ProfileScreenTestTags.LIKES_BLOCK,
             ProfileScreenTestTags.POSTS_BLOCK,
-            ProfileScreenTestTags.EDIT_BUTTON)
+        )
         .forEach { tag ->
           composeTestRule.bringIntoView(tag)
           composeTestRule.onNodeWithTag(tag, useUnmergedTree = true).assertExists()
         }
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.EDIT_BUTTON, useUnmergedTree = true)
+        .assertExists()
   }
 
   @Test
@@ -183,17 +186,17 @@ class ProfileScreenTest {
         .assertExists()
         .assert(hasText("“Hello world”"))
 
-      composeTestRule.bringIntoView(ProfileScreenTestTags.LIKES_BLOCK)
-      composeTestRule
-          .onNodeWithTag(ProfileScreenTestTags.LIKES_BLOCK, useUnmergedTree = true)
-          .assertExists()
-          .assert(hasText("3"))
+    composeTestRule.bringIntoView(ProfileScreenTestTags.LIKES_BLOCK)
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.LIKES_BLOCK, useUnmergedTree = true)
+        .assertExists()
+        .assert(hasText("3"))
 
-      composeTestRule.bringIntoView(ProfileScreenTestTags.POSTS_BLOCK)
-      composeTestRule
-          .onNodeWithTag(ProfileScreenTestTags.POSTS_BLOCK, useUnmergedTree = true)
-          .assertExists()
-          .assert(hasText("10"))
+    composeTestRule.bringIntoView(ProfileScreenTestTags.POSTS_BLOCK)
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.POSTS_BLOCK, useUnmergedTree = true)
+        .assertExists()
+        .assert(hasText("10"))
 
     composeTestRule.bringIntoView(ProfileScreenTestTags.FOLLOWERS_BLOCK)
     composeTestRule
@@ -212,7 +215,10 @@ class ProfileScreenTest {
   fun clickingEditTriggersCallback() {
     var clicked = false
     setContentViewMode(onEditClick = { clicked = true })
-    composeTestRule.safeClick(ProfileScreenTestTags.EDIT_BUTTON)
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.EDIT_BUTTON, useUnmergedTree = true)
+        .assertExists()
+        .performClick()
 
     composeTestRule.waitUntil(3_000) { clicked }
     assert(clicked)
@@ -333,8 +339,7 @@ class ProfileScreenTest {
             username = "ok_user",
             bio = "X".repeat(200),
             mode = ProfileMode.EDIT,
-            bioError = errorMsg
-            )
+            bioError = errorMsg)
     setContentEditMode(state = state)
 
     composeTestRule.scrollAnyScrollableTo(hasText(errorMsg))
@@ -371,5 +376,117 @@ class ProfileScreenTest {
     val expected = "4/30"
     composeTestRule.scrollAnyScrollableTo(hasText(expected))
     composeTestRule.onNode(hasText(expected), useUnmergedTree = true).assertExists()
+  }
+
+  @Test
+  fun editMode_addsTagAndDisplaysIt() {
+    val state =
+        mutableStateOf(
+            ProfileUiState(name = "John", username = "john", bio = "", mode = ProfileMode.EDIT))
+
+    composeTestRule.setContent {
+      SampleAppTheme {
+        ProfileScreen(
+            uiState = state.value,
+            onTagInputFieldChange = { s -> state.value = state.value.copy(inputTag = s) },
+            onTagSubmit = {
+              val normalized = state.value.inputTag.trim().lowercase()
+              if (normalized.isNotEmpty()) {
+                state.value =
+                    state.value.copy(
+                        tags = state.value.tags + normalized, inputTag = "", tagError = null)
+              }
+            },
+            onRemoveTag = { t ->
+              state.value = state.value.copy(tags = state.value.tags.filterNot { it == t })
+            })
+      }
+    }
+
+    // Type and add "rock"
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.FIELD_ADD_TAG, useUnmergedTree = true)
+        .performTextInput("Rock")
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.ADD_TAG_BUTTON, useUnmergedTree = true)
+        .performClick()
+
+    // Chip text is lowercased by normalization; search unmerged to see the label
+    composeTestRule.onNode(hasText("rock"), useUnmergedTree = true).assertExists()
+  }
+
+  @Test
+  fun editMode_removeTagHidesIt() {
+    val state =
+        mutableStateOf(
+            ProfileUiState(
+                name = "John",
+                username = "john",
+                bio = "",
+                mode = ProfileMode.EDIT,
+                tags = arrayListOf("rock", "edm")))
+
+    composeTestRule.setContent {
+      SampleAppTheme {
+        ProfileScreen(
+            uiState = state.value,
+            onTagInputFieldChange = { s -> state.value = state.value.copy(inputTag = s) },
+            onTagSubmit = {
+              val n = state.value.inputTag.trim().lowercase()
+              if (n.isNotEmpty())
+                  state.value = state.value.copy(tags = state.value.tags + n, inputTag = "")
+            },
+            onRemoveTag = { t ->
+              state.value = state.value.copy(tags = state.value.tags.filterNot { it == t })
+            })
+      }
+    }
+
+    // Click the "X" for the "rock" chip
+    composeTestRule.onNodeWithTag("profile/tag/remove/rock", useUnmergedTree = true).performClick()
+
+    // "rock" should be gone
+    composeTestRule.onNode(hasText("rock"), useUnmergedTree = true).assertDoesNotExist()
+  }
+
+  @Test
+  fun viewMode_displaysTagsReadOnly() {
+    val state =
+        ProfileUiState(
+            name = "Arianna",
+            username = "itsmeeeari",
+            bio = "“Look at my awesome profile”",
+            tags = listOf("rock", "indie pop", "metal"),
+            mode = ProfileMode.VIEW)
+
+    setContentViewMode(state)
+
+    // All chips are visible
+    composeTestRule.bringIntoView(ProfileScreenTestTags.TAGS_VIEW_SECTION)
+    listOf("rock", "indie pop", "metal").forEach {
+      composeTestRule.onNode(hasText(it), useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    composeTestRule.onNode(hasText("rock"), useUnmergedTree = true).assert(!hasClickAction())
+  }
+
+  @Test
+  fun viewMode_tagsAreViewOnly() {
+    setContentViewMode(
+        state =
+            ProfileUiState(
+                name = "A",
+                username = "a",
+                bio = "",
+                likes = 0,
+                posts = 0,
+                followers = 0,
+                following = 0,
+                mode = ProfileMode.VIEW,
+                tags = arrayListOf("rock")))
+
+    composeTestRule
+        .onNode(hasText("rock"), useUnmergedTree = true)
+        .assert(SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick).not())
   }
 }
