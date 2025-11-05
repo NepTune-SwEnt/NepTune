@@ -42,6 +42,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -462,8 +463,16 @@ private fun ProfileEditContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_EDIT_SECTION)) {
-              uiState.tags.forEach { tag -> EditableTagChip(tagText = tag, onRemove = onRemoveTag) }
+              uiState.tags.forEach { tag ->
+                key(tag) { // <— ensures slot stability and proper disposal on removal
+                  EditableTagChip(
+                      tagText = tag,
+                      onRemove = onRemoveTag,
+                      modifier = Modifier.testTag("profile/tag/chip/${tag.replace(' ', '_')}"))
+                }
+              }
             }
+
         Spacer(modifier = Modifier.height(40.dp))
 
         Button(
@@ -543,15 +552,16 @@ fun Avatar(
 }
 
 @Composable
-fun EditableTagChip(tagText: String, onRemove: (String) -> Unit) {
+fun EditableTagChip(tagText: String, onRemove: (String) -> Unit, modifier: Modifier = Modifier) {
   InputChip(
+      modifier = modifier,
       selected = false,
       onClick = {},
       label = { Text(text = tagText) },
       trailingIcon = {
         IconButton(
             onClick = { onRemove(tagText) },
-            modifier = Modifier.testTag("profile/tag/remove/$tagText")) {
+            modifier = Modifier.testTag("profile/tag/remove/${tagText.replace(' ', '_')}")) {
               Icon(
                   imageVector = Icons.Default.Close,
                   contentDescription = "Remove tag",

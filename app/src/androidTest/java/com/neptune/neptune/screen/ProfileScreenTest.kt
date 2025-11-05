@@ -6,14 +6,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.hasTextExactly
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onFirst
@@ -444,16 +442,16 @@ class ProfileScreenTest {
       }
     }
 
-    // Click the "X" for the "rock" chip
-    composeTestRule
-        .onAllNodes(hasTextExactly("rock", includeEditableText = false), useUnmergedTree = false)
-        .assertCountEquals(1)
+    val chipTag = "profile/tag/chip/rock"
+    val removeTag = "profile/tag/remove/rock"
 
-    composeTestRule.onNodeWithTag("profile/tag/remove/rock", useUnmergedTree = true).performClick()
+    composeTestRule.onNodeWithTag(chipTag, useUnmergedTree = true).assertExists()
+
+    composeTestRule.onNodeWithTag(removeTag, useUnmergedTree = true).performClick()
 
     composeTestRule.waitUntil(5_000L) {
       composeTestRule
-          .onAllNodes(hasTextExactly("rock", includeEditableText = false), false)
+          .onAllNodes(hasTestTag(chipTag), useUnmergedTree = true)
           .fetchSemanticsNodes()
           .isEmpty()
     }
