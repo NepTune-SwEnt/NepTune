@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -167,7 +169,7 @@ private fun ProfileViewContent(
       topBar = {
         Column {
           Row(
-              modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp).verticalScroll(rememberScrollState()),
+              modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
               horizontalArrangement = Arrangement.SpaceBetween,
               verticalAlignment = Alignment.CenterVertically) {
                 IconButton(
@@ -195,6 +197,7 @@ private fun ProfileViewContent(
             modifier =
                 Modifier.fillMaxSize()
                     .padding(innerPadding)
+                    .verticalScroll(rememberScrollState())
                     .testTag(ProfileScreenTestTags.VIEW_CONTENT),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -215,7 +218,7 @@ private fun ProfileViewContent(
               style = MaterialTheme.typography.bodyMedium,
               modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
 
-            Spacer(Modifier.height(50.dp))
+            Spacer(Modifier.height(40.dp))
 
             Row(Modifier.fillMaxWidth()) {
                 StatBlock(
@@ -242,7 +245,7 @@ private fun ProfileViewContent(
                     testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
             }
 
-          Spacer(Modifier.height(150.dp))
+          Spacer(Modifier.height(50.dp))
 
           Text(
               text = if (state.bio != "") "“${state.bio}”" else "",
@@ -251,8 +254,8 @@ private fun ProfileViewContent(
               textAlign = TextAlign.Center,
               modifier = Modifier.testTag(ProfileScreenTestTags.BIO)
           )
+            Spacer(Modifier.height(50.dp))
 
-            // under the bio (before Edit button)
             if (state.tags.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))
                 FlowRow(
@@ -274,7 +277,7 @@ private fun ProfileViewContent(
                 }
             }
 
-
+            Spacer(Modifier.height(50.dp))
             Button(
               onClick = onEdit,
               enabled = true,
@@ -411,30 +414,39 @@ private fun ProfileEditContent(
 
         Spacer(modifier = Modifier.height(40.dp))
 
-      OutlinedTextField(
-          value = uiState.inputTag,
-          onValueChange = onTagInputFieldChange,
-          label = { Text("Add a tag") },
-          colors = TextFieldColors(),
-          modifier = Modifier
-              .fillMaxWidth()
-              .testTag("profile/field/add_tag"),
-          supportingText = {
-              Text(
-                  text = buildString {
-                      append("${uiState.inputTag.trim().length}/20")
-                      if (uiState.tagError != null) append(" • ${uiState.tagError}")
-                  },
-                  color = if (uiState.tagError != null) MaterialTheme.colorScheme.error
-                  else NepTuneTheme.colors.onBackground,
-                  style = MaterialTheme.typography.bodySmall
-              )
+      Row(
+            verticalAlignment = Alignment.CenterVertically,
+      ) {
+          OutlinedTextField(
+              value = uiState.inputTag,
+              onValueChange = onTagInputFieldChange,
+              label = { Text("My music genre") },
+              colors = TextFieldColors(),
+              singleLine = true,
+              modifier = Modifier
+                  .weight(1f)
+                  .testTag("profile/field/add_tag"),
+              supportingText = {
+                  Text(
+                      text = buildString {
+                          append("${uiState.inputTag.trim().length}/20")
+                          if (uiState.tagError != null) append(" • ${uiState.tagError}")
+                      },
+                      color = if (uiState.tagError != null) MaterialTheme.colorScheme.error
+                      else NepTuneTheme.colors.onBackground,
+                      style = MaterialTheme.typography.bodySmall
+                  )
+              }
+          )
+          Spacer(Modifier.width(12.dp))
+          Button(
+              onClick = onTagSubmit,
+              modifier = Modifier.fillMaxHeight()
+          ) {
+              Icon(imageVector = Icons.Default.Add, contentDescription = "Add")
           }
-      )
 
-      Spacer(Modifier.height(12.dp))
-
-      Button(onClick = onTagSubmit) { Text("+ Add") }
+      }
 
       Spacer(Modifier.height(12.dp))
 
@@ -446,7 +458,7 @@ private fun ProfileEditContent(
               EditableTagChip(tagText = tag, onRemove = onRemoveTag)
           }
       }
-
+      Spacer(modifier = Modifier.height(40.dp))
 
         Button(
             onClick = onSave,
