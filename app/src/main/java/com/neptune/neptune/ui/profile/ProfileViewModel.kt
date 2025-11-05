@@ -13,6 +13,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
+private const val MAX_TAGS = 10
+private const val MAX_TAG_LEN = 20
+private val TAG_REGEX = Regex("^[a-z0-9 _-]+$")
+private fun normalizeTag(s: String) = s.trim().lowercase().replace(Regex("\\s+"), " ")
+
 /**
  * ViewModel responsible for managing and validating profile data.
  *
@@ -47,6 +52,7 @@ class ProfileViewModel(private val repo: ProfileRepository = ProfileRepositoryPr
                   following = p.subscriptions.toInt(),
                   likes = p.likes.toInt(),
                   posts = p.posts.toInt(),
+                  tags = p.tags,
                   error = null)
         } else if (p != null && _uiState.value.mode == ProfileMode.EDIT) {
           _uiState.value =
@@ -55,6 +61,7 @@ class ProfileViewModel(private val repo: ProfileRepository = ProfileRepositoryPr
                   following = p.subscriptions.toInt(),
                   likes = p.likes.toInt(),
                   posts = p.posts.toInt(),
+                    tags = p.tags,
                   avatarUrl = p.avatarUrl,
               )
         }
@@ -79,6 +86,7 @@ class ProfileViewModel(private val repo: ProfileRepository = ProfileRepositoryPr
                 following = prof.subscriptions.toInt(),
                 likes = prof.likes.toInt(),
                 posts = prof.posts.toInt(),
+                tags = prof.tags,
                 isSaving = false,
                 error = null)
       } catch (t: Throwable) {
@@ -150,6 +158,65 @@ class ProfileViewModel(private val repo: ProfileRepository = ProfileRepositoryPr
     if (_uiState.value.mode != ProfileMode.EDIT) return
     _uiState.value = _uiState.value.copy(bio = newBio).validated()
   }
+
+    fun onTagInputFieldChange(newTag: String) {
+        if (_uiState.value.mode != ProfileMode.EDIT) return
+        _uiState.value = _uiState.value.copy(inputTag = newTag, tagError = null)
+    }
+
+    fun onTagAddition() {
+        if (_uiState.value.mode != ProfileMode.EDIT) return
+
+        val s = _uiState.value
+        val normalized = normalizeTag(s.inputTag)
+
+        when {
+            normalized.isEmpty() -> return
+            normalized.length > MAX_TAG_LEN ->
+            { _uiState.value = s.copy(tagError = "Max $MAX_TAG_LEN characters."); return }
+            !TAG_REGEX.matches(normalized) ->
+            { _uiState.value = s.copy(tagError = "Only letters, numbers, spaces, - and _."); return }
+            s.tags.size >= MAX_TAGS ->
+            { _uiState.value = s.copy(tagError = "You can add up to $MAX_TAGS tags."); return }
+            s.tags.any { it.equals(normalized, true) } ->
+            { _uiState.value = s.copy(tagError = "Tag already exists."); return }
+        }
+
+        _uiState.value = s.copy(tags = s.tags + normalized, inputTag = "", tagError = null)
+
+        viewModelScope.launch {
+            try {
+                repo.addNewTag(normalized)
+            } catch (t: Throwable) {
+                _uiState.value = _uiState.value.copy(
+                    tags = _uiState.value.tags.filterNot { it == normalized },
+                    tagError = t.message ?: "Couldn't add tag."
+                )
+            }
+        }
+    }
+
+
+    fun onTagDeletion(tagToRemove: String) {
+        if (_uiState.value.mode != ProfileMode.EDIT) return
+
+        val prev = _uiState.value
+        if (prev.tags.none { it.equals(tagToRemove, true) }) return
+
+        _uiState.value = prev.copy(tags = prev.tags.filterNot { it.equals(tagToRemove, true) })
+
+        viewModelScope.launch {
+            try {
+                repo.removeTag(tagToRemove)
+            } catch (t: Throwable) {
+                _uiState.value = _uiState.value.copy(
+                    tags = prev.tags,
+                    tagError = t.message ?: "Couldn't remove tag."
+                )
+            }
+        }
+    }
+
 
   /**
    * Validates and saves the profile data.
