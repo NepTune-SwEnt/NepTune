@@ -46,7 +46,7 @@ class ProfileViewModelTest {
   }
 
   @Test
-  fun `initial state loads defaults in VIEW mode`() {
+  fun initialStateLoadsDefaultsInViewMode() {
     val s = viewModel.uiState.value
     assertEquals(ProfileMode.VIEW, s.mode)
     assertEquals("John Doe", s.name)
@@ -57,13 +57,13 @@ class ProfileViewModelTest {
   }
 
   @Test
-  fun `onNameChange ignored while in VIEW mode`() {
+  fun onNameChangeIgnoredWhileInViewMode() {
     viewModel.onNameChange("Alice")
     assertEquals("John Doe", viewModel.uiState.value.name) // unchanged
   }
 
   @Test
-  fun `onEditClick enters EDIT and restores current saved values`() {
+  fun onEditClickEntersEditAndRestoresCurrentSavedValues() {
     viewModel.onEditClick()
     val s = viewModel.uiState.value
     assertEquals(ProfileMode.EDIT, s.mode)
@@ -73,7 +73,7 @@ class ProfileViewModelTest {
   }
 
   @Test
-  fun `username validation fails for bad format`() {
+  fun usernameValidationFailsForBadFormat() {
     viewModel.onEditClick()
     viewModel.onUsernameChange("__bad__")
     val s = viewModel.uiState.value
@@ -82,7 +82,7 @@ class ProfileViewModelTest {
   }
 
   @Test
-  fun `bio validation fails when too long`() {
+  fun bioValidationFailsWhenTooLong() {
     viewModel.onEditClick()
     viewModel.onBioChange("x".repeat(161))
     val s = viewModel.uiState.value
@@ -91,7 +91,7 @@ class ProfileViewModelTest {
   }
 
   @Test
-  fun `onSaveClick no-op when not in EDIT mode`() = runTest {
+  fun onSaveClickNoOpWhenNotInEditMode() = runTest {
     val before = viewModel.uiState.value
     viewModel.onSaveClick()
     val after = viewModel.uiState.value
@@ -99,7 +99,7 @@ class ProfileViewModelTest {
   }
 
   @Test
-  fun `onSaveClick does not proceed when invalid`() = runTest {
+  fun onSaveClickDoesNotProceedWhenInvalid() = runTest {
     viewModel.onEditClick()
     viewModel.onNameChange("A") // invalid (too short)
     viewModel.onSaveClick()
@@ -111,7 +111,7 @@ class ProfileViewModelTest {
   }
 
   @Test
-  fun `successful save trims fields and returns to VIEW`() = runTest {
+  fun successfulSaveTrimsFieldsAndReturnsToView() = runTest {
     viewModel.onEditClick()
     viewModel.onNameChange("  Alice  ")
     viewModel.onUsernameChange("alice_123")
@@ -132,5 +132,50 @@ class ProfileViewModelTest {
     assertEquals("Alice", s.name)
     assertEquals("alice_123", s.username)
     assertEquals("Hello there", s.bio)
+  }
+
+  @Test
+  fun onTagInputChangeAddDuplicateAndDelete() = runTest {
+    // In VIEW mode, input change is ignored
+    viewModel.onTagInputFieldChange(" rock ")
+    assertEquals("", viewModel.uiState.value.inputTag) // unchanged in VIEW
+
+    // Enter EDIT and verify input field change clears errors
+    viewModel.onEditClick()
+    viewModel.onTagInputFieldChange("  rock  ")
+    var s = viewModel.uiState.value
+    assertEquals("  rock  ", s.inputTag)
+    assertNull(s.tagError)
+
+    // Empty/whitespace addition is a no-op
+    viewModel.onTagInputFieldChange("   ")
+    viewModel.onTagAddition()
+    s = viewModel.uiState.value
+    assertTrue("No tags should be added on empty input", s.tags.isEmpty())
+
+    // Add a valid tag
+    viewModel.onTagInputFieldChange("  Rock  ")
+    viewModel.onTagAddition()
+    advanceUntilIdle()
+    s = viewModel.uiState.value
+    assertTrue("rock should be added once", s.tags.contains("rock"))
+    assertEquals("", s.inputTag)
+    assertNull(s.tagError)
+
+    // Attempt to add duplicate
+    viewModel.onTagInputFieldChange("ROCK")
+    viewModel.onTagAddition()
+    s = viewModel.uiState.value
+    assertEquals("Tag already exists.", s.tagError)
+
+    // Deletion of existing tag
+    viewModel.onTagDeletion("rock")
+    advanceUntilIdle()
+    s = viewModel.uiState.value
+    assertFalse("rock should be removed", s.tags.contains("rock"))
+
+    // Deletion of a non-existing tag is ignored
+    viewModel.onTagDeletion("does-not-exist")
+    assertEquals(s, viewModel.uiState.value)
   }
 }
