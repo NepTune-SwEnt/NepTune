@@ -30,7 +30,7 @@ class FakeProfileRepository(initial: Profile? = null) : ProfileRepository {
                 subscriptions = 0,
                 likes = 0,
                 posts = 0,
-                tags = emptyList())
+                tags = arrayListOf())
     this@FakeProfileRepository.profile = profile
     return profile
   }
@@ -51,13 +51,9 @@ class FakeProfileRepository(initial: Profile? = null) : ProfileRepository {
 
   override suspend fun uploadAvatar(localUri: Uri): String = ""
 
-  override suspend fun addNewTag(tag: String) {
-    profile = profile?.copy(tags = profile!!.tags + tag)
-  }
+  override suspend fun addNewTag(tag: String) { }
 
-  override suspend fun removeTag(tag: String) {
-    profile = profile?.copy(tags = profile!!.tags - tag)
-  }
+  override suspend fun removeTag(tag: String) {}
 
   override suspend fun removeAvatar() {}
 }
