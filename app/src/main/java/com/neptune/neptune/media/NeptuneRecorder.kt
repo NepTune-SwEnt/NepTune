@@ -16,13 +16,14 @@ class NeptuneRecorder(private val context: Context) {
   var isRecording = false
   private var outputFile: File? = null
 
-  fun start(fileName: String = "rec_${System.currentTimeMillis()}.m4a", sampleRate: Int = 44100): File {
+  fun start(fileName: String = "rec_${System.currentTimeMillis()}.m4a", sampleRate: Int = 44100, audioSource: Int = MediaRecorder.AudioSource.UNPROCESSED): File {
     if (sampleRate <= 0) throw IllegalArgumentException("Sample rate must be positive")
     if (isRecording) throw IllegalStateException("Already recording")
     val file = createOutputFile(fileName)
     recorder =
         MediaRecorder().apply {
-          setAudioSource(MediaRecorder.AudioSource.MIC)
+          // TODO: try different audio sources
+          setAudioSource(audioSource)
           setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
           setOutputFile(file.absolutePath)
           setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
