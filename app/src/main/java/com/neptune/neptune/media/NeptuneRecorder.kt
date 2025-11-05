@@ -3,6 +3,7 @@ package com.neptune.neptune.media
 import android.content.Context
 import android.media.MediaRecorder
 import android.media.MediaScannerConnection
+import com.neptune.neptune.data.StoragePaths
 import java.io.File
 import java.io.IOException
 
@@ -10,16 +11,24 @@ import java.io.IOException
  * NeptuneRecorder is an audio recorder that captures audio from the microphone and saves it to a
  * file.
  */
-class NeptuneRecorder(private val context: Context) {
+class NeptuneRecorder(private val context: Context, private val paths: StoragePaths) {
 
   var recorder: MediaRecorder? = null
   var isRecording = false
   private var outputFile: File? = null
 
-  fun start(fileName: String = "rec_${System.currentTimeMillis()}.m4a", sampleRate: Int = 44100, audioSource: Int = MediaRecorder.AudioSource.UNPROCESSED): File {
+  fun start(
+      fileName: String = "rec_${System.currentTimeMillis()}.m4a",
+      sampleRate: Int = 44100,
+      audioSource: Int = MediaRecorder.AudioSource.UNPROCESSED
+  ): File {
     if (sampleRate <= 0) throw IllegalArgumentException("Sample rate must be positive")
     if (isRecording) throw IllegalStateException("Already recording")
-    val file = createOutputFile(fileName)
+    val file: File
+    paths.recordWorkspace().let { dir ->
+      if (!dir.exists()) dir.mkdirs()
+      file = File(dir, fileName)
+    }
     recorder =
         MediaRecorder().apply {
           // TODO: try different audio sources
@@ -76,11 +85,5 @@ class NeptuneRecorder(private val context: Context) {
     } catch (_: Exception) {}
     recorder = null
     isRecording = false
-  }
-
-  private fun createOutputFile(fileName: String): File {
-    val dir = context.getExternalFilesDir("Records") ?: context.filesDir
-    if (!dir.exists()) dir.mkdirs()
-    return File(dir, fileName)
   }
 }
