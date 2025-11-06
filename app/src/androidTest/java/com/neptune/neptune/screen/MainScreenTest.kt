@@ -1,13 +1,13 @@
 package com.neptune.neptune.screen
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.ui.res.painterResource
+import android.content.Context
+import androidx.activity.ComponentActivity
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onLast
@@ -15,57 +15,54 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
-import com.neptune.neptune.NeptuneApp
-import com.neptune.neptune.R
-import com.neptune.neptune.ui.main.IconWithText
-import com.neptune.neptune.ui.main.IconWithTextPainter
+import com.neptune.neptune.media.LocalMediaPlayer
+import com.neptune.neptune.media.NeptuneMediaPlayer
+import com.neptune.neptune.model.FakeProfileRepository
+import com.neptune.neptune.model.FakeSampleRepository
+import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.navigation.NavigationTestTags
-import com.neptune.neptune.ui.navigation.Screen
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+/**
+ * Tests for the MainScreen.This has been written with the help of LLMs.
+ *
+ * @author Angéline Bignens
+ */
 class MainScreenTest {
 
-  @get:Rule val composeTestRule = createComposeRule()
+  @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
-  private fun setContent(mainViewModel: MainViewModel = MainViewModel()) {
-    composeTestRule.setContent { NeptuneApp(startDestination = Screen.Main.route) }
-  }
+  private lateinit var viewModel: MainViewModel
+  private lateinit var context: Context
 
-  @Test
-  fun mainScreen_displaysBottomNav() {
-    setContent()
+  private lateinit var mediaPlayer: NeptuneMediaPlayer
 
-    composeTestRule.onNodeWithTag(MainScreenTestTags.MAIN_SCREEN).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
-  }
+  @Before
+  fun setup() {
+    context = composeTestRule.activity.applicationContext
+    mediaPlayer = NeptuneMediaPlayer(context)
 
-  @Test
-  fun mainScreen_bottomNavigationBar_hasAllButton() {
-    setContent()
+    // Use fake repo
+    val fakeSampleRepo = FakeSampleRepository()
+    val fakeProfileRepo = FakeProfileRepository()
 
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.POST_TAB).assertIsDisplayed()
-  }
+    // Inject fake repo into ViewModel and use mock data
+    viewModel =
+        MainViewModel(repo = fakeSampleRepo, profileRepo = fakeProfileRepo, useMockData = true)
 
-  @Test
-  fun mainScreen_bottomNavigationBar_canClickAllButtons() {
-    setContent()
-    listOf(
-            NavigationTestTags.MAIN_TAB,
-            NavigationTestTags.SEARCH_TAB,
-            NavigationTestTags.PROJECTLIST_TAB,
-            NavigationTestTags.POST_TAB)
-        .forEach { tag -> composeTestRule.onNodeWithTag(tag).assertHasClickAction().performClick() }
+    composeTestRule.setContent {
+      CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
+        MainScreen(mainViewModel = viewModel)
+      }
+    }
   }
 
   @Test
   fun mainScreen_topAppNavBar_canClickOnProfile() {
-    setContent()
     composeTestRule
         .onNodeWithTag(NavigationTestTags.PROFILE_BUTTON)
         .assertHasClickAction()
@@ -74,8 +71,6 @@ class MainScreenTest {
 
   @Test
   fun discoverSection_displaysSample() {
-    setContent()
-
     composeTestRule.onNodeWithText("Discover").assertIsDisplayed()
     // Check that at least one sample card is displayed
     composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_CARD).onFirst().assertIsDisplayed()
@@ -83,7 +78,6 @@ class MainScreenTest {
 
   @Test
   fun followedSection_isDisplayed() {
-    setContent()
     val lazyColumn = composeTestRule.onNodeWithTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)
 
     // Scroll to the Followed Section
@@ -99,43 +93,46 @@ class MainScreenTest {
 
   @Test
   fun sampleCard_displaysDetails() {
-    setContent()
-
     composeTestRule
-        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_PROFILE_ICON)
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_PROFILE_ICON, true)
         .onFirst()
         .assertIsDisplayed()
     composeTestRule
-        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_USERNAME)
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_USERNAME, true)
         .onFirst()
         .assertIsDisplayed()
-    composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_NAME).onFirst().assertIsDisplayed()
     composeTestRule
-        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_DURATION)
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_NAME, true)
         .onFirst()
         .assertIsDisplayed()
-    composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_TAGS).onFirst().assertIsDisplayed()
+    composeTestRule
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_DURATION, true)
+        .onFirst()
+        .assertIsDisplayed()
+    composeTestRule
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_TAGS, true)
+        .onFirst()
+        .assertIsDisplayed()
   }
 
   @Test
   fun sampleCard_displaysActions() {
-    setContent()
-
-    composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_LIKES).onFirst().assertIsDisplayed()
     composeTestRule
-        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_COMMENTS)
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_LIKES, true)
         .onFirst()
         .assertIsDisplayed()
     composeTestRule
-        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_DOWNLOADS)
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_COMMENTS, true)
+        .onFirst()
+        .assertIsDisplayed()
+    composeTestRule
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_DOWNLOADS, true)
         .onFirst()
         .assertIsDisplayed()
   }
 
   @Test
   fun canScrollToLastSampleCard() {
-    setContent()
-
     composeTestRule
         .onNodeWithTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)
         .performScrollToNode(hasTestTag(MainScreenTestTags.SAMPLE_CARD))
@@ -144,18 +141,13 @@ class MainScreenTest {
     composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_CARD).onLast().assertIsDisplayed()
   }
 
+  /** Test that like button is clickable */
   @Test
-  fun iconWithText_defaultModifier() {
-    composeTestRule.setContent {
-      IconWithText(Icons.Default.FavoriteBorder, "Like", "0") // uses default Modifier
-    }
-  }
-
-  @Test
-  fun iconWithTextPainter_defaultModifier() {
-    composeTestRule.setContent {
-      IconWithTextPainter(
-          icon = painterResource(R.drawable.download), "Downloads", "0") // uses default Modifier
-    }
+  fun canLike() {
+    composeTestRule
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_LIKES)
+        .onFirst()
+        .assertHasClickAction()
+        .performClick()
   }
 }

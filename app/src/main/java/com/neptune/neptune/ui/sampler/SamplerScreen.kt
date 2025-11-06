@@ -41,6 +41,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.ui.sampler.SamplerTestTags.CURVE_EDITOR_SCROLL_CONTAINER
 import com.neptune.neptune.ui.sampler.SamplerTestTags.FADER_60HZ_TAG
 import com.neptune.neptune.ui.theme.NepTuneTheme
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -108,9 +110,26 @@ enum class KnobUnit {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SamplerScreen(viewModel: SamplerViewModel = viewModel(), onBack: () -> Unit = {}) {
+fun SamplerScreen(
+    viewModel: SamplerViewModel = viewModel(),
+    zipFilePath: String?,
+) {
   val uiState by viewModel.uiState.collectAsState()
-  var selectedItem by remember { mutableIntStateOf(2) }
+
+  val decodedZipPath =
+      remember(zipFilePath) {
+        if (zipFilePath.isNullOrEmpty()) {
+          null
+        } else {
+          URLDecoder.decode(zipFilePath, StandardCharsets.UTF_8.name())
+        }
+      }
+
+  LaunchedEffect(Unit) {
+    if (decodedZipPath != null) {
+      viewModel.loadProjectData(decodedZipPath)
+    }
+  }
 
   Scaffold(
       containerColor = NepTuneTheme.colors.background,
@@ -753,7 +772,8 @@ fun UniversalKnob(
     modifier: Modifier = Modifier
 ) {
   val accentColor = NepTuneTheme.colors.accentPrimary
-  val lightText = Color.White
+  val knobColor = Color.White
+  val lightText = NepTuneTheme.colors.smallText
 
   val displayValue =
       when (unit) {
@@ -810,12 +830,12 @@ fun UniversalKnob(
             val indicatorX = center.x + radius * cos(adjustedAngleRad).toFloat()
             val indicatorY = center.y + radius * sin(adjustedAngleRad).toFloat()
             drawLine(
-                color = lightText,
+                color = knobColor,
                 start = center,
                 end = Offset(indicatorX, indicatorY),
                 strokeWidth = 1.5.dp.toPx())
             drawCircle(
-                color = lightText, radius = 3.dp.toPx(), center = Offset(indicatorX, indicatorY))
+                color = knobColor, radius = 3.dp.toPx(), center = Offset(indicatorX, indicatorY))
           }
         }
     Spacer(modifier = Modifier.height(8.dp))

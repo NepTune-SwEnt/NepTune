@@ -2,26 +2,38 @@ package com.neptune.neptune.ui.profile
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -30,7 +42,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -72,56 +87,55 @@ object ProfileScreenTestTags {
 
   const val FOLLOWERS_BLOCK = "profile/stat/followers"
   const val FOLLOWING_BLOCK = "profile/stat/following"
+  const val POSTS_BLOCK = "profile/stat/posts"
+  const val LIKES_BLOCK = "profile/stat/likes"
+
+  const val TAGS_VIEW_SECTION = "profile/view/tags"
+  const val TAGS_EDIT_SECTION = "profile/edit/tags"
 
   const val EDIT_BUTTON = "profile/btn/edit"
   const val SAVE_BUTTON = "profile/btn/save"
-  const val LOGOUT_BUTTON = "profile/btn/logout"
+  const val ADD_TAG_BUTTON = "profile/btn/add_tag"
+  const val SETTINGS_BUTTON = "profile/btn/settings"
   const val GOBACK_BUTTON = "profile/btn/goback"
 
   const val FIELD_NAME = "profile/field/name"
   const val FIELD_USERNAME = "profile/field/username"
   const val FIELD_BIO = "profile/field/bio"
-
-  fun statBlockTag(label: String) = "profile/stat/$label"
+  const val FIELD_ADD_TAG = "profile/field/add_tag"
 }
 
 /**
  * Displays the main Profile screen, switching between view and edit modes.
  *
  * @param uiState The current [ProfileUiState] containing user data and screen mode.
- * @param onEditClick Callback invoked when the Edit button is pressed.
- * @param onSaveClick Callback invoked when the Save button is pressed.
- * @param onNameChange Called whenever the user edits their name field.
- * @param onUsernameChange Called whenever the user edits their username field.
- * @param onBioChange Called whenever the user edits their bio field.
- * @param onLogoutClick Callback invoked when the Logout button is pressed.
+ * @param callbacks The [ProfileScreenCallbacks] for handling user interactions.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     uiState: ProfileUiState,
-    onEditClick: () -> Unit = {},
-    onSaveClick: (name: String, username: String, bio: String) -> Unit = { _, _, _ -> },
-    onNameChange: (String) -> Unit = {},
-    onUsernameChange: (String) -> Unit = {},
-    onBioChange: (String) -> Unit = {},
-    onLogoutClick: () -> Unit = {},
-    goBackClick: () -> Unit = {}
+    callbacks: ProfileScreenCallbacks = ProfileScreenCallbacks.Empty,
 ) {
-  // TODO: add profile picture, follower/following count and back button
   Column(modifier = Modifier.padding(16.dp).testTag(ProfileScreenTestTags.ROOT)) {
     when (uiState.mode) {
       ProfileMode.VIEW -> {
         ProfileViewContent(
-            state = uiState, onEdit = onEditClick, logout = onLogoutClick, goBack = goBackClick)
+            state = uiState,
+            onEdit = callbacks.onEditClick,
+            settings = callbacks.onSettingsClick,
+            goBack = callbacks.goBackClick)
       }
       ProfileMode.EDIT -> {
         ProfileEditContent(
             uiState = uiState,
-            onSave = { onSaveClick(uiState.name, uiState.username, uiState.bio) },
-            onNameChange = onNameChange,
-            onUsernameChange = onUsernameChange,
-            onBioChange = onBioChange)
+            onSave = { callbacks.onSaveClick(uiState.name, uiState.username, uiState.bio) },
+            onNameChange = callbacks.onNameChange,
+            onUsernameChange = callbacks.onUsernameChange,
+            onBioChange = callbacks.onBioChange,
+            onTagInputFieldChange = callbacks.onTagInputFieldChange,
+            onTagSubmit = callbacks.onTagSubmit,
+            onRemoveTag = callbacks.onRemoveTag)
       }
     }
   }
@@ -135,13 +149,16 @@ fun ProfileScreen(
  *
  * @param state The [ProfileUiState] containing the displayed user information.
  * @param onEdit Callback triggered when the Edit button is clicked.
+ * @param goBack Callback triggered when the Go Back button is clicked.
+ * @param settings Callback triggered when the Settings button is clicked.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ProfileViewContent(
     state: ProfileUiState,
     onEdit: () -> Unit,
     goBack: () -> Unit,
-    logout: () -> Unit,
+    settings: () -> Unit,
 ) {
   Scaffold(
       modifier = Modifier.testTag(ProfileScreenTestTags.ROOT),
@@ -155,16 +172,16 @@ private fun ProfileViewContent(
                     onClick = goBack,
                     modifier = Modifier.testTag(ProfileScreenTestTags.GOBACK_BUTTON)) {
                       Icon(
-                          painter = painterResource(id = android.R.drawable.ic_menu_revert),
+                          imageVector = Icons.Default.ArrowBackIosNew,
                           contentDescription = "Go Back",
                           tint = NepTuneTheme.colors.onBackground)
                     }
                 IconButton(
-                    modifier = Modifier.size(30.dp).testTag(ProfileScreenTestTags.LOGOUT_BUTTON),
-                    onClick = logout) {
+                    modifier = Modifier.size(30.dp).testTag(ProfileScreenTestTags.SETTINGS_BUTTON),
+                    onClick = settings) {
                       Icon(
                           modifier = Modifier.size(30.dp),
-                          imageVector = Icons.AutoMirrored.Filled.Logout,
+                          imageVector = Icons.Default.Settings,
                           contentDescription = "Logout",
                           tint = NepTuneTheme.colors.onBackground)
                     }
@@ -172,58 +189,101 @@ private fun ProfileViewContent(
         }
       },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
-        Column(
-            modifier =
-                Modifier.fillMaxSize()
-                    .padding(innerPadding)
-                    .testTag(ProfileScreenTestTags.VIEW_CONTENT),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            // verticalArrangement = Arrangement.Center
-        ) {
-          Spacer(Modifier.height(15.dp))
-          Avatar(modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR), showEditPencil = false)
-          Spacer(Modifier.height(15.dp))
+        Box(Modifier.fillMaxSize().padding(innerPadding)) {
+          Column(
+              modifier =
+                  Modifier.fillMaxSize()
+                      .padding(bottom = 88.dp)
+                      .verticalScroll(rememberScrollState())
+                      .testTag(ProfileScreenTestTags.VIEW_CONTENT),
+              horizontalAlignment = Alignment.CenterHorizontally,
+          ) {
+            Spacer(Modifier.height(15.dp))
+            Avatar(
+                modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR), showEditPencil = false)
+            Spacer(Modifier.height(15.dp))
 
-          Text(
-              text = state.name,
-              color = NepTuneTheme.colors.onBackground,
-              style = MaterialTheme.typography.headlineMedium,
-              textAlign = TextAlign.Center,
-              modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
+            Text(
+                text = state.name,
+                color = NepTuneTheme.colors.onBackground,
+                style = MaterialTheme.typography.headlineMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
 
-          Text(
-              text = "@${state.username}",
-              color = NepTuneTheme.colors.onBackground,
-              style = MaterialTheme.typography.bodyMedium,
-              modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
+            Text(
+                text = "@${state.username}",
+                color = NepTuneTheme.colors.onBackground,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
 
-          Spacer(Modifier.height(100.dp))
+            Spacer(Modifier.height(40.dp))
 
-          Text(
-              text = if (state.bio != "") "“ ${state.bio} ”" else "",
-              color = NepTuneTheme.colors.onBackground,
-              style = MaterialTheme.typography.titleLarge,
-              textAlign = TextAlign.Center,
-              modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
-          Spacer(Modifier.height(150.dp))
-          Row(Modifier.fillMaxWidth()) {
-            StatBlock(
-                label = "Followers",
-                value = state.followers,
-                modifier = Modifier.weight(1f),
-                testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
-            StatBlock(
-                label = "Following",
-                value = state.following,
-                modifier = Modifier.weight(1f),
-                testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
+            Row(Modifier.fillMaxWidth()) {
+              StatBlock(
+                  label = "Posts",
+                  value = state.posts,
+                  modifier = Modifier.weight(1f),
+                  testTag = ProfileScreenTestTags.POSTS_BLOCK)
+              StatBlock(
+                  label = "Likes",
+                  value = state.likes,
+                  modifier = Modifier.weight(1f),
+                  testTag = ProfileScreenTestTags.LIKES_BLOCK)
+              StatBlock(
+                  label = "Followers",
+                  value = state.followers,
+                  modifier = Modifier.weight(1f),
+                  testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
+              StatBlock(
+                  label = "Following",
+                  value = state.following,
+                  modifier = Modifier.weight(1f),
+                  testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
+            }
+
+            Spacer(Modifier.height(100.dp))
+
+            Text(
+                text = if (state.bio != "") "“${state.bio}”" else "",
+                color = NepTuneTheme.colors.onBackground,
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
+            Spacer(Modifier.height(100.dp))
+
+            if (state.tags.isNotEmpty()) {
+              Spacer(Modifier.height(16.dp))
+              FlowRow(
+                  horizontalArrangement = Arrangement.spacedBy(8.dp),
+                  verticalArrangement = Arrangement.spacedBy(8.dp),
+                  modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_VIEW_SECTION)) {
+                    state.tags.forEach { tag ->
+                      InputChip(
+                          selected = false,
+                          onClick = {},
+                          enabled = false,
+                          label = { Text(tag) },
+                          colors =
+                              InputChipDefaults.inputChipColors(
+                                  disabledContainerColor = NepTuneTheme.colors.cardBackground,
+                                  disabledLabelColor = NepTuneTheme.colors.onBackground),
+                          border =
+                              InputChipDefaults.inputChipBorder(
+                                  borderWidth = 0.dp, enabled = false, selected = false))
+                    }
+                  }
+            }
+
+            Spacer(Modifier.height(50.dp))
           }
-          Spacer(Modifier.height(80.dp))
 
           Button(
               onClick = onEdit,
               enabled = true,
-              modifier = Modifier.testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
+              modifier =
+                  Modifier.align(Alignment.BottomCenter)
+                      .padding(bottom = 24.dp)
+                      .testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
                 Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
                 Spacer(Modifier.width(8.dp))
                 Text("Edit")
@@ -260,7 +320,7 @@ val TextFieldColors: @Composable () -> TextFieldColors = {
  * @param onUsernameChange Called on text change in the username field.
  * @param onBioChange Called on text change in the bio field.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun ProfileEditContent(
     uiState: ProfileUiState,
@@ -268,9 +328,15 @@ private fun ProfileEditContent(
     onNameChange: (String) -> Unit,
     onUsernameChange: (String) -> Unit,
     onBioChange: (String) -> Unit,
+    onTagInputFieldChange: (String) -> Unit,
+    onTagSubmit: () -> Unit,
+    onRemoveTag: (String) -> Unit
 ) {
   Column(
-      modifier = Modifier.fillMaxSize().testTag(ProfileScreenTestTags.EDIT_CONTENT),
+      modifier =
+          Modifier.fillMaxSize()
+              .verticalScroll(rememberScrollState())
+              .testTag(ProfileScreenTestTags.EDIT_CONTENT),
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.Center) {
         Spacer(modifier = Modifier.height(40.dp))
@@ -352,6 +418,55 @@ private fun ProfileEditContent(
             })
 
         Spacer(modifier = Modifier.height(40.dp))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+          OutlinedTextField(
+              value = uiState.inputTag,
+              onValueChange = onTagInputFieldChange,
+              label = { Text("My music genre") },
+              colors = TextFieldColors(),
+              singleLine = true,
+              modifier = Modifier.weight(1f).testTag(ProfileScreenTestTags.FIELD_ADD_TAG),
+              supportingText = {
+                Text(
+                    text =
+                        buildString {
+                          append("${uiState.inputTag.trim().length}/20")
+                          if (uiState.tagError != null) append(" • ${uiState.tagError}")
+                        },
+                    color =
+                        if (uiState.tagError != null) MaterialTheme.colorScheme.error
+                        else NepTuneTheme.colors.onBackground,
+                    style = MaterialTheme.typography.bodySmall)
+              })
+          Spacer(Modifier.width(12.dp))
+          Button(
+              onClick = onTagSubmit,
+              modifier = Modifier.fillMaxHeight().testTag(ProfileScreenTestTags.ADD_TAG_BUTTON)) {
+                Icon(imageVector = Icons.Default.Add, contentDescription = "Add")
+              }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_EDIT_SECTION)) {
+              uiState.tags.forEach { tag ->
+                key(tag) { // <— ensures slot stability and proper disposal on removal
+                  EditableTagChip(
+                      tagText = tag,
+                      onRemove = onRemoveTag,
+                      modifier = Modifier.testTag("profile/tag/chip/${tag.replace(' ', '_')}"))
+                }
+              }
+            }
+
+        Spacer(modifier = Modifier.height(40.dp))
+
         Button(
             onClick = onSave,
             enabled = !uiState.isSaving && uiState.isValid,
@@ -371,7 +486,7 @@ private fun ProfileEditContent(
  * @param modifier Optional [Modifier] for layout customization.
  */
 @Composable
-private fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, testTag: String) {
+fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, testTag: String) {
   Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
     Text(
         text = label,
@@ -428,38 +543,39 @@ fun Avatar(
   }
 }
 
-/*
 /**
- * Previews the [ProfileScreen] in either view or edit mode.
+ * Displays an editable tag chip with a remove icon.
  *
- * @param mode The [ProfileMode] to preview.
+ * @param tagText The text to display inside the chip.
+ * @param onRemove Callback invoked when the remove icon is clicked.
+ * @param modifier Optional [Modifier] for layout customization.
  */
 @Composable
-fun ProfileScreenPreview(mode: ProfileMode) {
-  SampleAppTheme {
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-      ProfileScreen(
-          uiState =
-              ProfileUiState(
-                  name = "John Doe", username = "johndoe", bio = "I'm awesome", mode = mode))
-    }
-  }
+fun EditableTagChip(tagText: String, onRemove: (String) -> Unit, modifier: Modifier = Modifier) {
+  InputChip(
+      modifier = modifier,
+      selected = false,
+      onClick = {},
+      label = { Text(text = tagText) },
+      trailingIcon = {
+        Icon(
+            imageVector = Icons.Default.Close,
+            contentDescription = "Remove tag",
+            tint = NepTuneTheme.colors.onBackground,
+            modifier =
+                Modifier.clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }) {
+                          onRemove(tagText)
+                        }
+                    .testTag("profile/tag/remove/${tagText.replace(' ', '_')}"))
+      },
+      colors =
+          InputChipDefaults.inputChipColors(
+              containerColor = NepTuneTheme.colors.background,
+              labelColor = NepTuneTheme.colors.onBackground,
+          ))
 }
-
-/** Preview of the profile screen in view-only mode. */
-@Preview
-@Composable
-fun ProfileScreenViewModePreview() {
-  ProfileScreenPreview(ProfileMode.VIEW)
-}
-
-/** Preview of the profile screen in editable mode. */
-@Preview
-@Composable
-fun ProfileScreenEditModePreview() {
-  ProfileScreenPreview(ProfileMode.EDIT)
-}
-*/
 
 /**
  * Composable route for the Profile feature.
@@ -468,17 +584,24 @@ fun ProfileScreenEditModePreview() {
  * function is typically used as the entry point for navigation to the profile screen.
  */
 @Composable
-fun ProfileRoute(logout: () -> Unit = {}, goBack: () -> Unit = {}) {
+fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
   val viewModel: ProfileViewModel = viewModel()
   val state = viewModel.uiState.collectAsState().value
 
+  LaunchedEffect(Unit) { viewModel.loadOrEnsure() }
+
   ProfileScreen(
       uiState = state,
-      onEditClick = viewModel::onEditClick,
-      onSaveClick = { _, _, _ -> viewModel.onSaveClick() }, // VM reads from state
-      onNameChange = viewModel::onNameChange,
-      onUsernameChange = viewModel::onUsernameChange,
-      onBioChange = viewModel::onBioChange,
-      onLogoutClick = logout,
-      goBackClick = goBack)
+      callbacks =
+          profileScreenCallbacks(
+              onEditClick = viewModel::onEditClick,
+              onSaveClick = { _, _, _ -> viewModel.onSaveClick() }, // VM reads from state
+              onNameChange = viewModel::onNameChange,
+              onUsernameChange = viewModel::onUsernameChange,
+              onBioChange = viewModel::onBioChange,
+              onTagInputFieldChange = viewModel::onTagInputFieldChange,
+              onTagSubmit = viewModel::onTagAddition,
+              onRemoveTag = viewModel::onTagDeletion,
+              onSettingsClick = settings,
+              goBackClick = goBack))
 }

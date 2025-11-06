@@ -5,7 +5,9 @@ plugins {
     alias(libs.plugins.sonar)
     alias(libs.plugins.gms)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.ksp)
     id("jacoco")
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
 }
 
 android {
@@ -47,7 +49,7 @@ android {
     }
 
     testCoverage {
-        jacocoVersion = "0.8.8"
+        jacocoVersion = "0.8.11"
     }
 
     buildFeatures {
@@ -102,7 +104,7 @@ android {
 sonar {
     properties {
         property("sonar.projectKey", "NepTune-SwEnt_NepTune")
-        property("sonar.projectName", "NepTune")
+        property("sonar.projectName", "Android-Sample")
         property("sonar.organization", "neptune-swent")
         property("sonar.host.url", "https://sonarcloud.io")
         // Comma-separated paths to the various directories containing the *.xml JUnit report files. Each path may be absolute or relative to the project base directory.
@@ -165,20 +167,41 @@ dependencies {
     // ----------        Firebase       ------------
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
 
     // ---------- Credential Manager ------------
     implementation(libs.credentials)
     implementation(libs.credentials.play.services.auth)
     implementation(libs.googleid)
 
+    // ----------       Room Database    ------------
+    implementation(libs.room)
+    implementation(libs.room.runtime)
+    annotationProcessor(libs.room.compiler)
+    ksp(libs.room.compiler)
+
     // Networking with OkHttp
     implementation(libs.okhttp)
 
     androidTestImplementation("io.mockk:mockk-android:1.13.10")
+    androidTestImplementation(libs.firebase.auth)
+    androidTestImplementation(libs.firebase.firestore)
+
+    androidTestImplementation("androidx.test:runner:1.5.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+
     testImplementation("junit:junit:4.13.2")
+    testImplementation("com.google.truth:truth:1.4.4")
     testImplementation("io.mockk:mockk:1.13.10")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
+    globalTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+
+    testImplementation("app.cash.turbine:turbine:0.12.3")
+    androidTestImplementation("app.cash.turbine:turbine:0.12.3")
+
 }
 
 tasks.withType<Test> {
@@ -187,6 +210,10 @@ tasks.withType<Test> {
         isIncludeNoLocationClasses = true
         excludes = listOf("jdk.internal.*")
     }
+    jvmArgs(
+        "--add-opens=java.base/java.io=ALL-UNNAMED",
+        "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+    )
 }
 
 tasks.register("jacocoTestReport", JacocoReport::class) {

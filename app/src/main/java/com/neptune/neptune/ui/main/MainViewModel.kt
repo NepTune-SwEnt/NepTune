@@ -1,11 +1,30 @@
 package com.neptune.neptune.ui.main
 
 import androidx.lifecycle.ViewModel
-import com.neptune.neptune.Sample
+import androidx.lifecycle.viewModelScope
+import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import com.neptune.neptune.model.sample.Sample
+import com.neptune.neptune.model.sample.SampleRepository
+import com.neptune.neptune.model.sample.SampleRepositoryProvider
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
-class MainViewModel() : ViewModel() {
-  // No real data for now
+/**
+ * ViewModel for managing the state and operations related to the samples. This has been written
+ * with the help of LLMs.
+ *
+ * @property SampleRepository Repository for accessing and manipulating samples.
+ * @property ProfileRepository Repository for accessing and manipulating profile.
+ * @property useMockData false by default; true if we want to test with some MockData
+ * @author Angéline Bignens
+ */
+class MainViewModel(
+    private val repo: SampleRepository = SampleRepositoryProvider.repository,
+    private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
+    private val useMockData: Boolean = false
+) : ViewModel() {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
   val discoverSamples: MutableStateFlow<List<Sample>> = _discoverSamples
 
@@ -13,10 +32,30 @@ class MainViewModel() : ViewModel() {
   val followedSamples: MutableStateFlow<List<Sample>> = _followedSamples
 
   init {
-    loadData()
+    if (useMockData) {
+      // If we are testing we load mock data
+      loadData()
+    } else {
+      loadSamplesFromFirebase()
+    }
   }
 
-  // Todo: Replace with actual data from the repository
+  private fun loadSamplesFromFirebase() {
+    viewModelScope.launch {
+      // Get current user's profile
+      val profile = profileRepo.getProfile()
+      val following = profile?.following.orEmpty()
+      repo.observeSamples().collectLatest { samples ->
+        _discoverSamples.value = samples.filter { it.ownerId !in following }
+        _followedSamples.value = samples.filter { it.ownerId in following }
+      }
+    }
+  }
+
+  fun onLikeClicked(sample: Sample, isLiked: Boolean) {
+    viewModelScope.launch { repo.toggleLike(sample.id, isLiked) }
+  }
+  // Mock Data
   private fun loadData() {
     _discoverSamples.value =
         listOf(
