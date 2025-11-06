@@ -109,44 +109,30 @@ object ProfileScreenTestTags {
  * Displays the main Profile screen, switching between view and edit modes.
  *
  * @param uiState The current [ProfileUiState] containing user data and screen mode.
- * @param onEditClick Callback invoked when the Edit button is pressed.
- * @param onSaveClick Callback invoked when the Save button is pressed.
- * @param onNameChange Called whenever the user edits their name field.
- * @param onUsernameChange Called whenever the user edits their username field.
- * @param onBioChange Called whenever the user edits their bio field.
- * @param onLogoutClick Callback invoked when the Logout button is pressed.
+ * @param callbacks The [ProfileScreenCallbacks] for handling user interactions.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     uiState: ProfileUiState,
-    onEditClick: () -> Unit = {},
-    onSaveClick: (name: String, username: String, bio: String) -> Unit = { _, _, _ -> },
-    onNameChange: (String) -> Unit = {},
-    onUsernameChange: (String) -> Unit = {},
-    onBioChange: (String) -> Unit = {},
-    onTagInputFieldChange: (String) -> Unit = {},
-    onTagSubmit: () -> Unit = {},
-    onRemoveTag: (String) -> Unit = {},
-    onSettingsClick: () -> Unit = {},
-    goBackClick: () -> Unit = {}
+    callbacks: ProfileScreenCallbacks = ProfileScreenCallbacks.Empty,
 ) {
   Column(modifier = Modifier.padding(16.dp).testTag(ProfileScreenTestTags.ROOT)) {
     when (uiState.mode) {
       ProfileMode.VIEW -> {
         ProfileViewContent(
-            state = uiState, onEdit = onEditClick, settings = onSettingsClick, goBack = goBackClick)
+            state = uiState, onEdit = callbacks.onEditClick, settings = callbacks.onSettingsClick, goBack = callbacks.goBackClick)
       }
       ProfileMode.EDIT -> {
         ProfileEditContent(
             uiState = uiState,
-            onSave = { onSaveClick(uiState.name, uiState.username, uiState.bio) },
-            onNameChange = onNameChange,
-            onUsernameChange = onUsernameChange,
-            onBioChange = onBioChange,
-            onTagInputFieldChange = onTagInputFieldChange,
-            onTagSubmit = onTagSubmit,
-            onRemoveTag = onRemoveTag)
+            onSave = { callbacks.onSaveClick(uiState.name, uiState.username, uiState.bio) },
+            onNameChange = callbacks.onNameChange,
+            onUsernameChange = callbacks.onUsernameChange,
+            onBioChange = callbacks.onBioChange,
+            onTagInputFieldChange = callbacks.onTagInputFieldChange,
+            onTagSubmit = callbacks.onTagSubmit,
+            onRemoveTag = callbacks.onRemoveTag)
       }
     }
   }
@@ -160,6 +146,8 @@ fun ProfileScreen(
  *
  * @param state The [ProfileUiState] containing the displayed user information.
  * @param onEdit Callback triggered when the Edit button is clicked.
+ * @param goBack Callback triggered when the Go Back button is clicked.
+ * @param settings Callback triggered when the Settings button is clicked.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -554,6 +542,13 @@ fun Avatar(
   }
 }
 
+/**
+ * Displays an editable tag chip with a remove icon.
+ *
+ * @param tagText The text to display inside the chip.
+ * @param onRemove Callback invoked when the remove icon is clicked.
+ * @param modifier Optional [Modifier] for layout customization.
+ */
 @Composable
 fun EditableTagChip(tagText: String, onRemove: (String) -> Unit, modifier: Modifier = Modifier) {
   InputChip(
@@ -596,14 +591,17 @@ fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
 
   ProfileScreen(
       uiState = state,
-      onEditClick = viewModel::onEditClick,
-      onSaveClick = { _, _, _ -> viewModel.onSaveClick() }, // VM reads from state
-      onNameChange = viewModel::onNameChange,
-      onUsernameChange = viewModel::onUsernameChange,
-      onBioChange = viewModel::onBioChange,
-      onTagInputFieldChange = viewModel::onTagInputFieldChange,
-      onTagSubmit = viewModel::onTagAddition,
-      onRemoveTag = viewModel::onTagDeletion,
-      onSettingsClick = settings,
-      goBackClick = goBack)
+      callbacks = profileScreenCallbacks(
+          onEditClick = viewModel::onEditClick,
+          onSaveClick = { _, _, _ -> viewModel.onSaveClick() }, // VM reads from state
+          onNameChange = viewModel::onNameChange,
+          onUsernameChange = viewModel::onUsernameChange,
+          onBioChange = viewModel::onBioChange,
+          onTagInputFieldChange = viewModel::onTagInputFieldChange,
+          onTagSubmit = viewModel::onTagAddition,
+          onRemoveTag = viewModel::onTagDeletion,
+          onSettingsClick = settings,
+          goBackClick = goBack
+      )
+  )
 }
