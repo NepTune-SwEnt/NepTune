@@ -1,7 +1,10 @@
 package com.neptune.neptune.ui.profile
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.net.Uri
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
@@ -18,16 +21,26 @@ import kotlinx.coroutines.launch
  *
  * Holds the current [ProfileUiState] and exposes update functions for UI-driven changes (name,
  * username, bio). Simulates save operations (to be replaced with repository calls).
+ *
+ * @param application The application context.
+ * @param repo The profile repository for data operations.
  */
-class ProfileViewModel(private val repo: ProfileRepository = ProfileRepositoryProvider.repository) :
-    ViewModel() {
+class ProfileViewModel(
+    application: Application,
+    private val repo: ProfileRepository = ProfileRepositoryProvider.repository
+) : AndroidViewModel(application) {
 
   private val _uiState = MutableStateFlow(ProfileUiState())
   val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
+  private val _localAvatarUri = MutableStateFlow<Uri?>(null)
+  val localAvatarUri: StateFlow<Uri?> = _localAvatarUri.asStateFlow()
+
+  private val imageRepo = ImageStorageRepository(application.applicationContext)
+  private val avatarFileName = "profile_image.jpg"
+
   /** Latest snapshot we saw from Firestore, used to detect changes on save. */
   private var snapshot: Profile? = null
-
   /** Cancelable job for username availability checks. */
   private var usernameCheckJob: Job? = null // suggested by ChatGPT
 
@@ -54,6 +67,21 @@ class ProfileViewModel(private val repo: ProfileRepository = ProfileRepositoryPr
                   avatarUrl = p.avatarUrl,
               )
         }
+      }
+    }
+    viewModelScope.launch { _localAvatarUri.value = imageRepo.getImageUri(avatarFileName) }
+  }
+
+  /** Call this when the user has cropped a new avatar image. */
+  fun onAvatarCropped(croppedUri: Uri) {
+    viewModelScope.launch {
+      try {
+        val savedFile = imageRepo.saveImageFromUri(croppedUri, avatarFileName)
+        if (savedFile != null) {
+          _localAvatarUri.value = imageRepo.getImageUri(avatarFileName)
+        }
+      } catch (_: Exception) {
+        _uiState.value = _uiState.value.copy(error = "Impossible to save the avatar.")
       }
     }
   }
@@ -112,20 +140,18 @@ class ProfileViewModel(private val repo: ProfileRepository = ProfileRepositoryPr
     val updated = _uiState.value.copy(username = newUsername).validated()
     _uiState.value = updated
 
-    usernameCheckJob?.cancel() // This was suggested by ChatGPT
+    usernameCheckJob?.cancel()
     if (updated.usernameError == null && newUsername.isNotBlank()) {
       usernameCheckJob =
           viewModelScope.launch {
             try {
               val free = repo.isUsernameAvailable(newUsername.trim())
-              // If user hasn’t typed further (still same username), apply result
               if (_uiState.value.username.trim() == newUsername.trim()) {
                 _uiState.value =
                     _uiState.value.copy(
                         usernameError = if (free) null else "This username is already taken.")
               }
             } catch (t: Throwable) {
-              // Don’t block editing if network hiccups; show soft error
               if (_uiState.value.username.trim() == newUsername.trim()) {
                 _uiState.value =
                     _uiState.value.copy(error = "Couldn’t verify username. Check your connection.")
@@ -193,11 +219,10 @@ class ProfileViewModel(private val repo: ProfileRepository = ProfileRepositoryPr
                 nameError = null,
                 usernameError = null,
                 bioError = null)
-      } catch (e: UsernameTakenException) {
+      } catch (_: UsernameTakenException) {
         _uiState.value =
             _uiState.value.copy(isSaving = false, usernameError = "This username is already taken.")
       } catch (t: Throwable) {
-        android.util.Log.e("Profile", "Save failed", t)
         _uiState.value =
             _uiState.value.copy(isSaving = false, error = t.message ?: "Couldn’t save changes.")
       }

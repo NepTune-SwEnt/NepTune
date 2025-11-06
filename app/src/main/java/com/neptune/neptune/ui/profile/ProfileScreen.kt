@@ -1,6 +1,7 @@
 package com.neptune.neptune.ui.profile
 
-import androidx.compose.foundation.Image
+import android.app.Application
+import android.net.Uri
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,16 +34,23 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.neptune.neptune.R
+import com.neptune.neptune.data.rememberImagePickerLauncher
+import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
 /**
@@ -102,28 +110,36 @@ object ProfileScreenTestTags {
 @Composable
 fun ProfileScreen(
     uiState: ProfileUiState,
+    localAvatarUri: Uri? = null,
     onEditClick: () -> Unit = {},
     onSaveClick: (name: String, username: String, bio: String) -> Unit = { _, _, _ -> },
     onNameChange: (String) -> Unit = {},
     onUsernameChange: (String) -> Unit = {},
     onBioChange: (String) -> Unit = {},
     onSettingsClick: () -> Unit = {},
-    goBackClick: () -> Unit = {}
+    goBackClick: () -> Unit = {},
+    onAvatarEditClick: () -> Unit = {}
 ) {
-  // TODO: add profile picture, follower/following count and back button
+  // TODO: add follower/following count
   Column(modifier = Modifier.padding(16.dp).testTag(ProfileScreenTestTags.ROOT)) {
     when (uiState.mode) {
       ProfileMode.VIEW -> {
         ProfileViewContent(
-            state = uiState, onEdit = onEditClick, settings = onSettingsClick, goBack = goBackClick)
+            state = uiState,
+            localAvatarUri = localAvatarUri,
+            onEdit = onEditClick,
+            settings = onSettingsClick,
+            goBack = goBackClick)
       }
       ProfileMode.EDIT -> {
         ProfileEditContent(
             uiState = uiState,
+            localAvatarUri = localAvatarUri,
             onSave = { onSaveClick(uiState.name, uiState.username, uiState.bio) },
             onNameChange = onNameChange,
             onUsernameChange = onUsernameChange,
-            onBioChange = onBioChange)
+            onBioChange = onBioChange,
+            onAvatarEditClick = onAvatarEditClick)
       }
     }
   }
@@ -141,6 +157,7 @@ fun ProfileScreen(
 @Composable
 private fun ProfileViewContent(
     state: ProfileUiState,
+    localAvatarUri: Uri?,
     onEdit: () -> Unit,
     goBack: () -> Unit,
     settings: () -> Unit,
@@ -183,7 +200,13 @@ private fun ProfileViewContent(
             // verticalArrangement = Arrangement.Center
         ) {
           Spacer(Modifier.height(15.dp))
-          Avatar(modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR), showEditPencil = false)
+
+          val avatarModel = localAvatarUri ?: state.avatarUrl ?: R.drawable.ic_avatar_placeholder
+          Avatar(
+              avatarModel,
+              modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
+              showEditPencil = false)
+
           Spacer(Modifier.height(15.dp))
 
           Text(
@@ -266,10 +289,12 @@ val TextFieldColors: @Composable () -> TextFieldColors = {
 @Composable
 private fun ProfileEditContent(
     uiState: ProfileUiState,
+    localAvatarUri: Uri?,
     onSave: () -> Unit,
     onNameChange: (String) -> Unit,
     onUsernameChange: (String) -> Unit,
     onBioChange: (String) -> Unit,
+    onAvatarEditClick: () -> Unit
 ) {
   Column(
       modifier = Modifier.fillMaxSize().testTag(ProfileScreenTestTags.EDIT_CONTENT),
@@ -277,10 +302,13 @@ private fun ProfileEditContent(
       verticalArrangement = Arrangement.Center) {
         Spacer(modifier = Modifier.height(40.dp))
 
+        val avatarModel = localAvatarUri ?: uiState.avatarUrl ?: R.drawable.ic_avatar_placeholder
+
         Avatar(
+            model = avatarModel,
             modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
             showEditPencil = true,
-            onEditClick = { /* TODO: will open photo picker later */})
+            onEditClick = onAvatarEditClick)
         Spacer(modifier = Modifier.height(40.dp))
 
         OutlinedTextField(
@@ -395,6 +423,7 @@ fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, testTag:
  *
  * When [showEditPencil] is true, a small floating action button appears in the corner.
  *
+ * @param model The image model for Coil to load (URL, Uri, resource ID, etc.).
  * @param modifier Layout modifier for sizing and positioning.
  * @param sizeDp The diameter of the avatar circle, in dp.
  * @param showEditPencil Whether to show the edit pencil button.
@@ -402,29 +431,31 @@ fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, testTag:
  */
 @Composable
 fun Avatar(
-    modifier: Modifier = Modifier,
+    model: Any,
     sizeDp: Int = 120,
+    modifier: Modifier = Modifier,
     showEditPencil: Boolean,
-    onEditClick: () -> Unit = {} // currently NO-OP
+    onEditClick: () -> Unit = {}
 ) {
   Box(modifier = modifier.size(sizeDp.dp), contentAlignment = Alignment.BottomEnd) {
-    Image(
-        painter = painterResource(id = R.drawable.ic_avatar_placeholder),
-        contentDescription = "Profile picture",
-        contentScale = ContentScale.Crop,
+    AsyncImage(
+        model = model,
+        contentDescription = "Avatar",
         modifier =
-            Modifier.matchParentSize()
+            Modifier.fillMaxSize()
                 .clip(CircleShape)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape))
-
+                .border(2.dp, NepTuneTheme.colors.accentPrimary, CircleShape),
+        contentScale = ContentScale.Crop,
+        placeholder = painterResource(id = R.drawable.ic_avatar_placeholder),
+        error = painterResource(id = R.drawable.ic_avatar_placeholder))
     if (showEditPencil) {
       SmallFloatingActionButton(
-          onClick = onEditClick, // no-op for now
-          containerColor = MaterialTheme.colorScheme.primaryContainer,
-          contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+          onClick = onEditClick,
+          modifier = Modifier.align(Alignment.BottomEnd),
           shape = CircleShape,
-          modifier = Modifier.align(Alignment.BottomEnd)) {
-            Icon(Icons.Default.Edit, contentDescription = "Edit avatar")
+          containerColor = NepTuneTheme.colors.accentPrimary,
+          contentColor = NepTuneTheme.colors.onBackground) {
+            Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit Avatar")
           }
     }
   }
@@ -468,21 +499,49 @@ fun ProfileScreenEditModePreview() {
  *
  * Connects the [ProfileViewModel] to the [ProfileScreen] and handles state collection. This
  * function is typically used as the entry point for navigation to the profile screen.
+ *
+ * This method was made using AI assistance
  */
 @Composable
 fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
-  val viewModel: ProfileViewModel = viewModel()
+
+  val application = LocalContext.current.applicationContext as Application
+  val factory =
+      object : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+          if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return ProfileViewModel(
+                application = application, repo = ProfileRepositoryProvider.repository)
+                as T
+          }
+          throw IllegalArgumentException("Unknown ViewModel class")
+        }
+      }
+
+  val viewModel: ProfileViewModel = viewModel(factory = factory)
   val state = viewModel.uiState.collectAsState().value
+  val localAvatarUri by viewModel.localAvatarUri.collectAsState()
 
   LaunchedEffect(Unit) { viewModel.loadOrEnsure() }
 
+  // Prepare the image picker launcher. The callback will notify the ViewModel.
+  val imagePickerLauncher = rememberImagePickerLauncher { croppedUri ->
+    if (croppedUri != null) {
+      viewModel.onAvatarCropped(croppedUri)
+    }
+  }
+
   ProfileScreen(
       uiState = state,
+      localAvatarUri = localAvatarUri,
       onEditClick = viewModel::onEditClick,
       onSaveClick = { _, _, _ -> viewModel.onSaveClick() }, // VM reads from state
       onNameChange = viewModel::onNameChange,
       onUsernameChange = viewModel::onUsernameChange,
       onBioChange = viewModel::onBioChange,
       onSettingsClick = settings,
-      goBackClick = goBack)
+      goBackClick = goBack,
+      onAvatarEditClick = { imagePickerLauncher.launch("image/*") } // Launch the picker
+      )
 }
