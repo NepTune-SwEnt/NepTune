@@ -2,6 +2,8 @@ package com.neptune.neptune.ui.profile
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +45,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -559,14 +562,17 @@ fun EditableTagChip(tagText: String, onRemove: (String) -> Unit, modifier: Modif
       onClick = {},
       label = { Text(text = tagText) },
       trailingIcon = {
-        IconButton(
-            onClick = { onRemove(tagText) },
-            modifier = Modifier.testTag("profile/tag/remove/${tagText.replace(' ', '_')}")) {
-              Icon(
-                  imageVector = Icons.Default.Close,
-                  contentDescription = "Remove tag",
-                  tint = NepTuneTheme.colors.onBackground)
-            }
+        Icon(
+            imageVector = Icons.Default.Close,
+            contentDescription = "Remove tag",
+            tint = NepTuneTheme.colors.onBackground,
+            modifier =
+                Modifier.clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }) {
+                          onRemove(tagText)
+                        }
+                    .testTag("profile/tag/remove/${tagText.replace(' ', '_')}"))
       },
       colors =
           InputChipDefaults.inputChipColors(
