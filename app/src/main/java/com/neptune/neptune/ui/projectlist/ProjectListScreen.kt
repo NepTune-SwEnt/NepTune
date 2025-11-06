@@ -203,7 +203,7 @@ fun ProjectListItem(
               .clickable(
                   onClick = {
                     projectListViewModel.selectProject(project)
-                    val pathToSend = project.filePath ?: project.id
+                    val pathToSend = project.filePath ?: project.uid
                     val encodedFilePath =
                         URLEncoder.encode(pathToSend, StandardCharsets.UTF_8.name())
                     openProject(encodedFilePath)

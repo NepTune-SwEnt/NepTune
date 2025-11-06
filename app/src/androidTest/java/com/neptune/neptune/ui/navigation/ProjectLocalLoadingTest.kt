@@ -28,7 +28,7 @@ class FakeLoadingRepository(private val zipFile: File) :
   override suspend fun getAllProjects(): List<ProjectItem> {
     return listOf(
         ProjectItem(
-            id = "42",
+            uid = "42",
             name = "Test Project ZIP",
             filePath = zipFile.path,
             lastUpdated = Timestamp(100, 0)))
@@ -58,7 +58,7 @@ class LocalProjectLoadingTest {
     runBlocking {
       ProjectItemsRepositoryProvider.repository.addProject(
           ProjectItem(
-              id = TARGET_PROJECT_ID,
+              uid = TARGET_PROJECT_ID,
               name = "Test Project ZIP",
               filePath = absoluteZipPath,
               lastUpdated = Timestamp(100, 0)))
