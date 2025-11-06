@@ -5,12 +5,12 @@ import android.util.Log
 class ProjectItemsRepositoryVar : ProjectItemsRepository {
 
   private val projects = mutableListOf<ProjectItem>(
-    ProjectItem(
-      uid = "0",
-      name = "Sample Project",
-      description = "This is a sample project description.",
-      isFavorite = false,
-    ),
+//    ProjectItem(
+//      uid = "0",
+//      name = "Sample Project",
+//      description = "This is a sample project description.",
+//      isFavorite = false,
+//    ),
   )
   private var idCounter = 0
 
