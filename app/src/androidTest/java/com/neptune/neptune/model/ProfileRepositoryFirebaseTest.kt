@@ -317,4 +317,60 @@ class ProfileRepositoryFirebaseTest {
     assertTrue(chosenDoc.exists())
     assertEquals(myUid, chosenDoc.getString("uid"))
   }
+
+  @Test
+  fun addNewTagAddsTagOnlyOnce() = runBlocking {
+    val profile = repo.ensureProfile("tagger", null)
+    val uid = profile.uid
+
+    // Add a new tag
+    repo.addNewTag("rock")
+
+    val snap1 = db.collection(PROFILES_COLLECTION_PATH).document(uid).get().await()
+    val tags1 = snap1.get("tags") as? List<*> ?: emptyList<Any>()
+    assertTrue("Tag 'rock' should be present", tags1.contains("rock"))
+
+    // Add the same tag again -> should not duplicate
+    repo.addNewTag("rock")
+    val snap2 = db.collection(PROFILES_COLLECTION_PATH).document(uid).get().await()
+    val tags2 = snap2.get("tags") as? List<*> ?: emptyList<Any>()
+    assertEquals("Tags should not contain duplicates", 1, tags2.size)
+  }
+
+  @Test
+  fun removeTagRemovesTagFromList() = runBlocking {
+    val profile = repo.ensureProfile("tagger2", null)
+    val uid = profile.uid
+    val doc = db.collection(PROFILES_COLLECTION_PATH).document(uid)
+
+    // Pre-fill a few tags
+    doc.update("tags", listOf("rock", "jazz", "pop")).await()
+
+    repo.removeTag("jazz")
+
+    val updated = doc.get().await()
+    val tags = updated.get("tags") as? List<*> ?: emptyList<Any>()
+    assertFalse("Tag 'jazz' should be removed", tags.contains("jazz"))
+    assertTrue("Other tags should remain", tags.containsAll(listOf("rock", "pop")))
+  }
+
+  @Test
+  fun addAndRemoveMultipleTagsPersistsChangesCorrectly() = runBlocking {
+    val profile = repo.ensureProfile("multiTagger", null)
+    val uid = profile.uid
+    val doc = db.collection(PROFILES_COLLECTION_PATH).document(uid)
+
+    // Add multiple
+    listOf("edm", "indie", "metal").forEach { repo.addNewTag(it) }
+    val afterAdd = doc.get().await()
+    val tagsAfterAdd = afterAdd.get("tags") as? List<*> ?: emptyList<Any>()
+    assertTrue(tagsAfterAdd.containsAll(listOf("edm", "indie", "metal")))
+
+    // Remove one
+    repo.removeTag("indie")
+    val afterRemove = doc.get().await()
+    val tagsAfterRemove = afterRemove.get("tags") as? List<*> ?: emptyList<Any>()
+    assertFalse(tagsAfterRemove.contains("indie"))
+    assertTrue(tagsAfterRemove.containsAll(listOf("edm", "metal")))
+  }
 }
