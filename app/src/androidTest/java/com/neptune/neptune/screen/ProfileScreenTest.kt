@@ -90,7 +90,10 @@ class ProfileScreenTest {
       onEditClick: () -> Unit = {},
   ) {
     composeTestRule.setContent {
-      SampleAppTheme { ProfileScreen(uiState = state, callbacks = profileScreenCallbacks(onEditClick = onEditClick)) }
+      SampleAppTheme {
+        ProfileScreen(
+            uiState = state, callbacks = profileScreenCallbacks(onEditClick = onEditClick))
+      }
     }
     composeTestRule.waitForIdle()
   }
@@ -115,12 +118,12 @@ class ProfileScreenTest {
       SampleAppTheme {
         ProfileScreen(
             uiState = state,
-            callbacks = profileScreenCallbacks(
-                onSaveClick = onSaveClick,
-                onNameChange = onNameChange,
-                onUsernameChange = onUsernameChange,
-                onBioChange = onBioChange
-            ))
+            callbacks =
+                profileScreenCallbacks(
+                    onSaveClick = onSaveClick,
+                    onNameChange = onNameChange,
+                    onUsernameChange = onUsernameChange,
+                    onBioChange = onBioChange))
       }
     }
     composeTestRule.waitForIdle()
@@ -392,20 +395,22 @@ class ProfileScreenTest {
       SampleAppTheme {
         ProfileScreen(
             uiState = state.value,
-            callbacks = profileScreenCallbacks(
-                onTagInputFieldChange = { s -> state.value = state.value.copy(inputTag = s) },
-                onTagSubmit = {
-                  val normalized = state.value.inputTag.trim().lowercase()
-                  if (normalized.isNotEmpty()) {
-                    state.value =
-                        state.value.copy(
-                            tags = state.value.tags + normalized, inputTag = "", tagError = null)
-                  }
-                },
-                onRemoveTag = { t ->
-                  state.value = state.value.copy(tags = state.value.tags.filterNot { it == t })
-                })
-        )
+            callbacks =
+                profileScreenCallbacks(
+                    onTagInputFieldChange = { s -> state.value = state.value.copy(inputTag = s) },
+                    onTagSubmit = {
+                      val normalized = state.value.inputTag.trim().lowercase()
+                      if (normalized.isNotEmpty()) {
+                        state.value =
+                            state.value.copy(
+                                tags = state.value.tags + normalized,
+                                inputTag = "",
+                                tagError = null)
+                      }
+                    },
+                    onRemoveTag = { t ->
+                      state.value = state.value.copy(tags = state.value.tags.filterNot { it == t })
+                    }))
       }
     }
 
@@ -436,17 +441,17 @@ class ProfileScreenTest {
       SampleAppTheme {
         ProfileScreen(
             uiState = state.value,
-            callbacks = profileScreenCallbacks(
-                onTagInputFieldChange = { s -> state.value = state.value.copy(inputTag = s) },
-                onTagSubmit = {
-                  val n = state.value.inputTag.trim().lowercase()
-                  if (n.isNotEmpty())
-                      state.value = state.value.copy(tags = state.value.tags + n, inputTag = "")
-                },
-                onRemoveTag = { t ->
-                  state.value = state.value.copy(tags = state.value.tags.filterNot { it == t })
-                })
-        )
+            callbacks =
+                profileScreenCallbacks(
+                    onTagInputFieldChange = { s -> state.value = state.value.copy(inputTag = s) },
+                    onTagSubmit = {
+                      val n = state.value.inputTag.trim().lowercase()
+                      if (n.isNotEmpty())
+                          state.value = state.value.copy(tags = state.value.tags + n, inputTag = "")
+                    },
+                    onRemoveTag = { t ->
+                      state.value = state.value.copy(tags = state.value.tags.filterNot { it == t })
+                    }))
       }
     }
 

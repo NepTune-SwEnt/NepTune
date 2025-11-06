@@ -15,8 +15,9 @@ data class ProfileScreenCallbacks(
     val onSettingsClick: () -> Unit,
     val goBackClick: () -> Unit,
 ) {
-    companion object {
-        val Empty = ProfileScreenCallbacks(
+  companion object {
+    val Empty =
+        ProfileScreenCallbacks(
             onEditClick = {},
             onSaveClick = { _, _, _ -> },
             onNameChange = {},
@@ -28,7 +29,7 @@ data class ProfileScreenCallbacks(
             onSettingsClick = {},
             goBackClick = {},
         )
-    }
+  }
 }
 
 fun profileScreenCallbacks(
@@ -42,15 +43,15 @@ fun profileScreenCallbacks(
     onRemoveTag: (String) -> Unit = {},
     onSettingsClick: () -> Unit = {},
     goBackClick: () -> Unit = {},
-) = ProfileScreenCallbacks(
-    onEditClick,
-    onSaveClick,
-    onNameChange,
-    onUsernameChange,
-    onBioChange,
-    onTagInputFieldChange,
-    onTagSubmit,
-    onRemoveTag,
-    onSettingsClick,
-    goBackClick
-)
+) =
+    ProfileScreenCallbacks(
+        onEditClick,
+        onSaveClick,
+        onNameChange,
+        onUsernameChange,
+        onBioChange,
+        onTagInputFieldChange,
+        onTagSubmit,
+        onRemoveTag,
+        onSettingsClick,
+        goBackClick)

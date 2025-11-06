@@ -121,7 +121,10 @@ fun ProfileScreen(
     when (uiState.mode) {
       ProfileMode.VIEW -> {
         ProfileViewContent(
-            state = uiState, onEdit = callbacks.onEditClick, settings = callbacks.onSettingsClick, goBack = callbacks.goBackClick)
+            state = uiState,
+            onEdit = callbacks.onEditClick,
+            settings = callbacks.onSettingsClick,
+            goBack = callbacks.goBackClick)
       }
       ProfileMode.EDIT -> {
         ProfileEditContent(
@@ -591,17 +594,16 @@ fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
 
   ProfileScreen(
       uiState = state,
-      callbacks = profileScreenCallbacks(
-          onEditClick = viewModel::onEditClick,
-          onSaveClick = { _, _, _ -> viewModel.onSaveClick() }, // VM reads from state
-          onNameChange = viewModel::onNameChange,
-          onUsernameChange = viewModel::onUsernameChange,
-          onBioChange = viewModel::onBioChange,
-          onTagInputFieldChange = viewModel::onTagInputFieldChange,
-          onTagSubmit = viewModel::onTagAddition,
-          onRemoveTag = viewModel::onTagDeletion,
-          onSettingsClick = settings,
-          goBackClick = goBack
-      )
-  )
+      callbacks =
+          profileScreenCallbacks(
+              onEditClick = viewModel::onEditClick,
+              onSaveClick = { _, _, _ -> viewModel.onSaveClick() }, // VM reads from state
+              onNameChange = viewModel::onNameChange,
+              onUsernameChange = viewModel::onUsernameChange,
+              onBioChange = viewModel::onBioChange,
+              onTagInputFieldChange = viewModel::onTagInputFieldChange,
+              onTagSubmit = viewModel::onTagAddition,
+              onRemoveTag = viewModel::onTagDeletion,
+              onSettingsClick = settings,
+              goBackClick = goBack))
 }
