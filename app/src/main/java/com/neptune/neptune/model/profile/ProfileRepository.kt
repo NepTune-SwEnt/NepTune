@@ -73,6 +73,20 @@ interface ProfileRepository {
   suspend fun updateBio(newBio: String)
 
   /**
+   * Adds a new tag to profiles/{uid}.tags, avoiding duplicates.
+   *
+   * @param tag the new tag to add
+   */
+  suspend fun addNewTag(tag: String)
+
+  /**
+   * Removes a tag from profiles/{uid}.tags.
+   *
+   * @param tag the tag to remove
+   */
+  suspend fun removeTag(tag: String)
+
+  /**
    * Uploads image and updates profiles/{uid}.photoUrl.
    *
    * @param localUri local Uri of the image to upload
