@@ -4,6 +4,7 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
@@ -37,7 +38,15 @@ class ProfileViewModel(
   val localAvatarUri: StateFlow<Uri?> = _localAvatarUri.asStateFlow()
 
   private val imageRepo = ImageStorageRepository(application.applicationContext)
-  private val avatarFileName = "profile_image.jpg"
+
+  private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+
+  /**
+   * Generates a user-specific filename for the avatar based on the logged-in user's UID. Returns
+   * null if no user is logged in.
+   */
+  private val avatarFileName: String?
+    get() = auth.currentUser?.uid?.let { "avatar_$it.jpg" }
 
   /** Latest snapshot we saw from Firestore, used to detect changes on save. */
   private var snapshot: Profile? = null
@@ -67,20 +76,29 @@ class ProfileViewModel(
                   avatarUrl = p.avatarUrl,
               )
         }
+        loadInitialLocalAvatar()
       }
     }
-    loadInitialLocalAvatar()
   }
 
   private fun loadInitialLocalAvatar() {
     viewModelScope.launch {
-      val baseUri = imageRepo.getImageUri(avatarFileName)
+      // Retrieves the dynamic filename. If it is null (no user), the URI is sanitized.
+      val fileName = avatarFileName
+      if (fileName == null) {
+        _localAvatarUri.value = null
+        return@launch
+      }
+
+      val baseUri = imageRepo.getImageUri(fileName)
       if (baseUri != null) {
         _localAvatarUri.value =
             baseUri
                 .buildUpon()
                 .appendQueryParameter("t", System.currentTimeMillis().toString())
                 .build()
+      } else {
+        _localAvatarUri.value = null
       }
     }
   }
@@ -88,8 +106,14 @@ class ProfileViewModel(
   /** Call this when the user has cropped a new avatar image. */
   fun onAvatarCropped(croppedUri: Uri) {
     viewModelScope.launch {
+      val fileName = avatarFileName
+      if (fileName == null) {
+        _uiState.value = _uiState.value.copy(error = "User not logged in.")
+        return@launch
+      }
+
       try {
-        val savedFile = imageRepo.saveImageFromUri(croppedUri, avatarFileName)
+        val savedFile = imageRepo.saveImageFromUri(croppedUri, fileName)
         if (savedFile != null) {
           loadInitialLocalAvatar()
         }
@@ -164,7 +188,7 @@ class ProfileViewModel(
                     _uiState.value.copy(
                         usernameError = if (free) null else "This username is already taken.")
               }
-            } catch (t: Throwable) {
+            } catch (_: Throwable) {
               if (_uiState.value.username.trim() == newUsername.trim()) {
                 _uiState.value =
                     _uiState.value.copy(error = "Couldn’t verify username. Check your connection.")
