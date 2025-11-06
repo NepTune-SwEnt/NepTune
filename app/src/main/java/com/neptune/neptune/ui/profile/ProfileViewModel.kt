@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 
 private const val MAX_TAGS = 10
 private const val MAX_TAG_LEN = 20
-private val TAG_REGEX = Regex("^[a-z0-9 _-]+$")
+private val TAG_REGEX = Regex("^[A-Za-z0-9 _-]+$")
 
 private fun normalizeTag(s: String) = s.trim().lowercase().replace(Regex("\\s+"), " ")
 
@@ -169,7 +169,7 @@ class ProfileViewModel(private val repo: ProfileRepository = ProfileRepositoryPr
     if (_uiState.value.mode != ProfileMode.EDIT) return
 
     val s = _uiState.value
-    val tag = s.inputTag
+    val tag = s.inputTag.trim()
 
     when {
       tag.isEmpty() -> return
