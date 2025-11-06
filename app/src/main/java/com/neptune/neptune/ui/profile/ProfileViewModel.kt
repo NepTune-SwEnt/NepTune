@@ -69,7 +69,20 @@ class ProfileViewModel(
         }
       }
     }
-    viewModelScope.launch { _localAvatarUri.value = imageRepo.getImageUri(avatarFileName) }
+    loadInitialLocalAvatar()
+  }
+
+  private fun loadInitialLocalAvatar() {
+    viewModelScope.launch {
+      val baseUri = imageRepo.getImageUri(avatarFileName)
+      if (baseUri != null) {
+        _localAvatarUri.value =
+            baseUri
+                .buildUpon()
+                .appendQueryParameter("t", System.currentTimeMillis().toString())
+                .build()
+      }
+    }
   }
 
   /** Call this when the user has cropped a new avatar image. */
@@ -78,7 +91,7 @@ class ProfileViewModel(
       try {
         val savedFile = imageRepo.saveImageFromUri(croppedUri, avatarFileName)
         if (savedFile != null) {
-          _localAvatarUri.value = imageRepo.getImageUri(avatarFileName)
+          loadInitialLocalAvatar()
         }
       } catch (_: Exception) {
         _uiState.value = _uiState.value.copy(error = "Impossible to save the avatar.")
