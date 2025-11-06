@@ -23,7 +23,7 @@ class NeptuneRecorder(private val context: Context, private val paths: StoragePa
       audioSource: Int = MediaRecorder.AudioSource.UNPROCESSED
   ): File {
     require(sampleRate > 0) { "Sample rate must be positive" }
-    require(isRecording) { "Already recording" }
+    require(!isRecording) { "Already recording" }
     val file: File
     paths.recordWorkspace().let { dir ->
       if (!dir.exists()) dir.mkdirs()

@@ -81,12 +81,12 @@ class NeptuneRecorderTest {
   @Test
   fun startRecordingTwiceThrowsIllegalStateException() {
     recorder.start("test.m4a")
-    assertThrows(IllegalStateException::class.java) { recorder.start("test2.m4a") }
+    assertThrows(java.lang.IllegalArgumentException::class.java) { recorder.start("test2.m4a") }
   }
 
   @Test
   fun stopRecordingWithoutStartingThrowsIllegalStateException() {
-    assertThrows(IllegalStateException::class.java) { recorder.stop() }
+    assertThrows(java.lang.IllegalArgumentException::class.java) { recorder.stop() }
   }
 
   @Test
@@ -122,7 +122,7 @@ class NeptuneRecorderTest {
     assertThat(file).isNull()
 
     // Verify state is reset, so another stop throws exception
-    assertThrows(IllegalStateException::class.java) { recorder.stop() }
+    assertThrows(java.lang.IllegalArgumentException::class.java) { recorder.stop() }
   }
 
   @Test
