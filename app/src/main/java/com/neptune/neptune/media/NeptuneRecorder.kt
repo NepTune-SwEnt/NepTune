@@ -22,8 +22,8 @@ class NeptuneRecorder(private val context: Context, private val paths: StoragePa
       sampleRate: Int = 44100,
       audioSource: Int = MediaRecorder.AudioSource.UNPROCESSED
   ): File {
-    if (sampleRate <= 0) throw IllegalArgumentException("Sample rate must be positive")
-    if (isRecording) throw IllegalStateException("Already recording")
+    require(sampleRate > 0) { "Sample rate must be positive" }
+    require(isRecording) { "Already recording" }
     val file: File
     paths.recordWorkspace().let { dir ->
       if (!dir.exists()) dir.mkdirs()
@@ -55,7 +55,7 @@ class NeptuneRecorder(private val context: Context, private val paths: StoragePa
   }
 
   fun stop(): File? {
-    if (!isRecording) throw IllegalStateException("Not recording")
+    require(isRecording) { "Not recording" }
     return try {
       recorder?.apply {
         stop()
@@ -67,7 +67,9 @@ class NeptuneRecorder(private val context: Context, private val paths: StoragePa
       recordedFile?.let { f ->
         try {
           MediaScannerConnection.scanFile(context, arrayOf(f.absolutePath), null, null)
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+          null
+        }
       }
 
       recordedFile
@@ -82,7 +84,9 @@ class NeptuneRecorder(private val context: Context, private val paths: StoragePa
   private fun releaseSafely() {
     try {
       recorder?.release()
-    } catch (_: Exception) {}
+    } catch (_: Exception) {
+
+    }
     recorder = null
     isRecording = false
   }
