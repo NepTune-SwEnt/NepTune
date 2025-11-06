@@ -84,9 +84,8 @@ class NeptuneRecorder(private val context: Context, private val paths: StoragePa
   private fun releaseSafely() {
     try {
       recorder?.release()
-    } catch (_: Exception) {
+    } catch (_: Exception) {}
 
-    }
     recorder = null
     isRecording = false
   }
