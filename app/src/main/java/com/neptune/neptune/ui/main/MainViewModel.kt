@@ -8,10 +8,15 @@ import com.neptune.neptune.Sample
 import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -33,33 +38,61 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
   private val _userAvatar = MutableStateFlow<Any?>(null)
   val userAvatar: StateFlow<Any?> = _userAvatar.asStateFlow()
 
+  private val _currentUserFlow = MutableStateFlow(auth.currentUser)
+  private val authListener =
+      FirebaseAuth.AuthStateListener { firebaseAuth ->
+        _currentUserFlow.value = firebaseAuth.currentUser
+      }
+
+  private var observeUserJob: Job? = null // Proposed by gemini
+
   init {
     loadData()
+    auth.addAuthStateListener(authListener)
     observeUser()
+  }
+
+  fun onResume() {
+    observeUser()
+  }
+
+  override fun onCleared() {
+    super.onCleared()
+    auth.removeAuthStateListener(authListener)
   }
 
   /**
    * View the profile and verify the local avatar. Give priority to the local (modified) avatar over
    * the remote avatar. This function was made using AI assistance
    */
+  @OptIn(ExperimentalCoroutinesApi::class)
   private fun observeUser() {
-    viewModelScope.launch {
-      profileRepo.observeProfile().collectLatest { profile ->
-        val localUri = avatarFileName?.let { imageRepo.getImageUri(it) }
-
-        if (localUri != null) {
-          _userAvatar.value =
-              localUri
-                  .buildUpon()
-                  .appendQueryParameter("t", System.currentTimeMillis().toString())
-                  .build()
-        } else if (profile?.avatarUrl != null) {
-          _userAvatar.value = profile.avatarUrl
-        } else {
-          _userAvatar.value = null
+    observeUserJob?.cancel()
+    observeUserJob =
+        viewModelScope.launch {
+          _currentUserFlow
+              .flatMapLatest { firebaseUser ->
+                if (firebaseUser == null) {
+                  flowOf(null)
+                } else {
+                  profileRepo.observeProfile().map { profile ->
+                    val dynamicFileName = "avatar_${firebaseUser.uid}.jpg"
+                    val localUri = imageRepo.getImageUri(dynamicFileName)
+                    if (localUri != null) {
+                      localUri
+                          .buildUpon()
+                          .appendQueryParameter("t", System.currentTimeMillis().toString())
+                          .build()
+                    } else if (profile?.avatarUrl != null) {
+                      profile.avatarUrl
+                    } else {
+                      null
+                    }
+                  }
+                }
+              }
+              .collectLatest { avatar -> _userAvatar.value = avatar }
         }
-      }
-    }
   }
 
   // Todo: Replace with actual data from the repository
