@@ -42,9 +42,16 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
   /** Toggle like (increment or decrement count) */
   override suspend fun toggleLike(sampleId: Int, isLiked: Boolean) {
     val sampleDoc = samples.document(sampleId.toString())
+
+    val snapshot = sampleDoc.get().await()
+    // Make sure the document exist
+    if (!snapshot.exists()) {
+      println("SampleRepositoryFirebase.toggleLike: Sample with id=$sampleId doesn't exist")
+      return
+    }
     db.runTransaction { transaction ->
-          val snapshot = transaction.get(sampleDoc)
-          val currentLikes = snapshot.getLong("likes") ?: 0L
+          val docSnapshot = transaction[sampleDoc]
+          val currentLikes = docSnapshot.getLong("likes") ?: 0L
           val newLikes = if (isLiked) currentLikes + 1 else maxOf(0, currentLikes - 1)
           transaction.update(sampleDoc, "likes", newLikes)
         }

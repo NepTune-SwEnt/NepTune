@@ -187,7 +187,7 @@ class NavigationTest {
 
   /** Test that the main screen has a bottom bar */
   @Test
-  fun mainScreen_displaysBottomNav() {
+  fun mainScreenDisplaysBottomNav() {
     setContent()
     composeTestRule.onNodeWithTag(MainScreenTestTags.MAIN_SCREEN).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
@@ -195,7 +195,7 @@ class NavigationTest {
 
   /** Test that the bottom bar has all the button displayed */
   @Test
-  fun mainScreen_bottomNavigationBar_hasAllButton() {
+  fun mainScreenBottomNavigationBarHasAllButton() {
     setContent()
     // Original order: MAIN, SEARCH, PROJECTLIST, POST (now IMPORT_FILE)
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
@@ -207,7 +207,7 @@ class NavigationTest {
 
   /** Test that we can click on all of the bottom bar buttons */
   @Test
-  fun mainScreen_bottomNavigationBar_canClickAllButtons() {
+  fun mainScreenBottomNavigationBarCanClickAllButtons() {
     setContent()
     listOf(
             NavigationTestTags.MAIN_TAB,
