@@ -114,12 +114,17 @@ class ProfileRepositoryFirebaseTest {
     assertEquals("Hello! New NepTune user here!", created.bio)
     assertEquals(0L, created.subscribers)
     assertEquals(0L, created.subscriptions)
+    assertTrue("Following list should be empty by default", created.following.isEmpty())
 
     val snap = getProfileDoc()
     assertTrue(snap.exists())
     assertEquals(created.username, snap.getString("username"))
     assertEquals(created.name, snap.getString("name"))
     assertEquals(created.bio, snap.getString("bio"))
+
+    val followingFromDb = snap.get("following") as? List<*> ?: emptyList<Any>()
+    assertTrue(
+        "Firestore 'following' field should by default be an empty list", followingFromDb.isEmpty())
   }
 
   @Test
@@ -168,7 +173,7 @@ class ProfileRepositoryFirebaseTest {
     assertTrue(repo.isUsernameAvailable(aOld)) // available to its owner
 
     // A switches to a new username => old username should be released
-    val aNew = "z_123456"
+    val aNew = "z_${Random.nextInt(100000, 999999)}"
     repo.setUsername(aNew)
 
     // Old doc should be gone now

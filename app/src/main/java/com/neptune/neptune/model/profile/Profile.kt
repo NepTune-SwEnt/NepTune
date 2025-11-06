@@ -15,6 +15,7 @@ package com.neptune.neptune.model.profile
  * @property likes Total number of likes received across all posts.
  * @property posts Total number of posted samples.
  * @property tags List of user-defined tags associated with the profile.
+ * @property following List of all the person that the user follows.
  * @property avatarUrl URL of the profile picture (empty string if not set).
  * @author Arianna Baur
  */
@@ -28,7 +29,8 @@ data class Profile(
     val likes: Long = 0,
     val posts: Long = 0,
     val tags: List<String> = emptyList(),
-    val avatarUrl: String = ""
+    val avatarUrl: String = "",
+    val following: List<String> = emptyList()
 )
 
 /**

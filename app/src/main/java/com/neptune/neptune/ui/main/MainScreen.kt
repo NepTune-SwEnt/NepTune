@@ -63,9 +63,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
-import com.neptune.neptune.Sample
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
+import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.theme.NepTuneTheme
@@ -211,8 +211,15 @@ fun MainScreen(
                         items(columns) { samplesColumn ->
                           Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
                             samplesColumn.forEach { samples ->
+                              val clickHandlers =
+                                  onClickFunctions(
+                                      onLikeClick = { isLiked ->
+                                        mainViewModel.onLikeClicked(samples, isLiked)
+                                      })
                               SampleCard(
-                                  samples, width = cardWidth, clickHandlers = onClickFunctions())
+                                  sample = samples,
+                                  width = cardWidth,
+                                  clickHandlers = clickHandlers)
                             }
                           }
                         }
@@ -222,7 +229,12 @@ fun MainScreen(
                 item { SectionHeader(title = "Followed") }
                 // If the screen is too small, it will display 1 Card instead of 2
                 items(followedSamples.chunked(maxColumns)) { samples ->
-                  SampleCardRow(samples, cardWidth = cardWidth)
+                  SampleCardRow(
+                      samples,
+                      cardWidth = cardWidth,
+                      onLikeClick = { sample, isLiked ->
+                        mainViewModel.onLikeClicked(sample, isLiked)
+                      })
                 }
               }
         }
@@ -256,12 +268,18 @@ fun SectionHeader(title: String) {
 
 // ----------------Sample Card in Row (2 per row)-----------------
 @Composable
-fun SampleCardRow(samples: List<Sample>, cardWidth: Dp) {
+fun SampleCardRow(
+    samples: List<Sample>,
+    cardWidth: Dp,
+    onLikeClick: (Sample, Boolean) -> Unit = { _, _ -> }
+) {
   Row(
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
       horizontalArrangement = Arrangement.spacedBy(25.dp)) {
         samples.forEach { sample ->
-          SampleCard(sample, width = cardWidth, clickHandlers = onClickFunctions())
+          val clickHandlers =
+              onClickFunctions(onLikeClick = { isLiked -> onLikeClick(sample, isLiked) })
+          SampleCard(sample = sample, width = cardWidth, clickHandlers = clickHandlers)
         }
       }
 }
@@ -271,14 +289,14 @@ data class ClickHandlers(
     val onProfileClick: () -> Unit,
     val onCommentClick: () -> Unit,
     val onDownloadClick: () -> Unit,
-    val onLikeClick: () -> Unit
+    val onLikeClick: (Boolean) -> Unit
 )
 // Function to create click handlers with default empty implementations
 fun onClickFunctions(
     onProfileClick: () -> Unit = {},
     onCommentClick: () -> Unit = {},
     onDownloadClick: () -> Unit = {},
-    onLikeClick: () -> Unit = {}
+    onLikeClick: (Boolean) -> Unit = {}
 ): ClickHandlers {
   return ClickHandlers(
       onProfileClick = onProfileClick,
@@ -288,9 +306,7 @@ fun onClickFunctions(
 }
 
 // ----------------Sample Card-----------------
-// TO DO: Decide whether when liking or commenting the online repo is notified,
-// updates the value online first and gives it locally or if it changes it locally and notifies the
-// online repo later
+// TO DO: Decide whether when commenting the online repo is notified
 @Composable
 fun SampleCard(
     sample: Sample,
@@ -420,7 +436,7 @@ fun SampleCard(
                                   .clickable(
                                       onClick = {
                                         isLiked = !isLiked
-                                        clickHandlers.onLikeClick()
+                                        clickHandlers.onLikeClick(isLiked)
                                       }),
                           tint = heartColor)
 

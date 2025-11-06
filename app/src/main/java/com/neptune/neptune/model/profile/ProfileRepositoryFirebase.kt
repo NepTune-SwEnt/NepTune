@@ -71,7 +71,8 @@ class ProfileRepositoryFirebase(
           likes = getLong("likes") ?: 0L,
           posts = getLong("posts") ?: 0L,
           tags = (get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
-          avatarUrl = getString("avatarUrl").orEmpty())
+          avatarUrl = getString("avatarUrl").orEmpty(),
+          following = (get("following") as? List<*>)?.filterIsInstance<String>() ?: emptyList())
     }
   }
 
@@ -104,6 +105,7 @@ class ProfileRepositoryFirebase(
                     avatarUrl = "",
                     subscribers = 0L,
                     subscriptions = 0L,
+                    following = emptyList(),
                     likes = 0L,
                     posts = 0L)
 
@@ -120,7 +122,8 @@ class ProfileRepositoryFirebase(
                     "subscriptions" to 0L,
                     "likes" to 0L,
                     "posts" to 0L,
-                    "tags" to emptyList<String>()))
+                    "tags" to emptyList<String>(),
+                    "following" to emptyList<String>()))
 
             created
           }
