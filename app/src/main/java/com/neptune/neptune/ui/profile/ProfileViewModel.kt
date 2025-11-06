@@ -191,7 +191,7 @@ class ProfileViewModel(private val repo: ProfileRepository = ProfileRepositoryPr
       }
     }
 
-      val normalized = normalizeTag(tag)
+    val normalized = normalizeTag(tag)
 
     _uiState.value = s.copy(tags = s.tags + normalized, inputTag = "", tagError = null)
 
