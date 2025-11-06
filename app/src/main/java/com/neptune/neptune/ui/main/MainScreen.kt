@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.neptune.neptune.R
 import com.neptune.neptune.Sample
 import com.neptune.neptune.media.LocalMediaPlayer
@@ -75,7 +76,6 @@ import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.theme.NepTuneTheme
-import coil.compose.AsyncImage
 
 object MainScreenTestTags : BaseSampleTestTags {
   override val prefix = "MainScreen"
@@ -123,25 +123,21 @@ object MainScreenTestTags : BaseSampleTestTags {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 // Implementation of the main screen
-fun MainScreen(
-    navigateToProfile: () -> Unit = {},
-    navigateToProjectList: () -> Unit = {}
-) {
-    val application = LocalContext.current.applicationContext as Application
-    val factory =
-        object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
-                    @Suppress("UNCHECKED_CAST")
-                    return MainViewModel(application) as T
-                }
-                throw IllegalArgumentException("Unknown ViewModel class")
-            }
+fun MainScreen(navigateToProfile: () -> Unit = {}, navigateToProjectList: () -> Unit = {}) {
+  val application = LocalContext.current.applicationContext as Application
+  val factory =
+      object : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+          if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST") return MainViewModel(application) as T
+          }
+          throw IllegalArgumentException("Unknown ViewModel class")
         }
-    val mainViewModel: MainViewModel = viewModel(factory = factory)
+      }
+  val mainViewModel: MainViewModel = viewModel(factory = factory)
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
-    val userAvatar by mainViewModel.userAvatar.collectAsState()
+  val userAvatar by mainViewModel.userAvatar.collectAsState()
 
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
   val horizontalPadding = 30.dp
@@ -175,17 +171,14 @@ fun MainScreen(
                         Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
                             .size(57.dp)
                             .testTag(NavigationTestTags.PROFILE_BUTTON)) {
-                    AsyncImage(
-                        model = userAvatar ?: R.drawable.profile,
-                        contentDescription = "Profile",
-                        modifier =
-                            Modifier.fillMaxSize()
-                                .clip(CircleShape),
-                        contentScale = ContentScale.Crop,
-                        placeholder = painterResource(id = R.drawable.profile),
-                        error = painterResource(id = R.drawable.profile)
-                    )
-                }
+                      AsyncImage(
+                          model = userAvatar ?: R.drawable.profile,
+                          contentDescription = "Profile",
+                          modifier = Modifier.fillMaxSize().clip(CircleShape),
+                          contentScale = ContentScale.Crop,
+                          placeholder = painterResource(id = R.drawable.profile),
+                          error = painterResource(id = R.drawable.profile))
+                    }
               },
               colors =
                   TopAppBarDefaults.centerAlignedTopAppBarColors(
