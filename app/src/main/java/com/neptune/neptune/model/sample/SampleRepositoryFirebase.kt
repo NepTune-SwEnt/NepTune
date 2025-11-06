@@ -46,8 +46,8 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
     val snapshot = sampleDoc.get().await()
     // Make sure the document exist
     if (!snapshot.exists()) {
-      println("SampleRepositoryFirebase.toggleLike: Sample with id=$sampleId doesn't exist")
-      return
+      throw IllegalStateException(
+          "SampleRepositoryFirebase.toggleLike: Sample with id=$sampleId doesn't exist")
     }
     db.runTransaction { transaction ->
           val docSnapshot = transaction[sampleDoc]
