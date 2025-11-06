@@ -169,15 +169,15 @@ class ProfileViewModel(private val repo: ProfileRepository = ProfileRepositoryPr
     if (_uiState.value.mode != ProfileMode.EDIT) return
 
     val s = _uiState.value
-    val normalized = normalizeTag(s.inputTag)
+    val tag = s.inputTag
 
     when {
-      normalized.isEmpty() -> return
-      normalized.length > MAX_TAG_LEN -> {
+      tag.isEmpty() -> return
+      tag.length > MAX_TAG_LEN -> {
         _uiState.value = s.copy(tagError = "Max $MAX_TAG_LEN characters.")
         return
       }
-      !TAG_REGEX.matches(normalized) -> {
+      !TAG_REGEX.matches(tag) -> {
         _uiState.value = s.copy(tagError = "Only letters, numbers, spaces, - and _.")
         return
       }
@@ -185,11 +185,13 @@ class ProfileViewModel(private val repo: ProfileRepository = ProfileRepositoryPr
         _uiState.value = s.copy(tagError = "You can add up to $MAX_TAGS tags.")
         return
       }
-      s.tags.any { it.equals(normalized, true) } -> {
+      s.tags.any { it.equals(tag, true) } -> {
         _uiState.value = s.copy(tagError = "Tag already exists.")
         return
       }
     }
+
+      val normalized = normalizeTag(tag)
 
     _uiState.value = s.copy(tags = s.tags + normalized, inputTag = "", tagError = null)
 
