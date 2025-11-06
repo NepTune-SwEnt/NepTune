@@ -1,19 +1,65 @@
 package com.neptune.neptune.ui.main
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import com.neptune.neptune.Sample
+import com.neptune.neptune.data.ImageStorageRepository
+import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
-class MainViewModel() : ViewModel() {
+class MainViewModel(application: Application) : AndroidViewModel(application) {
   // No real data for now
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
-  val discoverSamples: MutableStateFlow<List<Sample>> = _discoverSamples
+  val discoverSamples: StateFlow<List<Sample>> = _discoverSamples
 
   private val _followedSamples = MutableStateFlow<List<Sample>>(emptyList())
-  val followedSamples: MutableStateFlow<List<Sample>> = _followedSamples
+  val followedSamples: StateFlow<List<Sample>> = _followedSamples
+
+  private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+  private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository
+  private val imageRepo = ImageStorageRepository(application.applicationContext)
+
+  /** Generates a user-specific filename for the avatar. */
+  private val avatarFileName: String?
+    get() = auth.currentUser?.uid?.let { "avatar_$it.jpg" }
+
+  private val _userAvatar = MutableStateFlow<Any?>(null)
+  val userAvatar: StateFlow<Any?> = _userAvatar.asStateFlow()
 
   init {
     loadData()
+    observeUser()
+  }
+
+  /**
+   * View the profile and verify the local avatar. Give priority to the local (modified) avatar over
+   * the remote avatar. This function was made using AI assistance
+   */
+  private fun observeUser() {
+    viewModelScope.launch {
+      profileRepo.observeProfile().collectLatest { profile ->
+        val localUri = avatarFileName?.let { imageRepo.getImageUri(it) }
+
+        if (localUri != null) {
+          _userAvatar.value =
+              localUri
+                  .buildUpon()
+                  .appendQueryParameter("t", System.currentTimeMillis().toString())
+                  .build()
+        } else if (profile?.avatarUrl != null) {
+          _userAvatar.value = profile.avatarUrl
+        } else {
+          _userAvatar.value = null
+        }
+      }
+    }
   }
 
   // Todo: Replace with actual data from the repository
