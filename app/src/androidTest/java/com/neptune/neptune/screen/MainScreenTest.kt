@@ -21,7 +21,6 @@ import com.neptune.neptune.R
 import com.neptune.neptune.ui.main.IconWithText
 import com.neptune.neptune.ui.main.IconWithTextPainter
 import com.neptune.neptune.ui.main.MainScreenTestTags
-import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.navigation.Screen
 import org.junit.Rule
@@ -31,7 +30,7 @@ class MainScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()
 
-  private fun setContent(mainViewModel: MainViewModel = MainViewModel()) {
+  private fun setContent() {
     composeTestRule.setContent { NeptuneApp(startDestination = Screen.Main.route) }
     composeTestRule.waitUntil(timeoutMillis = 5000) {
       composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).isDisplayed()
