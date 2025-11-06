@@ -265,10 +265,8 @@ private fun ProfileViewContent(
                           label = { Text(tag) },
                           colors =
                               InputChipDefaults.inputChipColors(
-                                  disabledContainerColor =
-                                      MaterialTheme.colorScheme.secondaryContainer,
-                                  disabledLabelColor =
-                                      MaterialTheme.colorScheme.onSecondaryContainer),
+                                  disabledContainerColor = NepTuneTheme.colors.cardBackground,
+                                  disabledLabelColor = NepTuneTheme.colors.onBackground),
                           border =
                               InputChipDefaults.inputChipBorder(
                                   borderWidth = 0.dp, enabled = false, selected = false))
