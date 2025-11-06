@@ -267,7 +267,7 @@ fun SampleCardRow(samples: List<Sample>, cardWidth: Dp) {
 }
 // ----------------Click Handlers for Sample Card-----------------
 // Placeholder for click handlers
-data class clickHandlers(
+data class ClickHandlers(
     val onProfileClick: () -> Unit,
     val onCommentClick: () -> Unit,
     val onDownloadClick: () -> Unit,
@@ -279,8 +279,8 @@ fun onClickFunctions(
     onCommentClick: () -> Unit = {},
     onDownloadClick: () -> Unit = {},
     onLikeClick: () -> Unit = {}
-): clickHandlers {
-  return clickHandlers(
+): ClickHandlers {
+  return ClickHandlers(
       onProfileClick = onProfileClick,
       onCommentClick = onCommentClick,
       onDownloadClick = onDownloadClick,
@@ -297,7 +297,7 @@ fun SampleCard(
     width: Dp = 150.dp,
     height: Dp = 166.dp,
     testTags: BaseSampleTestTags = MainScreenTestTags,
-    clickHandlers: clickHandlers,
+    clickHandlers: ClickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
 ) {
 
@@ -330,7 +330,6 @@ fun SampleCard(
                             .testTag(testTags.SAMPLE_PROFILE_ICON))
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    /*Todo: Replace the hardCoded "Name" with the one provided by the Profile ViewModel*/
                     text = sample.name,
                     color = NepTuneTheme.colors.onBackground,
                     modifier = Modifier.testTag(testTags.SAMPLE_USERNAME),

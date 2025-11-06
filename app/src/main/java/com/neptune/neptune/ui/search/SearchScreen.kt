@@ -24,8 +24,8 @@ import com.neptune.neptune.Sample
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.ui.BaseSampleTestTags
+import com.neptune.neptune.ui.main.ClickHandlers
 import com.neptune.neptune.ui.main.SampleCard
-import com.neptune.neptune.ui.main.clickHandlers
 import com.neptune.neptune.ui.main.onClickFunctions
 import com.neptune.neptune.ui.projectlist.SearchBar
 import com.neptune.neptune.ui.theme.NepTuneTheme
@@ -83,7 +83,7 @@ class SearchScreenTestTagsPerSampleCard(private val idInColumn: Int = 0) : BaseS
 @Composable
 fun SearchScreen(
     searchViewModel: SearchViewModel = viewModel(),
-    clickHandlers: clickHandlers = onClickFunctions(),
+    clickHandlers: ClickHandlers = onClickFunctions(),
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
 ) {
   val samples by searchViewModel.samples.collectAsState()
@@ -112,7 +112,7 @@ fun SearchScreen(
 fun ScrollableColumnOfSamples(
     modifier: Modifier = Modifier,
     samples: List<Sample>,
-    clickHandlers: clickHandlers,
+    clickHandlers: ClickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
 ) {
   LazyColumn(
