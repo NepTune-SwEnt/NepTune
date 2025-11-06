@@ -14,6 +14,7 @@ package com.neptune.neptune.model.profile
  * @property subscribers Number of users following this profile.
  * @property likes Total number of likes received across all posts.
  * @property posts Total number of posted samples.
+ * @property tags List of user-defined tags associated with the profile.
  * @property avatarUrl URL of the profile picture (empty string if not set).
  * @author Arianna Baur
  */
