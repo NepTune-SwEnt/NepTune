@@ -70,7 +70,7 @@ class ProfileRepositoryFirebase(
           subscribers = getLong("subscribers") ?: 0L,
           likes = getLong("likes") ?: 0L,
           posts = getLong("posts") ?: 0L,
-          tags = get("tags") as? List<String> ?: emptyList(),
+          tags = (get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
           avatarUrl = getString("avatarUrl").orEmpty())
     }
   }
