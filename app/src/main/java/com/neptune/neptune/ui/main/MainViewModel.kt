@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
  * ViewModel for managing the state and operations related to the samples. This has been written
  * with the help of LLMs.
  *
+ * @param context The application context.
  * @property SampleRepository Repository for accessing and manipulating samples.
  * @property ProfileRepository Repository for accessing and manipulating profile.
  * @property useMockData false by default; true if we want to test with some MockData
@@ -34,7 +35,8 @@ class MainViewModel(
     context: Context,
     private val repo: SampleRepository = SampleRepositoryProvider.repository,
     private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
-    private val useMockData: Boolean = false
+    private val useMockData: Boolean = false,
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel() {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
   val discoverSamples: MutableStateFlow<List<Sample>> = _discoverSamples
@@ -42,7 +44,6 @@ class MainViewModel(
   private val _followedSamples = MutableStateFlow<List<Sample>>(emptyList())
   val followedSamples: StateFlow<List<Sample>> = _followedSamples
 
-  private val auth: FirebaseAuth = FirebaseAuth.getInstance()
   private val imageRepo = ImageStorageRepository(context)
   private val _userAvatar = MutableStateFlow<Any?>(null)
   val userAvatar: StateFlow<Any?> = _userAvatar.asStateFlow()

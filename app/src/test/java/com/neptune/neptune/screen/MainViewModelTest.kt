@@ -1,31 +1,67 @@
 package com.neptune.neptune.screen
 
-import android.app.Application
-import androidx.test.core.app.ApplicationProvider
+import android.content.Context
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.neptune.neptune.model.fakes.FakeProfileRepository
 import com.neptune.neptune.model.fakes.FakeSampleRepository
 import com.neptune.neptune.ui.main.MainViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
+@ExperimentalCoroutinesApi
 class MainViewModelTest {
-  private lateinit var fakeRepository: FakeSampleRepository
 
+  @get:Rule val instantTaskExecutorRule = InstantTaskExecutorRule()
+  private val testDispatcher: TestDispatcher = UnconfinedTestDispatcher()
+
+  private lateinit var mockContext: Context
+  private lateinit var mockAuth: FirebaseAuth
+  private lateinit var mockFirebaseUser: FirebaseUser
+
+  private lateinit var fakeRepository: FakeSampleRepository
   private lateinit var fakeProfileRepository: FakeProfileRepository
   private lateinit var viewModel: MainViewModel
 
   @Before
+  // This function was made using AI assistance
   fun setup() {
-    val application = ApplicationProvider.getApplicationContext<Application>()
+    Dispatchers.setMain(testDispatcher)
+
+    mockContext = mock()
+    mockAuth = mock()
+    mockFirebaseUser = mock()
+
     fakeRepository = FakeSampleRepository()
     fakeProfileRepository = FakeProfileRepository()
+
+    whenever(mockAuth.currentUser).thenReturn(mockFirebaseUser)
+    whenever(mockFirebaseUser.uid).thenReturn("fake_user_id_for_test")
+
     viewModel =
         MainViewModel(
-            application,
+            context = mockContext,
             repo = fakeRepository,
             profileRepo = fakeProfileRepository,
-            useMockData = true)
+            useMockData = true,
+            auth = mockAuth)
+  }
+
+  @After
+  fun tearDown() {
+    Dispatchers.resetMain()
   }
 
   @Test

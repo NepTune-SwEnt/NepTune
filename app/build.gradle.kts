@@ -202,6 +202,9 @@ dependencies {
     implementation("com.github.yalantis:ucrop:2.2.8")
 
     implementation("io.coil-kt:coil-compose:2.6.0")
+    testImplementation("org.mockito:mockito-core:5.5.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
+
 
 }
 
