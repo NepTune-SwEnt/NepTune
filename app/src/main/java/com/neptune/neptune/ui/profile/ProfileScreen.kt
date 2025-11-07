@@ -627,7 +627,7 @@ fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
           if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             return ProfileViewModel(
-                application = application, repo = ProfileRepositoryProvider.repository)
+                context = application, repo = ProfileRepositoryProvider.repository)
                 as T
           }
           throw IllegalArgumentException("Unknown ViewModel class")

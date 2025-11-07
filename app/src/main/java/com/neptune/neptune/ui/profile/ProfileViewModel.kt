@@ -1,8 +1,8 @@
 package com.neptune.neptune.ui.profile
 
-import android.app.Application
+import android.content.Context
 import android.net.Uri
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.neptune.neptune.data.ImageStorageRepository
@@ -29,23 +29,21 @@ private fun normalizeTag(s: String) = s.trim().lowercase().replace(Regex("\\s+")
  * Holds the current [ProfileUiState] and exposes update functions for UI-driven changes (name,
  * username, bio). Simulates save operations (to be replaced with repository calls).
  *
- * @param application The application context.
+ * @param context The application context.
  * @param repo The profile repository for data operations.
  */
 class ProfileViewModel(
-    application: Application,
-    private val repo: ProfileRepository = ProfileRepositoryProvider.repository
-) : AndroidViewModel(application) {
+    context: Context,
+    private val repo: ProfileRepository = ProfileRepositoryProvider.repository,
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
+    private val imageRepo: ImageStorageRepository = ImageStorageRepository(context)
+) : ViewModel() {
 
   private val _uiState = MutableStateFlow(ProfileUiState())
   val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
   private val _localAvatarUri = MutableStateFlow<Uri?>(null)
   val localAvatarUri: StateFlow<Uri?> = _localAvatarUri.asStateFlow()
-
-  private val imageRepo = ImageStorageRepository(application.applicationContext)
-
-  private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
   /**
    * Generates a user-specific filename for the avatar based on the logged-in user's UID. Returns
