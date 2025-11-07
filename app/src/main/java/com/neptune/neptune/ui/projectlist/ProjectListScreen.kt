@@ -265,8 +265,8 @@ fun ProjectListItem(
  */
 @Composable
 fun EditMenu(
-  project: ProjectItem,
-  projectListViewModel: ProjectListViewModel,
+    project: ProjectItem,
+    projectListViewModel: ProjectListViewModel,
 ) {
   var expanded by remember { mutableStateOf(false) }
   var showRenameDialog by remember { mutableStateOf(false) }
@@ -275,95 +275,94 @@ fun EditMenu(
 
   if (showRenameDialog) {
     RenameProjectDialog(
-      initialName = project.name,
-      onDismiss = { showRenameDialog = false },
-      onConfirm = { newName ->
-        projectListViewModel.renameProject(project.uid, newName)
-        showRenameDialog = false
-      })
+        initialName = project.name,
+        onDismiss = { showRenameDialog = false },
+        onConfirm = { newName ->
+          projectListViewModel.renameProject(project.uid, newName)
+          showRenameDialog = false
+        })
   }
 
   if (showChangeDescDialog) {
     ChangeDescriptionDialog(
-      initialDescription = project.description,
-      onDismiss = { showChangeDescDialog = false },
-      onConfirm = { newDesc ->
-        projectListViewModel.changeProjectDescription(project.uid, newDesc)
-        showChangeDescDialog = false
-      })
+        initialDescription = project.description,
+        onDismiss = { showChangeDescDialog = false },
+        onConfirm = { newDesc ->
+          projectListViewModel.changeProjectDescription(project.uid, newDesc)
+          showChangeDescDialog = false
+        })
   }
 
   if (showDeleteDialog) {
     DeleteConfirmationDialog(
-      onConfirm = {
-        projectListViewModel.deleteProject(project.uid)
-        showDeleteDialog = false
-      },
-      onDismiss = { showDeleteDialog = false }
-    )
+        onConfirm = {
+          projectListViewModel.deleteProject(project.uid)
+          showDeleteDialog = false
+        },
+        onDismiss = { showDeleteDialog = false })
   }
 
   // Right  buttons
   Row {
     // Star favorite toggle
     IconButton(
-      onClick = { projectListViewModel.toggleFavorite(project.uid) },
-      modifier = Modifier.testTag("favorite_${project.uid}")) {
-      Icon(
-        imageVector = if (project.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
-        contentDescription = "Favorite",
-        tint = NepTuneTheme.colors.onBackground,
-        modifier = Modifier.size(26.dp))
-    }
+        onClick = { projectListViewModel.toggleFavorite(project.uid) },
+        modifier = Modifier.testTag("favorite_${project.uid}")) {
+          Icon(
+              imageVector = if (project.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
+              contentDescription = "Favorite",
+              tint = NepTuneTheme.colors.onBackground,
+              modifier = Modifier.size(26.dp))
+        }
 
     Box(modifier = Modifier.padding(end = 0.dp)) {
-      IconButton(onClick = { expanded = true }, modifier = Modifier.testTag("menu_${project.uid}")) {
-        Icon(
-          Icons.Rounded.MoreVert,
-          contentDescription = "Edit",
-          tint = NepTuneTheme.colors.onBackground,
-          modifier = Modifier.size(30.dp).padding(end = 0.dp),
-        )
-      }
+      IconButton(
+          onClick = { expanded = true }, modifier = Modifier.testTag("menu_${project.uid}")) {
+            Icon(
+                Icons.Rounded.MoreVert,
+                contentDescription = "Edit",
+                tint = NepTuneTheme.colors.onBackground,
+                modifier = Modifier.size(30.dp).padding(end = 0.dp),
+            )
+          }
       DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
         DropdownMenuItem(
-          text = { Text("Rename") },
-          onClick = {
-            showRenameDialog = true
-            expanded = false
-          })
+            text = { Text("Rename") },
+            onClick = {
+              showRenameDialog = true
+              expanded = false
+            })
         DropdownMenuItem(
-          text = { Text("Change Description") },
-          onClick = {
-            showChangeDescDialog = true
-            expanded = false
-          })
+            text = { Text("Change Description") },
+            onClick = {
+              showChangeDescDialog = true
+              expanded = false
+            })
         if (!project.isStoredInCloud) {
           DropdownMenuItem(
-            text = { Text("Add to Cloud") },
-            onClick = {
-              projectListViewModel.addProjectToCloud(project.uid)
-              expanded = false
-            })
+              text = { Text("Add to Cloud") },
+              onClick = {
+                projectListViewModel.addProjectToCloud(project.uid)
+                expanded = false
+              })
         } else {
           DropdownMenuItem(
-            text = { Text("Remove from Cloud") },
-            onClick = {
-              projectListViewModel.removeProjectFromCloud(project.uid)
-              expanded = false
-            })
+              text = { Text("Remove from Cloud") },
+              onClick = {
+                projectListViewModel.removeProjectFromCloud(project.uid)
+                expanded = false
+              })
         }
         DropdownMenuItem(
-          text = { Text("Delete") },
-          onClick = {
-            showDeleteDialog = true
-            expanded = false
-          })
+            text = { Text("Delete") },
+            onClick = {
+              showDeleteDialog = true
+              expanded = false
+            })
       }
     }
   }
 }
-
 
 /**
  * Composable function representing a dialog to rename a project. This has been written with the
@@ -375,8 +374,10 @@ fun EditMenu(
  */
 @Composable
 fun RenameProjectDialog(
-  initialName: String = "",
-  onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
+    initialName: String = "",
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
   var text by remember { mutableStateOf(initialName) }
 
   AlertDialog(
@@ -431,25 +432,15 @@ fun ChangeDescriptionDialog(
  * @author Uri Jaquet
  */
 @Composable
-fun DeleteConfirmationDialog(
-  onConfirm: () -> Unit,
-  onDismiss: () -> Unit
-) {
+fun DeleteConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
   AlertDialog(
-    onDismissRequest = onDismiss,
-    title = { Text("Delete Project") },
-    text = { Text("Are you sure you want to delete this project? This action cannot be undone.") },
-    confirmButton = {
-      TextButton(onClick = onConfirm) {
-        Text("Delete")
-      }
-    },
-    dismissButton = {
-      TextButton(onClick = onDismiss) {
-        Text("Cancel")
-      }
-    }
-  )
+      onDismissRequest = onDismiss,
+      title = { Text("Delete Project") },
+      text = {
+        Text("Are you sure you want to delete this project? This action cannot be undone.")
+      },
+      confirmButton = { TextButton(onClick = onConfirm) { Text("Delete") } },
+      dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
 }
 
 /**

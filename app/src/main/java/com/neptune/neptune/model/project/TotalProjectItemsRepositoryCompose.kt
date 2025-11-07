@@ -5,8 +5,9 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 
 open class TotalProjectItemsRepositoryCompose(
-  val localRepo: ProjectItemsRepository,
-  val cloudRepo: ProjectItemsRepository) : TotalProjectItemsRepository {
+    val localRepo: ProjectItemsRepository,
+    val cloudRepo: ProjectItemsRepository
+) : TotalProjectItemsRepository {
 
   override fun getNewIdLocal(): String {
     return localRepo.getNewId()
@@ -22,25 +23,25 @@ open class TotalProjectItemsRepositoryCompose(
 
     val allProjectIDs = localProjects.keys + cloudProjects.keys
 
-    val mergedProjects = allProjectIDs.mapNotNull { projectID ->
-      val localProject = localProjects[projectID]
-      val cloudProject = cloudProjects[projectID]
+    val mergedProjects =
+        allProjectIDs.mapNotNull { projectID ->
+          val localProject = localProjects[projectID]
+          val cloudProject = cloudProjects[projectID]
 
-      when {
-        localProject != null && cloudProject != null -> {
-          // Both local and cloud versions exist, choose the one with the latest lastEdited
-          if (localProject.lastUpdated >= cloudProject.lastUpdated) {
-            localProject.copy(isStoredInCloud = true)
-          } else {
-            cloudProject
+          when {
+            localProject != null && cloudProject != null -> {
+              // Both local and cloud versions exist, choose the one with the latest lastEdited
+              if (localProject.lastUpdated >= cloudProject.lastUpdated) {
+                localProject.copy(isStoredInCloud = true)
+              } else {
+                cloudProject
+              }
+            }
+            localProject != null -> localProject // Only local version exists
+            cloudProject != null -> cloudProject // Only cloud version exists
+            else -> null // This case should not happen
           }
         }
-
-        localProject != null -> localProject // Only local version exists
-        cloudProject != null -> cloudProject // Only cloud version exists
-        else -> null // This case should not happen
-      }
-    }
 
     Log.d("TotalRepo", "Merged Projects: $mergedProjects")
 
@@ -93,7 +94,8 @@ open class TotalProjectItemsRepositoryCompose(
   override suspend fun addProjectToCloud(projectID: String) {
     val project = localRepo.getProject(projectID)
     val newUid = cloudRepo.getNewId()
-    val newProject = project.copy(uid = newUid, isStoredInCloud = true, ownerId = Firebase.auth.currentUser?.uid)
+    val newProject =
+        project.copy(uid = newUid, isStoredInCloud = true, ownerId = Firebase.auth.currentUser?.uid)
     removeProjectFromLocalStorage(projectID)
     localRepo.addProject(newProject)
     cloudRepo.addProject(newProject)

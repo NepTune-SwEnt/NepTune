@@ -45,7 +45,7 @@ class ProjectItemsRepositoryLocal(private val context: Context) : ProjectItemsRe
 
   override suspend fun getProject(projectID: String): ProjectItem {
     return readProjects()[projectID]
-      ?: throw NoSuchElementException("Project with ID $projectID not found")
+        ?: throw NoSuchElementException("Project with ID $projectID not found")
   }
 
   override suspend fun addProject(project: ProjectItem) {

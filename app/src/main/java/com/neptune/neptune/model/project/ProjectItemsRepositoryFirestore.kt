@@ -18,18 +18,22 @@ class ProjectItemsRepositoryFirestore(private val db: FirebaseFirestore) : Proje
 
   override suspend fun getAllProjects(): List<ProjectItem> {
     val ownerId =
-      Firebase.auth.currentUser?.uid
-        ?: throw Exception("ToDosRepositoryFirestore: User not logged in.")
+        Firebase.auth.currentUser?.uid
+            ?: throw Exception("ToDosRepositoryFirestore: User not logged in.")
 
     val snapshot =
-      db.collection(PROJECTITEMS_COLLECTION_PATH).whereEqualTo(ownerAttributeName, ownerId).get().await()
+        db.collection(PROJECTITEMS_COLLECTION_PATH)
+            .whereEqualTo(ownerAttributeName, ownerId)
+            .get()
+            .await()
 
     return snapshot.mapNotNull { documentToProjectItem(it) }
   }
 
   override suspend fun getProject(projectID: String): ProjectItem {
     val document = db.collection(PROJECTITEMS_COLLECTION_PATH).document(projectID).get().await()
-    return documentToProjectItem(document) ?: throw Exception("ProjectItemsRepositoryFirestore: Project not found")
+    return documentToProjectItem(document)
+        ?: throw Exception("ProjectItemsRepositoryFirestore: Project not found")
   }
 
   override suspend fun addProject(project: ProjectItem) {
@@ -70,20 +74,19 @@ class ProjectItemsRepositoryFirestore(private val db: FirebaseFirestore) : Proje
       val collaborators = document.get("collaborators") as? List<String> ?: emptyList()
 
       ProjectItem(
-        uid = uid,
-        name = name,
-        description = description,
-        isStoredInCloud = true,
-        isFavorite = isFavorite,
-        tags = tags,
-        previewPath = previewPath,
-        filePath = filePath,
-        previewUrl = previewUrl,
-        fileUrl = fileUrl,
-        lastUpdated = lastUpdated,
-        ownerId = ownerId,
-        collaborators = collaborators
-      )
+          uid = uid,
+          name = name,
+          description = description,
+          isStoredInCloud = true,
+          isFavorite = isFavorite,
+          tags = tags,
+          previewPath = previewPath,
+          filePath = filePath,
+          previewUrl = previewUrl,
+          fileUrl = fileUrl,
+          lastUpdated = lastUpdated,
+          ownerId = ownerId,
+          collaborators = collaborators)
     } catch (e: Exception) {
       Log.e("ProjectItemsRepositoryFirestore", "Error converting document to ProjectItem", e)
       null

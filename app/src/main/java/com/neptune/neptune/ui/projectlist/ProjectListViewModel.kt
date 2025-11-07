@@ -20,8 +20,8 @@ import kotlinx.coroutines.launch
  * @author Uri Jaquet
  */
 class ProjectListViewModel(
-  private val projectRepository: TotalProjectItemsRepository =
-    TotalProjectItemsRepositoryProvider.repository,
+    private val projectRepository: TotalProjectItemsRepository =
+        TotalProjectItemsRepositoryProvider.repository,
 ) : ViewModel() {
   private var _uiState = MutableStateFlow(ProjectListUiState(projects = emptyList()))
   val uiState: StateFlow<ProjectListUiState> = _uiState.asStateFlow()
@@ -46,9 +46,9 @@ class ProjectListViewModel(
       try {
         val projects = projectRepository.getAllProjects()
         val sortedProjects =
-          projects.sortedWith(
-            compareByDescending<ProjectItem> { it.isFavorite }
-              .thenByDescending { it.lastUpdated })
+            projects.sortedWith(
+                compareByDescending<ProjectItem> { it.isFavorite }
+                    .thenByDescending { it.lastUpdated })
         _uiState.value = ProjectListUiState(projects = sortedProjects, isLoading = false)
         Log.i("ProjectListViewModel", "Loaded $sortedProjects")
       } catch (e: Exception) {
@@ -107,7 +107,7 @@ class ProjectListViewModel(
       try {
         val project = projectRepository.getProject(projectId)
         val updatedProject =
-          project.copy(description = newDescription, lastUpdated = Timestamp.now())
+            project.copy(description = newDescription, lastUpdated = Timestamp.now())
         projectRepository.editProject(projectId, updatedProject)
         refreshProjects()
       } catch (e: Exception) {
@@ -191,7 +191,7 @@ class ProjectListViewModel(
  * @author Uri Jaquet
  */
 data class ProjectListUiState(
-  val projects: List<ProjectItem>,
-  val isLoading: Boolean = false,
-  val selectedProject: String? = null
+    val projects: List<ProjectItem>,
+    val isLoading: Boolean = false,
+    val selectedProject: String? = null
 )

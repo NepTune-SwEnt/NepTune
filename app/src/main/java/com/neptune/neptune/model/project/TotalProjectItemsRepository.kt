@@ -2,6 +2,7 @@ package com.neptune.neptune.model.project
 
 interface TotalProjectItemsRepository {
   fun getNewIdLocal(): String
+
   fun getNewIdCloud(): String
 
   suspend fun getAllProjects(): List<ProjectItem>

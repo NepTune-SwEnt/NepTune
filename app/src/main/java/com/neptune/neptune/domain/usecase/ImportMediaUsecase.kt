@@ -46,11 +46,11 @@ class ImportMediaUseCase(
 
     // Add new MediaItem to repository in `projects.json`
     val vm = ProjectItemsRepositoryLocal(appContext)
-    vm.addProject(ProjectItem(
-      uid = vm.getNewId(),
-      name = projectZip.nameWithoutExtension,
-      filePath = projectZip.toURI().toString()
-    ))
+    vm.addProject(
+        ProjectItem(
+            uid = vm.getNewId(),
+            name = projectZip.nameWithoutExtension,
+            filePath = projectZip.toURI().toString()))
     return item
   }
 }

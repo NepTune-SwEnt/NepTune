@@ -64,7 +64,8 @@ class ProjectListScreenTest {
               lastUpdated = Timestamp(3, 0)))
     }
 
-    viewModel = ProjectListViewModel(TotalProjectItemsRepositoryCompose(localRepository, cloudRepository))
+    viewModel =
+        ProjectListViewModel(TotalProjectItemsRepositoryCompose(localRepository, cloudRepository))
 
     // Single setContent call per test lifecycle — inject navCalls collector here
     composeTestRule.setContent {

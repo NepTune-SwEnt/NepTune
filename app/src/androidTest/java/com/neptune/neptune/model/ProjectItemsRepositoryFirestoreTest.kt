@@ -1,11 +1,11 @@
 package com.neptune.neptune.model
 
 import android.util.Log
+import com.google.firebase.Timestamp
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepositoryFirestore
-import com.google.firebase.Timestamp
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -32,21 +32,20 @@ class ProjectItemsRepositoryFirestoreTest {
   }
 
   private fun buildProject(name: String, uid: String, ownerId: String?) =
-    ProjectItem(
-      uid = uid,
-      name = name,
-      description = "desc-$name",
-      isStoredInCloud = true,
-      isFavorite = false,
-      tags = listOf("tag1"),
-      previewPath = null,
-      filePath = null,
-      previewUrl = null,
-      fileUrl = null,
-      lastUpdated = Timestamp.now(),
-      ownerId = ownerId,
-      collaborators = emptyList()
-    )
+      ProjectItem(
+          uid = uid,
+          name = name,
+          description = "desc-$name",
+          isStoredInCloud = true,
+          isFavorite = false,
+          tags = listOf("tag1"),
+          previewPath = null,
+          filePath = null,
+          previewUrl = null,
+          fileUrl = null,
+          lastUpdated = Timestamp.now(),
+          ownerId = ownerId,
+          collaborators = emptyList())
 
   @Test
   fun canAddProjectsToRepository() = runTest {
@@ -123,10 +122,7 @@ class ProjectItemsRepositoryFirestoreTest {
     repository.addProject(p2)
 
     val retrieved = repository.getProject(p2.uid)
-    Log.i(
-      "canRetrieveAProjectByIDTest",
-      "Retrieved project: ${retrieved}, \nexpected: $p2"
-    )
+    Log.i("canRetrieveAProjectByIDTest", "Retrieved project: ${retrieved}, \nexpected: $p2")
     assertEquals(p2, retrieved)
   }
 
