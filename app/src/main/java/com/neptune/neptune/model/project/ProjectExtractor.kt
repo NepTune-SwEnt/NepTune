@@ -1,13 +1,13 @@
 package com.neptune.neptune.model.project
 
+import android.content.Context
+import android.net.Uri
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import kotlinx.serialization.json.Json
-import java.io.FileOutputStream
-import android.content.Context
-import android.net.Uri
 
 /** Utility class to handle extraction and deserialization of a Neptune project (.zip). */
 class ProjectExtractor {
@@ -58,15 +58,13 @@ class ProjectExtractor {
 
     ZipFile(zipFile).use { zip ->
       val audioEntry: ZipEntry =
-        zip.getEntry(audioFileName)
-          ?: throw IllegalArgumentException("Audio file $audioFileName not found in ZIP file.")
+          zip.getEntry(audioFileName)
+              ?: throw IllegalArgumentException("Audio file $audioFileName not found in ZIP file.")
 
       val extractedFile = File(context.cacheDir, audioFileName)
 
       zip.getInputStream(audioEntry).use { input ->
-        FileOutputStream(extractedFile).use { output ->
-          input.copyTo(output)
-        }
+        FileOutputStream(extractedFile).use { output -> input.copyTo(output) }
       }
       return Uri.fromFile(extractedFile)
     }

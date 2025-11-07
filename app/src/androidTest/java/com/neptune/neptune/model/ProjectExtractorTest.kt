@@ -10,7 +10,6 @@ import java.io.FileOutputStream
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertThrows
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -87,7 +86,6 @@ class ProjectExtractorTest {
       extractor.json.decodeFromString<SamplerProjectMetadata>(invalidJson)
     }
   }
-
 
   @Test
   fun extractMetadata_fromRealAssetZip_returnsCorrectMetadata() {

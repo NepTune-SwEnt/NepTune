@@ -1,23 +1,22 @@
 package com.neptune.neptune.ui.sampler
 
 import android.app.Application
+import android.content.Context
+import android.net.Uri
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.project.ProjectExtractor
 import com.neptune.neptune.model.project.SamplerProjectMetadata
 import java.io.File
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import android.net.Uri
-import android.content.Context
-import androidx.lifecycle.AndroidViewModel
-import com.neptune.neptune.media.NeptuneMediaPlayer
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 
 enum class SamplerTab {
   BASICS,
@@ -69,27 +68,23 @@ data class SamplerUiState(
     get() = "$pitchNote$pitchOctave"
 }
 
-open class SamplerViewModel(application: Application) : AndroidViewModel(application){
+open class SamplerViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val context: Context = application.applicationContext
+  private val context: Context = application.applicationContext
 
+  private val mediaPlayer = NeptuneMediaPlayer(context)
 
-    private val mediaPlayer = NeptuneMediaPlayer(context)
-
-    init {
-        mediaPlayer.setOnCompletionListener {
-            viewModelScope.launch {
-                _uiState.update { currentState ->
-                    currentState.copy(
-                        isPlaying = false,
-                        playbackPosition = 0.0f
-                    )
-                }
-            }
+  init {
+    mediaPlayer.setOnCompletionListener {
+      viewModelScope.launch {
+        _uiState.update { currentState ->
+          currentState.copy(isPlaying = false, playbackPosition = 0.0f)
         }
+      }
     }
+  }
 
-    private var playbackTickerJob: Job? = null
+  private var playbackTickerJob: Job? = null
 
   val _uiState = MutableStateFlow(SamplerUiState())
   val uiState: StateFlow<SamplerUiState> = _uiState
@@ -104,87 +99,89 @@ open class SamplerViewModel(application: Application) : AndroidViewModel(applica
     _uiState.update { it.copy(currentTab = tab) }
   }
 
-    private fun updatePlaybackPosition() {
-        val positionMillis = mediaPlayer.getCurrentPosition()
-        val durationMillis = _uiState.value.audioDurationMillis
+  private fun updatePlaybackPosition() {
+    val positionMillis = mediaPlayer.getCurrentPosition()
+    val durationMillis = _uiState.value.audioDurationMillis
 
-        val newPosition = if (durationMillis > 0) {
-            positionMillis.toFloat() / durationMillis.toFloat()
+    val newPosition =
+        if (durationMillis > 0) {
+          positionMillis.toFloat() / durationMillis.toFloat()
         } else {
-            0.0f
+          0.0f
         }
 
-        _uiState.update { it.copy(playbackPosition = newPosition) }
-    }
+    _uiState.update { it.copy(playbackPosition = newPosition) }
+  }
 
-    private fun startPlaybackTicker() {
-        playbackTickerJob?.cancel()
-        playbackTickerJob = viewModelScope.launch {
-            while (mediaPlayer.isPlaying()) {
-                updatePlaybackPosition()
-                delay(100L)
-            }
+  private fun startPlaybackTicker() {
+    playbackTickerJob?.cancel()
+    playbackTickerJob =
+        viewModelScope.launch {
+          while (mediaPlayer.isPlaying()) {
             updatePlaybackPosition()
+            delay(100L)
+          }
+          updatePlaybackPosition()
         }
+  }
+
+  private fun stopPlaybackTicker() {
+    playbackTickerJob?.cancel()
+    playbackTickerJob = null
+  }
+
+  open fun togglePlayPause() {
+    val currentUri = _uiState.value.currentAudioUri
+    if (currentUri == null) return
+
+    val currentState = _uiState.value
+
+    val shouldResetFromEnd = currentState.playbackPosition >= 0.99f
+    val isNearZero = currentState.playbackPosition < 0.01f
+
+    val durationMillis = currentState.audioDurationMillis
+    val currentUIPositionNorm = currentState.playbackPosition
+    val seekPositionMillis = (currentUIPositionNorm * durationMillis).roundToInt()
+
+    if (mediaPlayer.isPlaying()) {
+      mediaPlayer.pause()
+      stopPlaybackTicker()
+    } else {
+      val targetSeekPosition =
+          if (shouldResetFromEnd || isNearZero) {
+            0
+          } else {
+            seekPositionMillis
+          }
+
+      if (mediaPlayer.getCurrentUri() == currentUri) {
+        mediaPlayer.goTo(targetSeekPosition)
+        mediaPlayer.resume()
+      } else {
+        mediaPlayer.play(currentUri)
+        mediaPlayer.goTo(targetSeekPosition)
+      }
+
+      startPlaybackTicker()
     }
+    _uiState.update { state ->
+      val newIsPlaying = mediaPlayer.isPlaying()
+      val realDuration = mediaPlayer.getDuration()
+      val newDuration = if (realDuration > 0) realDuration else state.audioDurationMillis
+      val didReset = shouldResetFromEnd || isNearZero
+      val newPosition = if (newIsPlaying && didReset) 0.0f else state.playbackPosition
 
-    private fun stopPlaybackTicker() {
-        playbackTickerJob?.cancel()
-        playbackTickerJob = null
+      state.copy(
+          isPlaying = newIsPlaying,
+          playbackPosition = newPosition,
+          audioDurationMillis = newDuration)
     }
+  }
 
-    open fun togglePlayPause() {
-        val currentUri = _uiState.value.currentAudioUri
-        if (currentUri == null) return
-
-        val currentState = _uiState.value
-
-        val shouldResetFromEnd = currentState.playbackPosition >= 0.99f
-        val isNearZero = currentState.playbackPosition < 0.01f
-
-        val durationMillis = currentState.audioDurationMillis
-        val currentUIPositionNorm = currentState.playbackPosition
-        val seekPositionMillis = (currentUIPositionNorm * durationMillis).roundToInt()
-
-        if (mediaPlayer.isPlaying()) {
-            mediaPlayer.pause()
-            stopPlaybackTicker()
-        } else {
-            val targetSeekPosition = if (shouldResetFromEnd || isNearZero) {
-                0
-            } else {
-                seekPositionMillis
-            }
-
-            if (mediaPlayer.getCurrentUri() == currentUri) {
-                mediaPlayer.goTo(targetSeekPosition)
-                mediaPlayer.resume()
-            } else {
-                mediaPlayer.play(currentUri)
-                mediaPlayer.goTo(targetSeekPosition)
-            }
-
-            startPlaybackTicker()
-        }
-        _uiState.update { state ->
-            val newIsPlaying = mediaPlayer.isPlaying()
-            val realDuration = mediaPlayer.getDuration()
-            val newDuration = if (realDuration > 0) realDuration else state.audioDurationMillis
-            val didReset = shouldResetFromEnd || isNearZero
-            val newPosition = if (newIsPlaying && didReset) 0.0f else state.playbackPosition
-
-            state.copy(
-                isPlaying = newIsPlaying,
-                playbackPosition = newPosition,
-                audioDurationMillis = newDuration
-            )
-        }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        mediaPlayer.stop()
-    }
+  override fun onCleared() {
+    super.onCleared()
+    mediaPlayer.stop()
+  }
 
   open fun updateAttack(value: Float) {
     _uiState.update { it.copy(attack = value) }
@@ -316,55 +313,55 @@ open class SamplerViewModel(application: Application) : AndroidViewModel(applica
   fun loadProjectData(zipFilePath: String, context: Context) {
     viewModelScope.launch {
       try {
-          val zipFile = File(zipFilePath)
-          val metadata: SamplerProjectMetadata = extractor.extractMetadata(zipFile)
-          val audioFileName = metadata.audioFiles.firstOrNull()?.name
-          val audioUri = if (audioFileName != null) {
+        val zipFile = File(zipFilePath)
+        val metadata: SamplerProjectMetadata = extractor.extractMetadata(zipFile)
+        val audioFileName = metadata.audioFiles.firstOrNull()?.name
+        val audioUri =
+            if (audioFileName != null) {
               extractor.extractAudioFile(zipFile, context, audioFileName)
-          } else {
+            } else {
               null
+            }
+        val duration = mediaPlayer.getDuration()
+        Log.d("SamplerViewModel", "Audio URI chargée: $audioUri")
+        val paramMap = metadata.parameters.associate { it.type to it.value }
+        _uiState.update { current ->
+          val newEqBands = current.eqBands.toMutableList()
+          EQ_FREQUENCIES.forEachIndexed { index, _ ->
+            paramMap["eq_band_$index"]?.let { gain ->
+              newEqBands[index] = gain.coerceIn(EQ_GAIN_MIN, EQ_GAIN_MAX)
+            }
           }
-          val duration = mediaPlayer.getDuration()
-          Log.d("SamplerViewModel", "Audio URI chargée: $audioUri")
-          val paramMap = metadata.parameters.associate { it.type to it.value }
-          _uiState.update { current ->
-              val newEqBands = current.eqBands.toMutableList()
-              EQ_FREQUENCIES.forEachIndexed { index, _ ->
-                paramMap["eq_band_$index"]?.let { gain ->
-                  newEqBands[index] = gain.coerceIn(EQ_GAIN_MIN, EQ_GAIN_MAX)
-                }
-              }
 
-              current.copy(
-                  attack = paramMap["attack"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.attack,
-                  decay = paramMap["decay"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.decay,
-                  sustain = paramMap["sustain"]?.coerceIn(0f, ADSR_MAX_SUSTAIN) ?: current.sustain,
-                  release = paramMap["release"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.release,
-                  reverbWet = paramMap["reverbWet"]?.coerceIn(0f, 1f) ?: current.reverbWet,
-                  reverbSize =
-                      paramMap["reverbSize"]?.coerceIn(0.1f, REVERB_SIZE_MAX) ?: current.reverbSize,
-                  reverbWidth = paramMap["reverbWidth"]?.coerceIn(0f, 1f) ?: current.reverbWidth,
-                  reverbDepth = paramMap["reverbDepth"]?.coerceIn(0f, 1f) ?: current.reverbDepth,
-                  reverbPredelay =
-                      paramMap["reverbPredelay"]?.coerceIn(0f, PREDELAY_MAX_MS)
-                          ?: current.reverbPredelay,
-                  compThreshold =
-                      paramMap["compThreshold"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)
-                          ?: current.compThreshold,
-                  compRatio =
-                      paramMap["compRatio"]?.let { ratioFloat ->
-                        ratioFloat.roundToInt().coerceIn(1, 20)
-                      } ?: current.compRatio,
-                  compKnee = paramMap["compKnee"]?.coerceIn(0f, COMP_KNEE_MAX) ?: current.compKnee,
-                  compGain =
-                      paramMap["compGain"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX) ?: current.compGain,
-                  compAttack =
-                      paramMap["compAttack"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compAttack,
-                  compDecay = paramMap["compDecay"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compDecay,
-                  eqBands = newEqBands.toList(),
-                  currentAudioUri = audioUri,
-                  audioDurationMillis = if (duration > 0) duration else 4000
-              )
+          current.copy(
+              attack = paramMap["attack"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.attack,
+              decay = paramMap["decay"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.decay,
+              sustain = paramMap["sustain"]?.coerceIn(0f, ADSR_MAX_SUSTAIN) ?: current.sustain,
+              release = paramMap["release"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.release,
+              reverbWet = paramMap["reverbWet"]?.coerceIn(0f, 1f) ?: current.reverbWet,
+              reverbSize =
+                  paramMap["reverbSize"]?.coerceIn(0.1f, REVERB_SIZE_MAX) ?: current.reverbSize,
+              reverbWidth = paramMap["reverbWidth"]?.coerceIn(0f, 1f) ?: current.reverbWidth,
+              reverbDepth = paramMap["reverbDepth"]?.coerceIn(0f, 1f) ?: current.reverbDepth,
+              reverbPredelay =
+                  paramMap["reverbPredelay"]?.coerceIn(0f, PREDELAY_MAX_MS)
+                      ?: current.reverbPredelay,
+              compThreshold =
+                  paramMap["compThreshold"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)
+                      ?: current.compThreshold,
+              compRatio =
+                  paramMap["compRatio"]?.let { ratioFloat ->
+                    ratioFloat.roundToInt().coerceIn(1, 20)
+                  } ?: current.compRatio,
+              compKnee = paramMap["compKnee"]?.coerceIn(0f, COMP_KNEE_MAX) ?: current.compKnee,
+              compGain =
+                  paramMap["compGain"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX) ?: current.compGain,
+              compAttack =
+                  paramMap["compAttack"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compAttack,
+              compDecay = paramMap["compDecay"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compDecay,
+              eqBands = newEqBands.toList(),
+              currentAudioUri = audioUri,
+              audioDurationMillis = if (duration > 0) duration else 4000)
         }
       } catch (e: Exception) {
         Log.e("SamplerViewModel", "Échec du chargement du projet ZIP: ${e.message}", e)

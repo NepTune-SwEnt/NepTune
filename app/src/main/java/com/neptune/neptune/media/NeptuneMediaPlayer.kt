@@ -12,6 +12,7 @@ class NeptuneMediaPlayer(private val context: Context) {
   private var currentUri: Uri? = null
 
   private var onCompletionCallback: (() -> Unit)? = null
+
   fun setOnCompletionListener(listener: () -> Unit) {
     this.onCompletionCallback = listener
   }
