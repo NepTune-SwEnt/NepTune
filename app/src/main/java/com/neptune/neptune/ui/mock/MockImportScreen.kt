@@ -45,7 +45,9 @@ object MockImportTestTags {
   const val MIC_ICON = "MicIcon"
   const val STOP_ICON = "StopIcon"
 }
-// TODO replace with real ImportScreen when ready
+
+val padding = 16.dp
+
 @SuppressLint("VisibleForTests")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,8 +88,8 @@ fun MockImportScreen(vm: ImportViewModel = viewModel(), recorder: NeptuneRecorde
                   if (hasAudioPermission) {
                     try {
                       actualRecorder.start()
-                    } catch (e: Exception) {
-                      // TODO: show snackbar
+                    } catch (_: Exception) {
+                      // ignore
                     }
                   } else {
                     permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
@@ -96,7 +98,7 @@ fun MockImportScreen(vm: ImportViewModel = viewModel(), recorder: NeptuneRecorde
                 isRecording = actualRecorder.isRecording
               },
               modifier =
-                  Modifier.padding(bottom = 16.dp).testTag(MockImportTestTags.BUTTON_RECORD)) {
+                  Modifier.padding(bottom = padding).testTag(MockImportTestTags.BUTTON_RECORD)) {
                 Icon(
                     if (isRecording) Icons.Filled.Stop else Icons.Filled.Mic,
                     contentDescription = if (isRecording) "Stop recording" else "Start recording",

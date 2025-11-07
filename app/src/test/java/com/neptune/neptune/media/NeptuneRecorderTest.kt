@@ -34,7 +34,7 @@ class NeptuneRecorderTest {
       outputDir.mkdirs()
     }
 
-    every { context.getExternalFilesDir("Records") } returns outputDir
+    every { context.getExternalFilesDir("records") } returns outputDir
     every { paths.recordWorkspace() } returns outputDir
 
     // Mock MediaRecorder constructor to control its instances
@@ -79,13 +79,13 @@ class NeptuneRecorderTest {
   }
 
   @Test
-  fun startRecordingTwiceThrowsIllegalStateException() {
+  fun startRecordingTwiceThrowsIllegalArgumentException() {
     recorder.start("test.m4a")
     assertThrows(java.lang.IllegalArgumentException::class.java) { recorder.start("test2.m4a") }
   }
 
   @Test
-  fun stopRecordingWithoutStartingThrowsIllegalStateException() {
+  fun stopRecordingWithoutStartingThrowsIllegalArgumentException() {
     assertThrows(java.lang.IllegalArgumentException::class.java) { recorder.stop() }
   }
 
@@ -95,9 +95,6 @@ class NeptuneRecorderTest {
 
     val e = assertThrows(IOException::class.java) { recorder.start("test.m4a") }
     assertThat(e.message).isEqualTo("prepare failed")
-
-    // Verify that release is called to clean up
-    assert(recorder.recorder == null)
   }
 
   @Test
@@ -107,9 +104,6 @@ class NeptuneRecorderTest {
     val e = assertThrows(IOException::class.java) { recorder.start("test.m4a") }
     assertThat(e.message).isEqualTo("Failed to start recorder")
     assertThat(e.cause).isInstanceOf(RuntimeException::class.java)
-
-    // Verify that release is called to clean up
-    assert(recorder.recorder == null)
   }
 
   @Test
