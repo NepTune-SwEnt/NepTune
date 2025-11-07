@@ -2,18 +2,28 @@ package com.neptune.neptune.screen
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
+import com.neptune.neptune.model.fakes.FakeProfileRepository
+import com.neptune.neptune.model.fakes.FakeSampleRepository
 import com.neptune.neptune.ui.main.MainViewModel
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 
 class MainViewModelTest {
+  private lateinit var fakeRepository: FakeSampleRepository
+
+  private lateinit var fakeProfileRepository: FakeProfileRepository
   private lateinit var viewModel: MainViewModel
 
   @Before
   fun setup() {
     val application = ApplicationProvider.getApplicationContext<Application>()
-    val viewModel = MainViewModel(application)
+    fakeRepository = FakeSampleRepository()
+    fakeProfileRepository = FakeProfileRepository()
+    viewModel =
+        MainViewModel(
+            application,
+            repo = fakeRepository, profileRepo = fakeProfileRepository, useMockData = true)
   }
 
   @Test

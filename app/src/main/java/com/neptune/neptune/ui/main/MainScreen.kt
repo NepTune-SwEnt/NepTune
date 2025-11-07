@@ -74,9 +74,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.neptune.neptune.R
-import com.neptune.neptune.Sample
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
+import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.theme.NepTuneTheme
@@ -244,7 +244,15 @@ fun MainScreen(navigateToProfile: () -> Unit = {}, navigateToProjectList: () -> 
                         items(columns) { samplesColumn ->
                           Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
                             samplesColumn.forEach { samples ->
-                              SampleCard(samples, width = cardWidth)
+                              val clickHandlers =
+                                  onClickFunctions(
+                                      onLikeClick = { isLiked ->
+                                        mainViewModel.onLikeClicked(samples, isLiked)
+                                      })
+                              SampleCard(
+                                  sample = samples,
+                                  width = cardWidth,
+                                  clickHandlers = clickHandlers)
                             }
                           }
                         }
@@ -254,7 +262,12 @@ fun MainScreen(navigateToProfile: () -> Unit = {}, navigateToProjectList: () -> 
                 item { SectionHeader(title = "Followed") }
                 // If the screen is too small, it will display 1 Card instead of 2
                 items(followedSamples.chunked(maxColumns)) { samples ->
-                  SampleCardRow(samples, cardWidth = cardWidth)
+                  SampleCardRow(
+                      samples,
+                      cardWidth = cardWidth,
+                      onLikeClick = { sample, isLiked ->
+                        mainViewModel.onLikeClicked(sample, isLiked)
+                      })
                 }
               }
         }
@@ -288,31 +301,59 @@ fun SectionHeader(title: String) {
 
 // ----------------Sample Card in Row (2 per row)-----------------
 @Composable
-fun SampleCardRow(samples: List<Sample>, cardWidth: Dp) {
+fun SampleCardRow(
+    samples: List<Sample>,
+    cardWidth: Dp,
+    onLikeClick: (Sample, Boolean) -> Unit = { _, _ -> }
+) {
   Row(
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
       horizontalArrangement = Arrangement.spacedBy(25.dp)) {
-        samples.forEach { sample -> SampleCard(sample, width = cardWidth) }
+        samples.forEach { sample ->
+          val clickHandlers =
+              onClickFunctions(onLikeClick = { isLiked -> onLikeClick(sample, isLiked) })
+          SampleCard(sample = sample, width = cardWidth, clickHandlers = clickHandlers)
+        }
       }
+}
+// ----------------Click Handlers for Sample Card-----------------
+// Placeholder for click handlers
+data class ClickHandlers(
+    val onProfileClick: () -> Unit,
+    val onCommentClick: () -> Unit,
+    val onDownloadClick: () -> Unit,
+    val onLikeClick: (Boolean) -> Unit
+)
+// Function to create click handlers with default empty implementations
+fun onClickFunctions(
+    onProfileClick: () -> Unit = {},
+    onCommentClick: () -> Unit = {},
+    onDownloadClick: () -> Unit = {},
+    onLikeClick: (Boolean) -> Unit = {}
+): ClickHandlers {
+  return ClickHandlers(
+      onProfileClick = onProfileClick,
+      onCommentClick = onCommentClick,
+      onDownloadClick = onDownloadClick,
+      onLikeClick = onLikeClick)
 }
 
 // ----------------Sample Card-----------------
-// TO DO: Decide whether when liking or commenting the online repo is notified,
-// updates the value online first and gives it locally or if it changes it locally and notifies the
-// online repo later
+// TO DO: Decide whether when commenting the online repo is notified
 @Composable
 fun SampleCard(
     sample: Sample,
     width: Dp = 150.dp,
     height: Dp = 166.dp,
     testTags: BaseSampleTestTags = MainScreenTestTags,
-    onProfileClick: () -> Unit = {},
-    onCommentClick: () -> Unit = {},
-    onDownloadClick: () -> Unit = {},
-    onLikeClick: () -> Unit = {},
+    clickHandlers: ClickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
 ) {
+
   var isLiked by remember { mutableStateOf(false) }
+  val likeDescription = if (isLiked) "liked" else "not liked"
+  val heartColor = if (isLiked) Color.Red else NepTuneTheme.colors.background
+  val heartIcon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder
   Card(
       modifier =
           Modifier.width(width)
@@ -333,13 +374,12 @@ fun SampleCard(
                     contentDescription = "Profile",
                     tint = Color.Unspecified,
                     modifier =
-                        Modifier.clickable(onClick = onProfileClick)
+                        Modifier.clickable(onClick = clickHandlers.onProfileClick)
                             .size(22.dp)
                             .testTag(testTags.SAMPLE_PROFILE_ICON))
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    /*Todo: Replace the hardCoded "Name" with the one provided by the Profile ViewModel*/
-                    text = "Name",
+                    text = sample.name,
                     color = NepTuneTheme.colors.onBackground,
                     modifier = Modifier.testTag(testTags.SAMPLE_USERNAME),
                     style =
@@ -420,21 +460,18 @@ fun SampleCard(
                     modifier = Modifier.fillMaxSize(),
                     horizontalArrangement = Arrangement.SpaceBetween) {
                       IconWithText(
-                          icon =
-                              if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                          icon = heartIcon,
                           iconDescription = "Like",
                           text = sample.likes.toString(),
                           modifier =
                               Modifier.testTag(testTags.SAMPLE_LIKES)
-                                  .semantics {
-                                    stateDescription = if (isLiked) "liked" else "not liked"
-                                  }
+                                  .semantics { stateDescription = likeDescription }
                                   .clickable(
                                       onClick = {
                                         isLiked = !isLiked
-                                        onLikeClick()
+                                        clickHandlers.onLikeClick(isLiked)
                                       }),
-                          tint = if (isLiked) Color.Red else NepTuneTheme.colors.background)
+                          tint = heartColor)
 
                       IconWithTextPainter(
                           icon = painterResource(R.drawable.comments),
@@ -442,14 +479,14 @@ fun SampleCard(
                           text = sample.comments.toString(),
                           modifier =
                               Modifier.testTag(testTags.SAMPLE_COMMENTS)
-                                  .clickable(onClick = onCommentClick))
+                                  .clickable(onClick = clickHandlers.onCommentClick))
                       IconWithTextPainter(
                           icon = painterResource(R.drawable.download),
                           iconDescription = "Downloads",
                           text = sample.downloads.toString(),
                           modifier =
                               Modifier.testTag(testTags.SAMPLE_DOWNLOADS)
-                                  .clickable(onClick = onDownloadClick))
+                                  .clickable(onClick = clickHandlers.onDownloadClick))
                     }
               }
         }

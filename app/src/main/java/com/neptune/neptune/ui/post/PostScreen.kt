@@ -56,9 +56,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
-import com.neptune.neptune.Sample
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
+import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
 object PostScreenTestTags {

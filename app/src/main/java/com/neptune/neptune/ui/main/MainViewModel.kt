@@ -10,6 +10,13 @@ import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import com.neptune.neptune.model.sample.Sample
+import com.neptune.neptune.model.sample.SampleRepository
+import com.neptune.neptune.model.sample.SampleRepositoryProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,11 +25,26 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
-class MainViewModel(application: Application) : AndroidViewModel(application) {
-  // No real data for now
+/**
+ * ViewModel for managing the state and operations related to the samples. This has been written
+ * with the help of LLMs.
+ *
+ * @property SampleRepository Repository for accessing and manipulating samples.
+ * @property ProfileRepository Repository for accessing and manipulating profile.
+ * @property useMockData false by default; true if we want to test with some MockData
+ * @author Angéline Bignens
+ */
+class MainViewModel(
+    application: Application,
+    private val repo: SampleRepository = SampleRepositoryProvider.repository,
+    private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
+    private val useMockData: Boolean = false
+) : AndroidViewModel(application) {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
-  val discoverSamples: StateFlow<List<Sample>> = _discoverSamples
+  val discoverSamples: MutableStateFlow<List<Sample>> = _discoverSamples
 
   private val _followedSamples = MutableStateFlow<List<Sample>>(emptyList())
   val followedSamples: StateFlow<List<Sample>> = _followedSamples
@@ -47,55 +69,74 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
   private var observeUserJob: Job? = null // Proposed by gemini
 
   init {
-    loadData()
-    auth.addAuthStateListener(authListener)
-    observeUser()
+    if (useMockData) {
+      // If we are testing we load mock data
+      loadData()
+    } else {
+      loadSamplesFromFirebase()
+    }
+      auth.addAuthStateListener(authListener)
+      observeUser()
   }
 
-  fun onResume() {
-    observeUser()
+  private fun loadSamplesFromFirebase() {
+    viewModelScope.launch {
+      // Get current user's profile
+      val profile = profileRepo.getProfile()
+      val following = profile?.following.orEmpty()
+      repo.observeSamples().collectLatest { samples ->
+        _discoverSamples.value = samples.filter { it.ownerId !in following }
+        _followedSamples.value = samples.filter { it.ownerId in following }
+      }
+    }
   }
+    fun onResume() {
+        observeUser()
+    }
 
-  override fun onCleared() {
-    super.onCleared()
-    auth.removeAuthStateListener(authListener)
-  }
+    override fun onCleared() {
+        super.onCleared()
+        auth.removeAuthStateListener(authListener)
+    }
 
-  /**
-   * View the profile and verify the local avatar. Give priority to the local (modified) avatar over
-   * the remote avatar. This function was made using AI assistance
-   */
-  @OptIn(ExperimentalCoroutinesApi::class)
-  private fun observeUser() {
-    observeUserJob?.cancel()
-    observeUserJob =
-        viewModelScope.launch {
-          _currentUserFlow
-              .flatMapLatest { firebaseUser ->
-                if (firebaseUser == null) {
-                  flowOf(null)
-                } else {
-                  profileRepo.observeProfile().map { profile ->
-                    val dynamicFileName = "avatar_${firebaseUser.uid}.jpg"
-                    val localUri = imageRepo.getImageUri(dynamicFileName)
-                    if (localUri != null) {
-                      localUri
-                          .buildUpon()
-                          .appendQueryParameter("t", System.currentTimeMillis().toString())
-                          .build()
-                    } else if (profile?.avatarUrl != null) {
-                      profile.avatarUrl
-                    } else {
-                      null
+    /**
+     * View the profile and verify the local avatar. Give priority to the local (modified) avatar over
+     * the remote avatar. This function was made using AI assistance
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun observeUser() {
+        observeUserJob?.cancel()
+        observeUserJob =
+            viewModelScope.launch {
+                _currentUserFlow
+                    .flatMapLatest { firebaseUser ->
+                        if (firebaseUser == null) {
+                            flowOf(null)
+                        } else {
+                            profileRepo.observeProfile().map { profile ->
+                                val dynamicFileName = "avatar_${firebaseUser.uid}.jpg"
+                                val localUri = imageRepo.getImageUri(dynamicFileName)
+                                if (localUri != null) {
+                                    localUri
+                                        .buildUpon()
+                                        .appendQueryParameter("t", System.currentTimeMillis().toString())
+                                        .build()
+                                } else if (profile?.avatarUrl != null) {
+                                    profile.avatarUrl
+                                } else {
+                                    null
+                                }
+                            }
+                        }
                     }
-                  }
-                }
-              }
-              .collectLatest { avatar -> _userAvatar.value = avatar }
-        }
-  }
+                    .collectLatest { avatar -> _userAvatar.value = avatar }
+            }
+    }
 
-  // Todo: Replace with actual data from the repository
+  fun onLikeClicked(sample: Sample, isLiked: Boolean) {
+    viewModelScope.launch { repo.toggleLike(sample.id, isLiked) }
+  }
+  // Mock Data
   private fun loadData() {
     _discoverSamples.value =
         listOf(

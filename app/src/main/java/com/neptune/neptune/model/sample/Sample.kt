@@ -1,4 +1,4 @@
-package com.neptune.neptune
+package com.neptune.neptune.model.sample
 
 data class Sample(
     val id: Int,
@@ -9,5 +9,6 @@ data class Sample(
     val likes: Int,
     val comments: Int,
     val downloads: Int,
-    val uriString: String = ""
+    val uriString: String = "",
+    val ownerId: String = ""
 )

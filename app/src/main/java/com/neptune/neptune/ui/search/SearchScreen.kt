@@ -20,11 +20,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.neptune.neptune.Sample
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
+import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
+import com.neptune.neptune.ui.main.ClickHandlers
 import com.neptune.neptune.ui.main.SampleCard
+import com.neptune.neptune.ui.main.onClickFunctions
 import com.neptune.neptune.ui.projectlist.SearchBar
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import kotlinx.coroutines.delay
@@ -81,11 +83,7 @@ class SearchScreenTestTagsPerSampleCard(private val idInColumn: Int = 0) : BaseS
 @Composable
 fun SearchScreen(
     searchViewModel: SearchViewModel = viewModel(),
-    onProfilePicClick: () -> Unit = {},
-    onSampleClick: () -> Unit = {},
-    onDownloadClick: () -> Unit = {},
-    onLikeClick: () -> Unit = {},
-    onCommentClick: () -> Unit = {},
+    clickHandlers: ClickHandlers = onClickFunctions(),
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
 ) {
   val samples by searchViewModel.samples.collectAsState()
@@ -104,10 +102,7 @@ fun SearchScreen(
       content = { pd ->
         ScrollableColumnOfSamples(
             samples = samples,
-            onProfilePicClick = onProfilePicClick,
-            onDownloadClick = onDownloadClick,
-            onLikeClick = onLikeClick,
-            onCommentClick = onCommentClick,
+            clickHandlers = clickHandlers,
             modifier = Modifier.padding(pd),
             mediaPlayer = mediaPlayer)
       })
@@ -115,12 +110,9 @@ fun SearchScreen(
 
 @Composable
 fun ScrollableColumnOfSamples(
-    samples: List<Sample>,
-    onProfilePicClick: () -> Unit = {},
-    onDownloadClick: () -> Unit = {},
-    onLikeClick: () -> Unit = {},
-    onCommentClick: () -> Unit = {},
     modifier: Modifier = Modifier,
+    samples: List<Sample>,
+    clickHandlers: ClickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
 ) {
   LazyColumn(
@@ -128,7 +120,7 @@ fun ScrollableColumnOfSamples(
           modifier
               .testTag(SearchScreenTestTags.SAMPLE_LIST)
               .fillMaxSize()
-              .background(NepTuneTheme.colors.listBackground),
+              .background(NepTuneTheme.colors.background),
       verticalArrangement = Arrangement.spacedBy(12.dp),
       horizontalAlignment = Alignment.CenterHorizontally) {
         val width = 300.dp
@@ -138,10 +130,7 @@ fun ScrollableColumnOfSamples(
           SampleCard(
               sample = sample,
               width = width,
-              onProfileClick = onProfilePicClick,
-              onLikeClick = onLikeClick,
-              onDownloadClick = onDownloadClick,
-              onCommentClick = onCommentClick,
+              clickHandlers = clickHandlers,
               testTags = testTags,
               mediaPlayer = mediaPlayer)
         }
