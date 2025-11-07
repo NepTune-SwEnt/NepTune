@@ -29,7 +29,7 @@ class NeptuneRecorder(private val context: Context, private val paths: StoragePa
    * @param audioSource The audio source for recording. Defaults to
    *   MediaRecorder.AudioSource.UNPROCESSED.
    * @return The File object representing the recorded audio file.
-   * @throws IOException If there is an error preparing or starting the recorder.
+   * @throws IOException If there is an error preparing, starting, or deleting the file after a failure.
    */
   fun start(
       fileName: String = "rec_${System.currentTimeMillis()}.m4a",
@@ -60,13 +60,17 @@ class NeptuneRecorder(private val context: Context, private val paths: StoragePa
           } catch (e: IOException) {
             releaseSafely()
             if (file.exists()) {
-              file.delete()
+              if (!file.delete()) {
+                throw IOException("Failed to delete incomplete recording file: ${file.absolutePath}")
+              }
             }
             throw e
           } catch (e: RuntimeException) {
             releaseSafely()
             if (file.exists()) {
-              file.delete()
+              if (!file.delete()) {
+                throw IOException("Failed to delete incomplete recording file: ${file.absolutePath}")
+              }
             }
             throw IOException("Failed to start recorder", e)
           }
