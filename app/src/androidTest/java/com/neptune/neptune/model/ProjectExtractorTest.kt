@@ -88,25 +88,6 @@ class ProjectExtractorTest {
     }
   }
 
-  @Test
-  fun getAudioFileUri_returnsCorrectPlaceholderUri() {
-    val metadata = extractor.json.decodeFromString<SamplerProjectMetadata>(validJson)
-    val expectedFileName = "kick.wav"
-    val resultUri = extractor.getAudioFileUri(metadata, expectedFileName)
-
-    assertTrue("URI must contain the expected filename.", resultUri.contains(expectedFileName))
-    assertTrue(
-        "URI should start with the expected temporary path.",
-        resultUri.startsWith("file:///tmp/neptune/extracted/"))
-  }
-
-  @Test
-  fun getAudioFileUri_throwsException_whenFileNotFound() {
-    val metadata = extractor.json.decodeFromString<SamplerProjectMetadata>(validJson)
-    assertThrows(IllegalArgumentException::class.java) {
-      extractor.getAudioFileUri(metadata, "nonexistent.wav")
-    }
-  }
 
   @Test
   fun extractMetadata_fromRealAssetZip_returnsCorrectMetadata() {

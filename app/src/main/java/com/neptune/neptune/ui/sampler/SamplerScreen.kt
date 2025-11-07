@@ -48,6 +48,8 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import androidx.compose.ui.platform.LocalContext
+import com.neptune.neptune.media.LocalMediaPlayer
 
 object SamplerTestTags {
   const val SCREEN_CONTAINER = "samplerScreenContainer"
@@ -115,6 +117,7 @@ fun SamplerScreen(
     zipFilePath: String?,
 ) {
   val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
   val decodedZipPath =
       remember(zipFilePath) {
@@ -127,7 +130,7 @@ fun SamplerScreen(
 
   LaunchedEffect(Unit) {
     if (decodedZipPath != null) {
-      viewModel.loadProjectData(decodedZipPath)
+      viewModel.loadProjectData(decodedZipPath, context)
     }
   }
 
@@ -147,7 +150,8 @@ fun SamplerScreen(
           playbackPosition = uiState.playbackPosition,
           onPositionChange = viewModel::updatePlaybackPosition,
           onIncreasePitch = viewModel::increasePitch,
-          onDecreasePitch = viewModel::decreasePitch)
+          onDecreasePitch = viewModel::decreasePitch,
+          uiState = uiState)
 
       Spacer(modifier = Modifier.height(16.dp))
 
@@ -170,9 +174,15 @@ fun PlaybackAndWaveformControls(
     playbackPosition: Float,
     onPositionChange: (Float) -> Unit,
     onIncreasePitch: () -> Unit,
-    onDecreasePitch: () -> Unit
+    onDecreasePitch: () -> Unit,
+    uiState: SamplerUiState
 ) {
 
+    val mediaPlayer = LocalMediaPlayer.current
+    val currentUri = uiState.currentAudioUri
+
+    val playbackPosition = uiState.playbackPosition
+    val audioDurationMillis = uiState.audioDurationMillis
   Column(
       modifier =
           Modifier.fillMaxWidth()
@@ -183,7 +193,8 @@ fun PlaybackAndWaveformControls(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween) {
-              IconButton(onClick = onTogglePlayPause) {
+              IconButton(onClick = onTogglePlayPause
+              ) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                     contentDescription = if (isPlaying) "Pause" else "Play",
@@ -223,15 +234,28 @@ fun PlaybackAndWaveformControls(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        WaveformDisplay(
-            modifier =
-                Modifier.fillMaxWidth()
-                    .height(120.dp)
-                    .border(2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
-                    .testTag(SamplerTestTags.WAVEFORM_DISPLAY),
-            isPlaying = isPlaying,
-            playbackPosition = playbackPosition,
-            onPositionChange = onPositionChange)
+          Box(modifier = Modifier.fillMaxWidth().height(100.dp)) {
+
+              WaveformDisplay(
+                  modifier =
+                      Modifier.fillMaxWidth()
+                          .height(120.dp)
+                          .border(2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
+                          .testTag(SamplerTestTags.WAVEFORM_DISPLAY),
+                  isPlaying = isPlaying,
+                  playbackPosition = playbackPosition,
+                  onPositionChange = onPositionChange,
+                  audioDurationMillis = uiState.audioDurationMillis,
+
+              )
+              TimeDisplay(
+                  playbackPosition = playbackPosition,
+                  audioDurationMillis = audioDurationMillis,
+                  modifier = Modifier
+                      .align(Alignment.BottomEnd)
+                      .padding(bottom = 4.dp, end = 8.dp)
+              )
+          }
       }
 }
 
@@ -275,7 +299,8 @@ fun WaveformDisplay(
     modifier: Modifier = Modifier,
     isPlaying: Boolean = false,
     playbackPosition: Float = 0.0f,
-    onPositionChange: (Float) -> Unit = {}
+    onPositionChange: (Float) -> Unit = {},
+    audioDurationMillis: Int
 ) {
   val soundWaveColor = NepTuneTheme.colors.soundWave
   val localDensity = LocalDensity.current
@@ -292,13 +317,13 @@ fun WaveformDisplay(
   LaunchedEffect(isPlaying) {
     if (isPlaying) {
       if (playbackPositionAnimatable.value < 1.0f) {
-
+          val durationMillis = audioDurationMillis
         playbackPositionAnimatable.animateTo(
             targetValue = 1.0f,
             animationSpec =
                 tween(
                     durationMillis =
-                        (SampleDurationMillis * (1.0f - playbackPositionAnimatable.value))
+                        (durationMillis * (1.0f - playbackPositionAnimatable.value))
                             .roundToInt(),
                     easing = LinearEasing))
 
@@ -1142,7 +1167,25 @@ fun CompressorCurve(
     drawCircle(color = Color.Red, center = Offset(thresholdX, thresholdY), radius = 6.dp.toPx())
   }
 }
+@Composable
+fun TimeDisplay(
+    playbackPosition: Float,
+    audioDurationMillis: Int,
+    modifier: Modifier = Modifier
+) {
+    val currentPositionMillis = (playbackPosition * audioDurationMillis).roundToInt()
+    val totalSeconds = audioDurationMillis / 1000
+    val elapsedSeconds = currentPositionMillis / 1000
 
+    val timeText = String.format("%02d / %02d s", elapsedSeconds, totalSeconds)
+
+    Text(
+        text = timeText,
+        style = MaterialTheme.typography.bodySmall,
+        color = NepTuneTheme.colors.smallText,
+        modifier = modifier
+    )
+}
 @Composable
 fun RatioInputField(
     label: String,

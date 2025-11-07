@@ -11,6 +11,11 @@ class NeptuneMediaPlayer(private val context: Context) {
   private var mediaPlayer: MediaPlayer? = null
   private var currentUri: Uri? = null
 
+  private var onCompletionCallback: (() -> Unit)? = null
+  fun setOnCompletionListener(listener: () -> Unit) {
+    this.onCompletionCallback = listener
+  }
+
   /**
    * Play the audio from the given URI. If another audio is already playing, it will be stopped and
    * replaced.
@@ -22,6 +27,10 @@ class NeptuneMediaPlayer(private val context: Context) {
       mediaPlayer =
           MediaPlayer().apply {
             setDataSource(context, uri)
+            setOnCompletionListener { player ->
+              player.seekTo(0)
+              onCompletionCallback?.invoke()
+            }
             prepareAsync()
             setOnPreparedListener { start() }
           }
@@ -31,6 +40,10 @@ class NeptuneMediaPlayer(private val context: Context) {
           it.stop()
         }
         it.reset()
+        it.setOnCompletionListener { player ->
+          player.seekTo(0)
+          onCompletionCallback?.invoke()
+        }
         it.setDataSource(context, uri)
         it.prepareAsync()
       }
