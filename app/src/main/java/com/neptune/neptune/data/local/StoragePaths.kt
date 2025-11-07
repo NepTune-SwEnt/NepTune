@@ -7,9 +7,12 @@ open class StoragePaths(private val context: Context) {
   private val projects = "projects"
   private val project = "project"
   private val audioPath = "imports/audio"
+  private val recordPath = "records"
 
   // /Android/data/<pkg>/files/imports/audio
   fun audioWorkspace(): File = File(context.filesDir, audioPath).also { it.mkdirs() }
+
+  fun recordWorkspace(): File = File(context.filesDir, recordPath).also { it.mkdirs() }
 
   // /Android/data/<pkg>/files/projects
   fun projectsWorkspace(): File = File(context.filesDir, projects).also { it.mkdirs() }
