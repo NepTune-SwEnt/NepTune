@@ -13,13 +13,28 @@ import java.io.IOException
  */
 class NeptuneRecorder(private val context: Context, private val paths: StoragePaths) {
 
-  var recorder: MediaRecorder? = null
-  var isRecording = false
+  private var recorder: MediaRecorder? = null
+  private var _isRecording = false
   private var outputFile: File? = null
 
+  val isRecording: Boolean
+    get() = _isRecording
+
+  /**
+   * Starts recording audio and saves it to a file.
+   *
+   * @param fileName The name of the output file. Defaults to "rec_<timestamp>.m4a".
+   * @param sampleRate The sample rate for recording. Defaults to 44100 Hz.
+   * @param bitRate The bit rate for recording. Defaults to 128000 bps.
+   * @param audioSource The audio source for recording. Defaults to
+   *   MediaRecorder.AudioSource.UNPROCESSED.
+   * @return The File object representing the recorded audio file.
+   * @throws IOException If there is an error preparing or starting the recorder.
+   */
   fun start(
       fileName: String = "rec_${System.currentTimeMillis()}.m4a",
       sampleRate: Int = 44100,
+      bitRate: Int = 128000,
       audioSource: Int = MediaRecorder.AudioSource.UNPROCESSED
   ): File {
     require(sampleRate > 0) { "Sample rate must be positive" }
@@ -31,29 +46,40 @@ class NeptuneRecorder(private val context: Context, private val paths: StoragePa
     }
     recorder =
         MediaRecorder().apply {
-          // TODO: try different audio sources
           setAudioSource(audioSource)
           setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
           setOutputFile(file.absolutePath)
           setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
           setAudioSamplingRate(sampleRate)
-          setAudioEncodingBitRate(128000)
+          setAudioEncodingBitRate(bitRate)
           try {
             prepare()
             start()
-            isRecording = true
+            _isRecording = true
             outputFile = file
           } catch (e: IOException) {
             releaseSafely()
+            if (file.exists()) {
+              file.delete()
+            }
             throw e
           } catch (e: RuntimeException) {
             releaseSafely()
+            if (file.exists()) {
+              file.delete()
+            }
             throw IOException("Failed to start recorder", e)
           }
         }
     return file
   }
 
+  /**
+   * Stops the recording and releases the recorder resources.
+   *
+   * @return The File object representing the recorded audio file, or null if stopping failed.
+   * @throws IllegalStateException If the recorder is not currently recording.
+   */
   fun stop(): File? {
     require(isRecording) { "Not recording" }
     return try {
@@ -77,7 +103,7 @@ class NeptuneRecorder(private val context: Context, private val paths: StoragePa
       null
     } finally {
       recorder = null
-      isRecording = false
+      _isRecording = false
     }
   }
 
@@ -87,6 +113,6 @@ class NeptuneRecorder(private val context: Context, private val paths: StoragePa
     } catch (_: Exception) {}
 
     recorder = null
-    isRecording = false
+    _isRecording = false
   }
 }
