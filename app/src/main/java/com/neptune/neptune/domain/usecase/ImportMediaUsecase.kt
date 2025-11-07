@@ -1,9 +1,12 @@
 package com.neptune.neptune.domain.usecase
 
+import com.neptune.neptune.NepTuneApplication.Companion.appContext
 import com.neptune.neptune.data.NeptunePackager
 import com.neptune.neptune.domain.model.MediaItem
 import com.neptune.neptune.domain.port.FileImporter
 import com.neptune.neptune.domain.port.MediaRepository
+import com.neptune.neptune.model.project.ProjectItem
+import com.neptune.neptune.model.project.ProjectItemsRepositoryLocal
 import java.io.File
 import java.net.URI
 import java.util.UUID
@@ -40,6 +43,14 @@ class ImportMediaUseCase(
     val item =
         MediaItem(id = UUID.randomUUID().toString(), projectUri = projectZip.toURI().toString())
     repo.upsert(item)
+
+    // Add new MediaItem to repository in `projects.json`
+    val vm = ProjectItemsRepositoryLocal(appContext)
+    vm.addProject(ProjectItem(
+      uid = vm.getNewId(),
+      name = projectZip.nameWithoutExtension,
+      filePath = projectZip.toURI().toString()
+    ))
     return item
   }
 }
