@@ -1,5 +1,6 @@
 package com.neptune.neptune.screen
 
+import android.app.Application
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -26,6 +27,7 @@ import androidx.compose.ui.test.swipeWithVelocity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.test.platform.app.InstrumentationRegistry
 import com.neptune.neptune.MainActivity
 import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.sampler.SamplerTab
@@ -41,7 +43,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-class FakeSamplerViewModel : SamplerViewModel() {
+class FakeSamplerViewModel(application: Application) : SamplerViewModel(application) {
   var isAttackUpdated = false
   var isDecayUpdated = false
   var isSustainUpdated = false
@@ -199,7 +201,9 @@ class SamplerScreenTest {
 
   @Before
   fun setup() {
-    fakeViewModel = FakeSamplerViewModel()
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    val application = context.applicationContext as Application
+    fakeViewModel = FakeSamplerViewModel(application)
     val factory = SamplerViewModelFactory(fakeViewModel)
 
     composeTestRule.activity.setContent {
