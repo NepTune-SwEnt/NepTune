@@ -124,21 +124,25 @@ object MainScreenTestTags : BaseSampleTestTags {
   const val LAZY_COLUMN_SAMPLE_LIST = "sampleList"
 }
 
+private fun factory(application: Application) =
+    object : ViewModelProvider.Factory {
+      override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
+          @Suppress("UNCHECKED_CAST") return MainViewModel(application) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+      }
+    }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 // Implementation of the main screen
-fun MainScreen(navigateToProfile: () -> Unit = {}, navigateToProjectList: () -> Unit = {}) {
-  val application = LocalContext.current.applicationContext as Application
-  val factory =
-      object : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-          if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST") return MainViewModel(application) as T
-          }
-          throw IllegalArgumentException("Unknown ViewModel class")
-        }
-      }
-  val mainViewModel: MainViewModel = viewModel(factory = factory)
+fun MainScreen(
+    navigateToProfile: () -> Unit = {},
+    navigateToProjectList: () -> Unit = {},
+    mainViewModel: MainViewModel =
+        viewModel(factory = factory(LocalContext.current.applicationContext as Application))
+) {
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
   val userAvatar by mainViewModel.userAvatar.collectAsState()

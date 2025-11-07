@@ -23,7 +23,9 @@ class MainViewModelTest {
     viewModel =
         MainViewModel(
             application,
-            repo = fakeRepository, profileRepo = fakeProfileRepository, useMockData = true)
+            repo = fakeRepository,
+            profileRepo = fakeProfileRepository,
+            useMockData = true)
   }
 
   @Test
