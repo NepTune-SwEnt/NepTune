@@ -59,16 +59,38 @@ enum class SignInStatus {
 }
 
 /**
+ * Factory interface to abstract the creation of GetGoogleIdOption. This allows for easy mocking in
+ * unit tests.
+ */
+interface GoogleIdOptionFactory {
+  fun create(clientId: String): GetGoogleIdOption
+}
+
+/** The default, production implementation of the factory that uses the real builder. */
+class DefaultGoogleIdOptionFactory : GoogleIdOptionFactory {
+  override fun create(clientId: String): GetGoogleIdOption {
+    return GetGoogleIdOption.Builder()
+        .setFilterByAuthorizedAccounts(false)
+        .setServerClientId(clientId)
+        .build()
+  }
+}
+
+/**
  * ViewModel for the SignInScreen.
  *
  * This ViewModel orchestrates the user authentication flow using Google Sign-In with the Android
  * Credential Manager. It handles the logic for initiating the sign-in process, authenticating the
  * user with Firebase, and managing the user's session state.
+ *
+ * This class was made using AI assistance
  */
-class SignInViewModel : ViewModel() {
+class SignInViewModel(
+    private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance(),
+    private val googleIdOptionFactory: GoogleIdOptionFactory = DefaultGoogleIdOptionFactory()
+) : ViewModel() {
 
   private lateinit var credentialManager: CredentialManager
-  private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
 
   private val _signInStatus = MutableStateFlow<SignInStatus>(SignInStatus.BEFORE_INITIALIZATION)
 
@@ -122,11 +144,7 @@ class SignInViewModel : ViewModel() {
   fun beginSignIn(activity: Activity) {
     _signInStatus.value = SignInStatus.SIGN_IN_REQUESTED
 
-    val googleIdOption: GetGoogleIdOption =
-        GetGoogleIdOption.Builder()
-            .setFilterByAuthorizedAccounts(false)
-            .setServerClientId(clientId)
-            .build()
+    val googleIdOption: GetGoogleIdOption = googleIdOptionFactory.create(clientId)
 
     val request = GetCredentialRequest.Builder().addCredentialOption(googleIdOption).build()
 
