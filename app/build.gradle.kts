@@ -188,7 +188,7 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
 
     testImplementation("junit:junit:4.13.2")
-    testImplementation("com.google.truth:truth:1.4.4")
+    globalTestImplementation("com.google.truth:truth:1.4.4")
     testImplementation("io.mockk:mockk:1.13.10")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
     globalTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")

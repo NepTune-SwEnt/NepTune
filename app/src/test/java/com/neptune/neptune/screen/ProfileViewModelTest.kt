@@ -1,5 +1,7 @@
 package com.neptune.neptune.screen
 
+import android.app.Application
+import androidx.test.core.app.ApplicationProvider
 import com.neptune.neptune.model.fakes.FakeProfileRepository
 import com.neptune.neptune.ui.profile.ProfileMode
 import com.neptune.neptune.ui.profile.ProfileViewModel
@@ -42,7 +44,8 @@ class ProfileViewModelTest {
   @Before
   fun setup() {
     fakeRepo = FakeProfileRepository()
-    viewModel = ProfileViewModel(fakeRepo)
+    val application = ApplicationProvider.getApplicationContext<Application>()
+    viewModel = ProfileViewModel(application, fakeRepo)
   }
 
   @Test

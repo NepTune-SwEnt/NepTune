@@ -1,5 +1,7 @@
 package com.neptune.neptune.screen
 
+import android.app.Application
+import androidx.test.core.app.ApplicationProvider
 import com.neptune.neptune.ui.main.MainViewModel
 import org.junit.Assert
 import org.junit.Before
@@ -10,7 +12,8 @@ class MainViewModelTest {
 
   @Before
   fun setup() {
-    viewModel = MainViewModel()
+    val application = ApplicationProvider.getApplicationContext<Application>()
+    val viewModel = MainViewModel(application)
   }
 
   @Test
