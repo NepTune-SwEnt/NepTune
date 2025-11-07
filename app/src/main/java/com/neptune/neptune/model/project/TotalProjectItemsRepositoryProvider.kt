@@ -1,7 +1,6 @@
 package com.neptune.neptune.model.project
 
-import com.google.firebase.Firebase
-import com.google.firebase.firestore.firestore
+import com.neptune.neptune.NepTuneApplication // Import your new Application class
 
 /**
  * Singleton object providing access to the ProjectItemsRepository instance.
@@ -10,8 +9,9 @@ import com.google.firebase.firestore.firestore
  */
 object TotalProjectItemsRepositoryProvider {
   private val _repository: TotalProjectItemsRepository by lazy {
-    TotalProjectItemsRepositoryCompose(ProjectItemsRepositoryVar(),ProjectItemsRepositoryFirestore(Firebase.firestore))
-//    ProjectItemsRepositoryVarVar()
+    // Use the application context to create an instance of the local repository
+    val localRepository = ProjectItemsRepositoryLocal(NepTuneApplication.appContext)
+    TotalProjectItemsRepositoryCompose(localRepository, ProjectItemsRepositoryVar())
   }
 
   var repository: TotalProjectItemsRepository = _repository
