@@ -45,9 +45,9 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -125,6 +125,7 @@ fun ProfileScreen(
     uiState: ProfileUiState,
     localAvatarUri: Uri? = null,
     callbacks: ProfileScreenCallbacks = ProfileScreenCallbacks.Empty,
+    onAvatarEditClick: () -> Unit = {}
 ) {
   Column(modifier = Modifier.padding(16.dp).testTag(ProfileScreenTestTags.ROOT)) {
     when (uiState.mode) {
@@ -146,7 +147,8 @@ fun ProfileScreen(
             onBioChange = callbacks.onBioChange,
             onTagInputFieldChange = callbacks.onTagInputFieldChange,
             onTagSubmit = callbacks.onTagSubmit,
-            onRemoveTag = callbacks.onRemoveTag)
+            onRemoveTag = callbacks.onRemoveTag,
+            onAvatarEditClick = onAvatarEditClick)
       }
     }
   }
@@ -201,23 +203,29 @@ private fun ProfileViewContent(
         }
       },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
-        Column(
-            modifier =
-                Modifier.fillMaxSize()
-                    .padding(innerPadding)
-                    .testTag(ProfileScreenTestTags.VIEW_CONTENT),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            // verticalArrangement = Arrangement.Center
-        ) {
-          Spacer(Modifier.height(15.dp))
+        Box(Modifier.fillMaxSize().padding(innerPadding)) {
 
-          val avatarModel = localAvatarUri ?: state.avatarUrl ?: R.drawable.ic_avatar_placeholder
-          Avatar(
-              avatarModel,
-              modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
-              showEditPencil = false)
+          // 2. Votre Column de contenu est maintenant DANS le Box
+          Column(
+              modifier =
+                  Modifier.fillMaxSize()
+                      // 3. On rajoute le scroll vertical (il manquait dans le merge)
+                      .verticalScroll(rememberScrollState())
+                      // 4. On ajoute un padding en bas pour que le contenu
+                      // ne défile pas SOUS le bouton Edit
+                      .padding(bottom = 88.dp)
+                      .testTag(ProfileScreenTestTags.VIEW_CONTENT),
+              horizontalAlignment = Alignment.CenterHorizontally,
+          ) {
+            Spacer(Modifier.height(15.dp))
 
-          Spacer(Modifier.height(15.dp))
+            val avatarModel = localAvatarUri ?: state.avatarUrl ?: R.drawable.ic_avatar_placeholder
+            Avatar(
+                avatarModel,
+                modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
+                showEditPencil = false)
+
+            Spacer(Modifier.height(15.dp))
 
             Text(
                 text = state.name,
@@ -347,7 +355,7 @@ private fun ProfileEditContent(
     onBioChange: (String) -> Unit,
     onTagInputFieldChange: (String) -> Unit,
     onTagSubmit: () -> Unit,
-    onRemoveTag: (String) -> Unit
+    onRemoveTag: (String) -> Unit,
     onAvatarEditClick: () -> Unit
 ) {
   Column(
@@ -643,7 +651,7 @@ fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
       uiState = state,
       localAvatarUri = localAvatarUri,
       onAvatarEditClick = { imagePickerLauncher.launch("image/*") }, // Launch the picker
-              callbacks =
+      callbacks =
           profileScreenCallbacks(
               onEditClick = viewModel::onEditClick,
               onSaveClick = { _, _, _ -> viewModel.onSaveClick() }, // VM reads from state
