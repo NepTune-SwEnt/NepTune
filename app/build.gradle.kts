@@ -133,6 +133,7 @@ dependencies {
     testImplementation(libs.junit)
     globalTestImplementation(libs.androidx.junit)
     globalTestImplementation(libs.androidx.espresso.core)
+    globalTestImplementation("androidx.test.espresso:espresso-intents:3.5.1")
     implementation(libs.androidx.navigation.compose)
 
     // ------------- Jetpack Compose ------------------

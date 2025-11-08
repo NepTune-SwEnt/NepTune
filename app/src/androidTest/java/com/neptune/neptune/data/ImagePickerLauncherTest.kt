@@ -1,5 +1,8 @@
 package com.neptune.neptune.data
 
+import android.app.Activity
+import android.app.Instrumentation
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.material3.Button
@@ -9,8 +12,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.espresso.intent.Intents
+import androidx.test.espresso.intent.matcher.IntentMatchers.hasAction
+import androidx.test.espresso.intent.matcher.IntentMatchers.hasComponent
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
+import com.yalantis.ucrop.UCrop
+import com.yalantis.ucrop.UCropActivity
+import java.io.File
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,35 +38,97 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ImagePickerLauncherTest {
 
-  // The ComposeTestRule provides a testing environment for composables.
   @get:Rule val composeTestRule = createComposeRule()
+
+  private lateinit var fakeImageUri: Uri
+
+  @Before
+  fun setUp() {
+    Intents.init()
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    val tempFile = File.createTempFile("test_image", ".jpg", context.cacheDir)
+    fakeImageUri = Uri.fromFile(tempFile)
+  }
+
+  @After
+  fun tearDown() {
+    Intents.release()
+  }
 
   /** Tests that the launcher can be created and that launching it does not crash. */
   @Test
   fun launcherCanBeCreatedAndLaunchedWithoutCrashing() {
-    // Arrange: A variable to hold the launcher instance.
     var launcher: ActivityResultLauncher<String>? = null
-
     composeTestRule.setContent {
-      // State must be declared within a @Composable context.
-      val receivedUri = remember { mutableStateOf<Uri?>(null) }
-
-      // Create the launcher and store a reference to it.
-      launcher = rememberImagePickerLauncher { uri ->
-        // This callback would be executed after image selection and cropping.
-        receivedUri.value = uri
-      }
-
-      // A simple button to trigger the launcher.
-      Button(onClick = { launcher?.launch("image/*") }) { Text("Launch Picker") }
+      launcher = rememberImagePickerLauncher {}
+      Button(onClick = { launcher.launch("image/*") }) { Text("Launch Picker") }
     }
 
-    // Act: Simulate a user clicking the button to launch the image picker.
     composeTestRule.onNodeWithText("Launch Picker").performClick()
 
-    // Assert: The most crucial check here is that the performClick() action above did not
-    // crash the application, which confirms the launcher is wired up correctly.
-    // We also check that the launcher object itself was successfully created.
     assertThat(launcher).isNotNull()
+  }
+
+  /** Tests the full success flow: picking an image and successfully cropping it. */
+  @Test
+  fun launcherSuccessFlowReturnsCroppedUri() {
+    val pickerResult =
+        Instrumentation.ActivityResult(Activity.RESULT_OK, Intent().setData(fakeImageUri))
+    Intents.intending(hasAction(Intent.ACTION_GET_CONTENT)).respondWith(pickerResult)
+
+    val uCropResultIntent = Intent().putExtra(UCrop.EXTRA_OUTPUT_URI, fakeImageUri)
+    val uCropResult = Instrumentation.ActivityResult(Activity.RESULT_OK, uCropResultIntent)
+    Intents.intending(hasComponent(UCropActivity::class.java.name)).respondWith(uCropResult)
+
+    composeTestRule.setContent {
+      val receivedUri = remember { mutableStateOf<Uri?>(Uri.EMPTY) }
+      val launcher = rememberImagePickerLauncher { uri -> receivedUri.value = uri }
+      Button(onClick = { launcher.launch("image/*") }) { Text("Launch Picker") }
+      Text("Result: ${receivedUri.value}")
+    }
+
+    composeTestRule.onNodeWithText("Launch Picker").performClick()
+
+    composeTestRule.onNodeWithText("Result: $fakeImageUri").assertExists()
+  }
+
+  /** Tests the flow where the user cancels the image picker. */
+  @Test
+  fun launcherWhenPickerCanceledReturnsNull() {
+    val pickerResult = Instrumentation.ActivityResult(Activity.RESULT_CANCELED, Intent())
+    Intents.intending(hasAction(Intent.ACTION_GET_CONTENT)).respondWith(pickerResult)
+
+    composeTestRule.setContent {
+      val receivedUri = remember { mutableStateOf<Uri?>(Uri.EMPTY) }
+      val launcher = rememberImagePickerLauncher { uri -> receivedUri.value = uri }
+      Button(onClick = { launcher.launch("image/*") }) { Text("Launch Picker") }
+      Text("Result: ${receivedUri.value}")
+    }
+
+    composeTestRule.onNodeWithText("Launch Picker").performClick()
+
+    composeTestRule.onNodeWithText("Result: null").assertExists()
+  }
+
+  /** Tests the flow where the uCrop activity fails or is canceled. */
+  @Test
+  fun launcherWhenUCropFailsReturnsNull() {
+    val pickerResult =
+        Instrumentation.ActivityResult(Activity.RESULT_OK, Intent().setData(fakeImageUri))
+    Intents.intending(hasAction(Intent.ACTION_GET_CONTENT)).respondWith(pickerResult)
+
+    val uCropResult = Instrumentation.ActivityResult(Activity.RESULT_CANCELED, Intent())
+    Intents.intending(hasComponent(UCropActivity::class.java.name)).respondWith(uCropResult)
+
+    composeTestRule.setContent {
+      val receivedUri = remember { mutableStateOf<Uri?>(Uri.EMPTY) }
+      val launcher = rememberImagePickerLauncher { uri -> receivedUri.value = uri }
+      Button(onClick = { launcher.launch("image/*") }) { Text("Launch Picker") }
+      Text("Result: ${receivedUri.value}")
+    }
+
+    composeTestRule.onNodeWithText("Launch Picker").performClick()
+
+    composeTestRule.onNodeWithText("Result: null").assertExists()
   }
 }
