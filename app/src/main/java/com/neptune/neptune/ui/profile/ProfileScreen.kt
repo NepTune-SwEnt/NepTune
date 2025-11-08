@@ -203,16 +203,12 @@ private fun ProfileViewContent(
         }
       },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
+        // This box was made using AI assistance
         Box(Modifier.fillMaxSize().padding(innerPadding)) {
-
-          // 2. Votre Column de contenu est maintenant DANS le Box
           Column(
               modifier =
                   Modifier.fillMaxSize()
-                      // 3. On rajoute le scroll vertical (il manquait dans le merge)
                       .verticalScroll(rememberScrollState())
-                      // 4. On ajoute un padding en bas pour que le contenu
-                      // ne défile pas SOUS le bouton Edit
                       .padding(bottom = 88.dp)
                       .testTag(ProfileScreenTestTags.VIEW_CONTENT),
               horizontalAlignment = Alignment.CenterHorizontally,

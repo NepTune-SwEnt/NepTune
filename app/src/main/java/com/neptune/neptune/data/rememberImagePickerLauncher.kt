@@ -29,9 +29,9 @@ fun rememberImagePickerLauncher(onImageCropped: (Uri?) -> Unit): ActivityResultL
 
   val context = LocalContext.current
 
-  // A stable Uri for uCrop's output, remembered across recompositions.
+  // A stable Uri for uCrop's output, using a constant file name to avoid cache buildup.
   val uCropDestinationUri = remember {
-    Uri.fromFile(File(context.cacheDir, "ucrop_temp_${System.currentTimeMillis()}.jpg"))
+    Uri.fromFile(File(context.cacheDir, "ucrop_temp_output.jpg"))
   }
 
   // This handles the result *after* the image has been cropped.
@@ -39,9 +39,20 @@ fun rememberImagePickerLauncher(onImageCropped: (Uri?) -> Unit): ActivityResultL
       rememberLauncherForActivityResult(
           contract = ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-              // Success
               val resultUri = UCrop.getOutput(result.data!!)
-              onImageCropped(resultUri)
+
+              if (resultUri != null) {
+                // Append a timestamp to the URI to act as a cache buster.
+                // This forces to reload the image from disk.
+                val cacheBustedUri =
+                    resultUri
+                        .buildUpon()
+                        .appendQueryParameter("t", System.currentTimeMillis().toString())
+                        .build()
+                onImageCropped(cacheBustedUri)
+              } else {
+                onImageCropped(null)
+              }
             } else {
               onImageCropped(null)
             }
