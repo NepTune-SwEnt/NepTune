@@ -26,7 +26,15 @@ sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
 
   object Profile : Screen(route = "profile", showBottomBar = false)
 
+  object OtherUserProfile : Screen(route = "other_user_profile", showBottomBar = false)
+
   object SignIn : Screen(route = "signIn", showBottomBar = false)
+
+  object Settings : Screen(route = "setting", showBottomBar = false)
+
+  object SettingsTheme : Screen(route = "settings_theme", showBottomBar = false)
+
+  object SettingsAccount : Screen(route = "settings_account", showBottomBar = false)
 
   object ImportFile : Screen(route = "import_file", showBottomBar = false)
 }
@@ -55,7 +63,11 @@ open class NavigationActions(
       Screen.Post.route -> Screen.Post
       Screen.SignIn.route -> Screen.SignIn
       Screen.ProjectList.route -> Screen.ProjectList
+      Screen.Settings.route -> Screen.Settings
+      Screen.SettingsTheme.route -> Screen.SettingsTheme
+      Screen.SettingsAccount.route -> Screen.SettingsAccount
       Screen.ImportFile.route -> Screen.ImportFile
+      Screen.OtherUserProfile.route -> Screen.OtherUserProfile
       else -> Screen.SignIn
     }
   }

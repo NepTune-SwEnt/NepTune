@@ -1,16 +1,25 @@
 package com.neptune.neptune.screen
 
+import com.neptune.neptune.model.fakes.FakeProfileRepository
+import com.neptune.neptune.model.fakes.FakeSampleRepository
 import com.neptune.neptune.ui.main.MainViewModel
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 
 class MainViewModelTest {
+  private lateinit var fakeRepository: FakeSampleRepository
+
+  private lateinit var fakeProfileRepository: FakeProfileRepository
   private lateinit var viewModel: MainViewModel
 
   @Before
   fun setup() {
-    viewModel = MainViewModel()
+    fakeRepository = FakeSampleRepository()
+    fakeProfileRepository = FakeProfileRepository()
+    viewModel =
+        MainViewModel(
+            repo = fakeRepository, profileRepo = fakeProfileRepository, useMockData = true)
   }
 
   @Test
