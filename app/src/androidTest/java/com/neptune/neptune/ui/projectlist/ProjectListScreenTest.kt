@@ -137,7 +137,9 @@ class ProjectListScreenTest {
 
     // Open menu for project 3 and choose Change description
     composeTestRule.onNodeWithTag("menu_3").performClick()
-    composeTestRule.onNodeWithTag(ProjectListScreenTestTags.CHANGE_DESCRIPTION_BUTTON).performClick()
+    composeTestRule
+        .onNodeWithTag(ProjectListScreenTestTags.CHANGE_DESCRIPTION_BUTTON)
+        .performClick()
 
     // Input new description and confirm
     composeTestRule
@@ -166,7 +168,6 @@ class ProjectListScreenTest {
     composeTestRule.onNodeWithTag("menu_1").performClick()
     composeTestRule.onNodeWithTag(ProjectListScreenTestTags.DELETE_BUTTON).performClick()
     composeTestRule.onNodeWithTag(ProjectListScreenTestTags.CONFIRM_DIALOG).performClick()
-
 
     composeTestRule.waitForIdle()
 

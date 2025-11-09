@@ -73,14 +73,12 @@ open class TotalProjectItemsRepositoryCompose(
   override suspend fun deleteProject(projectID: String) {
     try {
       localRepo.deleteProject(projectID)
-    }
-    catch (e: Exception) {
+    } catch (e: Exception) {
       Log.e("TotalRepo", "Local delete failed for projectID $projectID: ${e.message}")
     }
     try {
       cloudRepo.deleteProject(projectID)
-    }
-    catch (e: Exception) {
+    } catch (e: Exception) {
       Log.e("TotalRepo", "Cloud delete failed for projectID $projectID: ${e.message}")
     }
   }
