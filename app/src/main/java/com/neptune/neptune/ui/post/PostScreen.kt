@@ -191,11 +191,11 @@ fun PostScreen(
                           .border(1.dp, NepTuneTheme.colors.onBackground, RoundedCornerShape(8.dp))
                           .testTag(PostScreenTestTags.AUDIO_PREVIEW),
                   contentAlignment = Alignment.Center) {
-
                     AsyncImage(
                         model = localImageUri,
                         contentDescription = "Sample's image",
-                        modifier =  Modifier.align(Alignment.Center).fillMaxWidth(0.7f).height(100.dp),
+                        modifier =
+                            Modifier.align(Alignment.Center).fillMaxWidth(0.7f).height(100.dp),
                         error = painterResource(id = R.drawable.waveform))
 
                     // Change image button
@@ -429,8 +429,9 @@ fun PostScreen(
 @Preview
 @Composable
 fun ProjectListScreenPreview() {
-  var previewViewModel : PostViewModel= viewModel()
-    previewViewModel =  previewViewModel.apply {
+  var previewViewModel: PostViewModel = viewModel()
+  previewViewModel =
+      previewViewModel.apply {
         loadSample(
             Sample(
                 id = 0,

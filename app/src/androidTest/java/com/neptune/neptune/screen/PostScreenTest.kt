@@ -28,27 +28,27 @@ import org.junit.Test
 class PostScreenTest {
   private lateinit var mediaPlayer: NeptuneMediaPlayer
   private lateinit var context: Context
+  private lateinit var viewModel: PostViewModel
 
   @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
-
-  private val viewModel =
-      PostViewModel().apply {
-        loadSample(
-            Sample(
-                id = 1,
-                name = "Test Sample",
-                description = "Sample description",
-                durationSeconds = 12,
-                tags = listOf("tag1", "tag2"),
-                likes = 10,
-                comments = 5,
-                downloads = 3,
-                uriString = "mock_uri"))
-      }
 
   @Before
   fun setup() {
     context = composeTestRule.activity.applicationContext
+    viewModel =
+        PostViewModel(composeTestRule.activity.application).apply {
+          loadSample(
+              Sample(
+                  id = 1,
+                  name = "Test Sample",
+                  description = "Sample description",
+                  durationSeconds = 12,
+                  tags = listOf("tag1", "tag2"),
+                  likes = 10,
+                  comments = 5,
+                  downloads = 3,
+                  uriString = "mock_uri"))
+        }
     mediaPlayer = NeptuneMediaPlayer(context)
     composeTestRule.setContent {
       CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {

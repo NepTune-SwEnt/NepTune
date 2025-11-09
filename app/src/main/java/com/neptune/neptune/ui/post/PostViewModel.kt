@@ -2,7 +2,7 @@ package com.neptune.neptune.ui.post
 
 import android.app.Application
 import android.net.Uri
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.model.sample.Sample
@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
  *
  * @author Angéline Bignens
  */
-class PostViewModel(application: Application) : ViewModel() {
+class PostViewModel(application: Application) : AndroidViewModel(application) {
   private val _uiState = MutableStateFlow(PostUiState())
   val uiState: StateFlow<PostUiState> = _uiState.asStateFlow()
 
