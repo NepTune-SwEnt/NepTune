@@ -99,7 +99,11 @@ fun PostScreen(
   val localImageUri by postViewModel.localImageUri.collectAsState()
 
   val imagePickerLauncher =
-      rememberImagePickerLauncher(onImageCropped = { postViewModel.onImageChanged(it) })
+      rememberImagePickerLauncher(
+          onImageCropped = { postViewModel.onImageChanged(it) },
+          aspectRatioX = 1.6f,
+          aspectRatioY = 1f,
+          circleDimmedLayer = false)
 
   var tagText by remember { mutableStateOf("") }
   var selectionTagText by remember { mutableStateOf(TextRange(0)) }
@@ -191,13 +195,19 @@ fun PostScreen(
                           .border(1.dp, NepTuneTheme.colors.onBackground, RoundedCornerShape(8.dp))
                           .testTag(PostScreenTestTags.AUDIO_PREVIEW),
                   contentAlignment = Alignment.Center) {
-                    AsyncImage(
-                        model = localImageUri,
-                        contentDescription = "Sample's image",
-                        modifier =
-                            Modifier.align(Alignment.Center).fillMaxWidth(0.7f).height(100.dp),
-                        error = painterResource(id = R.drawable.waveform))
-
+                    if (localImageUri != null) {
+                      AsyncImage(
+                          model = localImageUri,
+                          contentDescription = "Sample's image",
+                          modifier = Modifier.align(Alignment.Center).fillMaxSize(),
+                          error = painterResource(id = R.drawable.waveform))
+                    } else {
+                      Icon(
+                          painter = painterResource(id = R.drawable.waveform),
+                          contentDescription = "Sample's image",
+                          tint = NepTuneTheme.colors.onBackground,
+                          modifier = Modifier.fillMaxWidth(0.7f).height(100.dp))
+                    }
                     // Change image button
                     Button(
                         onClick = { imagePickerLauncher.launch("image/*") },
