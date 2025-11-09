@@ -61,7 +61,7 @@ class ImagePickerLauncherTest {
     var launcher: ActivityResultLauncher<String>? = null
     composeTestRule.setContent {
       launcher = rememberImagePickerLauncher {}
-      Button(onClick = { launcher.launch("image/*") }) { Text("Launch Picker") }
+      Button(onClick = { launcher?.launch("image/*") }) { Text("Launch Picker") }
     }
 
     composeTestRule.onNodeWithText("Launch Picker").performClick()
@@ -84,7 +84,9 @@ class ImagePickerLauncherTest {
       val receivedUri = remember { mutableStateOf<Uri?>(Uri.EMPTY) }
       val launcher = rememberImagePickerLauncher { uri -> receivedUri.value = uri }
       Button(onClick = { launcher.launch("image/*") }) { Text("Launch Picker") }
-      Text("Result: ${receivedUri.value}")
+      // The received URI has a cache-busting timestamp, so we clear it for a stable assertion.
+      val testableUri = receivedUri.value?.buildUpon()?.clearQuery()?.build()
+      Text("Result: ${testableUri}")
     }
 
     composeTestRule.onNodeWithText("Launch Picker").performClick()
