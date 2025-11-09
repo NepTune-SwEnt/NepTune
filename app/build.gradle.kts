@@ -169,7 +169,7 @@ dependencies {
     implementation("com.google.firebase:firebase-storage")
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
-    implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation("com.google.firebase:firebase-analytics")
 
     // ---------- Credential Manager ------------
     implementation(libs.credentials)
