@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
@@ -55,7 +56,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.neptune.neptune.R
+import com.neptune.neptune.data.rememberImagePickerLauncher
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.sample.Sample
@@ -93,6 +96,11 @@ fun PostScreen(
     postViewModel: PostViewModel = viewModel()
 ) {
   val uiState by postViewModel.uiState.collectAsState()
+  val localImageUri by postViewModel.localImageUri.collectAsState()
+
+  val imagePickerLauncher =
+      rememberImagePickerLauncher(onImageCropped = { postViewModel.onImageChanged(it) })
+
   var tagText by remember { mutableStateOf("") }
   var selectionTagText by remember { mutableStateOf(TextRange(0)) }
   LaunchedEffect(uiState.sample.tags) {
@@ -184,17 +192,15 @@ fun PostScreen(
                           .testTag(PostScreenTestTags.AUDIO_PREVIEW),
                   contentAlignment = Alignment.Center) {
 
-                    // Waveform image
-                    Icon(
-                        painter = painterResource(id = R.drawable.waveform),
+                    AsyncImage(
+                        model = localImageUri,
                         contentDescription = "Sample's image",
-                        tint = NepTuneTheme.colors.onBackground,
-                        modifier =
-                            Modifier.align(Alignment.Center).fillMaxWidth(0.7f).height(100.dp))
+                        modifier =  Modifier.align(Alignment.Center).fillMaxWidth(0.7f).height(100.dp),
+                        error = painterResource(id = R.drawable.waveform))
 
                     // Change image button
                     Button(
-                        onClick = { /* TODO: handle change image */},
+                        onClick = { imagePickerLauncher.launch("image/*") },
                         colors =
                             ButtonDefaults.buttonColors(
                                 containerColor = NepTuneTheme.colors.onBackground,
@@ -423,8 +429,8 @@ fun PostScreen(
 @Preview
 @Composable
 fun ProjectListScreenPreview() {
-  val previewViewModel =
-      PostViewModel().apply {
+  var previewViewModel : PostViewModel= viewModel()
+    previewViewModel =  previewViewModel.apply {
         loadSample(
             Sample(
                 id = 0,
@@ -438,7 +444,7 @@ fun ProjectListScreenPreview() {
                 uriString = "mock_uri"))
       }
 
-  val context = androidx.compose.ui.platform.LocalContext.current
+  val context = LocalContext.current
   val fakeMediaPlayer = NeptuneMediaPlayer(context)
 
   CompositionLocalProvider(LocalMediaPlayer provides fakeMediaPlayer) {
