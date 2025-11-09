@@ -128,7 +128,6 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(platform(libs.compose.bom))
-    implementation(libs.firebase.firestore)
     implementation(libs.androidx.room.external.antlr)
     testImplementation(libs.junit)
     globalTestImplementation(libs.androidx.junit)
@@ -167,8 +166,10 @@ dependencies {
 
     // ----------        Firebase       ------------
     implementation(platform(libs.firebase.bom))
+    implementation("com.google.firebase:firebase-storage")
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
+    implementation("com.google.firebase:firebase-analytics-ktx")
 
     // ---------- Credential Manager ------------
     implementation(libs.credentials)
