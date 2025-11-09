@@ -2,6 +2,9 @@ package com.neptune.neptune.ui.sampler
 
 import android.app.Application
 import android.content.Context
+import android.media.MediaCodec
+import android.media.MediaExtractor
+import android.media.MediaFormat
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
@@ -10,6 +13,7 @@ import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.project.ProjectExtractor
 import com.neptune.neptune.model.project.SamplerProjectMetadata
 import java.io.File
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -308,6 +312,76 @@ open class SamplerViewModel(application: Application) : AndroidViewModel(applica
 
   open fun updateCompDecay(value: Float) {
     _uiState.update { it.copy(compDecay = value.coerceIn(0.0f, COMP_TIME_MAX)) }
+  }
+
+  fun extractWaveform(context: Context, uri: Uri, sampleRate: Int = 100): List<Float> {
+    val extractor = MediaExtractor()
+    extractor.setDataSource(context, uri, null)
+
+    var trackIndex = -1
+    for (i in 0 until extractor.trackCount) {
+      val format = extractor.getTrackFormat(i)
+      val mime = format.getString(MediaFormat.KEY_MIME)
+      if (mime?.startsWith("audio/") == true) {
+        trackIndex = i
+        extractor.selectTrack(i)
+        break
+      }
+    }
+
+    if (trackIndex == -1) throw IllegalArgumentException("No audio track")
+
+    val format = extractor.getTrackFormat(trackIndex)
+    val codec = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
+    codec.configure(format, null, null, 0)
+    codec.start()
+
+    val waveform = mutableListOf<Float>()
+    val bufferInfo = MediaCodec.BufferInfo()
+    var isEOS = false
+
+    while (!isEOS) {
+      val inputIndex = codec.dequeueInputBuffer(10000)
+      if (inputIndex >= 0) {
+        val inputBuffer = codec.getInputBuffer(inputIndex)!!
+        val sampleSize = extractor.readSampleData(inputBuffer, 0)
+        if (sampleSize < 0) {
+          codec.queueInputBuffer(inputIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+          isEOS = true
+        } else {
+          codec.queueInputBuffer(inputIndex, 0, sampleSize, extractor.sampleTime, 0)
+          extractor.advance()
+        }
+      }
+
+      var outputIndex = codec.dequeueOutputBuffer(bufferInfo, 10000)
+      while (outputIndex >= 0) {
+        val outputBuffer = codec.getOutputBuffer(outputIndex)!!
+        val shortBuffer = outputBuffer.asShortBuffer()
+        val chunk = ShortArray(shortBuffer.remaining())
+        shortBuffer.get(chunk)
+
+        if (chunk.isNotEmpty()) {
+          val avgAmplitude = chunk.map { abs(it.toFloat()) }.average().toFloat()
+          val normalized = (avgAmplitude / Short.MAX_VALUE).coerceIn(0f, 1f)
+          if (!normalized.isNaN()) {
+            waveform.add(normalized)
+          }
+        }
+
+        codec.releaseOutputBuffer(outputIndex, false)
+        outputIndex = codec.dequeueOutputBuffer(bufferInfo, 0)
+      }
+    }
+
+    codec.stop()
+    codec.release()
+    extractor.release()
+
+    Log.d(
+        "WaveformDisplay",
+        "Waveform extracted: ${waveform.size} samples, min=${waveform.minOrNull()}, max=${waveform.maxOrNull()}")
+    return waveform
   }
 
   fun loadProjectData(zipFilePath: String, context: Context) {

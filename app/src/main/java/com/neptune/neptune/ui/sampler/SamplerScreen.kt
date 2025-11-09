@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.sampler
 
+import android.util.Log
 import androidx.compose.animation.core.*
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -50,6 +51,8 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 object SamplerTestTags {
   const val SCREEN_CONTAINER = "samplerScreenContainer"
@@ -151,7 +154,8 @@ fun SamplerScreen(
           onPositionChange = viewModel::updatePlaybackPosition,
           onIncreasePitch = viewModel::increasePitch,
           onDecreasePitch = viewModel::decreasePitch,
-          uiState = uiState)
+          uiState = uiState,
+          viewModel = viewModel)
 
       Spacer(modifier = Modifier.height(16.dp))
 
@@ -175,7 +179,8 @@ fun PlaybackAndWaveformControls(
     onPositionChange: (Float) -> Unit,
     onIncreasePitch: () -> Unit,
     onDecreasePitch: () -> Unit,
-    uiState: SamplerUiState
+    uiState: SamplerUiState,
+    viewModel: SamplerViewModel
 ) {
 
   val mediaPlayer = LocalMediaPlayer.current
@@ -244,7 +249,8 @@ fun PlaybackAndWaveformControls(
               playbackPosition = playbackPosition,
               onPositionChange = onPositionChange,
               audioDurationMillis = uiState.audioDurationMillis,
-          )
+              uiState = uiState,
+              viewModel = viewModel)
           TimeDisplay(
               playbackPosition = playbackPosition,
               audioDurationMillis = audioDurationMillis,
@@ -294,11 +300,37 @@ fun WaveformDisplay(
     isPlaying: Boolean = false,
     playbackPosition: Float = 0.0f,
     onPositionChange: (Float) -> Unit = {},
-    audioDurationMillis: Int
+    audioDurationMillis: Int,
+    uiState: SamplerUiState,
+    viewModel: SamplerViewModel
 ) {
   val soundWaveColor = NepTuneTheme.colors.soundWave
   val localDensity = LocalDensity.current
   val latestOnPositionChange = rememberUpdatedState(onPositionChange)
+
+  val currentUri = uiState.currentAudioUri
+  val coroutineScope = rememberCoroutineScope()
+
+  val context = LocalContext.current
+
+  var waveform by remember { mutableStateOf<List<Float>>(emptyList()) }
+
+  LaunchedEffect(currentUri) {
+    if (currentUri != null) {
+      withContext(Dispatchers.IO) {
+        val wf =
+            try {
+              viewModel.extractWaveform(context, currentUri)
+            } catch (e: Exception) {
+              Log.e("WaveformDisplay", "Audio track error: ${e.message}")
+              emptyList<Float>()
+            }
+        waveform = wf
+      }
+    } else {
+      waveform = emptyList()
+    }
+  }
 
   val playbackPositionAnimatable = remember { Animatable(playbackPosition) }
 
@@ -365,20 +397,35 @@ fun WaveformDisplay(
             end = Offset(width - paddingPx, centerY),
             strokeWidth = 1f)
 
-        for (i in 0 until numBars) {
-          val simulatedAmplitude = (sin(i * 0.4f) * 0.3f + 0.5f).toFloat()
-          val barHeight = simulatedAmplitude * (height - 2 * paddingPx) * 0.7f
+        if (waveform.isNotEmpty()) {
+          val maxAmplitude = waveform.maxOrNull() ?: 1f
+          waveform.forEachIndexed { i, amp ->
+            val normalized = (amp / maxAmplitude).coerceIn(0f, 1f)
+            val barHeight = normalized * (height - 2 * paddingPx) * 0.8f
+            val startX = paddingPx + i * (barWidth + gapWidth) + barWidth / 2
+            val startY = centerY - barHeight / 2
+            val endY = centerY + barHeight / 2
 
-          val startX = paddingPx + i * (barWidth + gapWidth) + barWidth / 2
+            drawLine(
+                color = soundWaveColor,
+                start = Offset(startX, startY),
+                end = Offset(startX, endY),
+                strokeWidth = barWidth)
+          }
+        } else {
+          for (i in 0 until 50) {
+            val simulatedAmplitude = (sin(i * 0.4f) * 0.3f + 0.5f).toFloat()
+            val barHeight = simulatedAmplitude * (height - 2 * paddingPx) * 0.7f
+            val startX = paddingPx + i * (barWidth + gapWidth) + barWidth / 2
+            val startY = centerY - barHeight / 2
+            val endY = centerY + barHeight / 2
 
-          val startY = centerY - barHeight / 2
-          val endY = centerY + barHeight / 2
-
-          drawLine(
-              color = soundWaveColor,
-              start = Offset(startX, startY),
-              end = Offset(startX, endY),
-              strokeWidth = barWidth)
+            drawLine(
+                color = soundWaveColor.copy(alpha = 0.4f),
+                start = Offset(startX, startY),
+                end = Offset(startX, endY),
+                strokeWidth = barWidth)
+          }
         }
 
         val xPosition = contentWidth * currentAnimPosition + paddingPx
