@@ -133,6 +133,7 @@ dependencies {
     testImplementation(libs.junit)
     globalTestImplementation(libs.androidx.junit)
     globalTestImplementation(libs.androidx.espresso.core)
+    globalTestImplementation("androidx.test.espresso:espresso-intents:3.5.1")
     implementation(libs.androidx.navigation.compose)
 
     // ------------- Jetpack Compose ------------------
@@ -188,7 +189,7 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
 
     testImplementation("junit:junit:4.13.2")
-    testImplementation("com.google.truth:truth:1.4.4")
+    globalTestImplementation("com.google.truth:truth:1.4.4")
     testImplementation("io.mockk:mockk:1.13.10")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
     globalTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
@@ -198,6 +199,13 @@ dependencies {
 
     testImplementation("app.cash.turbine:turbine:0.12.3")
     androidTestImplementation("app.cash.turbine:turbine:0.12.3")
+
+    implementation("com.github.yalantis:ucrop:2.2.8")
+
+    implementation("io.coil-kt:coil-compose:2.6.0")
+    testImplementation("org.mockito:mockito-core:5.5.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
+
 
 }
 

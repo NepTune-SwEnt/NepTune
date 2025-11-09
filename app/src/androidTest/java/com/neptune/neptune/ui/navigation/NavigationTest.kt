@@ -18,7 +18,6 @@ import com.neptune.neptune.model.FakeProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.ui.main.MainScreenTestTags
-import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.post.PostScreenTestTags
 import com.neptune.neptune.ui.search.SearchScreenTestTagsPerSampleCard
 import org.junit.After
@@ -30,7 +29,7 @@ class NavigationTest {
 
   @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
-  private fun setContent(mainViewModel: MainViewModel = MainViewModel()) {
+  private fun setContent() {
     composeTestRule.setContent { NeptuneApp(startDestination = Screen.Main.route) }
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).isDisplayed()
