@@ -94,7 +94,7 @@ class ProjectExtractorTest {
     assertNotNull("Metadata should not be null", metadata)
     assertEquals(1, metadata.audioFiles.size)
     assertEquals(13, metadata.parameters.size)
-    assertEquals("soft-piano-chord_E_major.wav", metadata.audioFiles.first().name)
+    assertEquals("electric-picked-bass-long-release_C_major.wav", metadata.audioFiles.first().name)
 
     val parameters = metadata.parameters
 
