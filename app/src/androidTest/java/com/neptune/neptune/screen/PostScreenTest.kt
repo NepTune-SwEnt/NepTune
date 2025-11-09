@@ -1,6 +1,7 @@
 package com.neptune.neptune.screen
 
 import android.content.Context
+import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
@@ -16,12 +17,16 @@ import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.post.PostScreen
 import com.neptune.neptune.ui.post.PostScreenTestTags
 import com.neptune.neptune.ui.post.PostViewModel
+import java.io.File
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
 /**
- * Tests for the PostScreen.This has been written with the help of LLMs.
+ * Tests for the PostScreen. This has been written with the help of LLMs.
  *
  * @author Angéline Bignens
  */
@@ -126,5 +131,33 @@ class PostScreenTest {
   @Test
   fun postButtonIsClickable() {
     composeTestRule.onNodeWithTag(PostScreenTestTags.POST_BUTTON).performScrollTo().performClick()
+  }
+
+  /** Tests that onImageChanged with a valid URI updates the localImageUri state */
+  @Test
+  fun onImageChangedUpdatesLocalUri() {
+    // Create a dummy file to act as our image
+    val fakeImageFile =
+        File(context.cacheDir, "fake_image.jpg").apply {
+          createNewFile()
+          writeText("This is a fake image.")
+        }
+    val fakeImageUri = Uri.fromFile(fakeImageFile)
+    assertNull(viewModel.localImageUri.value)
+    viewModel.onImageChanged(fakeImageUri)
+    composeTestRule.waitUntil(5000) { viewModel.localImageUri.value != null }
+    val newUri = viewModel.localImageUri.value
+    assertNotNull(newUri)
+    assertTrue(newUri.toString().contains("post_image_for_sample_1.jpg"))
+    fakeImageFile.delete()
+  }
+
+  /** Tests that onImageChanged with a null URI does not change the state */
+  @Test
+  fun onImageChangedWithNullUriDoesNothing() {
+    assertNull(viewModel.localImageUri.value)
+    viewModel.onImageChanged(null)
+    Thread.sleep(500)
+    assertNull(viewModel.localImageUri.value)
   }
 }
