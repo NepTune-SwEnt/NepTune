@@ -84,6 +84,23 @@ class FakeProfileRepository(
     return url
   }
 
+  override suspend fun addNewTag(tag: String) {
+    val cur = state.value ?: return
+    val currentTags = ArrayList(cur.tags)
+    if (!currentTags.contains(tag)) {
+      currentTags.add(tag)
+      state.value = cur.copy(tags = currentTags)
+    }
+  }
+
+  override suspend fun removeTag(tag: String) {
+    val cur = state.value ?: return
+    val currentTags = ArrayList(cur.tags)
+    if (currentTags.remove(tag)) {
+      state.value = cur.copy(tags = currentTags)
+    }
+  }
+
   override suspend fun removeAvatar() {
     val cur = state.value ?: return
     state.value = cur.copy(avatarUrl = "")

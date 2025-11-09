@@ -4,6 +4,7 @@ import android.net.Uri
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Transaction
 import kotlinx.coroutines.channels.awaitClose
@@ -67,7 +68,11 @@ class ProfileRepositoryFirebase(
           bio = getString("bio"),
           subscriptions = getLong("subscriptions") ?: 0L,
           subscribers = getLong("subscribers") ?: 0L,
-          avatarUrl = getString("avatarUrl").orEmpty())
+          likes = getLong("likes") ?: 0L,
+          posts = getLong("posts") ?: 0L,
+          tags = (get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+          avatarUrl = getString("avatarUrl").orEmpty(),
+          following = (get("following") as? List<*>)?.filterIsInstance<String>() ?: emptyList())
     }
   }
 
@@ -99,7 +104,10 @@ class ProfileRepositoryFirebase(
                     bio = DEFAULT_BIO,
                     avatarUrl = "",
                     subscribers = 0L,
-                    subscriptions = 0L)
+                    subscriptions = 0L,
+                    following = emptyList(),
+                    likes = 0L,
+                    posts = 0L)
 
             // Persist exactly what we’re returning
             tx.set(
@@ -111,7 +119,11 @@ class ProfileRepositoryFirebase(
                     "bio" to created.bio,
                     "avatarUrl" to created.avatarUrl,
                     "subscribers" to 0L,
-                    "subscriptions" to 0L))
+                    "subscriptions" to 0L,
+                    "likes" to 0L,
+                    "posts" to 0L,
+                    "tags" to emptyList<String>(),
+                    "following" to emptyList<String>()))
 
             created
           }
@@ -231,6 +243,25 @@ class ProfileRepositoryFirebase(
     val currentUser = Firebase.auth.currentUser
     val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
     profiles.document(uid).update("bio", newBio).await()
+  }
+
+  /** Adds a new tag to the current user's profile. */
+  override suspend fun addNewTag(tag: String) {
+    val currentUser = Firebase.auth.currentUser
+    val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
+    // no check for existence needed: we rely on Firestore’s built-in atomic behavior
+    profiles.document(uid).update("tags", FieldValue.arrayUnion(normalizeTag(tag))).await()
+  }
+
+  /** Removes a tag from the current user's profile. */
+  override suspend fun removeTag(tag: String) {
+    val currentUser = Firebase.auth.currentUser
+    val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
+    profiles.document(uid).update("tags", FieldValue.arrayRemove(normalizeTag(tag))).await()
+  }
+
+  private fun normalizeTag(tag: String): String {
+    return tag.trim().lowercase().replace(Regex("\\s+"), " ")
   }
 
   /**
