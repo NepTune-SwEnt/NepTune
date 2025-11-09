@@ -118,11 +118,12 @@ class ProjectListScreenTest {
   fun renamingProjectUpdatesUi() {
     // Open menu for project 1 and choose Rename
     composeTestRule.onNodeWithTag("menu_1").performClick()
-    composeTestRule.onNodeWithText("Rename").performClick()
+    composeTestRule.onNodeWithTag(ProjectListScreenTestTags.RENAME_BUTTON).performClick()
 
     // Input new name and confirm
+    composeTestRule.onNodeWithText("New name").performTextClearance()
     composeTestRule.onNodeWithText("New name").performTextInput("Old Renamed")
-    composeTestRule.onNodeWithText("Confirm").performClick()
+    composeTestRule.onNodeWithTag(ProjectListScreenTestTags.CONFIRM_DIALOG).performClick()
 
     composeTestRule.waitForIdle()
 
@@ -136,7 +137,7 @@ class ProjectListScreenTest {
 
     // Open menu for project 3 and choose Change description
     composeTestRule.onNodeWithTag("menu_3").performClick()
-    composeTestRule.onNodeWithText("Change description").performClick()
+    composeTestRule.onNodeWithTag(ProjectListScreenTestTags.CHANGE_DESCRIPTION_BUTTON).performClick()
 
     // Input new description and confirm
     composeTestRule
@@ -145,7 +146,7 @@ class ProjectListScreenTest {
     composeTestRule
         .onNodeWithTag(ProjectListScreenTestTags.DESCRIPTION_TEXT_FIELD)
         .performTextInput(newDesc)
-    composeTestRule.onNodeWithText("Confirm").performClick()
+    composeTestRule.onNodeWithTag(ProjectListScreenTestTags.CONFIRM_DIALOG).performClick()
 
     composeTestRule.waitForIdle()
 
@@ -163,7 +164,9 @@ class ProjectListScreenTest {
   fun deleteProjectRemovesItemFromUi() {
     // Delete project 1
     composeTestRule.onNodeWithTag("menu_1").performClick()
-    composeTestRule.onNodeWithText("Delete").performClick()
+    composeTestRule.onNodeWithTag(ProjectListScreenTestTags.DELETE_BUTTON).performClick()
+    composeTestRule.onNodeWithTag(ProjectListScreenTestTags.CONFIRM_DIALOG).performClick()
+
 
     composeTestRule.waitForIdle()
 
