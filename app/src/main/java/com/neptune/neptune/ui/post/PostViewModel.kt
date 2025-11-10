@@ -1,11 +1,15 @@
 package com.neptune.neptune.ui.post
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.model.sample.Sample
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 /**
  * ViewModel for managing the state and operations related to the post screen. This has been written
@@ -16,6 +20,11 @@ import kotlinx.coroutines.flow.update
 class PostViewModel() : ViewModel() {
   private val _uiState = MutableStateFlow(PostUiState())
   val uiState: StateFlow<PostUiState> = _uiState.asStateFlow()
+
+  private val _localImageUri = MutableStateFlow<Uri?>(null)
+  val localImageUri: StateFlow<Uri?> = _localImageUri.asStateFlow()
+
+  private val imageRepo = ImageStorageRepository()
 
   /**
    * Loads a sample
@@ -52,6 +61,34 @@ class PostViewModel() : ViewModel() {
   fun updateTags(tags: String) {
     val tagList = tags.split(" ").map { it.trim().removePrefix("#") }.filter { it.isNotBlank() }
     _uiState.update { it.copy(sample = it.sample.copy(tags = tagList)) }
+  }
+
+  /**
+   * Callback for when a new image is selected and cropped.
+   *
+   * @param uri The URI of the new image, or null if the process was canceled.
+   */
+  fun onImageChanged(uri: Uri?) {
+    if (uri == null) {
+      // The user cancels
+      return
+    }
+    viewModelScope.launch {
+      val sampleId = uiState.value.sample.id
+      val fileName = "post_image_for_sample_$sampleId.jpg"
+
+      imageRepo.saveImageFromUri(uri, fileName)
+
+      // Get the new URI from our internal storage and update the UI
+      _localImageUri.value =
+          imageRepo
+              .getImageUri(fileName)
+              ?.buildUpon()
+              ?.appendQueryParameter(
+                  "t", System.currentTimeMillis().toString() // Cache buster
+                  )
+              ?.build()
+    }
   }
 
   /** Submits the post */

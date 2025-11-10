@@ -1,6 +1,5 @@
 package com.neptune.neptune.ui.profile
 
-import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -29,14 +28,12 @@ private fun normalizeTag(s: String) = s.trim().lowercase().replace(Regex("\\s+")
  * Holds the current [ProfileUiState] and exposes update functions for UI-driven changes (name,
  * username, bio). Simulates save operations (to be replaced with repository calls).
  *
- * @param context The application context.
  * @param repo The profile repository for data operations.
  */
 class ProfileViewModel(
-    context: Context,
     private val repo: ProfileRepository = ProfileRepositoryProvider.repository,
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val imageRepo: ImageStorageRepository = ImageStorageRepository(context)
+    private val imageRepo: ImageStorageRepository = ImageStorageRepository()
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(ProfileUiState())
@@ -44,6 +41,9 @@ class ProfileViewModel(
 
   private val _localAvatarUri = MutableStateFlow<Uri?>(null)
   val localAvatarUri: StateFlow<Uri?> = _localAvatarUri.asStateFlow()
+
+  private val _tempAvatarUri = MutableStateFlow<Uri?>(null)
+  val tempAvatarUri: StateFlow<Uri?> = _tempAvatarUri.asStateFlow()
 
   /**
    * Generates a user-specific filename for the avatar based on the logged-in user's UID. Returns
@@ -114,7 +114,15 @@ class ProfileViewModel(
   }
 
   /** Call this when the user has cropped a new avatar image. */
-  fun onAvatarCropped(croppedUri: Uri) {
+  fun onAvatarCropped(newUri: Uri?) {
+    if (newUri != null) {
+      _tempAvatarUri.value = newUri
+    }
+  }
+
+  /** Call this to save the new avatar */
+  fun saveAvatar() {
+    val uriToSave = _tempAvatarUri.value ?: return
     viewModelScope.launch {
       val fileName = avatarFileName
       if (fileName == null) {
@@ -123,9 +131,10 @@ class ProfileViewModel(
       }
 
       try {
-        val savedFile = imageRepo.saveImageFromUri(croppedUri, fileName)
+        val savedFile = imageRepo.saveImageFromUri(uriToSave, fileName)
         if (savedFile != null) {
           loadInitialLocalAvatar()
+          _tempAvatarUri.value = null
         }
       } catch (_: Exception) {
         _uiState.value = _uiState.value.copy(error = "Impossible to save the avatar.")
@@ -325,6 +334,8 @@ class ProfileViewModel(
             repo.updateBio(newBio)
           }
         }
+
+        saveAvatar()
 
         _uiState.value =
             _uiState.value.copy(

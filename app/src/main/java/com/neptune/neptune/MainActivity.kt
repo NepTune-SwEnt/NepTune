@@ -101,8 +101,7 @@ fun NeptuneApp(
   val currentScreen = navigationActions.currentScreen(currentRoute ?: startDestination)
 
   // Media Player values
-  val context = LocalContext.current.applicationContext
-  val mediaPlayer = remember { NeptuneMediaPlayer(context) }
+  val mediaPlayer = remember { NeptuneMediaPlayer() }
 
   CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
     Scaffold(

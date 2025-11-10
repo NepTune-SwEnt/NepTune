@@ -1,6 +1,5 @@
 package com.neptune.neptune.ui.profile
 
-import android.app.Application
 import android.net.Uri
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -52,7 +51,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -616,15 +614,12 @@ fun EditableTagChip(tagText: String, onRemove: (String) -> Unit, modifier: Modif
 @Composable
 fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
 
-  val application = LocalContext.current.applicationContext as Application
   val factory =
       object : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
           if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ProfileViewModel(
-                context = application, repo = ProfileRepositoryProvider.repository)
-                as T
+            return ProfileViewModel(repo = ProfileRepositoryProvider.repository) as T
           }
           throw IllegalArgumentException("Unknown ViewModel class")
         }
@@ -633,19 +628,27 @@ fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
   val viewModel: ProfileViewModel = viewModel(factory = factory)
   val state = viewModel.uiState.collectAsState().value
   val localAvatarUri by viewModel.localAvatarUri.collectAsState()
+  val tempAvatarUri by viewModel.tempAvatarUri.collectAsState()
 
   LaunchedEffect(Unit) { viewModel.loadOrEnsure() }
 
   // Prepare the image picker launcher. The callback will notify the ViewModel.
-  val imagePickerLauncher = rememberImagePickerLauncher { croppedUri ->
-    if (croppedUri != null) {
-      viewModel.onAvatarCropped(croppedUri)
-    }
-  }
+  val imagePickerLauncher =
+      rememberImagePickerLauncher(
+          onImageCropped = { croppedUri: Uri? ->
+            if (croppedUri != null) {
+              viewModel.onAvatarCropped(croppedUri)
+            }
+          })
 
   ProfileScreen(
       uiState = state,
-      localAvatarUri = localAvatarUri,
+      localAvatarUri =
+          if (tempAvatarUri != null) {
+            tempAvatarUri
+          } else {
+            localAvatarUri
+          },
       onAvatarEditClick = { imagePickerLauncher.launch("image/*") }, // Launch the picker
       callbacks =
           profileScreenCallbacks(

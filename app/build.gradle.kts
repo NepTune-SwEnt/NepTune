@@ -198,7 +198,6 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     globalTestImplementation("com.google.truth:truth:1.4.4")
-    testImplementation("io.mockk:mockk:1.13.10")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
     globalTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
@@ -211,8 +210,15 @@ dependencies {
     implementation("com.github.yalantis:ucrop:2.2.8")
 
     implementation("io.coil-kt:coil-compose:2.6.0")
-    testImplementation("org.mockito:mockito-core:5.5.0")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
+
+    globalTestImplementation("io.mockk:mockk-android:1.13.10")
+
+    androidTestImplementation("org.mockito:mockito-android:5.12.0")
+    androidTestImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+    testImplementation("org.mockito:mockito-core:5.12.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+
+    androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
 
 
 }
