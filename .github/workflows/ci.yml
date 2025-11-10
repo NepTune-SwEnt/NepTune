@@ -112,7 +112,6 @@ jobs:
           ./gradlew check --parallel --build-cache
 
       # Run connected tests on the emulator
-      - name: Run tests
       - name: Setup Node (for firebase-tools)
         uses: actions/setup-node@v4
         with:

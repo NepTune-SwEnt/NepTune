@@ -57,7 +57,9 @@ class ProjectItemsRepositoryLocalTest {
     repository.addProject(project2)
 
     val allProjects = repository.getAllProjects()
-    assertThat(allProjects).containsAnyIn(listOf(project1, project2))
+    assertThat(allProjects.size).isEqualTo(2)
+    assertThat(allProjects).contains(project1)
+    assertThat(allProjects).contains(project2)
   }
 
   @Test
@@ -84,7 +86,7 @@ class ProjectItemsRepositoryLocalTest {
     try {
       repository.getProject(projectId)
       Assert.fail("Expected NoSuchElementException")
-    } catch (e: NoSuchElementException) {
+    } catch (_: NoSuchElementException) {
       // success
     }
   }
