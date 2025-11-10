@@ -15,6 +15,7 @@ import com.google.firebase.Timestamp
  * @property filePath Local path to the project's file.
  * @property previewUrl URL to the project's preview image in the cloud.
  * @property fileUrl URL to the project's file in the cloud.
+ * @property imageUrl URL to an image associated with the project.
  * @property lastUpdated Timestamp of the last update to the project.
  * @property ownerId Identifier of the user who owns the project.
  * @property collaborators List of user identifiers who are collaborators on the project.
@@ -31,6 +32,7 @@ data class ProjectItem(
     val filePath: String? = null,
     val previewUrl: String? = null,
     val fileUrl: String? = null,
+    val imageUrl: String? = null,
     val lastUpdated: Timestamp = Timestamp.now(),
     val ownerId: String? = null,
     val collaborators: List<String> = emptyList(),
