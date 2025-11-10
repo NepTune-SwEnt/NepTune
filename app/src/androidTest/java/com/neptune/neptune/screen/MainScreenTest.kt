@@ -50,10 +50,7 @@ class MainScreenTest {
     val fakeSampleRepo = FakeSampleRepository()
     val fakeProfileRepo = FakeProfileRepository()
     viewModel =
-        MainViewModel(
-            repo = fakeSampleRepo,
-            profileRepo = fakeProfileRepo,
-            useMockData = true)
+        MainViewModel(repo = fakeSampleRepo, profileRepo = fakeProfileRepo, useMockData = true)
     composeTestRule.setContent {
       CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
         MainScreen(mainViewModel = viewModel)
