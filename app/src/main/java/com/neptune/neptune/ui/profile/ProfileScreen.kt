@@ -1,6 +1,5 @@
 package com.neptune.neptune.ui.profile
 
-import android.app.Application
 import android.net.Uri
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -52,7 +51,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -616,15 +614,12 @@ fun EditableTagChip(tagText: String, onRemove: (String) -> Unit, modifier: Modif
 @Composable
 fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
 
-  val application = LocalContext.current.applicationContext as Application
   val factory =
       object : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
           if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ProfileViewModel(
-                context = application, repo = ProfileRepositoryProvider.repository)
-                as T
+            return ProfileViewModel(repo = ProfileRepositoryProvider.repository) as T
           }
           throw IllegalArgumentException("Unknown ViewModel class")
         }

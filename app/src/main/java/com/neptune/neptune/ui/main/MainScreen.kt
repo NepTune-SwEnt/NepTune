@@ -1,6 +1,5 @@
 package com.neptune.neptune.ui.main
 
-import android.app.Application
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -53,7 +52,6 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -124,11 +122,11 @@ object MainScreenTestTags : BaseSampleTestTags {
   const val LAZY_COLUMN_SAMPLE_LIST = "sampleList"
 }
 
-private fun factory(application: Application) =
+private fun factory() =
     object : ViewModelProvider.Factory {
       override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
-          @Suppress("UNCHECKED_CAST") return MainViewModel(application) as T
+          @Suppress("UNCHECKED_CAST") return MainViewModel() as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
       }
@@ -140,8 +138,7 @@ private fun factory(application: Application) =
 fun MainScreen(
     navigateToProfile: () -> Unit = {},
     navigateToProjectList: () -> Unit = {},
-    mainViewModel: MainViewModel =
-        viewModel(factory = factory(LocalContext.current.applicationContext as Application))
+    mainViewModel: MainViewModel = viewModel(factory = factory())
 ) {
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
