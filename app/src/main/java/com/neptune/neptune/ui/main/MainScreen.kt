@@ -7,11 +7,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,6 +28,8 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -35,8 +40,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +69,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
 import com.neptune.neptune.media.LocalMediaPlayer
@@ -113,6 +122,11 @@ object MainScreenTestTags : BaseSampleTestTags {
   const val LAZY_COLUMN_SAMPLE_LIST = "sampleList"
 }
 
+/**
+ * Composable function representing the Main Screen. This has been written with the help of LLMs.
+ *
+ * @author Angéline Bignens
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 // Implementation of the main screen
@@ -217,6 +231,7 @@ fun MainScreen(
                                         mainViewModel.onLikeClicked(samples, isLiked)
                                       })
                               SampleCard(
+                                  mainViewModel = mainViewModel,
                                   sample = samples,
                                   width = cardWidth,
                                   clickHandlers = clickHandlers)
@@ -306,9 +321,10 @@ fun onClickFunctions(
 }
 
 // ----------------Sample Card-----------------
-// TO DO: Decide whether when commenting the online repo is notified
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SampleCard(
+    mainViewModel: MainViewModel = viewModel(),
     sample: Sample,
     width: Dp = 150.dp,
     height: Dp = 166.dp,
@@ -316,8 +332,10 @@ fun SampleCard(
     clickHandlers: ClickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
 ) {
-
-  var isLiked by remember { mutableStateOf(false) }
+  val comments by mainViewModel.comments.collectAsState()
+  var showComments by remember { mutableStateOf(false) }
+  val likedSample by mainViewModel.likedSamples.collectAsState()
+  val isLiked = likedSample[sample.id] == true
   val likeDescription = if (isLiked) "liked" else "not liked"
   val heartColor = if (isLiked) Color.Red else NepTuneTheme.colors.background
   val heartIcon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder
@@ -433,11 +451,13 @@ fun SampleCard(
                           modifier =
                               Modifier.testTag(testTags.SAMPLE_LIKES)
                                   .semantics { stateDescription = likeDescription }
-                                  .clickable(
-                                      onClick = {
-                                        isLiked = !isLiked
-                                        clickHandlers.onLikeClick(isLiked)
-                                      }),
+                                  .clickable {
+                                    if (!isLiked) {
+                                      mainViewModel.onLikeClicked(sample, true)
+                                    } else {
+                                      mainViewModel.onLikeClicked(sample, false)
+                                    }
+                                  },
                           tint = heartColor)
 
                       IconWithTextPainter(
@@ -445,8 +465,9 @@ fun SampleCard(
                           iconDescription = "Comments",
                           text = sample.comments.toString(),
                           modifier =
-                              Modifier.testTag(testTags.SAMPLE_COMMENTS)
-                                  .clickable(onClick = clickHandlers.onCommentClick))
+                              Modifier.testTag(testTags.SAMPLE_COMMENTS).clickable {
+                                showComments = true
+                              })
                       IconWithTextPainter(
                           icon = painterResource(R.drawable.download),
                           iconDescription = "Downloads",
@@ -458,6 +479,120 @@ fun SampleCard(
               }
         }
       }
+  // Comments Overlay
+  if (showComments) {
+    var commentText by remember { mutableStateOf("") }
+
+    Dialog(onDismissRequest = { showComments = false }) {
+      Card(
+          modifier =
+              Modifier.fillMaxWidth(0.92f)
+                  .fillMaxHeight(0.8f)
+                  .background(NepTuneTheme.colors.background, RoundedCornerShape(10.dp))
+                  .padding(16.dp),
+          shape = RoundedCornerShape(10.dp),
+          colors = CardDefaults.cardColors(containerColor = NepTuneTheme.colors.background)) {
+            Column(
+                modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+                  Text(
+                      "Comments",
+                      style =
+                          TextStyle(
+                              fontSize = 37.sp,
+                              lineHeight = 90.sp,
+                              fontFamily = FontFamily(Font(R.font.markazi_text)),
+                              fontWeight = FontWeight(300),
+                              color = NepTuneTheme.colors.onBackground),
+                      textAlign = TextAlign.Center,
+                      modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp))
+
+                  LaunchedEffect(showComments) {
+                    if (showComments) {
+                      mainViewModel.observeCommentsForSample(sample.id)
+                    }
+                  }
+                  LazyColumn(
+                      modifier = Modifier.weight(1f).padding(vertical = 8.dp),
+                      verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(comments) { comment ->
+                          Column {
+                            Text(
+                                text = "${comment.author}:",
+                                style =
+                                    TextStyle(
+                                        fontSize = 18.sp,
+                                        fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                        fontWeight = FontWeight(300),
+                                        color = NepTuneTheme.colors.onBackground))
+                            Text(
+                                text = comment.text,
+                                style =
+                                    TextStyle(
+                                        fontSize = 18.sp,
+                                        fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                        fontWeight = FontWeight(300),
+                                        color = NepTuneTheme.colors.onBackground))
+                          }
+                        }
+                      }
+                  Row(
+                      modifier = Modifier.fillMaxWidth(),
+                      horizontalArrangement = Arrangement.spacedBy(8.dp),
+                      verticalAlignment = Alignment.CenterVertically) {
+                        TextField(
+                            value = commentText,
+                            onValueChange = { commentText = it },
+                            placeholder = {
+                              Text(
+                                  "Add a comment…",
+                                  style =
+                                      TextStyle(
+                                          fontSize = 25.sp,
+                                          fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                          fontWeight = FontWeight(300),
+                                          color =
+                                              NepTuneTheme.colors.onBackground.copy(alpha = 0.5f)),
+                              )
+                            },
+                            modifier = Modifier.weight(1f).heightIn(min = 56.dp),
+                            textStyle =
+                                TextStyle(
+                                    fontSize = 25.sp,
+                                    fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                    fontWeight = FontWeight(300),
+                                    color = NepTuneTheme.colors.onBackground),
+                            colors =
+                                TextFieldDefaults.colors(
+                                    focusedContainerColor = NepTuneTheme.colors.background,
+                                    unfocusedContainerColor = NepTuneTheme.colors.background,
+                                ))
+                        Button(
+                            onClick = {
+                              if (commentText.isNotBlank()) {
+                                mainViewModel.addComment(sample.id, commentText)
+                                commentText = ""
+                              }
+                            },
+                            shape = RoundedCornerShape(15.dp),
+                            colors =
+                                ButtonDefaults.buttonColors(
+                                    containerColor = NepTuneTheme.colors.indicatorColor),
+                            modifier = Modifier.height(35.dp),
+                            contentPadding = PaddingValues(0.dp)) {
+                              Text(
+                                  "Post",
+                                  style =
+                                      TextStyle(
+                                          fontSize = 25.sp,
+                                          fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                          fontWeight = FontWeight(300),
+                                          color = NepTuneTheme.colors.onBackground))
+                            }
+                      }
+                }
+          }
+    }
+  }
 }
 
 // Helper function for icons with text
