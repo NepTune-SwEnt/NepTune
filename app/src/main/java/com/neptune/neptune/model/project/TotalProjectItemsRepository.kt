@@ -25,5 +25,7 @@ interface TotalProjectItemsRepository {
 
   suspend fun addProjectToCloud(projectID: String)
 
+  suspend fun addProjectToLocalStorage(project: ProjectItem)
+
   suspend fun removeProjectFromLocalStorage(projectID: String)
 }

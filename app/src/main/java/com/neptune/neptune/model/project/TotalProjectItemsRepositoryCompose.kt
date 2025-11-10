@@ -109,6 +109,10 @@ open class TotalProjectItemsRepositoryCompose(
     cloudRepo.addProject(newProject)
   }
 
+  override suspend fun addProjectToLocalStorage(project: ProjectItem) {
+    localRepo.addProject(project)
+  }
+
   override suspend fun removeProjectFromLocalStorage(projectID: String) {
     localRepo.deleteProject(projectID)
   }
