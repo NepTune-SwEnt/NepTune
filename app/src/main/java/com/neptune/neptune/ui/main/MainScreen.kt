@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.main
 
+import android.app.Application
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -37,6 +38,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,11 +46,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
@@ -61,7 +67,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.neptune.neptune.R
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
@@ -113,16 +124,28 @@ object MainScreenTestTags : BaseSampleTestTags {
   const val LAZY_COLUMN_SAMPLE_LIST = "sampleList"
 }
 
+private fun factory(application: Application) =
+    object : ViewModelProvider.Factory {
+      override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
+          @Suppress("UNCHECKED_CAST") return MainViewModel(application) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+      }
+    }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 // Implementation of the main screen
 fun MainScreen(
-    mainViewModel: MainViewModel = viewModel(),
     navigateToProfile: () -> Unit = {},
-    navigateToProjectList: () -> Unit = {}
+    navigateToProjectList: () -> Unit = {},
+    mainViewModel: MainViewModel =
+        viewModel(factory = factory(LocalContext.current.applicationContext as Application))
 ) {
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
+  val userAvatar by mainViewModel.userAvatar.collectAsState()
 
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
   val horizontalPadding = 30.dp
@@ -130,6 +153,18 @@ fun MainScreen(
   // Depends on the size of the screen
   val maxColumns = if (screenWidth < 360.dp) 1 else 2
   val cardWidth = (screenWidth - horizontalPadding * 2 - spacing) / 2
+
+  val lifecycleOwner = LocalLifecycleOwner.current
+  // This effect was created using AI assistance
+  DisposableEffect(lifecycleOwner) {
+    val observer = LifecycleEventObserver { _, event ->
+      if (event == Lifecycle.Event.ON_RESUME) {
+        mainViewModel.onResume()
+      }
+    }
+    lifecycleOwner.lifecycle.addObserver(observer)
+    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+  }
 
   Scaffold(
       topBar = {
@@ -156,11 +191,13 @@ fun MainScreen(
                         Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
                             .size(57.dp)
                             .testTag(NavigationTestTags.PROFILE_BUTTON)) {
-                      Icon(
-                          painter = painterResource(id = R.drawable.profile),
+                      AsyncImage(
+                          model = userAvatar ?: R.drawable.profile,
                           contentDescription = "Profile",
-                          tint = Color.Unspecified,
-                      )
+                          modifier = Modifier.fillMaxSize().clip(CircleShape),
+                          contentScale = ContentScale.Crop,
+                          placeholder = painterResource(id = R.drawable.profile),
+                          error = painterResource(id = R.drawable.profile))
                     }
               },
               colors =
