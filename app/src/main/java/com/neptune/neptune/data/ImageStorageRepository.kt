@@ -1,7 +1,7 @@
 package com.neptune.neptune.data
 
-import android.content.Context
 import android.net.Uri
+import com.neptune.neptune.NepTuneApplication
 import java.io.File
 import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
@@ -12,7 +12,8 @@ import kotlinx.coroutines.withContext
  *
  * This class was made using AI assistance
  */
-class ImageStorageRepository(private val context: Context) {
+class ImageStorageRepository() {
+  val context = NepTuneApplication.appContext
   private val ioDispatcher = Dispatchers.IO
 
   // A dedicated folder for our images in internal storage

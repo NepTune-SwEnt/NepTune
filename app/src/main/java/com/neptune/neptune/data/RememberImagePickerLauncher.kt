@@ -25,7 +25,12 @@ import java.io.File
  * This function was made using AI assistance
  */
 @Composable
-fun rememberImagePickerLauncher(onImageCropped: (Uri?) -> Unit): ActivityResultLauncher<String> {
+fun rememberImagePickerLauncher(
+    onImageCropped: (Uri?) -> Unit,
+    aspectRatioX: Float = 1f,
+    aspectRatioY: Float = 1f,
+    circleDimmedLayer: Boolean = true
+): ActivityResultLauncher<String> {
 
   val context = LocalContext.current
 
@@ -66,7 +71,7 @@ fun rememberImagePickerLauncher(onImageCropped: (Uri?) -> Unit): ActivityResultL
 
           val options =
               UCrop.Options().apply {
-                setCircleDimmedLayer(true)
+                setCircleDimmedLayer(circleDimmedLayer)
                 setShowCropGrid(false)
                 setCompressionFormat(Bitmap.CompressFormat.JPEG)
                 setCompressionQuality(90)
@@ -74,7 +79,7 @@ fun rememberImagePickerLauncher(onImageCropped: (Uri?) -> Unit): ActivityResultL
 
           val uCropIntent =
               UCrop.of(sourceUri, uCropDestinationUri)
-                  .withAspectRatio(1f, 1f)
+                  .withAspectRatio(aspectRatioX, aspectRatioY)
                   .withOptions(options)
                   .getIntent(context)
 
