@@ -633,6 +633,7 @@ fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
   val viewModel: ProfileViewModel = viewModel(factory = factory)
   val state = viewModel.uiState.collectAsState().value
   val localAvatarUri by viewModel.localAvatarUri.collectAsState()
+  val tempAvatarUri by viewModel.tempAvatarUri.collectAsState()
 
   LaunchedEffect(Unit) { viewModel.loadOrEnsure() }
 
@@ -647,7 +648,12 @@ fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
 
   ProfileScreen(
       uiState = state,
-      localAvatarUri = localAvatarUri,
+      localAvatarUri =
+          if (tempAvatarUri != null) {
+            tempAvatarUri
+          } else {
+            localAvatarUri
+          },
       onAvatarEditClick = { imagePickerLauncher.launch("image/*") }, // Launch the picker
       callbacks =
           profileScreenCallbacks(
