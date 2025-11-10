@@ -1,6 +1,7 @@
 package com.neptune.neptune.screen
 
 import android.app.Application
+import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.neptune.neptune.data.ImageStorageRepository
@@ -59,6 +60,23 @@ class ProfileViewModelTest {
     whenever(mockFirebaseUser.uid).thenReturn("fake_user_id_for_test")
 
     viewModel = ProfileViewModel(mockApplication, fakeRepo, mockAuth, mockImageRepo)
+  }
+
+  @Test
+  fun onAvatarCroppedWithValidUriUpdatesTempAvatarUri() {
+    val mockUri: Uri = mock()
+    assertNull("Initial tempAvatarUri should be null", viewModel.tempAvatarUri.value)
+    viewModel.onAvatarCropped(mockUri)
+    assertEquals(
+        "tempAvatarUri should be updated with the new Uri", mockUri, viewModel.tempAvatarUri.value)
+  }
+
+  @Test
+  fun onAvatarCroppedWithNullUriDoesNotChangeTempAvatarUri() {
+    assertNull("Initial tempAvatarUri should be null", viewModel.tempAvatarUri.value)
+    viewModel.onAvatarCropped(null)
+    assertNull(
+        "tempAvatarUri should remain null when called with null", viewModel.tempAvatarUri.value)
   }
 
   @Test
