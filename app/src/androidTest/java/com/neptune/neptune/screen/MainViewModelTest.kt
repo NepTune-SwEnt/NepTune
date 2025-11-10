@@ -1,11 +1,10 @@
 package com.neptune.neptune.screen
 
-import android.content.Context
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.neptune.neptune.model.fakes.FakeProfileRepository
-import com.neptune.neptune.model.fakes.FakeSampleRepository
+import com.neptune.neptune.model.FakeProfileRepository
+import com.neptune.neptune.model.FakeSampleRepository
 import com.neptune.neptune.ui.main.MainViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,7 +26,6 @@ class MainViewModelTest {
   @get:Rule val instantTaskExecutorRule = InstantTaskExecutorRule()
   private val testDispatcher: TestDispatcher = UnconfinedTestDispatcher()
 
-  private lateinit var mockContext: Context
   private lateinit var mockAuth: FirebaseAuth
   private lateinit var mockFirebaseUser: FirebaseUser
 
@@ -39,8 +37,6 @@ class MainViewModelTest {
   // This function was made using AI assistance
   fun setup() {
     Dispatchers.setMain(testDispatcher)
-
-    mockContext = mock()
     mockAuth = mock()
     mockFirebaseUser = mock()
 
@@ -52,7 +48,6 @@ class MainViewModelTest {
 
     viewModel =
         MainViewModel(
-            context = mockContext,
             repo = fakeRepository,
             profileRepo = fakeProfileRepository,
             useMockData = true,
@@ -65,14 +60,14 @@ class MainViewModelTest {
   }
 
   @Test
-  fun `discoverSamples loads correctly`() {
+  fun discoverSamplesLoadsCorrectly() {
     val discover = viewModel.discoverSamples.value
     Assert.assertEquals(4, discover.size)
     Assert.assertEquals("Sample 1", discover[0].name)
   }
 
   @Test
-  fun `followedSamples loads correctly`() {
+  fun followedSamplesLoadsCorrectly() {
     val followed = viewModel.followedSamples.value
     Assert.assertEquals(2, followed.size)
     Assert.assertEquals("Sample 5", followed[0].name)
