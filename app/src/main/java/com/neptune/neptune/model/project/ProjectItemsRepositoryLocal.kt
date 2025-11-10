@@ -1,3 +1,8 @@
+/**
+ * This file was coded with the help of LLMs.
+ *
+ * @author Uri Jaquet
+ */
 package com.neptune.neptune.model.project
 
 import android.content.Context
@@ -6,17 +11,13 @@ import com.google.gson.reflect.TypeToken
 import java.io.File
 import java.util.UUID
 
-// Pass the context in through the constructor
 class ProjectItemsRepositoryLocal(private val context: Context) : ProjectItemsRepository {
-  // Now the context is available immediately.
   private val projectsFile = File(context.filesDir, "projects.json")
   private val gson = Gson()
 
   init {
-    // For testing purposes, we can initialize the file if it doesn't exist.
     if (!projectsFile.exists()) {
       projectsFile.createNewFile()
-      // Optionally, pre-populate with some initial data for testing
       writeProjects(emptyMap())
     }
   }
