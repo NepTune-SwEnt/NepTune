@@ -1,5 +1,10 @@
 package com.neptune.neptune.screen
 
+import android.app.Application
+import android.net.Uri
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.model.fakes.FakeProfileRepository
 import com.neptune.neptune.ui.profile.ProfileMode
 import com.neptune.neptune.ui.profile.ProfileViewModel
@@ -7,9 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.Assert.*
 import org.junit.Before
@@ -17,6 +20,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestWatcher
 import org.junit.runner.Description
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainDispatcherRule(val dispatcher: TestDispatcher = UnconfinedTestDispatcher()) :
@@ -38,11 +43,40 @@ class ProfileViewModelTest {
 
   private lateinit var viewModel: ProfileViewModel
   private lateinit var fakeRepo: FakeProfileRepository
+  private lateinit var mockApplication: Application
+  private lateinit var mockAuth: FirebaseAuth
+  private lateinit var mockFirebaseUser: FirebaseUser
+  private lateinit var mockImageRepo: ImageStorageRepository
 
   @Before
   fun setup() {
     fakeRepo = FakeProfileRepository()
-    viewModel = ProfileViewModel(fakeRepo)
+    mockApplication = mock()
+    mockAuth = mock()
+    mockFirebaseUser = mock()
+    mockImageRepo = mock()
+
+    whenever(mockAuth.currentUser).thenReturn(mockFirebaseUser)
+    whenever(mockFirebaseUser.uid).thenReturn("fake_user_id_for_test")
+
+    viewModel = ProfileViewModel(mockApplication, fakeRepo, mockAuth, mockImageRepo)
+  }
+
+  @Test
+  fun onAvatarCroppedWithValidUriUpdatesTempAvatarUri() {
+    val mockUri: Uri = mock()
+    assertNull("Initial tempAvatarUri should be null", viewModel.tempAvatarUri.value)
+    viewModel.onAvatarCropped(mockUri)
+    assertEquals(
+        "tempAvatarUri should be updated with the new Uri", mockUri, viewModel.tempAvatarUri.value)
+  }
+
+  @Test
+  fun onAvatarCroppedWithNullUriDoesNotChangeTempAvatarUri() {
+    assertNull("Initial tempAvatarUri should be null", viewModel.tempAvatarUri.value)
+    viewModel.onAvatarCropped(null)
+    assertNull(
+        "tempAvatarUri should remain null when called with null", viewModel.tempAvatarUri.value)
   }
 
   @Test
@@ -91,7 +125,7 @@ class ProfileViewModelTest {
   }
 
   @Test
-  fun onSaveClickNoOpWhenNotInEditMode() = runTest {
+  fun onSaveClickNoOpWhenNotInEditMode() {
     val before = viewModel.uiState.value
     viewModel.onSaveClick()
     val after = viewModel.uiState.value
@@ -99,7 +133,7 @@ class ProfileViewModelTest {
   }
 
   @Test
-  fun onSaveClickDoesNotProceedWhenInvalid() = runTest {
+  fun onSaveClickDoesNotProceedWhenInvalid() {
     viewModel.onEditClick()
     viewModel.onNameChange("A") // invalid (too short)
     viewModel.onSaveClick()
@@ -111,14 +145,13 @@ class ProfileViewModelTest {
   }
 
   @Test
-  fun successfulSaveTrimsFieldsAndReturnsToView() = runTest {
+  fun successfulSaveTrimsFieldsAndReturnsToView() {
     viewModel.onEditClick()
     viewModel.onNameChange("  Alice  ")
     viewModel.onUsernameChange("alice_123")
     viewModel.onBioChange("  Hello there  ")
 
     viewModel.onSaveClick()
-    advanceUntilIdle() // finish the viewModelScope.launch work
 
     val s = viewModel.uiState.value
     assertEquals(ProfileMode.VIEW, s.mode)
@@ -135,7 +168,7 @@ class ProfileViewModelTest {
   }
 
   @Test
-  fun onTagInputChangeAddDuplicateAndDelete() = runTest {
+  fun onTagInputChangeAddDuplicateAndDelete() {
     // In VIEW mode, input change is ignored
     viewModel.onTagInputFieldChange(" rock ")
     assertEquals("", viewModel.uiState.value.inputTag) // unchanged in VIEW
@@ -156,7 +189,6 @@ class ProfileViewModelTest {
     // Add a valid tag
     viewModel.onTagInputFieldChange("  Rock  ")
     viewModel.onTagAddition()
-    advanceUntilIdle()
     s = viewModel.uiState.value
     assertTrue("rock should be added once", s.tags.contains("rock"))
     assertEquals("", s.inputTag)
@@ -170,7 +202,6 @@ class ProfileViewModelTest {
 
     // Deletion of existing tag
     viewModel.onTagDeletion("rock")
-    advanceUntilIdle()
     s = viewModel.uiState.value
     assertFalse("rock should be removed", s.tags.contains("rock"))
 

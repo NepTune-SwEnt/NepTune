@@ -15,6 +15,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import com.neptune.neptune.NepTuneApplication.Companion.appContext
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.FakeProfileRepository
@@ -49,11 +50,12 @@ class MainScreenTest {
     // Use fake repo
     val fakeSampleRepo = FakeSampleRepository()
     val fakeProfileRepo = FakeProfileRepository()
-
-    // Inject fake repo into ViewModel and use mock data
     viewModel =
-        MainViewModel(repo = fakeSampleRepo, profileRepo = fakeProfileRepo, useMockData = true)
-
+        MainViewModel(
+            repo = fakeSampleRepo,
+            profileRepo = fakeProfileRepo,
+            useMockData = true,
+            context = appContext)
     composeTestRule.setContent {
       CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
         MainScreen(mainViewModel = viewModel)

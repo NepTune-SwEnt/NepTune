@@ -6,21 +6,21 @@ import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialResponse
 import androidx.credentials.PasswordCredential
 import androidx.credentials.exceptions.GetCredentialCancellationException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.neptune.neptune.ui.authentification.GoogleIdOptionFactory
 import com.neptune.neptune.ui.authentification.SignInStatus
 import com.neptune.neptune.ui.authentification.SignInViewModel
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -40,6 +40,8 @@ class SignInViewModelTest {
   private lateinit var mockFirebaseAuth: FirebaseAuth
   private lateinit var mockCredentialManager: CredentialManager
   private lateinit var mockActivity: Activity
+  private lateinit var mockGoogleIdOptionFactory: GoogleIdOptionFactory
+
   private lateinit var viewModel: SignInViewModel
   private val testDispatcher = StandardTestDispatcher()
   private val fakeOauthClientId = "fake-oauth-client-id-for-testing.apps.googleusercontent.com"
@@ -47,12 +49,15 @@ class SignInViewModelTest {
   @Before
   fun setup() {
     Dispatchers.setMain(testDispatcher)
-    mockkStatic(FirebaseAuth::class)
     mockFirebaseAuth = mockk(relaxed = true)
-    every { FirebaseAuth.getInstance() } returns mockFirebaseAuth
     mockCredentialManager = mockk(relaxed = true)
     mockActivity = mockk(relaxed = true)
-    viewModel = SignInViewModel()
+
+    mockGoogleIdOptionFactory = mockk()
+    val mockGoogleIdOption: GetGoogleIdOption = mockk()
+    every { mockGoogleIdOptionFactory.create(any()) } returns mockGoogleIdOption
+
+    viewModel = SignInViewModel(mockFirebaseAuth, mockGoogleIdOptionFactory)
   }
 
   @After
@@ -67,7 +72,7 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun initializeWhenUserIsSignedInNavigates() = runTest {
+  fun initializeWhenUserIsSignedInNavigates() {
     val mockUser: FirebaseUser = mockk()
     every { mockFirebaseAuth.currentUser } returns mockUser
     var hasNavigated = false
@@ -77,7 +82,7 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun initializeWhenNoUserIsSignedInDoesNotNavigate() = runTest {
+  fun initializeWhenNoUserIsSignedInDoesNotNavigate() {
     every { mockFirebaseAuth.currentUser } returns null
     var hasNavigated = false
     viewModel.initialize(mockCredentialManager, { hasNavigated = true }, fakeOauthClientId)
@@ -86,14 +91,14 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun beginSignInChangesStatusToRequested() = runTest {
+  fun beginSignInChangesStatusToRequested() {
     viewModel.initialize(mockk(), {}, fakeOauthClientId)
     viewModel.beginSignIn(mockActivity)
     assertEquals(SignInStatus.SIGN_IN_REQUESTED, viewModel.signInStatus.value)
   }
 
   @Test
-  fun beginSignInWhenUserCancelsChangesStatusToSignedOut() = runTest {
+  fun beginSignInWhenUserCancelsChangesStatusToSignedOut() {
     viewModel.initialize(mockCredentialManager, {}, fakeOauthClientId)
     coEvery { mockCredentialManager.getCredential(context = any(), request = any()) } throws
         GetCredentialCancellationException("User cancelled")
@@ -103,7 +108,7 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun beginSignInWhenGenericErrorChangesStatusToError() = runTest {
+  fun beginSignInWhenGenericErrorChangesStatusToError() {
     viewModel.initialize(mockCredentialManager, {}, fakeOauthClientId)
     coEvery { mockCredentialManager.getCredential(context = any(), request = any()) } throws
         RuntimeException("Network error")
@@ -113,7 +118,7 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun handleSignInWithNonGoogleCredentialDoesNothing() = runTest {
+  fun handleSignInWithNonGoogleCredentialDoesNothing() {
     viewModel.initialize(mockCredentialManager, {}, fakeOauthClientId)
     val mockCredentialResponse = mockk<GetCredentialResponse>()
     val mockCustomCredential = mockk<CustomCredential>()
@@ -130,7 +135,7 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun signOutClearsUserAndSetsStatus() = runTest {
+  fun signOutClearsUserAndSetsStatus() {
     val mockUser: FirebaseUser = mockk()
     every { mockFirebaseAuth.currentUser } returns mockUser
     viewModel.initialize(mockCredentialManager, {}, fakeOauthClientId)
@@ -142,7 +147,7 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun beginSignInWhenAlreadySignedInStartsNewFlow() = runTest {
+  fun beginSignInWhenAlreadySignedInStartsNewFlow() {
     val mockUser: FirebaseUser = mockk()
     every { mockFirebaseAuth.currentUser } returns mockUser
     viewModel.initialize(mockCredentialManager, {}, fakeOauthClientId)
@@ -151,7 +156,7 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun signOutWhenAlreadySignedOutIsSafe() = runTest {
+  fun signOutWhenAlreadySignedOutIsSafe() {
     every { mockFirebaseAuth.currentUser } returns null
     viewModel.initialize(mockCredentialManager, {}, fakeOauthClientId)
     viewModel.signOut()
@@ -161,7 +166,7 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun handleSignInWithNonCustomCredentialDoesNothing() = runTest {
+  fun handleSignInWithNonCustomCredentialDoesNothing() {
     viewModel.initialize(mockCredentialManager, {}, fakeOauthClientId)
     val mockCredentialResponse = mockk<GetCredentialResponse>()
     val mockPasswordCredential = mockk<PasswordCredential>()
