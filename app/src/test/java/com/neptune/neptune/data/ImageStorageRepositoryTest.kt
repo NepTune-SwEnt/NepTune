@@ -36,7 +36,7 @@ class ImageStorageRepositoryTest {
   @Before
   fun setUp() {
     context = ApplicationProvider.getApplicationContext()
-    repository = ImageStorageRepository(context)
+    repository = ImageStorageRepository()
     imagesDir = File(context.filesDir, "images")
     if (imagesDir.exists()) {
       imagesDir.deleteRecursively() // Ensure a clean state
