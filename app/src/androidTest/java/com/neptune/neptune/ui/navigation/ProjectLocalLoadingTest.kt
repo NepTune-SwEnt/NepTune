@@ -2,6 +2,7 @@ package com.neptune.neptune.ui.navigation
 
 import androidx.activity.compose.setContent
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -14,6 +15,7 @@ import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepository
 import com.neptune.neptune.model.project.ProjectItemsRepositoryProvider
 import com.neptune.neptune.model.project.ProjectItemsRepositoryVar
+import com.neptune.neptune.ui.sampler.SamplerTestTags
 import com.neptune.neptune.ui.theme.SampleAppTheme
 import java.io.File
 import java.io.FileOutputStream
@@ -69,6 +71,16 @@ class LocalProjectLoadingTest {
     }
   }
 
+  private fun waitForDataLoad() {
+    composeTestRule.mainClock.advanceTimeBy(500L)
+    composeTestRule.waitForIdle()
+  }
+
+  private fun openSection(title: String) {
+    composeTestRule.onNodeWithText(title).performClick()
+    composeTestRule.waitForIdle()
+  }
+
   @Test
   fun projectClick_loadsSamplerKnobsCorrectly() {
     composeTestRule.onNodeWithTag("project_$TARGET_PROJECT_ID").performClick()
@@ -76,5 +88,16 @@ class LocalProjectLoadingTest {
     composeTestRule.onNodeWithText("COMP").performClick()
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithText("4:1", substring = true).assertIsDisplayed()
+  }
+
+  @Test
+  fun endToEnd_loadProject_setsCorrectAudioDuration() {
+    composeTestRule.onNodeWithTag("project_$TARGET_PROJECT_ID").performClick()
+    composeTestRule.mainClock.advanceTimeBy(500L)
+    composeTestRule.waitForIdle()
+    composeTestRule
+        .onNodeWithTag(SamplerTestTags.TIME_DISPLAY)
+        .assertTextContains(" / 04 s", substring = true)
+        .assertIsDisplayed()
   }
 }

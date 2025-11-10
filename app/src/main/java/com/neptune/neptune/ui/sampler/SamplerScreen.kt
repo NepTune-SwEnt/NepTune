@@ -29,7 +29,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
@@ -82,6 +81,8 @@ object SamplerTestTags {
   const val KNOB_COMP_DECAY = "knobCompDecay"
   const val SECTION_ADSR = "sectionAdsrControls"
   const val SECTION_REVERB = "sectionReverbControls"
+
+  const val TIME_DISPLAY = "timeDisplay"
   const val EQ_FADER_BOX_INPUT = "eqFaderBoxInput"
   const val FADER_60HZ_TAG = "fader60Hz"
   const val CURVE_EDITOR_SCROLL_CONTAINER = "curveEditorScrollContainer"
@@ -120,8 +121,6 @@ fun SamplerScreen(
     zipFilePath: String?,
 ) {
   val uiState by viewModel.uiState.collectAsState()
-  val context = LocalContext.current
-
   val decodedZipPath =
       remember(zipFilePath) {
         if (zipFilePath.isNullOrEmpty()) {
@@ -133,7 +132,7 @@ fun SamplerScreen(
 
   LaunchedEffect(Unit) {
     if (decodedZipPath != null) {
-      viewModel.loadProjectData(decodedZipPath, context)
+      viewModel.loadProjectData(decodedZipPath)
     }
   }
 
@@ -248,7 +247,7 @@ fun PlaybackAndWaveformControls(
               isPlaying = isPlaying,
               playbackPosition = playbackPosition,
               onPositionChange = onPositionChange,
-              audioDurationMillis = uiState.audioDurationMillis,
+              audioDurationMillis = uiState.audioDurationMillis.toLong(),
               uiState = uiState,
               viewModel = viewModel)
           TimeDisplay(
@@ -300,18 +299,15 @@ fun WaveformDisplay(
     isPlaying: Boolean = false,
     playbackPosition: Float = 0.0f,
     onPositionChange: (Float) -> Unit = {},
-    audioDurationMillis: Int,
+    audioDurationMillis: Long,
     uiState: SamplerUiState,
     viewModel: SamplerViewModel
 ) {
   val soundWaveColor = NepTuneTheme.colors.soundWave
   val localDensity = LocalDensity.current
   val latestOnPositionChange = rememberUpdatedState(onPositionChange)
-
   val currentUri = uiState.currentAudioUri
   val coroutineScope = rememberCoroutineScope()
-
-  val context = LocalContext.current
 
   var waveform by remember { mutableStateOf<List<Float>>(emptyList()) }
 
@@ -320,7 +316,7 @@ fun WaveformDisplay(
       withContext(Dispatchers.IO) {
         val wf =
             try {
-              viewModel.extractWaveform(context, currentUri)
+              viewModel.extractWaveform(currentUri)
             } catch (e: Exception) {
               Log.e("WaveformDisplay", "Audio track error: ${e.message}")
               emptyList<Float>()
@@ -1221,7 +1217,7 @@ fun TimeDisplay(playbackPosition: Float, audioDurationMillis: Int, modifier: Mod
       text = timeText,
       style = MaterialTheme.typography.bodySmall,
       color = NepTuneTheme.colors.smallText,
-      modifier = modifier)
+      modifier = modifier.testTag(SamplerTestTags.TIME_DISPLAY))
 }
 
 @Composable

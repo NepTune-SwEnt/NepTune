@@ -1,9 +1,10 @@
 package com.neptune.neptune.screen
 
-import android.app.Application
+import android.net.Uri
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
@@ -29,6 +30,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.test.platform.app.InstrumentationRegistry
 import com.neptune.neptune.MainActivity
+import com.neptune.neptune.media.LocalMediaPlayer
+import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.sampler.SamplerTab
 import com.neptune.neptune.ui.sampler.SamplerTestTags
@@ -37,13 +40,14 @@ import com.neptune.neptune.ui.sampler.SamplerUiState
 import com.neptune.neptune.ui.sampler.SamplerViewModel
 import com.neptune.neptune.ui.theme.SampleAppTheme
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-class FakeSamplerViewModel(application: Application) : SamplerViewModel(application) {
+class FakeSamplerViewModel : SamplerViewModel() {
   var isAttackUpdated = false
   var isDecayUpdated = false
   var isSustainUpdated = false
@@ -67,6 +71,8 @@ class FakeSamplerViewModel(application: Application) : SamplerViewModel(applicat
   var isCompDecayUpdated = false
   var lastTempoUpdated: Int? = null
   var lastPlaybackPosition: Float? = null
+
+  var isWaveformExtracted = false
 
   val mutableUiState: MutableStateFlow<SamplerUiState> = _uiState
 
@@ -178,6 +184,16 @@ class FakeSamplerViewModel(application: Application) : SamplerViewModel(applicat
     isCompDecayUpdated = true
     super.updateCompDecay(value)
   }
+
+  override fun extractWaveform(uri: Uri, sampleRate: Int): List<Float> {
+    isWaveformExtracted = true
+    return List(50) { 0.5f }
+  }
+
+  override fun loadProjectData(zipFilePath: String) {
+    mutableUiState.update { it.copy(attack = 0.35f, sustain = 0.6f, compRatio = 4) }
+    super.loadProjectData(zipFilePath)
+  }
 }
 
 class SamplerViewModelFactory(private val viewModel: FakeSamplerViewModel) :
@@ -201,15 +217,18 @@ class SamplerScreenTest {
 
   @Before
   fun setup() {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext
-    val application = context.applicationContext as Application
-    fakeViewModel = FakeSamplerViewModel(application)
+
+    fakeViewModel = FakeSamplerViewModel()
     val factory = SamplerViewModelFactory(fakeViewModel)
 
     composeTestRule.activity.setContent {
-      SampleAppTheme {
-        Surface(color = MaterialTheme.colorScheme.background) {
-          SamplerScreen(viewModel = viewModel(factory = factory), zipFilePath = null)
+      val context = InstrumentationRegistry.getInstrumentation().targetContext
+      val mediaPlayer = NeptuneMediaPlayer(context)
+      CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
+        SampleAppTheme {
+          Surface(color = MaterialTheme.colorScheme.background) {
+            SamplerScreen(viewModel = viewModel(factory = factory), zipFilePath = null)
+          }
         }
       }
     }

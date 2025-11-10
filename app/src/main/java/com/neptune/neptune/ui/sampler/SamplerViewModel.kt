@@ -1,14 +1,14 @@
 package com.neptune.neptune.ui.sampler
 
-import android.app.Application
 import android.content.Context
 import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.net.Uri
 import android.util.Log
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.project.ProjectExtractor
 import com.neptune.neptune.model.project.SamplerProjectMetadata
@@ -41,6 +41,8 @@ const val COMP_TIME_MAX = 1.0f
 const val COMP_THRESHOLD_DEFAULT = -10.0f
 const val COMP_KNEE_MAX = 20.0f
 
+const val DEFAULT_SAMPLE_TIME = 4000
+
 data class SamplerUiState(
     val isPlaying: Boolean = false,
     val currentTab: SamplerTab = SamplerTab.BASICS,
@@ -72,9 +74,9 @@ data class SamplerUiState(
     get() = "$pitchNote$pitchOctave"
 }
 
-open class SamplerViewModel(application: Application) : AndroidViewModel(application) {
+open class SamplerViewModel() : ViewModel() {
 
-  private val context: Context = application.applicationContext
+  private val context: Context = NepTuneApplication.appContext
 
   private val mediaPlayer = NeptuneMediaPlayer(context)
 
@@ -314,19 +316,23 @@ open class SamplerViewModel(application: Application) : AndroidViewModel(applica
     _uiState.update { it.copy(compDecay = value.coerceIn(0.0f, COMP_TIME_MAX)) }
   }
 
-  fun extractWaveform(context: Context, uri: Uri, sampleRate: Int = 100): List<Float> {
+  open fun extractWaveform(uri: Uri, sampleRate: Int = 100): List<Float> {
     val extractor = MediaExtractor()
     extractor.setDataSource(context, uri, null)
 
     var trackIndex = -1
-    for (i in 0 until extractor.trackCount) {
+    var audioTrackFound = false
+    var i = 0
+    while (i < extractor.trackCount && !audioTrackFound) {
       val format = extractor.getTrackFormat(i)
       val mime = format.getString(MediaFormat.KEY_MIME)
+
       if (mime?.startsWith("audio/") == true) {
         trackIndex = i
         extractor.selectTrack(i)
-        break
+        audioTrackFound = true
       }
+      i++
     }
 
     if (trackIndex == -1) throw IllegalArgumentException("No audio track")
@@ -384,7 +390,7 @@ open class SamplerViewModel(application: Application) : AndroidViewModel(applica
     return waveform
   }
 
-  fun loadProjectData(zipFilePath: String, context: Context) {
+  open fun loadProjectData(zipFilePath: String) {
     viewModelScope.launch {
       try {
         val zipFile = File(zipFilePath)
@@ -396,7 +402,7 @@ open class SamplerViewModel(application: Application) : AndroidViewModel(applica
             } else {
               null
             }
-        val duration = mediaPlayer.getDuration()
+        val sampleDuration = mediaPlayer.getDuration()
         Log.d("SamplerViewModel", "Audio URI chargée: $audioUri")
         val paramMap = metadata.parameters.associate { it.type to it.value }
         _uiState.update { current ->
@@ -435,7 +441,7 @@ open class SamplerViewModel(application: Application) : AndroidViewModel(applica
               compDecay = paramMap["compDecay"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compDecay,
               eqBands = newEqBands.toList(),
               currentAudioUri = audioUri,
-              audioDurationMillis = if (duration > 0) duration else 4000)
+              audioDurationMillis = if (sampleDuration > 0) sampleDuration else DEFAULT_SAMPLE_TIME)
         }
       } catch (e: Exception) {
         Log.e("SamplerViewModel", "Échec du chargement du projet ZIP: ${e.message}", e)
