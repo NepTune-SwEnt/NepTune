@@ -1,6 +1,5 @@
 package com.neptune.neptune.screen
 
-import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.neptune.neptune.model.FakeProfileRepository
@@ -12,20 +11,34 @@ import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TestWatcher
+import org.junit.runner.Description
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+
+// These tests were maid using AI assistance
+@OptIn(ExperimentalCoroutinesApi::class)
+class MainDispatcherRule(val dispatcher: TestDispatcher = UnconfinedTestDispatcher()) :
+  TestWatcher() {
+
+  override fun starting(description: Description) {
+    Dispatchers.setMain(dispatcher)
+  }
+
+  override fun finished(description: Description) {
+    Dispatchers.resetMain()
+  }
+}
+
 
 @ExperimentalCoroutinesApi
 class MainViewModelTest {
 
-  @get:Rule val instantTaskExecutorRule = InstantTaskExecutorRule()
-  private val testDispatcher: TestDispatcher = UnconfinedTestDispatcher()
-
+  @get:Rule val mainRule = MainDispatcherRule()
   private lateinit var mockAuth: FirebaseAuth
   private lateinit var mockFirebaseUser: FirebaseUser
 
@@ -36,7 +49,6 @@ class MainViewModelTest {
   @Before
   // This function was made using AI assistance
   fun setup() {
-    Dispatchers.setMain(testDispatcher)
     mockAuth = mock()
     mockFirebaseUser = mock()
 
@@ -52,11 +64,6 @@ class MainViewModelTest {
             profileRepo = fakeProfileRepository,
             useMockData = true,
             auth = mockAuth)
-  }
-
-  @After
-  fun tearDown() {
-    Dispatchers.resetMain()
   }
 
   @Test
