@@ -23,7 +23,7 @@ import org.mockito.kotlin.whenever
 // These tests were maid using AI assistance
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainDispatcherRule(val dispatcher: TestDispatcher = UnconfinedTestDispatcher()) :
-  TestWatcher() {
+    TestWatcher() {
 
   override fun starting(description: Description) {
     Dispatchers.setMain(dispatcher)
@@ -33,7 +33,6 @@ class MainDispatcherRule(val dispatcher: TestDispatcher = UnconfinedTestDispatch
     Dispatchers.resetMain()
   }
 }
-
 
 @ExperimentalCoroutinesApi
 class MainViewModelTest {
