@@ -37,7 +37,7 @@ class NeptuneMediaPlayerTest {
   @Before
   fun setup() {
     context = composeTestRule.activity.applicationContext
-    mediaPlayer = NeptuneMediaPlayer(context)
+    mediaPlayer = NeptuneMediaPlayer()
 
     testURI1 = Uri.parse("android.resource://${context.packageName}/${R.raw.record1}")
     testURI2 = Uri.parse("android.resource://${context.packageName}/${R.raw.record2}")

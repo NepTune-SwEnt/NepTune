@@ -43,7 +43,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
@@ -455,8 +454,7 @@ fun ProjectListScreenPreview() {
                 uriString = "mock_uri"))
       }
 
-  val context = LocalContext.current
-  val fakeMediaPlayer = NeptuneMediaPlayer(context)
+  val fakeMediaPlayer = NeptuneMediaPlayer()
 
   CompositionLocalProvider(LocalMediaPlayer provides fakeMediaPlayer) {
     PostScreen(

@@ -1,12 +1,13 @@
 package com.neptune.neptune.media
 
-import android.content.Context
 import android.media.MediaPlayer
 import android.net.Uri
 import androidx.compose.runtime.compositionLocalOf
 import androidx.core.net.toUri
+import com.neptune.neptune.NepTuneApplication
 
-class NeptuneMediaPlayer(private val context: Context) {
+class NeptuneMediaPlayer() {
+  val context = NepTuneApplication.appContext
 
   private var mediaPlayer: MediaPlayer? = null
   private var currentUri: Uri? = null

@@ -44,7 +44,7 @@ class PostScreenTest {
   fun setup() {
     context = composeTestRule.activity.applicationContext
     viewModel =
-        PostViewModel(composeTestRule.activity.application).apply {
+        PostViewModel().apply {
           loadSample(
               Sample(
                   id = 1,
@@ -57,7 +57,7 @@ class PostScreenTest {
                   downloads = 3,
                   uriString = "mock_uri"))
         }
-    mediaPlayer = NeptuneMediaPlayer(context)
+    mediaPlayer = NeptuneMediaPlayer()
   }
 
   private fun setContent(
