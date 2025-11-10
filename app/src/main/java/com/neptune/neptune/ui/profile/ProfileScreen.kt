@@ -633,19 +633,23 @@ fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
   val viewModel: ProfileViewModel = viewModel(factory = factory)
   val state = viewModel.uiState.collectAsState().value
   val localAvatarUri by viewModel.localAvatarUri.collectAsState()
+  val tempAvatarUri by viewModel.tempAvatarUri.collectAsState()
 
   LaunchedEffect(Unit) { viewModel.loadOrEnsure() }
 
   // Prepare the image picker launcher. The callback will notify the ViewModel.
-  val imagePickerLauncher = rememberImagePickerLauncher { croppedUri ->
-    if (croppedUri != null) {
-      viewModel.onAvatarCropped(croppedUri)
-    }
-  }
+  val imagePickerLauncher =
+      rememberImagePickerLauncher(
+          onImageCropped = { croppedUri: Uri? -> viewModel.onAvatarCropped(croppedUri) })
 
   ProfileScreen(
       uiState = state,
-      localAvatarUri = localAvatarUri,
+      localAvatarUri =
+          if (tempAvatarUri != null) {
+            tempAvatarUri
+          } else {
+            localAvatarUri
+          },
       onAvatarEditClick = { imagePickerLauncher.launch("image/*") }, // Launch the picker
       callbacks =
           profileScreenCallbacks(
