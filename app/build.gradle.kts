@@ -182,8 +182,16 @@ dependencies {
     annotationProcessor(libs.room.compiler)
     ksp(libs.room.compiler)
 
+    // Networking with OkHttp
+    implementation(libs.okhttp)
+
+    // Gson for JSON parsing
+    implementation("com.google.code.gson:gson:2.13.2")
+
+    androidTestImplementation("io.mockk:mockk-android:1.13.10")
     androidTestImplementation(libs.firebase.auth)
     androidTestImplementation(libs.firebase.firestore)
+    androidTestImplementation("com.google.truth:truth:1.4.4")
 
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

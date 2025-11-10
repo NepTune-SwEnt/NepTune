@@ -11,9 +11,9 @@ import com.google.firebase.Timestamp
 import com.neptune.neptune.MainActivity
 import com.neptune.neptune.NeptuneApp
 import com.neptune.neptune.model.project.ProjectItem
-import com.neptune.neptune.model.project.ProjectItemsRepository
-import com.neptune.neptune.model.project.ProjectItemsRepositoryProvider
-import com.neptune.neptune.model.project.ProjectItemsRepositoryVar
+import com.neptune.neptune.model.project.ProjectItemsRepositoryVarVar
+import com.neptune.neptune.model.project.TotalProjectItemsRepository
+import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.ui.theme.SampleAppTheme
 import java.io.File
 import java.io.FileOutputStream
@@ -22,25 +22,12 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-class FakeLoadingRepository(private val zipFile: File) :
-    ProjectItemsRepository by ProjectItemsRepositoryVar() {
-
-  override suspend fun getAllProjects(): List<ProjectItem> {
-    return listOf(
-        ProjectItem(
-            id = "42",
-            name = "Test Project ZIP",
-            filePath = zipFile.path,
-            lastUpdated = Timestamp(100, 0)))
-  }
-}
-
 class LocalProjectLoadingTest {
 
   @get:Rule val composeTestRule = createAndroidComposeRule<MainActivity>()
 
   private lateinit var assetZipFile: File
-  private lateinit var fakeRepository: FakeLoadingRepository
+  private var fakeRepository: TotalProjectItemsRepository = ProjectItemsRepositoryVarVar()
 
   private val ASSET_ZIP_PATH = "fakeProject.zip"
   private val TARGET_PROJECT_ID = "42"
@@ -56,12 +43,13 @@ class LocalProjectLoadingTest {
     val absoluteZipPath = assetZipFile.absolutePath
 
     runBlocking {
-      ProjectItemsRepositoryProvider.repository.addProject(
+      fakeRepository.addProject(
           ProjectItem(
-              id = TARGET_PROJECT_ID,
+              uid = TARGET_PROJECT_ID,
               name = "Test Project ZIP",
               filePath = absoluteZipPath,
               lastUpdated = Timestamp(100, 0)))
+      TotalProjectItemsRepositoryProvider.repository = fakeRepository
     }
 
     composeTestRule.activity.setContent {

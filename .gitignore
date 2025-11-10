@@ -8,5 +8,6 @@
 .cxx
 local.properties
 app/google-services.json
-firebase-debug.log
-firestore-debug.log
+/.firebaserc
+/firebase-debug.log
+/firestore-debug.log

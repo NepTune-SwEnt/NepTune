@@ -73,6 +73,16 @@ jobs:
         run: |
           chmod +x ./gradlew
 
+      # Install NodeJS
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Install Firebase CLI
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
       # Check formatting
       - name: KTFmt Check
         run: |
