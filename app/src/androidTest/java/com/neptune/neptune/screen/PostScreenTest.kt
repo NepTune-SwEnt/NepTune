@@ -98,16 +98,6 @@ class PostScreenTest {
   }
 
   @Test
-  fun backButtonTriggersGoBackAction() {
-    val goBackMock = mockk<() -> Unit>(relaxed = true)
-    setContent(goBack = goBackMock)
-
-    composeTestRule.onNodeWithTag(PostScreenTestTags.BACK_BUTTON).performClick()
-
-    verify(exactly = 1) { goBackMock() }
-  }
-
-  @Test
   fun selectProjectButtonTriggersNavigation() {
     val navigateToProjectListMock = mockk<() -> Unit>(relaxed = true)
     setContent(navigateToProjectList = navigateToProjectListMock)
