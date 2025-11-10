@@ -10,10 +10,13 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.File
 import java.util.UUID
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
-class ProjectItemsRepositoryLocal(private val context: Context) : ProjectItemsRepository {
+class ProjectItemsRepositoryLocal(context: Context) : ProjectItemsRepository {
   private val projectsFile = File(context.filesDir, "projects.json")
   private val gson = Gson()
+  private val mutex = Mutex()
 
   init {
     if (!projectsFile.exists()) {
@@ -40,38 +43,41 @@ class ProjectItemsRepositoryLocal(private val context: Context) : ProjectItemsRe
     return UUID.randomUUID().toString()
   }
 
-  override suspend fun getAllProjects(): List<ProjectItem> {
-    return readProjects().values.toList()
-  }
+  override suspend fun getAllProjects(): List<ProjectItem> =
+      mutex.withLock { readProjects().values.toList() }
 
-  override suspend fun getProject(projectID: String): ProjectItem {
-    return readProjects()[projectID]
-        ?: throw NoSuchElementException("Project with ID $projectID not found")
-  }
+  override suspend fun getProject(projectID: String): ProjectItem =
+      mutex.withLock {
+        readProjects()[projectID]
+            ?: throw NoSuchElementException("Project with ID $projectID not found")
+      }
 
-  override suspend fun addProject(project: ProjectItem) {
-    val projects = readProjects()
-    projects[project.uid] = project
-    writeProjects(projects)
-  }
+  override suspend fun addProject(project: ProjectItem) =
+      mutex.withLock {
+        val projects = readProjects()
+        projects[project.uid] = project
+        writeProjects(projects)
+      }
 
-  override suspend fun editProject(projectID: String, newValue: ProjectItem) {
-    val projects = readProjects()
-    if (projects.containsKey(projectID)) {
-      projects[projectID] = newValue
-      writeProjects(projects)
-    } else {
-      throw NoSuchElementException("Project with ID $projectID not found")
-    }
-  }
+  override suspend fun editProject(projectID: String, newValue: ProjectItem) =
+      mutex.withLock {
+        val projects = readProjects()
+        if (projects.containsKey(projectID)) {
+          projects[projectID] = newValue
+          writeProjects(projects)
+        } else {
+          throw NoSuchElementException("Project with ID $projectID not found")
+        }
+      }
 
-  override suspend fun deleteProject(projectID: String) {
-    val projects = readProjects()
-    if (projects.remove(projectID) == null) {
-      throw NoSuchElementException("Project with ID $projectID not found")
-    }
-    writeProjects(projects)
-  }
+  override suspend fun deleteProject(projectID: String) =
+      mutex.withLock {
+        val projects = readProjects()
+        if (projects.remove(projectID) == null) {
+          throw NoSuchElementException("Project with ID $projectID not found")
+        }
+        writeProjects(projects)
+      }
 
   override suspend fun getProjectDuration(projectID: String): Int {
     TODO("Not yet implemented")
