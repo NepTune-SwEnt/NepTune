@@ -37,8 +37,7 @@ import org.robolectric.annotation.Config
 @Config(sdk = [33]) // Robolectric API level
 class SearchScreenAllTests {
   @get:Rule val composeRule = createComposeRule()
-  val fakeMediaPlayer =
-      NeptuneMediaPlayer(androidx.test.core.app.ApplicationProvider.getApplicationContext())
+  val fakeMediaPlayer = NeptuneMediaPlayer()
 
   /** Advance past the 300ms debounce in SearchScreen */
   private fun advanceDebounce() {
