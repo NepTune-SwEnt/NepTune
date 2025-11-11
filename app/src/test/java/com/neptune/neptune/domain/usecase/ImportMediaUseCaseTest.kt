@@ -48,6 +48,10 @@ private class FakeImporter(private val dir: File) : FileImporter {
         sizeBytes = f.length(),
         durationMs = 1200L)
   }
+
+  override suspend fun importRecorded(file: File): FileImporter.ImportedFile {
+    throw NotImplementedError("importRecorded not implemented in FakeImporter")
+  }
 }
 
 @RunWith(RobolectricTestRunner::class)
