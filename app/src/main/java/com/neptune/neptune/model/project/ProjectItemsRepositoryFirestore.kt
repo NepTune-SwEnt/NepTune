@@ -48,10 +48,6 @@ class ProjectItemsRepositoryFirestore(private val db: FirebaseFirestore) : Proje
     db.collection(PROJECT_ITEMS_COLLECTION_PATH).document(projectID).delete().await()
   }
 
-  override suspend fun getProjectDuration(projectID: String): Int {
-    TODO("Not yet implemented")
-  }
-
   /**
    * Converts a Firestore document to a ProjectItem.
    *
