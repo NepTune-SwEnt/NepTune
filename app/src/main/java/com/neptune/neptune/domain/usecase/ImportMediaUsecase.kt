@@ -53,4 +53,31 @@ class ImportMediaUseCase(
             filePath = projectZip.toURI().toString()))
     return item
   }
+
+  // Overload for a File created by the in-app recorder. Uses importer.importRecorded
+  suspend operator fun invoke(recordedFile: File): MediaItem {
+    val probe = importer.importRecorded(recordedFile)
+    val localAudio = File(URI(probe.localUri.toString()))
+
+    val projectZip =
+        try {
+          packager.createProjectZip(audioFile = localAudio, durationMs = probe.durationMs)
+        } catch (e: Exception) {
+          runCatching { localAudio.delete() }
+          throw e
+        }
+    runCatching { localAudio.delete() }
+
+    val item =
+        MediaItem(id = UUID.randomUUID().toString(), projectUri = projectZip.toURI().toString())
+    repo.upsert(item)
+
+    val vm = ProjectItemsRepositoryLocal(appContext)
+    vm.addProject(
+        ProjectItem(
+            uid = vm.getNewId(),
+            name = projectZip.nameWithoutExtension,
+            filePath = projectZip.toURI().toString()))
+    return item
+  }
 }

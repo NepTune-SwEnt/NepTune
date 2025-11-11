@@ -8,18 +8,21 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,6 +42,7 @@ import com.neptune.neptune.data.StoragePaths
 import com.neptune.neptune.media.NeptuneRecorder
 import com.neptune.neptune.ui.picker.ImportViewModel
 import com.neptune.neptune.ui.picker.ProjectList
+import java.io.File
 
 object MockImportTestTags {
   const val BUTTON_RECORD = "RecordFAB"
@@ -49,7 +53,7 @@ object MockImportTestTags {
 val padding = 16.dp
 
 @SuppressLint("VisibleForTests")
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun MockImportScreen(vm: ImportViewModel = viewModel(), recorder: NeptuneRecorder? = null) {
   val items by vm.library.collectAsState(initial = emptyList())
@@ -63,6 +67,11 @@ fun MockImportScreen(vm: ImportViewModel = viewModel(), recorder: NeptuneRecorde
   val actualRecorder = recorder ?: remember { NeptuneRecorder(context, StoragePaths(context)) }
   var isRecording by remember { mutableStateOf(actualRecorder.isRecording) }
   var hasAudioPermission by remember { mutableStateOf(false) }
+
+  // Dialog state for naming the recorded project
+  var showNameDialog by remember { mutableStateOf(false) }
+  var proposedFileToImport by remember { mutableStateOf<File?>(null) }
+  var projectName by remember { mutableStateOf("") }
 
   val permissionLauncher =
       rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) {
@@ -83,7 +92,18 @@ fun MockImportScreen(vm: ImportViewModel = viewModel(), recorder: NeptuneRecorde
           FloatingActionButton(
               onClick = {
                 if (isRecording) {
-                  actualRecorder.stop()
+                  val recorded =
+                      try {
+                        actualRecorder.stop()
+                      } catch (_: Exception) {
+                        null
+                      }
+                  // If we have a recorded file, ask for a project name and import it
+                  if (recorded != null) {
+                    proposedFileToImport = recorded
+                    projectName = recorded.nameWithoutExtension
+                    showNameDialog = true
+                  }
                 } else {
                   if (hasAudioPermission) {
                     try {
@@ -122,4 +142,64 @@ fun MockImportScreen(vm: ImportViewModel = viewModel(), recorder: NeptuneRecorde
           ProjectList(items, Modifier.padding(padding))
         }
       }
+
+  // Name dialog
+  if (showNameDialog && proposedFileToImport != null) {
+    val fileToImport = proposedFileToImport!!
+    AlertDialog(
+        onDismissRequest = { showNameDialog = false },
+        title = { Text("Name project") },
+        text = {
+          Column {
+            Text("Enter a name for the new project")
+            Spacer(Modifier.height(8.dp))
+            TextField(
+                value = projectName,
+                onValueChange = { projectName = it },
+                modifier = Modifier.fillMaxWidth())
+          }
+        },
+        confirmButton = {
+          Button(
+              onClick = {
+                // Sanitize project name and rename the recorded file before importing
+                val sanitized =
+                    projectName
+                        .replace(Regex("[^A-Za-z0-9._-]+"), "_")
+                        .trim('_', '.', ' ')
+                        .ifEmpty { projectName }
+                val ext = fileToImport.extension
+                val parent = fileToImport.parentFile
+                val desiredName = if (ext.isNotBlank()) "$sanitized.$ext" else sanitized
+                val desiredFile = File(parent, desiredName)
+                val finalFile =
+                    if (desiredFile.exists()) {
+                      // avoid overwrite: keep original file name
+                      fileToImport
+                    } else {
+                      val moved = fileToImport.renameTo(desiredFile)
+                      if (moved) desiredFile else fileToImport
+                    }
+
+                // Ask ViewModel to import the file
+                vm.importRecordedFile(finalFile)
+
+                showNameDialog = false
+                proposedFileToImport = null
+              }) {
+                Text("Create")
+              }
+        },
+        dismissButton = {
+          Button(
+              onClick = {
+                // If dismissed, still import with original filename
+                vm.importRecordedFile(fileToImport)
+                showNameDialog = false
+                proposedFileToImport = null
+              }) {
+                Text("Skip")
+              }
+        })
+  }
 }

@@ -38,10 +38,7 @@ class FileImporterImpl(
 
   // Single source of truth: add new formats here (one line)
   private val supportedFormats: Map<String, String> =
-      mapOf(
-          "mp3" to "audio/mpeg",
-          "wav" to "audio/wav",
-      )
+      mapOf("mp3" to "audio/mpeg", "wav" to "audio/wav", "m4a" to "audio/mp4")
   private val allowedExts = supportedFormats.keys
   private val allowedMimes = supportedFormats.values.toSet()
   private val supportedLabel = supportedFormats.keys.joinToString("/") { it.uppercase() }
@@ -50,22 +47,48 @@ class FileImporterImpl(
   override suspend fun importFile(sourceUri: URI): FileImporter.ImportedFile =
       withContext(io) {
         val safUri = sourceUri.toString().toUri()
+        val isFile = safUri.scheme == ContentResolver.SCHEME_FILE
         val parsed = resolveAndValidateAudio(safUri)
 
         val dir = paths.audioWorkspace()
         val target = uniqueFile(dir, "${parsed.base}.${parsed.ext}")
 
-        val inputStream =
-            cr.openInputStream(safUri)
-                ?: throw IllegalArgumentException("Cannot open input stream for URI: $safUri")
+        if (isFile) {
+          // For file:// URIs, copy directly from the file system
+          val srcFile = File(safUri.path ?: sourceUri.path ?: "")
+          if (!srcFile.exists() || !srcFile.isFile) {
+            throw IllegalArgumentException("Source file does not exist: $safUri")
+          }
+          srcFile.inputStream().use { input ->
+            FileOutputStream(target).use { output -> input.copyTo(output) }
+          }
+        } else {
+          // For content:// URIs use ContentResolver
+          val inputStream =
+              cr.openInputStream(safUri)
+                  ?: throw IllegalArgumentException("Cannot open input stream for URI: $safUri")
 
-        inputStream.use { input -> FileOutputStream(target).use { output -> input.copyTo(output) } }
+          inputStream.use { input ->
+            FileOutputStream(target).use { output -> input.copyTo(output) }
+          }
+        }
 
         val duration =
             runCatching {
-                  MediaMetadataRetriever().use { mmr ->
-                    mmr.setDataSource(context, safUri)
+                  val mmr = MediaMetadataRetriever()
+                  try {
+                    if (isFile) {
+                      // Use file path for reliability
+                      val srcFile = File(safUri.path ?: sourceUri.path ?: "")
+                      mmr.setDataSource(srcFile.absolutePath)
+                    } else {
+                      mmr.setDataSource(context, safUri)
+                    }
                     mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong()
+                  } finally {
+                    try {
+                      mmr.release()
+                    } catch (_: Exception) {}
                   }
                 }
                 .getOrNull()
@@ -76,6 +99,72 @@ class FileImporterImpl(
             displayName = target.name,
             mimeType = parsed.mime,
             sourceUri = sourceUri,
+            localUri = target.toURI(),
+            sizeBytes = target.length(),
+            durationMs = duration ?: 0L)
+      }
+
+  // New method: import a file created by the in-app recorder
+  override suspend fun importRecorded(file: File): FileImporter.ImportedFile =
+      withContext(io) {
+        if (!file.exists() || !file.isFile)
+            throw IllegalArgumentException("Recorded file does not exist: ${file.path}")
+
+        // Derive base/extension and mime
+        val ext = file.extension.lowercase()
+        val mime =
+            mimeFromExt(ext)
+                ?: throw UnsupportedAudioFormat("Only $supportedLabel are supported. Got ext=$ext")
+
+        val rawBase = file.nameWithoutExtension
+        val base =
+            rawBase.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_', '.', ' ').ifEmpty {
+              defaultBaseName
+            }
+
+        val dir = paths.audioWorkspace()
+        val target = uniqueFile(dir, "${base}.${ext}")
+
+        val moved =
+            try {
+              // Prefer atomic move (rename), fallback to copy
+              file.renameTo(target)
+            } catch (_: Exception) {
+              false
+            }
+
+        if (!moved) {
+          // copy and delete original
+          file.inputStream().use { input ->
+            FileOutputStream(target).use { output -> input.copyTo(output) }
+          }
+          try {
+            file.delete()
+          } catch (_: Exception) {}
+        }
+
+        val duration =
+            runCatching {
+                  val mmr = MediaMetadataRetriever()
+                  try {
+                    mmr.setDataSource(target.absolutePath)
+                    mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong()
+                  } finally {
+                    try {
+                      mmr.release()
+                    } catch (_: Exception) {}
+                  }
+                }
+                .getOrNull()
+
+        Log.v(
+            fileImporterTag,
+            "imported recorded ${target.name} (${target.length()} bytes, $duration ms)")
+
+        return@withContext FileImporter.ImportedFile(
+            displayName = target.name,
+            mimeType = mime,
+            sourceUri = file.toURI(),
             localUri = target.toURI(),
             sizeBytes = target.length(),
             durationMs = duration ?: 0L)
@@ -114,7 +203,8 @@ class FileImporterImpl(
             .firstOrNull { it in allowedExts }
             .orEmpty()
 
-    val rawBase = (display ?: defaultBaseName).removeSuffix(if (ext.isNotEmpty()) ".$ext" else "")
+    val rawBase =
+        (display ?: defaultBaseName).removeSuffix(if (ext.isNotEmpty()) ".${'$'}ext" else "")
     val base =
         rawBase.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_', '.', ' ').ifEmpty {
           defaultBaseName
@@ -145,7 +235,7 @@ class FileImporterImpl(
     val ext = candidate.substringAfterLast('.', "")
     var i = 2
     do {
-      f = File(dir, "$base ($i).$ext")
+      f = File(dir, "$base (${'$'}i).$ext")
       i++
     } while (f.exists())
     return f
