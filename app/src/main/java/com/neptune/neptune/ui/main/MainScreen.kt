@@ -365,10 +365,7 @@ fun SampleCardRow(
                   onLikeClick = { isLiked -> onLikeClick(sample, isLiked) },
                   onCommentClick = { onCommentClick(sample) })
           SampleCard(
-              sample = sample,
-              width = cardWidth,
-              isLiked = isLiked,
-              clickHandlers = clickHandlers)
+              sample = sample, width = cardWidth, isLiked = isLiked, clickHandlers = clickHandlers)
         }
       }
 }
