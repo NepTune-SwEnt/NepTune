@@ -47,7 +47,7 @@ class LocalProjectLoadingTest {
           ProjectItem(
               uid = TARGET_PROJECT_ID,
               name = "Test Project ZIP",
-              filePath = absoluteZipPath,
+              projectFilePath = absoluteZipPath,
               lastUpdated = Timestamp(100, 0)))
       TotalProjectItemsRepositoryProvider.repository = fakeRepository
     }

@@ -50,7 +50,7 @@ class ImportMediaUseCase(
         ProjectItem(
             uid = vm.getNewId(),
             name = projectZip.nameWithoutExtension,
-            filePath = projectZip.toURI().toString()))
+            projectFilePath = projectZip.toURI().toString()))
     return item
   }
 }

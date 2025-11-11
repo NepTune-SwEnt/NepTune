@@ -209,7 +209,7 @@ fun ProjectListItem(
               .clickable(
                   onClick = {
                     projectListViewModel.selectProject(project)
-                    val pathToSend = project.filePath ?: project.uid
+                    val pathToSend = project.projectFilePath ?: project.uid
                     val encodedFilePath =
                         URLEncoder.encode(pathToSend, StandardCharsets.UTF_8.name())
                     openProject(encodedFilePath)
@@ -554,8 +554,8 @@ fun ProjectListScreenPreview(
             description = "Description 1",
             isFavorite = false,
             tags = listOf(),
-            previewUrl = null,
-            fileUrl = null,
+            audioPreviewUri = null,
+            projectFileUrl = null,
             lastUpdated = Timestamp.now(),
             ownerId = null,
             collaborators = listOf(),
@@ -567,8 +567,8 @@ fun ProjectListScreenPreview(
             description = "Description 2",
             isFavorite = true,
             tags = listOf(),
-            previewUrl = null,
-            fileUrl = null,
+            audioPreviewUri = null,
+            projectFileUrl = null,
             lastUpdated = Timestamp.now(),
             ownerId = null,
             collaborators = listOf(),
