@@ -64,7 +64,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Timestamp
 import com.neptune.neptune.R
 import com.neptune.neptune.model.project.ProjectItem
-import com.neptune.neptune.model.project.ProjectItemsRepositoryProvider
+import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -77,6 +77,12 @@ object ProjectListScreenTestTags {
   const val PROJECT_NAME = "ProjectName"
   const val DESCRIPTION_TEXT_FIELD = "DescriptionTextField"
   const val SEARCH_TEXT_FIELD = "SearchTextField"
+  const val CONFIRM_DIALOG = "ConfirmDialog"
+  const val CHANGE_DESCRIPTION_BUTTON = "ChangeDescriptionButton"
+  const val RENAME_BUTTON = "RenameButton"
+  const val DELETE_BUTTON = "DeleteButton"
+  const val ADD_TO_CLOUD_BUTTON = "AddToCloudButton"
+  const val REMOVE_FROM_CLOUD_BUTTON = "RemoveFromCloudButton"
 }
 
 private const val SEARCHBAR_FONT_SIZE = 21
@@ -115,7 +121,7 @@ fun ProjectListScreen(
 
   Scaffold(
       containerColor = NepTuneTheme.colors.background,
-      content = {
+      content = { it ->
         Column(
             modifier =
                 Modifier.testTag(ProjectListScreenTestTags.PROJECT_LIST_SCREEN)
@@ -144,9 +150,9 @@ fun ProjectListScreen(
  */
 @Composable
 fun ProjectList(
+    modifier: Modifier = Modifier,
     projects: List<ProjectItem>,
     selectedProject: String? = null,
-    modifier: Modifier = Modifier,
     projectListViewModel: ProjectListViewModel,
     navigateToSampler: (zipFilePath: String) -> Unit = {},
 ) {
@@ -163,7 +169,7 @@ fun ProjectList(
   ) {
     if (projects.isNotEmpty()) {
       LazyColumn(modifier = modifier.testTag(ProjectListScreenTestTags.PROJECT_LIST)) {
-        items(items = projects, key = { project -> project.id }) { project ->
+        items(items = projects, key = { project -> project.uid }) { project ->
           ProjectListItem(
               project = project,
               selectedProject = selectedProject,
@@ -193,7 +199,7 @@ fun ProjectListItem(
     projectListViewModel: ProjectListViewModel,
 ) {
   val backGroundColor =
-      if (project.id == selectedProject) NepTuneTheme.colors.listBackground
+      if (project.uid == selectedProject) NepTuneTheme.colors.listBackground
       else NepTuneTheme.colors.background
   val lineColor = NepTuneTheme.colors.searchBar
   Card(
@@ -203,7 +209,7 @@ fun ProjectListItem(
               .clickable(
                   onClick = {
                     projectListViewModel.selectProject(project)
-                    val pathToSend = project.filePath ?: project.id
+                    val pathToSend = project.filePath ?: project.uid
                     val encodedFilePath =
                         URLEncoder.encode(pathToSend, StandardCharsets.UTF_8.name())
                     openProject(encodedFilePath)
@@ -215,7 +221,7 @@ fun ProjectListItem(
                     end = Offset(size.width, size.height),
                     strokeWidth = 2.dp.toPx())
               }
-              .testTag("project_${project.id}"),
+              .testTag("project_${project.uid}"),
       elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
       colors = CardDefaults.cardColors(backGroundColor),
       shape = RoundedCornerShape(0.dp),
@@ -271,12 +277,14 @@ fun EditMenu(
   var expanded by remember { mutableStateOf(false) }
   var showRenameDialog by remember { mutableStateOf(false) }
   var showChangeDescDialog by remember { mutableStateOf(false) }
+  var showDeleteDialog by remember { mutableStateOf(false) }
 
   if (showRenameDialog) {
     RenameProjectDialog(
+        initialName = project.name,
         onDismiss = { showRenameDialog = false },
         onConfirm = { newName ->
-          projectListViewModel.renameProject(project.id, newName)
+          projectListViewModel.renameProject(project.uid, newName)
           showRenameDialog = false
         })
   }
@@ -286,17 +294,26 @@ fun EditMenu(
         initialDescription = project.description,
         onDismiss = { showChangeDescDialog = false },
         onConfirm = { newDesc ->
-          projectListViewModel.changeProjectDescription(project.id, newDesc)
+          projectListViewModel.changeProjectDescription(project.uid, newDesc)
           showChangeDescDialog = false
         })
+  }
+
+  if (showDeleteDialog) {
+    DeleteConfirmationDialog(
+        onConfirm = {
+          projectListViewModel.deleteProject(project.uid)
+          showDeleteDialog = false
+        },
+        onDismiss = { showDeleteDialog = false })
   }
 
   // Right  buttons
   Row {
     // Star favorite toggle
     IconButton(
-        onClick = { projectListViewModel.toggleFavorite(project.id) },
-        modifier = Modifier.testTag("favorite_${project.id}")) {
+        onClick = { projectListViewModel.toggleFavorite(project.uid) },
+        modifier = Modifier.testTag("favorite_${project.uid}")) {
           Icon(
               imageVector = if (project.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
               contentDescription = "Favorite",
@@ -305,36 +322,52 @@ fun EditMenu(
         }
 
     Box(modifier = Modifier.padding(end = 0.dp)) {
-      IconButton(onClick = { expanded = true }, modifier = Modifier.testTag("menu_${project.id}")) {
-        Icon(
-            Icons.Rounded.MoreVert,
-            contentDescription = "Edit",
-            tint = NepTuneTheme.colors.onBackground,
-            modifier = Modifier.size(30.dp).padding(end = 0.dp),
-        )
-      }
+      IconButton(
+          onClick = { expanded = true }, modifier = Modifier.testTag("menu_${project.uid}")) {
+            Icon(
+                Icons.Rounded.MoreVert,
+                contentDescription = "Edit",
+                tint = NepTuneTheme.colors.onBackground,
+                modifier = Modifier.size(30.dp).padding(end = 0.dp),
+            )
+          }
       DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
         DropdownMenuItem(
+            modifier = Modifier.testTag(ProjectListScreenTestTags.RENAME_BUTTON),
             text = { Text("Rename") },
             onClick = {
               showRenameDialog = true
               expanded = false
             })
         DropdownMenuItem(
-            text = { Text("Change description") },
+            modifier = Modifier.testTag(ProjectListScreenTestTags.CHANGE_DESCRIPTION_BUTTON),
+            text = { Text("Change Description") },
             onClick = {
               showChangeDescDialog = true
               expanded = false
             })
+        if (!project.isStoredInCloud) {
+          DropdownMenuItem(
+              modifier = Modifier.testTag(ProjectListScreenTestTags.ADD_TO_CLOUD_BUTTON),
+              text = { Text("Add to Cloud") },
+              onClick = {
+                projectListViewModel.addProjectToCloud(project.uid)
+                expanded = false
+              })
+        } else {
+          DropdownMenuItem(
+              modifier = Modifier.testTag(ProjectListScreenTestTags.REMOVE_FROM_CLOUD_BUTTON),
+              text = { Text("Remove from Cloud") },
+              onClick = {
+                projectListViewModel.removeProjectFromCloud(project.uid)
+                expanded = false
+              })
+        }
         DropdownMenuItem(
-            text = {
-              Text((if (project.isStoredInCloud) "Remove from cloud" else "Store in cloud"))
-            },
-            onClick = { expanded = false })
-        DropdownMenuItem(
+            modifier = Modifier.testTag(ProjectListScreenTestTags.DELETE_BUTTON),
             text = { Text("Delete") },
             onClick = {
-              projectListViewModel.deleteProject(project.id)
+              showDeleteDialog = true
               expanded = false
             })
       }
@@ -351,8 +384,12 @@ fun EditMenu(
  * @author Uri Jaquet
  */
 @Composable
-fun RenameProjectDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
-  var text by remember { mutableStateOf("") }
+fun RenameProjectDialog(
+    initialName: String = "",
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+  var text by remember { mutableStateOf(initialName) }
 
   AlertDialog(
       onDismissRequest = onDismiss,
@@ -360,7 +397,13 @@ fun RenameProjectDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
       text = {
         OutlinedTextField(value = text, onValueChange = { text = it }, label = { Text("New name") })
       },
-      confirmButton = { Button(onClick = { onConfirm(text) }) { Text("Confirm") } },
+      confirmButton = {
+        Button(
+            onClick = { onConfirm(text) },
+            modifier = Modifier.testTag(ProjectListScreenTestTags.CONFIRM_DIALOG)) {
+              Text("Confirm")
+            }
+      },
       dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
 }
 
@@ -393,7 +436,39 @@ fun ChangeDescriptionDialog(
             singleLine = false,
             maxLines = 4)
       },
-      confirmButton = { Button(onClick = { onConfirm(text) }) { Text("Confirm") } },
+      confirmButton = {
+        Button(
+            onClick = { onConfirm(text) },
+            modifier = Modifier.testTag(ProjectListScreenTestTags.CONFIRM_DIALOG)) {
+              Text("Confirm")
+            }
+      },
+      dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
+}
+
+/**
+ * Composable function representing a confirmation dialog for deleting a project. This has been
+ * written with the help of LLMs.
+ *
+ * @param onConfirm Lambda function to call when the deletion is confirmed.
+ * @param onDismiss Lambda function to call when the dialog is dismissed.
+ * @author Uri Jaquet
+ */
+@Composable
+fun DeleteConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+  AlertDialog(
+      onDismissRequest = onDismiss,
+      title = { Text("Delete Project") },
+      text = {
+        Text("Are you sure you want to delete this project? This action cannot be undone.")
+      },
+      confirmButton = {
+        TextButton(
+            onClick = onConfirm,
+            modifier = Modifier.testTag(ProjectListScreenTestTags.CONFIRM_DIALOG)) {
+              Text("Delete")
+            }
+      },
       dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
 }
 
@@ -470,11 +545,11 @@ fun ProjectListScreenPreview(
     navigateBack: () -> Unit = {},
     navigateToSampler: (zipFilePath: String) -> Unit = {},
 ) {
-  val repo = ProjectItemsRepositoryProvider.repository
+  val repo = TotalProjectItemsRepositoryProvider.repository
   runBlocking {
     repo.addProject(
         ProjectItem(
-            id = "1",
+            uid = "1",
             name = "Project 1",
             description = "Description 1",
             isFavorite = false,
@@ -487,7 +562,7 @@ fun ProjectListScreenPreview(
         ))
     repo.addProject(
         ProjectItem(
-            id = "2",
+            uid = "2",
             name = "Project 2",
             description = "Description 2",
             isFavorite = true,

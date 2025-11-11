@@ -15,7 +15,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
-import com.neptune.neptune.NepTuneApplication.Companion.appContext
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.FakeProfileRepository
@@ -45,17 +44,13 @@ class MainScreenTest {
   @Before
   fun setup() {
     context = composeTestRule.activity.applicationContext
-    mediaPlayer = NeptuneMediaPlayer(context)
+    mediaPlayer = NeptuneMediaPlayer()
 
     // Use fake repo
     val fakeSampleRepo = FakeSampleRepository()
     val fakeProfileRepo = FakeProfileRepository()
     viewModel =
-        MainViewModel(
-            repo = fakeSampleRepo,
-            profileRepo = fakeProfileRepo,
-            useMockData = true,
-            context = appContext)
+        MainViewModel(repo = fakeSampleRepo, profileRepo = fakeProfileRepo, useMockData = true)
     composeTestRule.setContent {
       CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
         MainScreen(mainViewModel = viewModel)

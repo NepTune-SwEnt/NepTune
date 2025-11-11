@@ -1,6 +1,5 @@
 package com.neptune.neptune.ui.profile
 
-import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -29,14 +28,12 @@ private fun normalizeTag(s: String) = s.trim().lowercase().replace(Regex("\\s+")
  * Holds the current [ProfileUiState] and exposes update functions for UI-driven changes (name,
  * username, bio). Simulates save operations (to be replaced with repository calls).
  *
- * @param context The application context.
  * @param repo The profile repository for data operations.
  */
 class ProfileViewModel(
-    context: Context,
     private val repo: ProfileRepository = ProfileRepositoryProvider.repository,
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val imageRepo: ImageStorageRepository = ImageStorageRepository(context)
+    private val imageRepo: ImageStorageRepository = ImageStorageRepository()
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(ProfileUiState())

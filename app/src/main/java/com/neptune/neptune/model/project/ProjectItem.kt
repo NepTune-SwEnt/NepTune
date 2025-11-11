@@ -1,11 +1,12 @@
 package com.neptune.neptune.model.project
 
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.PropertyName
 
 /**
  * Data class representing a project item.
  *
- * @property id Unique identifier for the project.
+ * @property uid Unique identifier for the project.
  * @property name Name of the project.
  * @property description Description of the project.
  * @property isStoredInCloud Indicates if the project is stored in the cloud.
@@ -21,11 +22,11 @@ import com.google.firebase.Timestamp
  * @author Uri Jaquet
  */
 data class ProjectItem(
-    val id: String,
+    val uid: String,
     val name: String,
     val description: String = "",
-    val isStoredInCloud: Boolean = false,
-    val isFavorite: Boolean = false,
+    @get:PropertyName("isStoredInCloud") val isStoredInCloud: Boolean = false,
+    @get:PropertyName("isFavorite") val isFavorite: Boolean = false,
     val tags: List<String> = emptyList(),
     val previewPath: String? = null,
     val filePath: String? = null,

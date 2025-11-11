@@ -182,16 +182,22 @@ dependencies {
     annotationProcessor(libs.room.compiler)
     ksp(libs.room.compiler)
 
+    // Networking with OkHttp
+    implementation(libs.okhttp)
+
+    // Gson for JSON parsing
+    implementation("com.google.code.gson:gson:2.13.2")
+
     androidTestImplementation("io.mockk:mockk-android:1.13.10")
     androidTestImplementation(libs.firebase.auth)
     androidTestImplementation(libs.firebase.firestore)
+    androidTestImplementation("com.google.truth:truth:1.4.4")
 
     androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
 
     testImplementation("junit:junit:4.13.2")
     globalTestImplementation("com.google.truth:truth:1.4.4")
-    testImplementation("io.mockk:mockk:1.13.10")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
     globalTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
@@ -204,8 +210,15 @@ dependencies {
     implementation("com.github.yalantis:ucrop:2.2.8")
 
     implementation("io.coil-kt:coil-compose:2.6.0")
-    testImplementation("org.mockito:mockito-core:5.5.0")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
+
+    globalTestImplementation("io.mockk:mockk-android:1.13.10")
+
+    androidTestImplementation("org.mockito:mockito-android:5.12.0")
+    androidTestImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+    testImplementation("org.mockito:mockito-core:5.12.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+
+    androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
 
 
 }
