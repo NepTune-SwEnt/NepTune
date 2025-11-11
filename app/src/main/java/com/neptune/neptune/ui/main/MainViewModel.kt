@@ -168,7 +168,7 @@ class MainViewModel(
     viewModelScope.launch {
       val profile = profileRepo.getProfile()
       val username = profile?.username ?: "Anonymous"
-      repo.addComments(sampleId, username, text)
+      repo.addComments(sampleId, username, text.trim())
     }
   }
   // Mock Data
