@@ -24,13 +24,22 @@ open class StoragePaths(private val context: Context) {
     // strip path parts
     var name = raw.substringAfterLast('/').substringAfterLast('\\')
 
+    // remove all whitespace entirely
+    name = name.replace(Regex("\\s+"), "")
+
     // allow only letters, digits, dot, underscore, dash; replace others with '_'
     name = name.replace(Regex("[^A-Za-z0-9._-]"), "_")
+
+    // collapse multiple underscores to a single underscore
+    name = name.replace(Regex("_+"), "_")
 
     // collapse ".." to "_"
     while (name.contains("..")) {
       name = name.replace("..", "_")
     }
+
+    // trim leading/trailing dots/underscores/spaces
+    name = name.trim('_', '.', ' ')
 
     // avoid empty/bad names
     if (name.isBlank() || name == "." || name == "_") name = project

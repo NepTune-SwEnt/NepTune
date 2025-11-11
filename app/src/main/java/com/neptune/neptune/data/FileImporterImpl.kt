@@ -118,9 +118,16 @@ class FileImporterImpl(
 
         val rawBase = file.nameWithoutExtension
         val base =
-            rawBase.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_', '.', ' ').ifEmpty {
-              defaultBaseName
-            }
+            rawBase
+                // remove all whitespace entirely
+                .replace(Regex("\\s+"), "")
+                // replace other invalid chars with '_' and collapse consecutive underscores
+                .replace(Regex("[^A-Za-z0-9._-]+"), "_")
+                .replace(Regex("_+"), "_")
+                .trim('_', '.', ' ')
+                .ifEmpty {
+                  defaultBaseName
+                }
 
         val dir = paths.audioWorkspace()
         val target = uniqueFile(dir, "${base}.${ext}")
@@ -206,9 +213,16 @@ class FileImporterImpl(
     val rawBase =
         (display ?: defaultBaseName).removeSuffix(if (ext.isNotEmpty()) ".${'$'}ext" else "")
     val base =
-        rawBase.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_', '.', ' ').ifEmpty {
-          defaultBaseName
-        }
+        rawBase
+            // remove all whitespace entirely
+            .replace(Regex("\\s+"), "")
+            // replace invalid chars with '_' and collapse consecutive underscores
+            .replace(Regex("[^A-Za-z0-9._-]+"), "_")
+            .replace(Regex("_+"), "_")
+            .trim('_', '.', ' ')
+            .ifEmpty {
+              defaultBaseName
+            }
 
     val normalizedMime: String? =
         when {
@@ -227,7 +241,7 @@ class FileImporterImpl(
     return ParsedFromUri(normalizedMime!!, base, finalExt)
   }
 
-  // If file exists, appends (2), (3) etc. to base name to make it unique
+  // If file exists, appends -2, -3 etc. to base name to make it unique (no spaces)
   private fun uniqueFile(dir: File, candidate: String): File {
     var f = File(dir, candidate)
     if (!f.exists()) return f
@@ -235,7 +249,8 @@ class FileImporterImpl(
     val ext = candidate.substringAfterLast('.', "")
     var i = 2
     do {
-      f = File(dir, "$base (${'$'}i).$ext")
+      // Use dash suffix (no space) to be consistent with StoragePaths.projectFile
+      f = File(dir, "$base-" + i + "." + ext)
       i++
     } while (f.exists())
     return f

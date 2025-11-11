@@ -166,6 +166,8 @@ fun MockImportScreen(vm: ImportViewModel = viewModel(), recorder: NeptuneRecorde
                 val sanitized =
                     projectName
                         .replace(Regex("[^A-Za-z0-9._-]+"), "_")
+                        // collapse consecutive underscores to a single underscore
+                        .replace(Regex("_+"), "_")
                         .trim('_', '.', ' ')
                         .ifEmpty { projectName }
                 val ext = fileToImport.extension
