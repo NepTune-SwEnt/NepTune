@@ -223,7 +223,7 @@ class SamplerScreenTest {
 
     composeTestRule.activity.setContent {
       val context = InstrumentationRegistry.getInstrumentation().targetContext
-      val mediaPlayer = NeptuneMediaPlayer(context)
+      val mediaPlayer = NeptuneMediaPlayer()
       CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
         SampleAppTheme {
           Surface(color = MaterialTheme.colorScheme.background) {
