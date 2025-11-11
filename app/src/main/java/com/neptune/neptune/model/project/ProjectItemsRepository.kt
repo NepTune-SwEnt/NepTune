@@ -45,12 +45,4 @@ interface ProjectItemsRepository {
    * @param projectID The unique identifier of the project to delete.
    */
   suspend fun deleteProject(projectID: String)
-
-  /**
-   * Retrieves the duration of a specific project by its unique identifier.
-   *
-   * @param projectID The unique identifier of the project.
-   * @return The duration of the project in minutes.
-   */
-  suspend fun getProjectDuration(projectID: String): Int
 }

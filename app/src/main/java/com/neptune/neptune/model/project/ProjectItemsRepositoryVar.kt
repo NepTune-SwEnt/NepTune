@@ -50,8 +50,4 @@ class ProjectItemsRepositoryVar : ProjectItemsRepository {
     }
     throw Exception("ProjectItemsRepositoryVar: ProjectItem not found")
   }
-
-  override suspend fun getProjectDuration(projectID: String): Int {
-    TODO("Not yet implemented")
-  }
 }
