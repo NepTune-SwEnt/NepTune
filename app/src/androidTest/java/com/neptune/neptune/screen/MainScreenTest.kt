@@ -46,17 +46,13 @@ class MainScreenTest {
   @Before
   fun setup() {
     context = composeTestRule.activity.applicationContext
-    mediaPlayer = NeptuneMediaPlayer(context)
+    mediaPlayer = NeptuneMediaPlayer()
 
     // Use fake repo
     val fakeSampleRepo = FakeSampleRepository()
     val fakeProfileRepo = FakeProfileRepository()
     viewModel =
-        MainViewModel(
-            repo = fakeSampleRepo,
-            profileRepo = fakeProfileRepo,
-            useMockData = true,
-            context = appContext)
+        MainViewModel(repo = fakeSampleRepo, profileRepo = fakeProfileRepo, useMockData = true)
     composeTestRule.setContent {
       CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
         MainScreen(mainViewModel = viewModel)

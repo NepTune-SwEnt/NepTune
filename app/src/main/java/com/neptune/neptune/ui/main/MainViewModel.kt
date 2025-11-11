@@ -1,6 +1,5 @@
 package com.neptune.neptune.ui.main
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -26,14 +25,12 @@ import kotlinx.coroutines.launch
  * ViewModel for managing the state and operations related to the samples. This has been written
  * with the help of LLMs.
  *
- * @param context The application context.
  * @property SampleRepository Repository for accessing and manipulating samples.
  * @property ProfileRepository Repository for accessing and manipulating profile.
  * @property useMockData false by default; true if we want to test with some MockData
  * @author Angéline Bignens
  */
 class MainViewModel(
-    context: Context,
     private val repo: SampleRepository = SampleRepositoryProvider.repository,
     private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
     private val useMockData: Boolean = false,
@@ -45,7 +42,7 @@ class MainViewModel(
   private val _followedSamples = MutableStateFlow<List<Sample>>(emptyList())
   val followedSamples: StateFlow<List<Sample>> = _followedSamples
 
-  private val imageRepo = ImageStorageRepository(context)
+  private val imageRepo = ImageStorageRepository()
   private val _userAvatar = MutableStateFlow<Any?>(null)
   val userAvatar: StateFlow<Any?> = _userAvatar.asStateFlow()
 

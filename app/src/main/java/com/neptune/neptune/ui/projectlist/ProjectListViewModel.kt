@@ -5,8 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
 import com.neptune.neptune.model.project.ProjectItem
-import com.neptune.neptune.model.project.ProjectItemsRepository
-import com.neptune.neptune.model.project.ProjectItemsRepositoryProvider
+import com.neptune.neptune.model.project.TotalProjectItemsRepository
+import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,8 +20,8 @@ import kotlinx.coroutines.launch
  * @author Uri Jaquet
  */
 class ProjectListViewModel(
-    private val projectRepository: ProjectItemsRepository =
-        ProjectItemsRepositoryProvider.repository,
+    private val projectRepository: TotalProjectItemsRepository =
+        TotalProjectItemsRepositoryProvider.repository,
 ) : ViewModel() {
   private var _uiState = MutableStateFlow(ProjectListUiState(projects = emptyList()))
   val uiState: StateFlow<ProjectListUiState> = _uiState.asStateFlow()
@@ -117,6 +117,38 @@ class ProjectListViewModel(
   }
 
   /**
+   * Adds a project to the cloud and refreshes the project list.
+   *
+   * @param projectId The ID of the project to add to the cloud.
+   */
+  fun addProjectToCloud(projectId: String) {
+    viewModelScope.launch {
+      try {
+        projectRepository.addProjectToCloud(projectId)
+        refreshProjects()
+      } catch (e: Exception) {
+        Log.e("ProjectListViewModel", "Error adding project to cloud", e)
+      }
+    }
+  }
+
+  /**
+   * Removes a project from the cloud and refreshes the project list.
+   *
+   * @param projectId The ID of the project to remove from the cloud.
+   */
+  fun removeProjectFromCloud(projectId: String) {
+    viewModelScope.launch {
+      try {
+        projectRepository.removeProjectFromCloud(projectId)
+        refreshProjects()
+      } catch (e: Exception) {
+        Log.e("ProjectListViewModel", "Error removing project from cloud", e)
+      }
+    }
+  }
+
+  /**
    * Toggles the favorite status of a project by its ID and refreshes the project list. This has
    * been written with the help of LLMs.
    *
@@ -141,7 +173,7 @@ class ProjectListViewModel(
    * @param project The project to select.
    */
   fun selectProject(project: ProjectItem) {
-    _uiState.value = _uiState.value.copy(selectedProject = project.id)
+    _uiState.value = _uiState.value.copy(selectedProject = project.uid)
   }
 
   /** Gets the duration of a project in "MM:SS" format. */

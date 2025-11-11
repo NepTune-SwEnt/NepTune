@@ -25,7 +25,7 @@ class ProjectItemsRepositoryVarTest {
 
   @Test
   fun addProject_addsProjectSuccessfully() = runBlocking {
-    val project = ProjectItem(id = "1", name = "Project 1")
+    val project = ProjectItem(uid = "1", name = "Project 1")
     repository.addProject(project)
     val projects = repository.getAllProjects()
     assertTrue(projects.contains(project))
@@ -33,16 +33,16 @@ class ProjectItemsRepositoryVarTest {
 
   @Test(expected = Exception::class)
   fun addProject_throwsExceptionWhenIdAlreadyExists() = runBlocking {
-    val project = ProjectItem(id = "1", name = "Project 1")
+    val project = ProjectItem(uid = "1", name = "Project 1")
     repository.addProject(project)
     repository.addProject(project)
   }
 
   @Test
   fun editProject_updatesProjectSuccessfully() = runBlocking {
-    val project = ProjectItem(id = "1", name = "Project 1")
+    val project = ProjectItem(uid = "1", name = "Project 1")
     repository.addProject(project)
-    val updatedProject = ProjectItem(id = "1", name = "Updated Project 1")
+    val updatedProject = ProjectItem(uid = "1", name = "Updated Project 1")
     repository.editProject("1", updatedProject)
     val retrievedProject = repository.getProject("1")
     assertEquals("Updated Project 1", retrievedProject.name)
@@ -50,12 +50,12 @@ class ProjectItemsRepositoryVarTest {
 
   @Test(expected = Exception::class)
   fun editProject_throwsExceptionWhenProjectNotFound() = runBlocking {
-    repository.editProject("1", ProjectItem(id = "1", name = "Nonexistent Project"))
+    repository.editProject("1", ProjectItem(uid = "1", name = "Nonexistent Project"))
   }
 
   @Test
   fun deleteProject_removesProjectSuccessfully() = runBlocking {
-    val project = ProjectItem(id = "1", name = "Project 1")
+    val project = ProjectItem(uid = "1", name = "Project 1")
     repository.addProject(project)
     repository.deleteProject("1")
     val projects = repository.getAllProjects()
@@ -69,7 +69,7 @@ class ProjectItemsRepositoryVarTest {
 
   @Test
   fun getProject_returnsCorrectProject() = runBlocking {
-    val project = ProjectItem(id = "1", name = "Project 1")
+    val project = ProjectItem(uid = "1", name = "Project 1")
     repository.addProject(project)
     val retrievedProject = repository.getProject("1")
     assertEquals(project, retrievedProject)
@@ -82,8 +82,8 @@ class ProjectItemsRepositoryVarTest {
 
   @Test
   fun getAllProjects_returnsAllAddedProjects() = runBlocking {
-    val project1 = ProjectItem(id = "1", name = "Project 1")
-    val project2 = ProjectItem(id = "2", name = "Project 2")
+    val project1 = ProjectItem(uid = "1", name = "Project 1")
+    val project2 = ProjectItem(uid = "2", name = "Project 2")
     repository.addProject(project1)
     repository.addProject(project2)
     val projects = repository.getAllProjects()
