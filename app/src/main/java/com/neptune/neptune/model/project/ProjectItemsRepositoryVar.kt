@@ -1,14 +1,14 @@
 package com.neptune.neptune.model.project
 
 import android.util.Log
+import java.util.UUID
 
 class ProjectItemsRepositoryVar : ProjectItemsRepository {
 
   private val projects = mutableListOf<ProjectItem>()
-  private var idCounter = 0
 
   override fun getNewId(): String {
-    return (idCounter++).toString()
+    return UUID.randomUUID().toString()
   }
 
   override suspend fun getAllProjects(): List<ProjectItem> {
