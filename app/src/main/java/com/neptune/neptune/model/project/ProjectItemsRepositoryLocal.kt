@@ -44,38 +44,38 @@ class ProjectItemsRepositoryLocal(context: Context) : ProjectItemsRepository {
   }
 
   override suspend fun getAllProjects(): List<ProjectItem> =
-      mutex.withLock { readProjects().values.toList() }
+    mutex.withLock { readProjects().values.toList() }
 
   override suspend fun getProject(projectID: String): ProjectItem =
-      mutex.withLock {
-        readProjects()[projectID]
-            ?: throw NoSuchElementException("Project with ID $projectID not found")
-      }
+    mutex.withLock {
+      readProjects()[projectID]
+        ?: throw NoSuchElementException("Project with ID $projectID not found")
+    }
 
   override suspend fun addProject(project: ProjectItem) =
-      mutex.withLock {
-        val projects = readProjects()
-        projects[project.uid] = project
-        writeProjects(projects)
-      }
+    mutex.withLock {
+      val projects = readProjects()
+      projects[project.uid] = project
+      writeProjects(projects)
+    }
 
   override suspend fun editProject(projectID: String, newValue: ProjectItem) =
-      mutex.withLock {
-        val projects = readProjects()
-        if (projects.containsKey(projectID)) {
-          projects[projectID] = newValue
-          writeProjects(projects)
-        } else {
-          throw NoSuchElementException("Project with ID $projectID not found")
-        }
+    mutex.withLock {
+      val projects = readProjects()
+      if (projects.containsKey(projectID)) {
+        projects[projectID] = newValue
+        writeProjects(projects)
+      } else {
+        throw NoSuchElementException("Project with ID $projectID not found")
       }
+    }
 
   override suspend fun deleteProject(projectID: String) =
-      mutex.withLock {
-        val projects = readProjects()
-        if (projects.remove(projectID) == null) {
-          throw NoSuchElementException("Project with ID $projectID not found")
-        }
-        writeProjects(projects)
+    mutex.withLock {
+      val projects = readProjects()
+      if (projects.remove(projectID) == null) {
+        throw NoSuchElementException("Project with ID $projectID not found")
       }
+      writeProjects(projects)
+    }
 }
