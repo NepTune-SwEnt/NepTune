@@ -126,7 +126,8 @@ fun ScrollableColumnOfSamples(
         val width = 300.dp
         items(samples) { sample ->
           // change height and width if necessary
-          val testTags = SearchScreenTestTagsPerSampleCard(idInColumn = sample.id)
+          val testTags =
+              SearchScreenTestTagsPerSampleCard(idInColumn = sample.id.toInt()) // TODO CHANGE THIS
           SampleCard(
               sample = sample,
               width = width,

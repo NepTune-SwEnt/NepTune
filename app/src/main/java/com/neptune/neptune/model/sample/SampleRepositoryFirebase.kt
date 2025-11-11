@@ -2,6 +2,7 @@ package com.neptune.neptune.model.sample
 
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlin.String
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -26,6 +27,12 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
     return snap.documents.mapNotNull { it.toSampleOrNull() }
   }
 
+  override suspend fun getSample(sampleId: String): Sample {
+    val snap = samples.document(sampleId).get().await()
+    return snap.toSampleOrNull()
+        ?: throw Exception("SampleRepositoryFirebase: Sample with id=$sampleId doesn't exist")
+  }
+
   /** Observe samples in real time */
   override fun observeSamples(): Flow<List<Sample>> = callbackFlow {
     val reg =
@@ -40,8 +47,8 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
   }
 
   /** Toggle like (increment or decrement count) */
-  override suspend fun toggleLike(sampleId: Int, isLiked: Boolean) {
-    val sampleDoc = samples.document(sampleId.toString())
+  override suspend fun toggleLike(sampleId: String, isLiked: Boolean) {
+    val sampleDoc = samples.document(sampleId)
 
     val snapshot = sampleDoc.get().await()
 
@@ -60,13 +67,13 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
 
   /** Adds a new sample (for testing). */
   override suspend fun addSample(sample: Sample) {
-    samples.document(sample.id.toString()).set(sample.toMap()).await()
+    samples.document(sample.id).set(sample.toMap()).await()
   }
 
   /** Converts a Firestore [DocumentSnapshot] to a [Sample] instance, or null if missing. */
   private fun DocumentSnapshot.toSampleOrNull(): Sample? {
     if (!exists()) return null
-    val id = (get("id") as? Number)?.toInt() ?: return null
+    val id = getString("id") ?: return null
     val tags = (get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
     val ownerId = getString("ownerId") ?: return null
     return Sample(
@@ -79,7 +86,12 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
         comments = (get("comments") as? Number)?.toInt() ?: 0,
         downloads = (get("downloads") as? Number)?.toInt() ?: 0,
         uriString = getString("uriString").orEmpty(),
-        ownerId = ownerId)
+        ownerId = ownerId,
+        isPublic = (get("isPublic") as? Boolean) ?: false,
+        usersLike = (get("usersLike") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+        storageZipPath = getString("storageZipPath").orEmpty(),
+        storageImagePath = getString("storageImagePath").orEmpty(),
+        storagePreviewSamplePath = getString("storagePreviewSamplePath").orEmpty())
   }
 
   private fun Sample.toMap(): Map<String, Any> =
@@ -93,5 +105,10 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
           "comments" to comments,
           "downloads" to downloads,
           "uriString" to uriString,
-          "ownerId" to ownerId)
+          "ownerId" to ownerId,
+          "isPublic" to isPublic,
+          "usersLike" to usersLike,
+          "storageZipPath" to storageZipPath,
+          "storageImagePath" to storageImagePath,
+          "storagePreviewSamplePath" to storagePreviewSamplePath)
 }

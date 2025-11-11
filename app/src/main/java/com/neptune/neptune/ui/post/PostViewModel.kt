@@ -106,12 +106,13 @@ class PostViewModel() : ViewModel() {
 data class PostUiState(
     val sample: Sample =
         Sample(
-            id = 0,
+            id = "0",
             name = "",
             description = "",
             durationSeconds = 0,
             tags = emptyList(),
             likes = 0,
+            usersLike = emptyList(),
             comments = 0,
             downloads = 0,
             uriString = ""),

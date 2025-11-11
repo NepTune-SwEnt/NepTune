@@ -53,12 +53,13 @@ class SampleRepositoryFirebaseTest {
   fun addAndFetchSampleWorks() = runBlocking {
     val sample =
         Sample(
-            id = 1,
+            id = "1",
             name = "Test Sample",
             description = "Testing Firestore add",
             durationSeconds = 30,
             tags = listOf("#easy", "#sample"),
             likes = 10,
+            usersLike = emptyList(),
             comments = 1,
             downloads = 2)
 
@@ -73,29 +74,30 @@ class SampleRepositoryFirebaseTest {
     // initial sample with 5 likes
     val sample =
         Sample(
-            id = 2,
+            id = "2",
             name = "Test Sample",
             description = "Test Sample",
             durationSeconds = 10,
             tags = listOf("#easy"),
             likes = 5,
+            usersLike = emptyList(),
             comments = 0,
             downloads = 0)
     repository.addSample(sample)
 
     // Increase to 6
-    repository.toggleLike(2, true)
-    var fetched = repository.getSamples().first { it.id == 2 }
+    repository.toggleLike("2", true)
+    var fetched = repository.getSamples().first { it.id == "2" }
     assertEquals(6, fetched.likes)
 
     // Unlike it (-1) so 5
-    repository.toggleLike(2, false)
-    fetched = repository.getSamples().first { it.id == 2 }
+    repository.toggleLike("2", false)
+    fetched = repository.getSamples().first { it.id == "2" }
     assertEquals(5, fetched.likes)
 
     // Like again -> go to 6
-    repository.toggleLike(2, true)
-    fetched = repository.getSamples().first { it.id == 2 }
+    repository.toggleLike("2", true)
+    fetched = repository.getSamples().first { it.id == "2" }
     assertEquals(6, fetched.likes)
   }
 
