@@ -40,15 +40,17 @@ class TotalProjectItemsRepositoryComposeTest {
   }
 
   @Test
-  fun getNewIdLocalReturnsIdFromLocalRepo() {
-    Truth.assertThat(totalRepository.getNewIdLocal()).isEqualTo("0")
-    Truth.assertThat(totalRepository.getNewIdLocal()).isEqualTo("1")
-  }
-
-  @Test
-  fun getNewIdCloudReturnsIdFromCloudRepo() {
-    Truth.assertThat(totalRepository.getNewIdCloud()).isEqualTo("0")
-    Truth.assertThat(totalRepository.getNewIdCloud()).isEqualTo("1")
+  fun getNewIdReturnDifferent() {
+    val id1 = totalRepository.getNewIdLocal()
+    val id2 = totalRepository.getNewIdLocal()
+    Truth.assertThat(id1).isNotEqualTo(id2)
+    val id3 = totalRepository.getNewIdCloud()
+    val id4 = totalRepository.getNewIdCloud()
+    Truth.assertThat(id3).isNotEqualTo(id4)
+    Truth.assertThat(id3).isNotEqualTo(id1)
+    Truth.assertThat(id4).isNotEqualTo(id2)
+    Truth.assertThat(id3).isNotEqualTo(id2)
+    Truth.assertThat(id4).isNotEqualTo(id1)
   }
 
   @Test
