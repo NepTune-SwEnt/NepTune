@@ -77,6 +77,8 @@ class FakeProfileRepository(
     state.value = cur.copy(bio = newBio)
   }
 
+  override suspend fun updateAvatarUrl(newUrl: String) {}
+
   override suspend fun uploadAvatar(localUri: Uri): String {
     val cur = state.value ?: return ""
     val url = "https://example.invalid/avatars/${cur.uid}.jpg"

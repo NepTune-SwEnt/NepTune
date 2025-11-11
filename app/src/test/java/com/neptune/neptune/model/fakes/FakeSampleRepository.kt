@@ -18,6 +18,10 @@ class FakeSampleRepository(initialSamples: List<Sample> = emptyList()) : SampleR
 
   override suspend fun getSamples(): List<Sample> = samples.toList()
 
+  override suspend fun getSample(sampleId: String): Sample {
+    return getSamples().first()
+  }
+
   override fun observeSamples(): Flow<List<Sample>> = _samples.asStateFlow()
 
   override suspend fun addSample(sample: Sample) {
@@ -25,7 +29,7 @@ class FakeSampleRepository(initialSamples: List<Sample> = emptyList()) : SampleR
     _samples.value = samples.toList()
   }
 
-  override suspend fun toggleLike(sampleId: Int, isLiked: Boolean) {
+  override suspend fun toggleLike(sampleId: String, isLiked: Boolean) {
     val index = samples.indexOfFirst { it.id == sampleId }
     if (index == -1) return
     val sample = samples[index]
