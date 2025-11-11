@@ -12,32 +12,32 @@ import kotlinx.coroutines.tasks.await
 const val PROJECT_ITEMS_COLLECTION_PATH = "projects"
 
 data class SampleDocument(
-  val uid: String,
-  val name: String,
-  val description: String,
-  @get:PropertyName("isStoredInCloud") val isStoredInCloud: Boolean,
-  @get:PropertyName("isFavorite") val isFavorite: Boolean,
-  val tags: List<String>,
-  val audioPreviewUri: String?,
-  val projectFileUri: String?,
-  val lastUpdated: Timestamp,
-  val ownerId: String?,
-  val collaborators: List<String>
+    val uid: String,
+    val name: String,
+    val description: String,
+    @get:PropertyName("isStoredInCloud") val isStoredInCloud: Boolean,
+    @get:PropertyName("isFavorite") val isFavorite: Boolean,
+    val tags: List<String>,
+    val audioPreviewUri: String?,
+    val projectFileUri: String?,
+    val lastUpdated: Timestamp,
+    val ownerId: String?,
+    val collaborators: List<String>
 )
 
 fun ProjectItem.toSample(): SampleDocument {
   return SampleDocument(
-    uid = uid,
-    name = name,
-    description = description,
-    isStoredInCloud = isStoredInCloud,
-    isFavorite = isFavorite,
-    tags = tags,
-    audioPreviewUri = audioPreviewUri,
-    projectFileUri = projectFileUri,
-    lastUpdated = lastUpdated,
-    ownerId = ownerId,
-    collaborators = collaborators,
+      uid = uid,
+      name = name,
+      description = description,
+      isStoredInCloud = isStoredInCloud,
+      isFavorite = isFavorite,
+      tags = tags,
+      audioPreviewUri = audioPreviewUri,
+      projectFileUri = projectFileUri,
+      lastUpdated = lastUpdated,
+      ownerId = ownerId,
+      collaborators = collaborators,
   )
 }
 
@@ -69,7 +69,10 @@ class ProjectItemsRepositoryFirestore(private val db: FirebaseFirestore) : Proje
   }
 
   override suspend fun addProject(project: ProjectItem) {
-    db.collection(PROJECT_ITEMS_COLLECTION_PATH).document(project.uid).set(project.toSample()).await()
+    db.collection(PROJECT_ITEMS_COLLECTION_PATH)
+        .document(project.uid)
+        .set(project.toSample())
+        .await()
   }
 
   override suspend fun editProject(projectID: String, newValue: ProjectItem) {
