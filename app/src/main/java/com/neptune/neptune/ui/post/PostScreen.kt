@@ -188,7 +188,8 @@ fun PostScreen(
                           .clickable(
                               onClick = {
                                 mediaPlayer.togglePlay(
-                                    mediaPlayer.getUriFromSampleId(uiState.sample.id))
+                                    mediaPlayer.getUriFromSampleId(
+                                        uiState.sample.id.toInt())) // TODO CHANGE THIS
                               })
                           .aspectRatio(1.6f)
                           .border(1.dp, NepTuneTheme.colors.onBackground, RoundedCornerShape(8.dp))
@@ -443,12 +444,13 @@ fun ProjectListScreenPreview() {
       previewViewModel.apply {
         loadSample(
             Sample(
-                id = 0,
+                id = "0",
                 name = "Grilled Banana",
                 description = "Be careful not to grill your bananas",
                 durationSeconds = 21,
                 tags = listOf("relax", "easy"),
                 likes = 123,
+                usersLike = emptyList(),
                 comments = 45,
                 downloads = 67,
                 uriString = "mock_uri"))

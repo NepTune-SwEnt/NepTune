@@ -20,6 +20,14 @@ interface SampleRepository {
   suspend fun getSamples(): List<Sample>
 
   /**
+   * Returns the corresponding sample from the Firestore database.
+   *
+   * @param sampleId the ID of the sample
+   * @return the sample
+   */
+  suspend fun getSample(sampleId: String): Sample
+
+  /**
    * Observes real-time updates for all samples in Firestore.
    *
    * @return a flow of lists of sample as they change
@@ -39,5 +47,5 @@ interface SampleRepository {
    * @param sampleId the ID of the sample
    * @param isLiked true to increment likes, false to decrement
    */
-  suspend fun toggleLike(sampleId: Int, isLiked: Boolean)
+  suspend fun toggleLike(sampleId: String, isLiked: Boolean)
 }
