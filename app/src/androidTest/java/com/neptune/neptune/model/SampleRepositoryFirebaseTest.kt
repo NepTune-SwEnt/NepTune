@@ -1,9 +1,13 @@
 package com.neptune.neptune.model
 
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepositoryFirebase
 import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertFalse
+import junit.framework.TestCase.assertTrue
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import org.junit.After
@@ -16,7 +20,8 @@ import org.junit.Test
  *
  * REQUIREMENTS:
  * - Firestore emulator on port 8080
- * - Start them: firebase emulators:start --only firestore
+ * - Auth emulator on port 9099
+ * - Start them: firebase emulators:start --only firestore,auth
  *
  * On Android emulator, host is 10.0.2.2
  *
@@ -25,8 +30,10 @@ import org.junit.Test
 class SampleRepositoryFirebaseTest {
   private val host = "10.0.2.2"
   private val firestorePort = 8080
+  private val authPort = 9099
   private lateinit var repository: SampleRepositoryFirebase
   private lateinit var db: FirebaseFirestore
+  private lateinit var auth: FirebaseAuth
 
   @Before
   fun setup() {
@@ -39,6 +46,16 @@ class SampleRepositoryFirebaseTest {
       }
       repository = SampleRepositoryFirebase(db)
 
+      auth = FirebaseAuth.getInstance()
+      try {
+        auth.useEmulator(host, authPort)
+      } catch (e: IllegalStateException) {
+        "auth emulator not running?"
+      }
+      // You need to be sign in to like
+      if (auth.currentUser == null) {
+        auth.signInAnonymously().await()
+      }
       // Clean-up
       cleanUp()
     }
@@ -50,7 +67,7 @@ class SampleRepositoryFirebaseTest {
   }
 
   @Test
-  fun addAndFetchSampleWorks() = runBlocking {
+  fun addAndFetchSample() = runBlocking {
     val sample =
         Sample(
             id = 1,
@@ -69,7 +86,7 @@ class SampleRepositoryFirebaseTest {
   }
 
   @Test
-  fun toggleLikeIncrementsAndDecrementsProperly() = runBlocking {
+  fun toggleLikeIncrementsAndDecrements() = runBlocking {
     // initial sample with 5 likes
     val sample =
         Sample(
@@ -82,6 +99,9 @@ class SampleRepositoryFirebaseTest {
             comments = 0,
             downloads = 0)
     repository.addSample(sample)
+
+    // Check we are logged in
+    assertTrue(auth.currentUser != null)
 
     // Increase to 6
     repository.toggleLike(2, true)
@@ -97,6 +117,56 @@ class SampleRepositoryFirebaseTest {
     repository.toggleLike(2, true)
     fetched = repository.getSamples().first { it.id == 2 }
     assertEquals(6, fetched.likes)
+  }
+
+  @Test
+  fun addAndObserveComments() = runBlocking {
+    val sample =
+        Sample(
+            id = 3,
+            name = "Comment Test",
+            description = "Testing comments",
+            durationSeconds = 20,
+            tags = listOf("#test"),
+            likes = 0,
+            comments = 0,
+            downloads = 0)
+    repository.addSample(sample)
+
+    // Add a comment
+    repository.addComments(3, "Alice", "Hello world!")
+
+    // Observe the comments in real time
+    val commentsFlow = repository.observeComments(3)
+    val firstEmission = commentsFlow.first()
+
+    // Adding a comment should increment by 1
+    assertEquals(1, firstEmission.size)
+    assertEquals("Alice", firstEmission.first().author)
+    assertEquals("Hello world!", firstEmission.first().text)
+  }
+
+  @Test
+  fun hasUserLikedReflectsLikeStatus() = runBlocking {
+    val sample =
+        Sample(
+            id = 4,
+            name = "Like status",
+            description = "Description like status",
+            durationSeconds = 15,
+            tags = listOf("#check"),
+            likes = 0,
+            comments = 0,
+            downloads = 0)
+    repository.addSample(sample)
+
+    val initialLiked = repository.hasUserLiked(4)
+    assertFalse(initialLiked)
+
+    repository.toggleLike(4, true)
+
+    val likedAfter = repository.hasUserLiked(4)
+    assertTrue(likedAfter)
   }
 
   private fun cleanUp() {
