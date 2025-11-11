@@ -12,7 +12,6 @@ import kotlinx.coroutines.tasks.await
 const val PROJECT_ITEMS_COLLECTION_PATH = "projects"
 
 data class SampleDocument(
-    val uid: String,
     val name: String,
     val description: String,
     @get:PropertyName("isStoredInCloud") val isStoredInCloud: Boolean,
@@ -27,7 +26,6 @@ data class SampleDocument(
 
 fun ProjectItem.toSample(): SampleDocument {
   return SampleDocument(
-      uid = uid,
       name = name,
       description = description,
       isStoredInCloud = isStoredInCloud,
