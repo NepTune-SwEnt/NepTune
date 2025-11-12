@@ -132,7 +132,7 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
-            firebase emulators:exec --only firestore,auth --project demo-test "./gradlew connectedCheck --parallel --build-cache"
+            firebase emulators:exec firestore,auth --project demo-test "./gradlew connectedCheck --parallel --build-cache"
 
       # This step generates the coverage report which will be uploaded to sonar
       - name: Generate Coverage Report
