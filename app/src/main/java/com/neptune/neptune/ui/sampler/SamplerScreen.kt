@@ -1,7 +1,7 @@
 package com.neptune.neptune.ui.sampler
 
-import android.util.Log
 import android.graphics.Paint
+import android.util.Log
 import androidx.compose.animation.core.*
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
@@ -50,12 +51,11 @@ import java.nio.charset.StandardCharsets
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import androidx.compose.ui.graphics.nativeCanvas
-import kotlin.math.max
 
 object SamplerTestTags {
   const val SCREEN_CONTAINER = "samplerScreenContainer"
@@ -398,17 +398,19 @@ fun WaveformDisplay(
 
         // Draw timeline ticks and second labels at the top
         val totalSeconds = (audioDurationMillis / 1000L).coerceAtLeast(1L).toInt()
-        val pixelsPerSecond = if (totalSeconds > 0) contentWidth / totalSeconds.toFloat() else contentWidth
+        val pixelsPerSecond =
+            if (totalSeconds > 0) contentWidth / totalSeconds.toFloat() else contentWidth
         // lift the timeline slightly above its previous position
         val tickTop = (-5).dp.toPx()
         val tickBottom = 5.dp.toPx()
 
-        val textPaint = Paint().apply {
-          isAntiAlias = true
-          color = timelineLabelColorInt
-          textSize = timelineTextSizePx
-          textAlign = Paint.Align.LEFT // we'll position explicitly
-        }
+        val textPaint =
+            Paint().apply {
+              isAntiAlias = true
+              color = timelineLabelColorInt
+              textSize = timelineTextSizePx
+              textAlign = Paint.Align.LEFT // we'll position explicitly
+            }
 
         // Calculate label step to avoid overlapping labels horizontally
         val minLabelSpacingPx = 24.dp.toPx()
@@ -434,7 +436,8 @@ fun WaveformDisplay(
             // Preferred position: to the right of the tick
             var labelX = xPos + labelHorizontalPadding
 
-            // If it would overflow past the right content bound, draw to the left of the tick instead
+            // If it would overflow past the right content bound, draw to the left of the tick
+            // instead
             val rightBound = width - paddingPx
             if (labelX + labelWidth > rightBound) {
               // position so label's right edge sits left of the tick
@@ -444,7 +447,8 @@ fun WaveformDisplay(
               textPaint.textAlign = Paint.Align.LEFT
             }
 
-            // Compute baseline relative to the tick bottom so vertical offset actually moves the labels.
+            // Compute baseline relative to the tick bottom so vertical offset actually moves the
+            // labels.
             // When offset is 0 the baseline sits just below the tickBottom + text height.
             val labelVerticalOffset = 12.dp.toPx() // positive => move label *up*
             val baselineFromTickBottom = tickBottom + timelineTextSizePx
@@ -453,8 +457,8 @@ fun WaveformDisplay(
             val labelBaseline = max(minLabelBaseline, baselineFromTickBottom - labelVerticalOffset)
 
             drawContext.canvas.nativeCanvas.drawText(label, labelX, labelBaseline, textPaint)
-           }
-         }
+          }
+        }
 
         drawLine(
             color = Color.Gray.copy(alpha = 0.5f),
@@ -1282,7 +1286,13 @@ fun TimeDisplay(playbackPosition: Float, audioDurationMillis: Int, modifier: Mod
   val totalMilliseconds = (audioDurationMillis % 1000) / 10
   val elapsedMilliseconds = (currentPositionMillis % 1000) / 10
 
-  val timeText = String.format("%02d.%02d / %02d.%02d s", elapsedSeconds, elapsedMilliseconds, totalSeconds, totalMilliseconds)
+  val timeText =
+      String.format(
+          "%02d.%02d / %02d.%02d s",
+          elapsedSeconds,
+          elapsedMilliseconds,
+          totalSeconds,
+          totalMilliseconds)
 
   Text(
       text = timeText,
