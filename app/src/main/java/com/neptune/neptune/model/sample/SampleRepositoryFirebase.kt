@@ -82,7 +82,8 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
         ownerId = ownerId,
         storageZipPath = getString("storageZipPath").orEmpty(),
         storageImagePath = getString("storageImagePath").orEmpty(),
-        storagePreviewSamplePath = getString("storagePreviewSamplePath").orEmpty(),)
+        storagePreviewSamplePath = getString("storagePreviewSamplePath").orEmpty(),
+    )
   }
 
   private fun Sample.toMap(): Map<String, Any> =
@@ -99,5 +100,6 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
           "ownerId" to ownerId,
           "storageZipPath" to storageZipPath,
           "storageImagePath" to storageImagePath,
-          "storagePreviewSamplePath" to storagePreviewSamplePath,)
+          "storagePreviewSamplePath" to storagePreviewSamplePath,
+      )
 }
