@@ -1,3 +1,12 @@
+/**
+ * This file provides the Firestore implementation of the [ProjectItemsRepository]. It handles all
+ * the database operations related to project items, including creating, reading, updating, and
+ * deleting projects from the Firestore database.
+ *
+ * This file was written with the help of LLMs.
+ *
+ * @author Uri Jaquet
+ */
 package com.neptune.neptune.model.project
 
 import android.util.Log

@@ -29,6 +29,8 @@ import org.junit.runner.RunWith
  *
  * On Android emulator, host is 10.0.2.2
  *
+ * Written with the help of LLMs
+ *
  * @author Arianna Baur
  * @author Uri Jaquet
  */
