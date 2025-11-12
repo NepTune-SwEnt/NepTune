@@ -24,6 +24,7 @@ import {setGlobalOptions} from "firebase-functions";
 // this will be the maximum concurrent request count.
 setGlobalOptions({maxInstances: 10});
 
+export { generateSamplePreview } from "./generateSamplePreview";
 // export const helloWorld = onRequest((request, response) => {
 //   logger.info("Hello logs!", {structuredData: true});
 //   response.send("Hello from Firebase!");
