@@ -43,7 +43,7 @@ class StorageService(
       deleteFileByUrl(it.storagePreviewSamplePath)
     }
 
-    val newStorageZipPath = "samples/${sampleId}.zip}"
+    val newStorageZipPath = "samples/${sampleId}.zip"
     val newStorageImagePath = "samples/${sampleId}/${getFileNameFromUri(localImageUri)}"
 
     coroutineScope {
