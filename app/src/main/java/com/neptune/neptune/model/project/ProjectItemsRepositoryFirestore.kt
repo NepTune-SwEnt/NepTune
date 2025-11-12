@@ -16,6 +16,7 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.PropertyName
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.tasks.await
 
 const val PROJECT_ITEMS_COLLECTION_PATH = "projects"
@@ -81,7 +82,10 @@ class ProjectItemsRepositoryFirestore(private val db: FirebaseFirestore) : Proje
   }
 
   override suspend fun editProject(projectID: String, newValue: ProjectItem) {
-    db.collection(PROJECT_ITEMS_COLLECTION_PATH).document(projectID).set(newValue).await()
+    db.collection(PROJECT_ITEMS_COLLECTION_PATH)
+        .document(projectID)
+        .set(newValue.toSample(), SetOptions.merge())
+        .await()
   }
 
   override suspend fun deleteProject(projectID: String) {
