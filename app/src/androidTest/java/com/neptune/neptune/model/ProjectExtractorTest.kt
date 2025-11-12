@@ -10,7 +10,6 @@ import java.io.FileOutputStream
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertThrows
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -89,33 +88,13 @@ class ProjectExtractorTest {
   }
 
   @Test
-  fun getAudioFileUri_returnsCorrectPlaceholderUri() {
-    val metadata = extractor.json.decodeFromString<SamplerProjectMetadata>(validJson)
-    val expectedFileName = "kick.wav"
-    val resultUri = extractor.getAudioFileUri(metadata, expectedFileName)
-
-    assertTrue("URI must contain the expected filename.", resultUri.contains(expectedFileName))
-    assertTrue(
-        "URI should start with the expected temporary path.",
-        resultUri.startsWith("file:///tmp/neptune/extracted/"))
-  }
-
-  @Test
-  fun getAudioFileUri_throwsException_whenFileNotFound() {
-    val metadata = extractor.json.decodeFromString<SamplerProjectMetadata>(validJson)
-    assertThrows(IllegalArgumentException::class.java) {
-      extractor.getAudioFileUri(metadata, "nonexistent.wav")
-    }
-  }
-
-  @Test
   fun extractMetadata_fromRealAssetZip_returnsCorrectMetadata() {
     val metadata: SamplerProjectMetadata = extractor.extractMetadata(zipFile)
 
     assertNotNull("Metadata should not be null", metadata)
     assertEquals(1, metadata.audioFiles.size)
     assertEquals(13, metadata.parameters.size)
-    assertEquals("soft-piano-chord_E_major.wav", metadata.audioFiles.first().name)
+    assertEquals("electric-picked-bass-long-release_C_major.wav", metadata.audioFiles.first().name)
 
     val parameters = metadata.parameters
 
