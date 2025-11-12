@@ -111,15 +111,7 @@ class FileImporterImpl(
                 ?: throw UnsupportedAudioFormat("Only $AudioFormats.supportedLabel are supported. Got ext=$ext")
 
         val rawBase = file.nameWithoutExtension
-        val base =
-            rawBase
-                // remove all whitespace entirely
-                .replace(Regex("\\s+"), "")
-                // replace other invalid chars with '_' and collapse consecutive underscores
-                .replace(Regex("[^A-Za-z0-9._-]+"), "_")
-                .replace(Regex("_+"), "_")
-                .trim('_', '.', ' ')
-                .ifEmpty { defaultBaseName }
+        val base = sanitizeBase(rawBase, removeWhitespace = true)
 
         val dir = paths.audioWorkspace()
         val target = uniqueFile(dir, "${base}.${ext}")
@@ -198,14 +190,7 @@ class FileImporterImpl(
 
     val rawBase =
         (display ?: defaultBaseName).removeSuffix(if (ext.isNotEmpty()) ".${'$'}ext" else "")
-    val base =
-        rawBase
-            .replace(Regex("\\s+"), "_")
-            // replace invalid chars with '_' and collapse consecutive underscores
-            .replace(Regex("[^A-Za-z0-9._-]+"), "_")
-            .replace(Regex("_+"), "_")
-            .trim('_', '.', ' ')
-            .ifEmpty { defaultBaseName }
+    val base = sanitizeBase(rawBase)
 
     val normalizedMime: String? =
         when {
@@ -222,6 +207,17 @@ class FileImporterImpl(
     val finalExt = AudioFormats.extFromMime(normalizedMime) ?: ext.ifEmpty { AudioFormats.allowedExts.first() }
 
     return ParsedFromUri(normalizedMime!!, base, finalExt)
+  }
+
+  // Normalize a base filename: optionally remove whitespace (for recorded files),
+  // replace invalid chars with '_', collapse multiple '_' and trim edge chars.
+  private fun sanitizeBase(raw: String, removeWhitespace: Boolean = false): String {
+    val step1 = if (removeWhitespace) raw.replace(Regex("\\s+"), "") else raw.replace(Regex("\\s+"), "_")
+    return step1
+        .replace(Regex("[^A-Za-z0-9._-]+"), "_")
+        .replace(Regex("_+"), "_")
+        .trim('_', '.', ' ')
+        .ifEmpty { defaultBaseName }
   }
 
   // If file exists, appends -2, -3 etc. to base name to make it unique (no spaces)
