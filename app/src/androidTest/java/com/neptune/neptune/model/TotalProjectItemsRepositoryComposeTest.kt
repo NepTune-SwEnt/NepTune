@@ -1,7 +1,6 @@
 package com.neptune.neptune.model
 
 import com.google.common.truth.Truth
-import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -13,7 +12,9 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
@@ -32,11 +33,17 @@ class TotalProjectItemsRepositoryComposeTest {
     localRepo = ProjectItemsRepositoryVar()
     cloudRepo = ProjectItemsRepositoryVar()
     totalRepository = TotalProjectItemsRepositoryCompose(localRepo, cloudRepo)
-    mockkStatic(Firebase::class)
+    mockkStatic(FirebaseAuth::class)
     val firebaseAuth = mockk<FirebaseAuth>()
     val firebaseUser = mockk<FirebaseUser>()
     every { firebaseAuth.currentUser } returns firebaseUser
     every { firebaseUser.uid } returns "test_user_id"
+    every { FirebaseAuth.getInstance() } returns firebaseAuth
+  }
+
+  @After
+  fun tearDown() {
+    unmockkStatic(FirebaseAuth::class)
   }
 
   @Test
@@ -152,7 +159,7 @@ class TotalProjectItemsRepositoryComposeTest {
     val project = projects.find { it.uid == "new_cloud_id" }
     Truth.assertThat(project).isNotNull()
     Truth.assertThat(project?.isStoredInCloud).isTrue()
-    Truth.assertThat(project?.ownerId).isEqualTo(null)
+    Truth.assertThat(project?.ownerId).isEqualTo("test_user_id")
   }
 
   @Test

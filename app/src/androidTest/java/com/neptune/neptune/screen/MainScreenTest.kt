@@ -15,6 +15,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextInput
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.FakeProfileRepository
@@ -146,5 +147,37 @@ class MainScreenTest {
         .onFirst()
         .assertHasClickAction()
         .performClick()
+  }
+
+  /** Test that a comment can be added on a sample */
+  @Test
+  fun canAddCommentToSample() {
+    // Scroll to a Sample card
+    composeTestRule
+        .onNodeWithTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)
+        .performScrollToNode(hasTestTag(MainScreenTestTags.SAMPLE_CARD))
+
+    // Click on comment icon
+    composeTestRule
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_COMMENTS)
+        .onFirst()
+        .assertHasClickAction()
+        .performClick()
+
+    composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_SECTION).assertIsDisplayed()
+
+    // Type a comment
+    composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_TEXT_FIELD).performTextInput("Banana")
+
+    // Send the comment
+    composeTestRule
+        .onNodeWithTag(MainScreenTestTags.COMMENT_POST_BUTTON)
+        .assertHasClickAction()
+        .performClick()
+
+    // Verify it appears
+    composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_LIST).assertIsDisplayed()
+
+    composeTestRule.onNodeWithText("Banana").assertIsDisplayed()
   }
 }

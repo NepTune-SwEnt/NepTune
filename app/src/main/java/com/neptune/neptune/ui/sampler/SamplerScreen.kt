@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.sampler
 
+import android.util.Log
 import androidx.compose.animation.core.*
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -38,6 +39,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.ui.sampler.SamplerTestTags.CURVE_EDITOR_SCROLL_CONTAINER
 import com.neptune.neptune.ui.sampler.SamplerTestTags.FADER_60HZ_TAG
 import com.neptune.neptune.ui.theme.NepTuneTheme
@@ -48,6 +50,8 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 object SamplerTestTags {
   const val SCREEN_CONTAINER = "samplerScreenContainer"
@@ -77,6 +81,8 @@ object SamplerTestTags {
   const val KNOB_COMP_DECAY = "knobCompDecay"
   const val SECTION_ADSR = "sectionAdsrControls"
   const val SECTION_REVERB = "sectionReverbControls"
+
+  const val TIME_DISPLAY = "timeDisplay"
   const val EQ_FADER_BOX_INPUT = "eqFaderBoxInput"
   const val FADER_60HZ_TAG = "fader60Hz"
   const val CURVE_EDITOR_SCROLL_CONTAINER = "curveEditorScrollContainer"
@@ -115,7 +121,6 @@ fun SamplerScreen(
     zipFilePath: String?,
 ) {
   val uiState by viewModel.uiState.collectAsState()
-
   val decodedZipPath =
       remember(zipFilePath) {
         if (zipFilePath.isNullOrEmpty()) {
@@ -147,7 +152,9 @@ fun SamplerScreen(
           playbackPosition = uiState.playbackPosition,
           onPositionChange = viewModel::updatePlaybackPosition,
           onIncreasePitch = viewModel::increasePitch,
-          onDecreasePitch = viewModel::decreasePitch)
+          onDecreasePitch = viewModel::decreasePitch,
+          uiState = uiState,
+          viewModel = viewModel)
 
       Spacer(modifier = Modifier.height(16.dp))
 
@@ -170,9 +177,16 @@ fun PlaybackAndWaveformControls(
     playbackPosition: Float,
     onPositionChange: (Float) -> Unit,
     onIncreasePitch: () -> Unit,
-    onDecreasePitch: () -> Unit
+    onDecreasePitch: () -> Unit,
+    uiState: SamplerUiState,
+    viewModel: SamplerViewModel
 ) {
 
+  val mediaPlayer = LocalMediaPlayer.current
+  val currentUri = uiState.currentAudioUri
+
+  val playbackPosition = uiState.playbackPosition
+  val audioDurationMillis = uiState.audioDurationMillis
   Column(
       modifier =
           Modifier.fillMaxWidth()
@@ -223,15 +237,24 @@ fun PlaybackAndWaveformControls(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        WaveformDisplay(
-            modifier =
-                Modifier.fillMaxWidth()
-                    .height(120.dp)
-                    .border(2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
-                    .testTag(SamplerTestTags.WAVEFORM_DISPLAY),
-            isPlaying = isPlaying,
-            playbackPosition = playbackPosition,
-            onPositionChange = onPositionChange)
+        Box(modifier = Modifier.fillMaxWidth().height(100.dp)) {
+          WaveformDisplay(
+              modifier =
+                  Modifier.fillMaxWidth()
+                      .height(120.dp)
+                      .border(2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
+                      .testTag(SamplerTestTags.WAVEFORM_DISPLAY),
+              isPlaying = isPlaying,
+              playbackPosition = playbackPosition,
+              onPositionChange = onPositionChange,
+              audioDurationMillis = uiState.audioDurationMillis.toLong(),
+              uiState = uiState,
+              viewModel = viewModel)
+          TimeDisplay(
+              playbackPosition = playbackPosition,
+              audioDurationMillis = audioDurationMillis,
+              modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 4.dp, end = 8.dp))
+        }
       }
 }
 
@@ -275,11 +298,35 @@ fun WaveformDisplay(
     modifier: Modifier = Modifier,
     isPlaying: Boolean = false,
     playbackPosition: Float = 0.0f,
-    onPositionChange: (Float) -> Unit = {}
+    onPositionChange: (Float) -> Unit = {},
+    audioDurationMillis: Long,
+    uiState: SamplerUiState,
+    viewModel: SamplerViewModel
 ) {
   val soundWaveColor = NepTuneTheme.colors.soundWave
   val localDensity = LocalDensity.current
   val latestOnPositionChange = rememberUpdatedState(onPositionChange)
+  val currentUri = uiState.currentAudioUri
+  val coroutineScope = rememberCoroutineScope()
+
+  var waveform by remember { mutableStateOf<List<Float>>(emptyList()) }
+
+  LaunchedEffect(currentUri) {
+    if (currentUri != null) {
+      withContext(Dispatchers.IO) {
+        val wf =
+            try {
+              viewModel.extractWaveform(currentUri)
+            } catch (e: Exception) {
+              Log.e("WaveformDisplay", "Audio track error: ${e.message}")
+              emptyList<Float>()
+            }
+        waveform = wf
+      }
+    } else {
+      waveform = emptyList()
+    }
+  }
 
   val playbackPositionAnimatable = remember { Animatable(playbackPosition) }
 
@@ -292,14 +339,13 @@ fun WaveformDisplay(
   LaunchedEffect(isPlaying) {
     if (isPlaying) {
       if (playbackPositionAnimatable.value < 1.0f) {
-
+        val durationMillis = audioDurationMillis
         playbackPositionAnimatable.animateTo(
             targetValue = 1.0f,
             animationSpec =
                 tween(
                     durationMillis =
-                        (SampleDurationMillis * (1.0f - playbackPositionAnimatable.value))
-                            .roundToInt(),
+                        (durationMillis * (1.0f - playbackPositionAnimatable.value)).roundToInt(),
                     easing = LinearEasing))
 
         latestOnPositionChange.value(1.0f)
@@ -347,20 +393,35 @@ fun WaveformDisplay(
             end = Offset(width - paddingPx, centerY),
             strokeWidth = 1f)
 
-        for (i in 0 until numBars) {
-          val simulatedAmplitude = (sin(i * 0.4f) * 0.3f + 0.5f).toFloat()
-          val barHeight = simulatedAmplitude * (height - 2 * paddingPx) * 0.7f
+        if (waveform.isNotEmpty()) {
+          val maxAmplitude = waveform.maxOrNull() ?: 1f
+          waveform.forEachIndexed { i, amp ->
+            val normalized = (amp / maxAmplitude).coerceIn(0f, 1f)
+            val barHeight = normalized * (height - 2 * paddingPx) * 0.8f
+            val startX = paddingPx + i * (barWidth + gapWidth) + barWidth / 2
+            val startY = centerY - barHeight / 2
+            val endY = centerY + barHeight / 2
 
-          val startX = paddingPx + i * (barWidth + gapWidth) + barWidth / 2
+            drawLine(
+                color = soundWaveColor,
+                start = Offset(startX, startY),
+                end = Offset(startX, endY),
+                strokeWidth = barWidth)
+          }
+        } else {
+          for (i in 0 until 50) {
+            val simulatedAmplitude = (sin(i * 0.4f) * 0.3f + 0.5f).toFloat()
+            val barHeight = simulatedAmplitude * (height - 2 * paddingPx) * 0.7f
+            val startX = paddingPx + i * (barWidth + gapWidth) + barWidth / 2
+            val startY = centerY - barHeight / 2
+            val endY = centerY + barHeight / 2
 
-          val startY = centerY - barHeight / 2
-          val endY = centerY + barHeight / 2
-
-          drawLine(
-              color = soundWaveColor,
-              start = Offset(startX, startY),
-              end = Offset(startX, endY),
-              strokeWidth = barWidth)
+            drawLine(
+                color = soundWaveColor.copy(alpha = 0.4f),
+                start = Offset(startX, startY),
+                end = Offset(startX, endY),
+                strokeWidth = barWidth)
+          }
         }
 
         val xPosition = contentWidth * currentAnimPosition + paddingPx
@@ -1142,6 +1203,21 @@ fun CompressorCurve(
 
     drawCircle(color = Color.Red, center = Offset(thresholdX, thresholdY), radius = 6.dp.toPx())
   }
+}
+
+@Composable
+fun TimeDisplay(playbackPosition: Float, audioDurationMillis: Int, modifier: Modifier = Modifier) {
+  val currentPositionMillis = (playbackPosition * audioDurationMillis).roundToInt()
+  val totalSeconds = audioDurationMillis / 1000
+  val elapsedSeconds = currentPositionMillis / 1000
+
+  val timeText = String.format("%02d / %02d s", elapsedSeconds, totalSeconds)
+
+  Text(
+      text = timeText,
+      style = MaterialTheme.typography.bodySmall,
+      color = NepTuneTheme.colors.smallText,
+      modifier = modifier.testTag(SamplerTestTags.TIME_DISPLAY))
 }
 
 @Composable
