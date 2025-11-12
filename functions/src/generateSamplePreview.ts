@@ -24,8 +24,10 @@ export const generateSamplePreview = onObjectFinalized(
   {timeoutSeconds: 540, memory: "1GiB"},
   async (event) => {
     const objectPath = event.data?.name ?? "";
-    if (!objectPath.endsWith(".zip") ||
-      objectPath.startsWith("sample_previews/")) return;
+    const match = objectPath.match(/^samples\/([^/]+)\.zip$/);
+    if (!match) return; // ignore anything not in samples/<id>.zip
+    const sampleId = match[1];
+    const previewPath = `sample_previews/${sampleId}.mp3`;
 
     const tmpRoot = join(tmpdir(), `preview-${Date.now()}`);
     await mkdir(tmpRoot, {recursive: true});
@@ -66,15 +68,11 @@ export const generateSamplePreview = onObjectFinalized(
       await copyFile(audioSrc, previewAudio);
     }
 
-    const previewPath = objectPath
-      .replace(/^samples\//, "sample_previews/")
-      .replace(/\.zip$/, ".mp3");
     await bucket.upload(previewAudio, {
       destination: previewPath,
       contentType: "audio/mpeg",
     });
 
-    const sampleId = metadataEntry.entryName.replace(".json", "");
     await getFirestore().collection("samples").doc(sampleId).update({
       storagePreviewSamplePath: previewPath,
     });
