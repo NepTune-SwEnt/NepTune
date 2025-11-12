@@ -29,7 +29,6 @@ class StorageService(
    */
   suspend fun uploadSampleFiles(sample: Sample, localZipUri: Uri, localImageUri: Uri) {
     val sampleId = sample.id
-    val localPreviewUri: Uri = Uri.EMPTY // TODO implement the mp3
 
     val oldSample: Sample? =
         try {
@@ -46,7 +45,6 @@ class StorageService(
 
     val newStorageZipPath = "samples/${sampleId}.zip}"
     val newStorageImagePath = "samples/${sampleId}/${getFileNameFromUri(localImageUri)}"
-    val newStoragePreviewPath = "" // TODO implement the mp3
 
     coroutineScope {
       val deferredZipUrl = async { uploadFileAndGetUrl(localZipUri, newStorageZipPath) }
@@ -55,14 +53,12 @@ class StorageService(
 
       val newZipUrl = deferredZipUrl.await()
       val newImageUrl = deferredImageUrl.await()
-      // newPreviewUrl = deferredPreviewUrl.await() // TODO implement the mp3
 
       val finalSample =
           sample.copy(
               storageZipPath = newZipUrl,
               storageImagePath = newImageUrl,
-              storagePreviewSamplePath = "" // TODO implement the mp3
-              )
+              storagePreviewSamplePath = "")
       sampleRepo.addSample(finalSample)
     }
   }
