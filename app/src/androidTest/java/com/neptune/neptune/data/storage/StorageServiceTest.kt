@@ -22,6 +22,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
+// This class was made using AI assistance.
 @ExperimentalCoroutinesApi
 @RunWith(AndroidJUnit4::class)
 class StorageServiceTest {
