@@ -48,6 +48,9 @@ object MockImportTestTags {
   const val BUTTON_RECORD = "RecordFAB"
   const val MIC_ICON = "MicIcon"
   const val STOP_ICON = "StopIcon"
+  const val BUTTON_CREATE = "ButtonCreate"
+  const val BUTTON_CANCEL = "ButtonCancel"
+    const val EMPTY_LIST = "EmptyList"
 }
 
 val padding = 16.dp
@@ -55,7 +58,12 @@ val padding = 16.dp
 @SuppressLint("VisibleForTests")
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun MockImportScreen(vm: ImportViewModel = viewModel(), recorder: NeptuneRecorder? = null) {
+fun MockImportScreen(
+    vm: ImportViewModel = viewModel(),
+    recorder: NeptuneRecorder? = null,
+    // When false (tests) the name dialog is suppressed to avoid flaky/infinite idling in Robolectric
+    enableNameDialog: Boolean = true
+) {
   val items by vm.library.collectAsState(initial = emptyList())
 
   val pickAudio =
@@ -133,7 +141,7 @@ fun MockImportScreen(vm: ImportViewModel = viewModel(), recorder: NeptuneRecorde
         }
       }) { padding ->
         if (items.isEmpty()) {
-          Column(Modifier.padding(padding).fillMaxSize().padding(24.dp)) {
+          Column(Modifier.padding(padding).fillMaxSize().padding(24.dp).testTag(MockImportTestTags.EMPTY_LIST)) {
             Text("No projects yet.", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
             Text("Tap “Import audio” to create a .neptune project (zip with config.json + audio).")
@@ -144,7 +152,7 @@ fun MockImportScreen(vm: ImportViewModel = viewModel(), recorder: NeptuneRecorde
       }
 
   // Name dialog
-  if (showNameDialog && proposedFileToImport != null) {
+  if (enableNameDialog && showNameDialog && proposedFileToImport != null) {
     val fileToImport = proposedFileToImport!!
     AlertDialog(
         onDismissRequest = { showNameDialog = false },
@@ -161,6 +169,7 @@ fun MockImportScreen(vm: ImportViewModel = viewModel(), recorder: NeptuneRecorde
         },
         confirmButton = {
           Button(
+                modifier = Modifier.testTag(MockImportTestTags.BUTTON_CREATE),
               onClick = {
                 // Sanitize project name and rename the recorded file before importing
                 val sanitized =
@@ -194,13 +203,14 @@ fun MockImportScreen(vm: ImportViewModel = viewModel(), recorder: NeptuneRecorde
         },
         dismissButton = {
           Button(
+              modifier = Modifier.testTag(MockImportTestTags.BUTTON_CANCEL),
               onClick = {
-                // If dismissed, still import with original filename
-                vm.importRecordedFile(fileToImport)
+                // If dismissed, cancel import and delete the recorded file
+                fileToImport.delete()
                 showNameDialog = false
                 proposedFileToImport = null
               }) {
-                Text("Skip")
+                Text("Cancel / Delete")
               }
         })
   }
