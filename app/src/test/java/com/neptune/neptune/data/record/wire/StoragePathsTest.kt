@@ -35,7 +35,7 @@ class StoragePathsTest {
     val stem = candidate.name.removeSuffix(".zip")
 
     assertFalse("no whitespace", stem.contains(Regex("\\s")))
-    assertFalse("no consecutive underscores", stem.contains("__"))
+    assertFalse("no consecutive underscores $stem", stem.contains("__"))
     assertFalse("no leading dot", stem.startsWith("."))
     assertTrue(
         "inside projects workspace",

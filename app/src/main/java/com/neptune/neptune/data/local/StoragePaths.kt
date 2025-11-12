@@ -38,6 +38,9 @@ open class StoragePaths(private val context: Context) {
       name = name.replace("..", "_")
     }
 
+    // collapse multiple underscores again because replacing ".." may have created "__"
+    name = name.replace(Regex("_+"), "_")
+
     // trim leading/trailing dots/underscores/spaces
     name = name.trim('_', '.', ' ')
 
