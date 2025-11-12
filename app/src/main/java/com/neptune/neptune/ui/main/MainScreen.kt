@@ -360,9 +360,7 @@ fun SampleCard(
           Modifier.width(width)
               .height(height)
               .clickable(
-                  onClick = {
-                    mediaPlayer.togglePlay(mediaPlayer.getUriFromSampleId(sample.id.toInt()))
-                  }) //// TODO CHANGE THIS
+                  onClick = { mediaPlayer.togglePlay(mediaPlayer.getUriFromSampleId(sample.id)) })
               .testTag(testTags.SAMPLE_CARD),
       colors = CardDefaults.cardColors(containerColor = NepTuneTheme.colors.cardBackground),
       shape = RoundedCornerShape(12.dp),

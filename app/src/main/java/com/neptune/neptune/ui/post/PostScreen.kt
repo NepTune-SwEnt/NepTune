@@ -188,8 +188,7 @@ fun PostScreen(
                           .clickable(
                               onClick = {
                                 mediaPlayer.togglePlay(
-                                    mediaPlayer.getUriFromSampleId(
-                                        uiState.sample.id.toInt())) // TODO CHANGE THIS
+                                    mediaPlayer.getUriFromSampleId(uiState.sample.id))
                               })
                           .aspectRatio(1.6f)
                           .border(1.dp, NepTuneTheme.colors.onBackground, RoundedCornerShape(8.dp))
