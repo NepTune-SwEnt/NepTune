@@ -251,8 +251,6 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         "**/Manifest*.*",
         "**/*Test*.*",
         "android/**/*.*",
-
-        // I want to add those lines
         "**/*\$Lambda*",
         "**/*\$ExternalSynthetic*",
         "androidx/compose/**",
@@ -260,7 +258,6 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         "**/*\$composable*",
         "**/*\$ui*",
         "**/*_Factory*",
-        // To here
     )
 
     val debugTree = fileTree("${project.layout.buildDirectory.get()}/tmp/kotlin-classes/debug") {
@@ -281,7 +278,6 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         reportFile.writeText(newContent)
     }
 }
-
 configurations.forEach { configuration ->
     // Exclude protobuf-lite from all configurations
     // This fixes a fatal exception for tests interacting with Cloud Firestore
