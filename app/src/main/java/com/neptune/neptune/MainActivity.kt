@@ -57,9 +57,9 @@ import com.neptune.neptune.ui.settings.SettingsViewModelFactory
 import com.neptune.neptune.ui.settings.ThemeDataStore
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.ui.theme.SampleAppTheme
-import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.FileOutputStream
+import kotlinx.coroutines.runBlocking
 
 private const val ASSET_ZIP_PATH = "fakeProject.zip"
 private const val TARGET_PROJECT_ID = "42"
@@ -73,23 +73,22 @@ class MainActivity : ComponentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-      val context = NepTuneApplication.appContext
-      val assetZipFile = File(context.cacheDir, "test_${ASSET_ZIP_PATH}")
-      context.assets.open(ASSET_ZIP_PATH).use { inputStream ->
-          FileOutputStream(assetZipFile).use { outputStream -> inputStream.copyTo(outputStream) }
-      }
-      val absoluteZipPath = assetZipFile.absolutePath
+    val context = NepTuneApplication.appContext
+    val assetZipFile = File(context.cacheDir, "test_${ASSET_ZIP_PATH}")
+    context.assets.open(ASSET_ZIP_PATH).use { inputStream ->
+      FileOutputStream(assetZipFile).use { outputStream -> inputStream.copyTo(outputStream) }
+    }
+    val absoluteZipPath = assetZipFile.absolutePath
 
-      runBlocking {
-          fakeRepository.addProject(
-              ProjectItem(
-                  uid = TARGET_PROJECT_ID,
-                  name = "Test Project ZIP",
-                  filePath = absoluteZipPath,
-                  lastUpdated = Timestamp(100, 0)))
-          TotalProjectItemsRepositoryProvider.repository = fakeRepository
-      }
-
+    runBlocking {
+      fakeRepository.addProject(
+          ProjectItem(
+              uid = TARGET_PROJECT_ID,
+              name = "Test Project ZIP",
+              filePath = absoluteZipPath,
+              lastUpdated = Timestamp(100, 0)))
+      TotalProjectItemsRepositoryProvider.repository = fakeRepository
+    }
 
     // Initialize the ThemeDataStore using the application-level context
     themeDataStore = ThemeDataStore(applicationContext)
@@ -115,8 +114,6 @@ class MainActivity : ComponentActivity() {
     }
   }
 }
-
-
 
 @Composable
 fun NeptuneApp(

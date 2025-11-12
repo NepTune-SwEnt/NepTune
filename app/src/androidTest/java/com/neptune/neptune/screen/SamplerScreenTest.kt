@@ -496,10 +496,8 @@ class SamplerScreenTest {
 
   @Test
   fun updatePlaybackPosition_durationIsZero_setsZero() {
-    fakeViewModel.mutableUiState.value = fakeViewModel.uiState.value.copy(
-      audioDurationMillis = 0,
-      playbackPosition = 0.5f
-    )
+    fakeViewModel.mutableUiState.value =
+        fakeViewModel.uiState.value.copy(audioDurationMillis = 0, playbackPosition = 0.5f)
     composeTestRule.waitForIdle()
     fakeViewModel.updatePlaybackPosition()
     assertEquals(0.0f, fakeViewModel.uiState.value.playbackPosition, 0.001f)
@@ -508,7 +506,8 @@ class SamplerScreenTest {
   @Test
   fun increasePitch_wrapsToNextOctave() {
 
-    fakeViewModel.mutableUiState.value = fakeViewModel.uiState.value.copy(pitchNote = "B", pitchOctave = 4)
+    fakeViewModel.mutableUiState.value =
+        fakeViewModel.uiState.value.copy(pitchNote = "B", pitchOctave = 4)
     composeTestRule.waitForIdle()
     fakeViewModel.increasePitch()
     assertEquals("C", fakeViewModel.uiState.value.pitchNote)
@@ -518,7 +517,8 @@ class SamplerScreenTest {
 
   @Test
   fun decreasePitch_wrapsToPreviousOctave() {
-    fakeViewModel.mutableUiState.value = fakeViewModel.uiState.value.copy(pitchNote = "C", pitchOctave = 5)
+    fakeViewModel.mutableUiState.value =
+        fakeViewModel.uiState.value.copy(pitchNote = "C", pitchOctave = 5)
     composeTestRule.waitForIdle()
     fakeViewModel.decreasePitch()
     assertEquals("B", fakeViewModel.uiState.value.pitchNote)
