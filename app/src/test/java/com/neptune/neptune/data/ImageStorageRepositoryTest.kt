@@ -11,6 +11,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlin.test.assertTrue
 
 /**
  * Unit tests for the [ImageStorageRepository].
@@ -88,11 +89,11 @@ class ImageStorageRepositoryTest {
 
     // Assert: Check that the URI is not null and points to the correct file
     assertThat(retrievedUri).isNotNull()
-    if (retrievedUri!!.path!!.first() == '/') {
-      assertThat(retrievedUri.path).isEqualTo('/' + file.absolutePath)
-    } else {
-      assertThat(retrievedUri.path).isEqualTo(file.absolutePath)
+    var absolutePath = file.absolutePath
+    if (file.absolutePath.first() != '/') {
+      absolutePath = '/' + file.absolutePath
     }
+    assertThat(retrievedUri?.path).isEqualTo(absolutePath)
   }
 
   /** Verifies that `getImageUri` returns null when the requested file does not exist. */
