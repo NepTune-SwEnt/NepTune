@@ -116,6 +116,8 @@ fun ScrollableColumnOfSamples(
     clickHandlers: ClickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
 ) {
+  // Ensure the possibility to like in local
+  var likedSamples by remember { mutableStateOf(setOf<Int>()) }
   LazyColumn(
       modifier =
           modifier
@@ -128,11 +130,22 @@ fun ScrollableColumnOfSamples(
         items(samples) { sample ->
           // change height and width if necessary
           val testTags = SearchScreenTestTagsPerSampleCard(idInColumn = sample.id)
+          val isLiked = likedSamples.contains(sample.id)
+          val cardClickHanders =
+              onClickFunctions(
+                  onProfileClick = clickHandlers.onProfileClick,
+                  onCommentClick = clickHandlers.onCommentClick,
+                  onDownloadClick = clickHandlers.onDownloadClick,
+                  onLikeClick = { isNowLiked ->
+                    likedSamples =
+                        if (isNowLiked) likedSamples + sample.id else likedSamples - sample.id
+                    clickHandlers.onLikeClick(isNowLiked)
+                  })
           SampleCard(
               sample = sample,
               width = width,
-              clickHandlers = clickHandlers,
-              isLiked = false,
+              clickHandlers = cardClickHanders,
+              isLiked = isLiked,
               testTags = testTags,
               mediaPlayer = mediaPlayer)
         }
