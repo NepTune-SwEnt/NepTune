@@ -50,7 +50,7 @@ object MockImportTestTags {
   const val STOP_ICON = "StopIcon"
   const val BUTTON_CREATE = "ButtonCreate"
   const val BUTTON_CANCEL = "ButtonCancel"
-    const val EMPTY_LIST = "EmptyList"
+  const val EMPTY_LIST = "EmptyList"
 }
 
 val padding = 16.dp
@@ -61,7 +61,8 @@ val padding = 16.dp
 fun MockImportScreen(
     vm: ImportViewModel = viewModel(),
     recorder: NeptuneRecorder? = null,
-    // When false (tests) the name dialog is suppressed to avoid flaky/infinite idling in Robolectric
+    // When false (tests) the name dialog is suppressed to avoid flaky/infinite idling in
+    // Robolectric
     enableNameDialog: Boolean = true
 ) {
   val items by vm.library.collectAsState(initial = emptyList())
@@ -141,11 +142,16 @@ fun MockImportScreen(
         }
       }) { padding ->
         if (items.isEmpty()) {
-          Column(Modifier.padding(padding).fillMaxSize().padding(24.dp).testTag(MockImportTestTags.EMPTY_LIST)) {
-            Text("No projects yet.", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
-            Text("Tap “Import audio” to create a .neptune project (zip with config.json + audio).")
-          }
+          Column(
+              Modifier.padding(padding)
+                  .fillMaxSize()
+                  .padding(24.dp)
+                  .testTag(MockImportTestTags.EMPTY_LIST)) {
+                Text("No projects yet.", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Tap “Import audio” to create a .neptune project (zip with config.json + audio).")
+              }
         } else {
           ProjectList(items, Modifier.padding(padding))
         }
@@ -169,7 +175,7 @@ fun MockImportScreen(
         },
         confirmButton = {
           Button(
-                modifier = Modifier.testTag(MockImportTestTags.BUTTON_CREATE),
+              modifier = Modifier.testTag(MockImportTestTags.BUTTON_CREATE),
               onClick = {
                 // Sanitize project name and rename the recorded file before importing
                 val sanitized =

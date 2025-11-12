@@ -48,7 +48,9 @@ class MockImportScreenTest {
 
   @Test
   fun topAppBarAndFabAreVisibleInEmptyState() {
-    composeRule.setContent { MockImportScreen(vm = vm, recorder = mockk(relaxed = true), enableNameDialog = false) }
+    composeRule.setContent {
+      MockImportScreen(vm = vm, recorder = mockk(relaxed = true), enableNameDialog = false)
+    }
 
     composeRule.onNodeWithText("Neptune • placeholder").assertIsDisplayed()
     composeRule.onNodeWithText("No projects yet.").assertIsDisplayed()
@@ -61,7 +63,9 @@ class MockImportScreenTest {
 
   @Test
   fun fabIsClickableDoesNotCrash() {
-    composeRule.setContent { MockImportScreen(vm = vm, recorder = mockk(relaxed = true), enableNameDialog = false) }
+    composeRule.setContent {
+      MockImportScreen(vm = vm, recorder = mockk(relaxed = true), enableNameDialog = false)
+    }
 
     // Just verify the FAB is present and "clickable" logically.
     // Robolectric can't actually launch SAF intents.
@@ -71,7 +75,9 @@ class MockImportScreenTest {
 
   @Test
   fun whenLibraryIsEmptyHidesEmptyText() {
-    composeRule.setContent { MockImportScreen(vm = vm, recorder = mockk(relaxed = true), enableNameDialog = false) }
+    composeRule.setContent {
+      MockImportScreen(vm = vm, recorder = mockk(relaxed = true), enableNameDialog = false)
+    }
 
     composeRule.onNodeWithText("No projects yet.").assertIsDisplayed()
 
@@ -88,7 +94,9 @@ class MockImportScreenTest {
 
   @Test
   fun doesNotCallImportWithoutActivityResult() {
-    composeRule.setContent { MockImportScreen(vm = vm, recorder = mockk(relaxed = true), enableNameDialog = false) }
+    composeRule.setContent {
+      MockImportScreen(vm = vm, recorder = mockk(relaxed = true), enableNameDialog = false)
+    }
 
     verify(exactly = 0) { vm.importFromSaf(any()) }
   }
@@ -97,7 +105,9 @@ class MockImportScreenTest {
   fun whenLibraryIsNonEmptyShowsListBranchImmediately() {
     // Start non-empty so the first composition goes straight to ProjectList branch
     libraryFlow.value = listOf(mockk<MediaItem>(relaxed = true))
-    composeRule.setContent { MockImportScreen(vm = vm, recorder = mockk(relaxed = true), enableNameDialog = false) }
+    composeRule.setContent {
+      MockImportScreen(vm = vm, recorder = mockk(relaxed = true), enableNameDialog = false)
+    }
 
     // Empty-state texts should NOT be visible
     composeRule.onNodeWithText("No projects yet.").assertIsNotDisplayed()
@@ -115,7 +125,9 @@ class MockImportScreenTest {
   fun listBranchThenBackToEmptyRendersEmptyStateAgain() {
     // Start non-empty -> list branch
     libraryFlow.value = listOf(mockk<MediaItem>(relaxed = true))
-    composeRule.setContent { MockImportScreen(vm = vm, recorder = mockk(relaxed = true), enableNameDialog = false) }
+    composeRule.setContent {
+      MockImportScreen(vm = vm, recorder = mockk(relaxed = true), enableNameDialog = false)
+    }
 
     composeRule.onNodeWithText("No projects yet.").assertIsNotDisplayed()
 
@@ -132,7 +144,9 @@ class MockImportScreenTest {
   @Test
   fun importFromSafCallbackIsTriggered() {
     val fakeUri = android.net.Uri.parse("content://some/audio.mp3")
-    composeRule.setContent { MockImportScreen(vm = vm, recorder = mockk(relaxed = true), enableNameDialog = false) }
+    composeRule.setContent {
+      MockImportScreen(vm = vm, recorder = mockk(relaxed = true), enableNameDialog = false)
+    }
 
     // Simulate that the picker returned a URI manually
     fakeUri.let { vm.importFromSaf(it.toString()) }
@@ -158,7 +172,9 @@ class MockImportScreenTest {
               }
         }
 
-    composeRule.setContent { MockImportScreen(vm = vm, recorder = recorder, enableNameDialog = false) }
+    composeRule.setContent {
+      MockImportScreen(vm = vm, recorder = recorder, enableNameDialog = false)
+    }
 
     // Initial state: not recording, Mic icon is shown
     composeRule.onNodeWithTag(MockImportTestTags.MIC_ICON, true).assertIsDisplayed()
@@ -184,21 +200,23 @@ class MockImportScreenTest {
   fun recordStopAndCancel() {
     var isRecording = false
     recorder =
-      mockk(relaxed = true) {
-        every { this@mockk.isRecording } answers { isRecording }
-        every { start(any(), any(), any()) } answers
-                {
-                  isRecording = true
-                  mockk(relaxed = true) // Return a dummy file
-                }
-        every { stop() } answers
-                {
-                  isRecording = false
-                  mockk(relaxed = true) // Return a dummy file
-                }
-      }
+        mockk(relaxed = true) {
+          every { this@mockk.isRecording } answers { isRecording }
+          every { start(any(), any(), any()) } answers
+              {
+                isRecording = true
+                mockk(relaxed = true) // Return a dummy file
+              }
+          every { stop() } answers
+              {
+                isRecording = false
+                mockk(relaxed = true) // Return a dummy file
+              }
+        }
 
-    composeRule.setContent { MockImportScreen(vm = vm, recorder = recorder, enableNameDialog = false) }
+    composeRule.setContent {
+      MockImportScreen(vm = vm, recorder = recorder, enableNameDialog = false)
+    }
 
     // Initial state: not recording
     composeRule.onNodeWithTag(MockImportTestTags.MIC_ICON, true).assertIsDisplayed()
