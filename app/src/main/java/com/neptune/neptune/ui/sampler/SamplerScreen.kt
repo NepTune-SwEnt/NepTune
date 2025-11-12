@@ -412,7 +412,7 @@ fun WaveformDisplay(
 
         // Calculate label step to avoid overlapping labels horizontally
         val minLabelSpacingPx = 24.dp.toPx()
-        val labelStep = kotlin.math.max(1, kotlin.math.ceil(minLabelSpacingPx / pixelsPerSecond).toInt())
+        val labelStep = max(1, kotlin.math.ceil(minLabelSpacingPx / pixelsPerSecond).toInt())
 
         val labelHorizontalPadding = 4.dp.toPx()
         for (sec in 0..totalSeconds) {
@@ -444,12 +444,13 @@ fun WaveformDisplay(
               textPaint.textAlign = Paint.Align.LEFT
             }
 
-            // Vertical center aligned with tick area, nudge label up a bit and clamp the baseline so it's not clipped
-            val tickCenterY = tickTop + (tickBottom - tickTop) / 2f
-            val preferredLabelBaseline = tickCenterY + timelineTextSizePx / 2f
-            val labelVerticalOffset = 20.dp.toPx() // move label up by 16.dp
-            val minLabelBaseline = timelineTextSizePx // ensure at least one text size down from top
-            val labelBaseline = max(minLabelBaseline, preferredLabelBaseline - labelVerticalOffset)
+            // Compute baseline relative to the tick bottom so vertical offset actually moves the labels.
+            // When offset is 0 the baseline sits just below the tickBottom + text height.
+            val labelVerticalOffset = 12.dp.toPx() // positive => move label *up*
+            val baselineFromTickBottom = tickBottom + timelineTextSizePx
+            // allow labels to move higher by lowering the minimum allowed baseline
+            val minLabelBaseline = timelineTextSizePx * 0.25f
+            val labelBaseline = max(minLabelBaseline, baselineFromTickBottom - labelVerticalOffset)
 
             drawContext.canvas.nativeCanvas.drawText(label, labelX, labelBaseline, textPaint)
            }
