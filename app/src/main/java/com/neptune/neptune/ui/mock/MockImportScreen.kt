@@ -19,7 +19,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -35,9 +34,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.neptune.neptune.R
 import com.neptune.neptune.data.StoragePaths
 import com.neptune.neptune.media.NeptuneRecorder
 import com.neptune.neptune.ui.picker.ImportViewModel
@@ -54,6 +59,13 @@ object MockImportTestTags {
 }
 
 val padding = 16.dp
+
+// Shared text style used across this screen to match app typography
+private val appTextStyle =
+    TextStyle(
+        fontSize = 19.sp,
+        fontFamily = FontFamily(Font(R.font.markazi_text)),
+        fontWeight = FontWeight(400))
 
 @SuppressLint("VisibleForTests")
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
@@ -95,7 +107,7 @@ fun MockImportScreen(
   }
 
   Scaffold(
-      topBar = { TopAppBar(title = { Text("Neptune • placeholder") }) },
+      topBar = { TopAppBar(title = { Text("Neptune • placeholder", style = appTextStyle) }) },
       floatingActionButton = {
         Column(horizontalAlignment = Alignment.End) {
           FloatingActionButton(
@@ -137,7 +149,7 @@ fun MockImportScreen(
                             else MockImportTestTags.MIC_ICON))
               }
           ExtendedFloatingActionButton(onClick = { pickAudio.launch(arrayOf("audio/*")) }) {
-            Text("Import audio")
+            Text("Import audio", style = appTextStyle)
           }
         }
       }) { padding ->
@@ -147,10 +159,11 @@ fun MockImportScreen(
                   .fillMaxSize()
                   .padding(24.dp)
                   .testTag(MockImportTestTags.EMPTY_LIST)) {
-                Text("No projects yet.", style = MaterialTheme.typography.titleMedium)
+                Text("No projects yet.", style = appTextStyle)
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Tap “Import audio” to create a .neptune project (zip with config.json + audio).")
+                    "Tap “Import audio” to create a .neptune project (zip with config.json + audio).",
+                    style = appTextStyle)
               }
         } else {
           ProjectList(items, Modifier.padding(padding))
@@ -162,10 +175,10 @@ fun MockImportScreen(
     val fileToImport = proposedFileToImport!!
     AlertDialog(
         onDismissRequest = { showNameDialog = false },
-        title = { Text("Name project") },
+        title = { Text("Name project", style = appTextStyle) },
         text = {
           Column {
-            Text("Enter a name for the new project")
+            Text("Enter a name for the new project", style = appTextStyle)
             Spacer(Modifier.height(8.dp))
             TextField(
                 value = projectName,
@@ -204,7 +217,7 @@ fun MockImportScreen(
                 showNameDialog = false
                 proposedFileToImport = null
               }) {
-                Text("Create")
+                Text("Create", style = appTextStyle)
               }
         },
         dismissButton = {
@@ -216,7 +229,7 @@ fun MockImportScreen(
                 showNameDialog = false
                 proposedFileToImport = null
               }) {
-                Text("Cancel / Delete")
+                Text("Cancel / Delete", style = appTextStyle)
               }
         })
   }

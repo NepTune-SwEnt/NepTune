@@ -36,7 +36,6 @@ class FileImporterImpl(
   private val fileImporterTag = "FileImporter"
   private val defaultBaseName = "audio"
 
-
   @RequiresApi(Build.VERSION_CODES.Q)
   override suspend fun importFile(sourceUri: URI): FileImporter.ImportedFile =
       withContext(io) {
@@ -108,7 +107,8 @@ class FileImporterImpl(
         val ext = file.extension.lowercase()
         val mime =
             AudioFormats.mimeFromExt(ext)
-                ?: throw UnsupportedAudioFormat("Only $AudioFormats.supportedLabel are supported. Got ext=$ext")
+                ?: throw UnsupportedAudioFormat(
+                    "Only $AudioFormats.supportedLabel are supported. Got ext=$ext")
 
         val rawBase = file.nameWithoutExtension
         val base = sanitizeBase(rawBase, removeWhitespace = true)
@@ -161,7 +161,6 @@ class FileImporterImpl(
             durationMs = duration ?: 0L)
       }
 
-
   // Ensures the file is one of the supported formats by MIME and/or extension; derives a sane name.
   private fun resolveAndValidateAudio(uri: Uri): ParsedFromUri {
     val isFile = uri.scheme == ContentResolver.SCHEME_FILE
@@ -204,7 +203,8 @@ class FileImporterImpl(
           "Only $AudioFormats.supportedLabel are supported. Got mime=$crMime name=$display")
     }
 
-    val finalExt = AudioFormats.extFromMime(normalizedMime) ?: ext.ifEmpty { AudioFormats.allowedExts.first() }
+    val finalExt =
+        AudioFormats.extFromMime(normalizedMime) ?: ext.ifEmpty { AudioFormats.allowedExts.first() }
 
     return ParsedFromUri(normalizedMime!!, base, finalExt)
   }
@@ -212,7 +212,8 @@ class FileImporterImpl(
   // Normalize a base filename: optionally remove whitespace (for recorded files),
   // replace invalid chars with '_', collapse multiple '_' and trim edge chars.
   private fun sanitizeBase(raw: String, removeWhitespace: Boolean = false): String {
-    val step1 = if (removeWhitespace) raw.replace(Regex("\\s+"), "") else raw.replace(Regex("\\s+"), "_")
+    val step1 =
+        if (removeWhitespace) raw.replace(Regex("\\s+"), "") else raw.replace(Regex("\\s+"), "_")
     return step1
         .replace(Regex("[^A-Za-z0-9._-]+"), "_")
         .replace(Regex("_+"), "_")
