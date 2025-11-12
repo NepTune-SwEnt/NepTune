@@ -47,7 +47,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-class FakeSamplerViewModel : SamplerViewModel() {
+open class FakeSamplerViewModel : SamplerViewModel() {
   var isAttackUpdated = false
   var isDecayUpdated = false
   var isSustainUpdated = false

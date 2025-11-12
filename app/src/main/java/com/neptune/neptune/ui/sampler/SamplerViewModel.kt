@@ -78,7 +78,7 @@ open class SamplerViewModel() : ViewModel() {
 
   private val context: Context = NepTuneApplication.appContext
 
-  private val mediaPlayer = NeptuneMediaPlayer()
+  open val mediaPlayer = NeptuneMediaPlayer()
 
   init {
     mediaPlayer.setOnCompletionListener {
