@@ -14,8 +14,17 @@ class NeptuneMediaPlayer() {
 
   private var onCompletionCallback: (() -> Unit)? = null
 
+
+
+
   fun setOnCompletionListener(listener: () -> Unit) {
     this.onCompletionCallback = listener
+  }
+
+  private var onPreparedCallback: (() -> Unit)? = null
+
+  fun setOnPreparedListener(listener: () -> Unit) {
+    this.onPreparedCallback = listener
   }
 
   /**
@@ -27,15 +36,18 @@ class NeptuneMediaPlayer() {
   fun play(uri: Uri) {
     if (mediaPlayer == null) {
       mediaPlayer =
-          MediaPlayer().apply {
-            setDataSource(context, uri)
-            setOnCompletionListener { player ->
-              player.seekTo(0)
-              onCompletionCallback?.invoke()
-            }
-            prepareAsync()
-            setOnPreparedListener { start() }
+        MediaPlayer().apply {
+          setDataSource(context, uri)
+          setOnCompletionListener { player ->
+            player.seekTo(0)
+            onCompletionCallback?.invoke()
           }
+          setOnPreparedListener {
+            start()
+            onPreparedCallback?.invoke()
+          }
+          prepareAsync()
+        }
     } else {
       mediaPlayer?.let {
         if (it.isPlaying) {
@@ -45,6 +57,10 @@ class NeptuneMediaPlayer() {
         it.setOnCompletionListener { player ->
           player.seekTo(0)
           onCompletionCallback?.invoke()
+        }
+        it.setOnPreparedListener {
+          it.start()
+          onPreparedCallback?.invoke()
         }
         it.setDataSource(context, uri)
         it.prepareAsync()
@@ -133,9 +149,9 @@ class NeptuneMediaPlayer() {
    *
    * @return Duration in milliseconds, or -1 if no audio is loaded.
    */
-  fun getDuration(): Int {
-    return mediaPlayer?.duration ?: -1
-  }
+    fun getDuration(): Int {
+      return mediaPlayer?.duration ?: -1
+    }
 
   /**
    * Get the current playback position in milliseconds.

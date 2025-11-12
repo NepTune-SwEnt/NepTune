@@ -23,6 +23,11 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.neptune.neptune.ui.sampler.SamplerViewModel
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.test.junit4.ComposeContentTestRule
 
 class LocalProjectLoadingTest {
 
@@ -33,6 +38,11 @@ class LocalProjectLoadingTest {
 
   private val ASSET_ZIP_PATH = "fakeProject.zip"
   private val TARGET_PROJECT_ID = "42"
+
+  @Composable
+  private fun getSamplerViewModelInstance(): SamplerViewModel {
+    return viewModel()
+  }
 
   @Before
   fun setUp() {

@@ -127,7 +127,7 @@ class FakeSamplerViewModel : SamplerViewModel() {
 
   override fun updatePlaybackPosition(position: Float) {
     lastPlaybackPosition = position
-    super.updatePlaybackPosition(position)
+    super.updatePlaybackPosition()
   }
 
   override fun updateReverbWet(value: Float) {
@@ -492,5 +492,37 @@ class SamplerScreenTest {
     ratioFieldNode.performTextInput("10")
     assertEquals(10, fakeViewModel.uiState.value.compRatio)
     assertTrue("updateCompRatio should be true", fakeViewModel.isCompRatioUpdated)
+  }
+
+  @Test
+  fun updatePlaybackPosition_durationIsZero_setsZero() {
+    fakeViewModel.mutableUiState.value = fakeViewModel.uiState.value.copy(
+      audioDurationMillis = 0,
+      playbackPosition = 0.5f
+    )
+    composeTestRule.waitForIdle()
+    fakeViewModel.updatePlaybackPosition()
+    assertEquals(0.0f, fakeViewModel.uiState.value.playbackPosition, 0.001f)
+  }
+
+  @Test
+  fun increasePitch_wrapsToNextOctave() {
+
+    fakeViewModel.mutableUiState.value = fakeViewModel.uiState.value.copy(pitchNote = "B", pitchOctave = 4)
+    composeTestRule.waitForIdle()
+    fakeViewModel.increasePitch()
+    assertEquals("C", fakeViewModel.uiState.value.pitchNote)
+    assertEquals(5, fakeViewModel.uiState.value.pitchOctave)
+    assertTrue("IncreasePitch should have been called.", fakeViewModel.isIncreasePitchCalled)
+  }
+
+  @Test
+  fun decreasePitch_wrapsToPreviousOctave() {
+    fakeViewModel.mutableUiState.value = fakeViewModel.uiState.value.copy(pitchNote = "C", pitchOctave = 5)
+    composeTestRule.waitForIdle()
+    fakeViewModel.decreasePitch()
+    assertEquals("B", fakeViewModel.uiState.value.pitchNote)
+    assertEquals(4, fakeViewModel.uiState.value.pitchOctave)
+    assertTrue("DecreasePitch should have been called.", fakeViewModel.isDecreasePitchCalled)
   }
 }
