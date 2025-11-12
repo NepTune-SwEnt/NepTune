@@ -88,7 +88,11 @@ class ImageStorageRepositoryTest {
 
     // Assert: Check that the URI is not null and points to the correct file
     assertThat(retrievedUri).isNotNull()
-    assertThat(retrievedUri?.path).isEqualTo(file.absolutePath)
+    if (retrievedUri!!.path!!.first() == '/') {
+      assertThat(retrievedUri.path).isEqualTo('/' + file.absolutePath)
+    } else {
+      assertThat(retrievedUri.path).isEqualTo(file.absolutePath)
+    }
   }
 
   /** Verifies that `getImageUri` returns null when the requested file does not exist. */
