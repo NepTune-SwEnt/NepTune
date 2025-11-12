@@ -1,6 +1,7 @@
 package com.neptune.neptune.ui.sampler
 
 import android.util.Log
+import android.graphics.Paint
 import androidx.compose.animation.core.*
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -27,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -52,6 +54,8 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.graphics.nativeCanvas
+import kotlin.math.max
 
 object SamplerTestTags {
   const val SCREEN_CONTAINER = "samplerScreenContainer"
@@ -363,6 +367,11 @@ fun WaveformDisplay(
   val paddingPx = localDensity.run { 8.dp.toPx() }
   val playheadStrokeWidth = localDensity.run { 1.5.dp.toPx() }
 
+  // Precompute label color and text size in composable scope to use inside draw lambda
+  val timelineLabelColor = NepTuneTheme.colors.smallText.copy(alpha = 0.8f)
+  val timelineLabelColorInt = timelineLabelColor.toArgb()
+  val timelineTextSizePx = localDensity.run { 12.sp.toPx() }
+
   Canvas(
       modifier =
           modifier.background(spectrogramBackground).padding(8.dp).pointerInput(Unit) {
@@ -386,6 +395,65 @@ fun WaveformDisplay(
         val barWidth = 2.dp.toPx()
         val numBars = 50
         val gapWidth = (contentWidth - (numBars * barWidth)) / (numBars - 1).coerceAtLeast(1)
+
+        // Draw timeline ticks and second labels at the top
+        val totalSeconds = (audioDurationMillis / 1000L).coerceAtLeast(1L).toInt()
+        val pixelsPerSecond = if (totalSeconds > 0) contentWidth / totalSeconds.toFloat() else contentWidth
+        // lift the timeline slightly above its previous position
+        val tickTop = (-5).dp.toPx()
+        val tickBottom = 5.dp.toPx()
+
+        val textPaint = Paint().apply {
+          isAntiAlias = true
+          color = timelineLabelColorInt
+          textSize = timelineTextSizePx
+          textAlign = Paint.Align.LEFT // we'll position explicitly
+        }
+
+        // Calculate label step to avoid overlapping labels horizontally
+        val minLabelSpacingPx = 24.dp.toPx()
+        val labelStep = kotlin.math.max(1, kotlin.math.ceil(minLabelSpacingPx / pixelsPerSecond).toInt())
+
+        val labelHorizontalPadding = 4.dp.toPx()
+        for (sec in 0..totalSeconds) {
+          val xPos = paddingPx + sec * pixelsPerSecond
+          // small tick for each second
+          drawLine(
+              color = timelineLabelColor,
+              start = Offset(xPos, tickTop),
+              end = Offset(xPos, tickBottom),
+              strokeWidth = 2f)
+
+          // draw a label only every `labelStep` seconds to avoid overlap
+          if (sec % labelStep == 0) {
+            val label = "${sec}s"
+
+            // measure label width
+            val labelWidth = textPaint.measureText(label)
+
+            // Preferred position: to the right of the tick
+            var labelX = xPos + labelHorizontalPadding
+
+            // If it would overflow past the right content bound, draw to the left of the tick instead
+            val rightBound = width - paddingPx
+            if (labelX + labelWidth > rightBound) {
+              // position so label's right edge sits left of the tick
+              labelX = xPos - labelHorizontalPadding - labelWidth
+              textPaint.textAlign = Paint.Align.LEFT
+            } else {
+              textPaint.textAlign = Paint.Align.LEFT
+            }
+
+            // Vertical center aligned with tick area, nudge label up a bit and clamp the baseline so it's not clipped
+            val tickCenterY = tickTop + (tickBottom - tickTop) / 2f
+            val preferredLabelBaseline = tickCenterY + timelineTextSizePx / 2f
+            val labelVerticalOffset = 20.dp.toPx() // move label up by 16.dp
+            val minLabelBaseline = timelineTextSizePx // ensure at least one text size down from top
+            val labelBaseline = max(minLabelBaseline, preferredLabelBaseline - labelVerticalOffset)
+
+            drawContext.canvas.nativeCanvas.drawText(label, labelX, labelBaseline, textPaint)
+           }
+         }
 
         drawLine(
             color = Color.Gray.copy(alpha = 0.5f),
@@ -1210,8 +1278,10 @@ fun TimeDisplay(playbackPosition: Float, audioDurationMillis: Int, modifier: Mod
   val currentPositionMillis = (playbackPosition * audioDurationMillis).roundToInt()
   val totalSeconds = audioDurationMillis / 1000
   val elapsedSeconds = currentPositionMillis / 1000
+  val totalMilliseconds = (audioDurationMillis % 1000) / 10
+  val elapsedMilliseconds = (currentPositionMillis % 1000) / 10
 
-  val timeText = String.format("%02d / %02d s", elapsedSeconds, totalSeconds)
+  val timeText = String.format("%02d.%02d / %02d.%02d s", elapsedSeconds, elapsedMilliseconds, totalSeconds, totalMilliseconds)
 
   Text(
       text = timeText,
