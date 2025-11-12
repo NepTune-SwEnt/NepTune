@@ -12,6 +12,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
 
+// This class was made using AI assistance.
 class StorageService(
     private val storage: FirebaseStorage,
     private val sampleRepo: SampleRepository = SampleRepositoryProvider.repository
@@ -19,7 +20,7 @@ class StorageService(
 
   private val storageRef = storage.reference
 
-  suspend fun updateSampleFiles(sample: Sample, localZipUri: Uri, localImageUri: Uri) {
+  suspend fun uploadSampleFiles(sample: Sample, localZipUri: Uri, localImageUri: Uri) {
     val sampleId = sample.id
     val localPreviewUri: Uri = Uri.EMPTY // TODO implement the mp3
 
@@ -37,7 +38,7 @@ class StorageService(
     }
 
     val newStorageZipPath = "samples/${sampleId}/${getFileNameFromUri(localZipUri)}"
-    val newStorageImagePath = "samples/${sampleId}.jpg"
+    val newStorageImagePath = "samples/${sampleId}/${getFileNameFromUri(localImageUri)}"
     val newStoragePreviewPath = "" // TODO implement the mp3
 
     coroutineScope {
@@ -65,8 +66,6 @@ class StorageService(
    * @param localUri The URI of the file on the device (e.g., after cropping).
    * @param storagePath The full path in Firebase Storage (e.g., "profile_pictures/userID.jpg").
    * @return The public download URL of the file.
-   *
-   * This function was made using AI assistance.
    */
   suspend fun uploadFileAndGetUrl(localUri: Uri, storagePath: String): String {
     try {
