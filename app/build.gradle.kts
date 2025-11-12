@@ -10,20 +10,6 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
 }
 
-jacoco {
-    toolVersion = "0.8.13"
-}
-
-configurations.all {
-    resolutionStrategy {
-        force(
-            "org.jacoco:org.jacoco.agent:0.8.13",
-            "org.jacoco:org.jacoco.build:0.8.13",
-            "org.ow2.asm:asm:9.8"
-        )
-    }
-}
-
 android {
     namespace = "com.neptune.neptune"
     compileSdk = 34
@@ -63,7 +49,7 @@ android {
     }
 
     testCoverage {
-        jacocoVersion = "0.8.13"
+        jacocoVersion = "0.8.11"
     }
 
     buildFeatures {
