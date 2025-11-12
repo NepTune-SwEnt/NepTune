@@ -20,6 +20,13 @@ class StorageService(
 
   private val storageRef = storage.reference
 
+  /**
+   * Uploads sample zip and image files, cleans up old files, and updates the sample in the repo.
+   *
+   * @param sample The sample metadata to update.
+   * @param localZipUri The local Uri for the .zip file.
+   * @param localImageUri The local Uri for the cover image.
+   */
   suspend fun uploadSampleFiles(sample: Sample, localZipUri: Uri, localImageUri: Uri) {
     val sampleId = sample.id
     val localPreviewUri: Uri = Uri.EMPTY // TODO implement the mp3
@@ -37,7 +44,7 @@ class StorageService(
       deleteFileByUrl(it.storagePreviewSamplePath)
     }
 
-    val newStorageZipPath = "samples/${sampleId}/${getFileNameFromUri(localZipUri)}"
+    val newStorageZipPath = "samples/${sampleId}.zip}"
     val newStorageImagePath = "samples/${sampleId}/${getFileNameFromUri(localImageUri)}"
     val newStoragePreviewPath = "" // TODO implement the mp3
 
