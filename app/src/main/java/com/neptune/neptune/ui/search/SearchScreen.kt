@@ -45,7 +45,7 @@ object SearchScreenTestTags {
   const val SAMPLE_LIST = "sampleList"
 }
 
-class SearchScreenTestTagsPerSampleCard(private val idInColumn: Int = 0) : BaseSampleTestTags {
+class SearchScreenTestTagsPerSampleCard(private val idInColumn: String = "0") : BaseSampleTestTags {
   override val prefix = "SearchScreen"
 
   override fun tag(name: String) = "${prefix}/${name}_$idInColumn"
@@ -116,7 +116,7 @@ fun ScrollableColumnOfSamples(
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
 ) {
   // Ensure the possibility to like in local
-  var likedSamples by remember { mutableStateOf(setOf<Int>()) }
+  var likedSamples by remember { mutableStateOf(setOf<String>()) }
   LazyColumn(
       modifier =
           modifier

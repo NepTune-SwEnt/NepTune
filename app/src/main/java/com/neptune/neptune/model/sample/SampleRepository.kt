@@ -56,7 +56,7 @@ interface SampleRepository {
    * @param author the username of the person who comments
    * @param text the comment
    */
-  suspend fun addComment(sampleId: Int, author: String, text: String)
+  suspend fun addComment(sampleId: String, author: String, text: String)
 
   /**
    * Observes real-time comments of a specific sample.
@@ -64,7 +64,7 @@ interface SampleRepository {
    * @param sampleId the ID of the sample
    * @return a Flow lists of comments
    */
-  fun observeComments(sampleId: Int): Flow<List<Comment>>
+  fun observeComments(sampleId: String): Flow<List<Comment>>
 
   /**
    * Check if the user has already liked a sample.
@@ -72,5 +72,5 @@ interface SampleRepository {
    * @param sampleId the ID of the sample
    * @return True if the user has already liked; false otherwise
    */
-  suspend fun hasUserLiked(sampleId: Int): Boolean
+  suspend fun hasUserLiked(sampleId: String): Boolean
 }

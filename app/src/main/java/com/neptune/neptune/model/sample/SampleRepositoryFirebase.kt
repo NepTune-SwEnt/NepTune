@@ -82,8 +82,7 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
   /** Check if the user has already like a sample */
   override suspend fun hasUserLiked(sampleId: String): Boolean {
     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return false
-    val likeDoc =
-        samples.document(sampleId).collection("likes").document(userId).get().await()
+    val likeDoc = samples.document(sampleId).collection("likes").document(userId).get().await()
     return likeDoc.exists()
   }
 
@@ -109,7 +108,7 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
   override fun observeComments(sampleId: String): Flow<List<Comment>> = callbackFlow {
     val listener =
         samples
-            .document(sampleId.toString())
+            .document(sampleId)
             .collection("comments")
             .orderBy("timestamp")
             .addSnapshotListener { snap, error ->

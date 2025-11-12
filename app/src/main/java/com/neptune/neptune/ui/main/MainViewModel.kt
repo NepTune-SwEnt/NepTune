@@ -57,8 +57,8 @@ class MainViewModel(
   private val _comments = MutableStateFlow<List<Comment>>(emptyList())
   val comments: StateFlow<List<Comment>> = _comments
 
-  private val _likedSamples = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
-  val likedSamples: StateFlow<Map<Int, Boolean>> = _likedSamples
+  private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+  val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
 
   init {
     if (useMockData) {
@@ -148,7 +148,7 @@ class MainViewModel(
     viewModelScope.launch {
       val allSamples = _discoverSamples.value + _followedSamples.value
 
-      val updatedStates = mutableMapOf<Int, Boolean>()
+      val updatedStates = mutableMapOf<String, Boolean>()
       for (sample in allSamples) {
         val liked = repo.hasUserLiked(sample.id)
         updatedStates[sample.id] = liked
@@ -157,11 +157,11 @@ class MainViewModel(
     }
   }
 
-  fun observeCommentsForSample(sampleId: Int) {
+  fun observeCommentsForSample(sampleId: String) {
     viewModelScope.launch { repo.observeComments(sampleId).collectLatest { _comments.value = it } }
   }
 
-  fun addComment(sampleId: Int, text: String) {
+  fun addComment(sampleId: String, text: String) {
     viewModelScope.launch {
       val profile = profileRepo.getProfile()
       val username = profile?.username ?: "Anonymous"

@@ -17,8 +17,8 @@ class FakeSampleRepository(initialSamples: List<Sample> = emptyList()) : SampleR
 
   private val _samples = MutableStateFlow(initialSamples)
   private val samples = initialSamples.toMutableList()
-  private val _commentsMap = mutableMapOf<Int, MutableStateFlow<List<Comment>>>()
-  private val likedSamples = mutableSetOf<Int>()
+  private val _commentsMap = mutableMapOf<String, MutableStateFlow<List<Comment>>>()
+  private val likedSamples = mutableSetOf<String>()
 
   override suspend fun getSamples(): List<Sample> = samples.toList()
 
@@ -55,11 +55,11 @@ class FakeSampleRepository(initialSamples: List<Sample> = emptyList()) : SampleR
     _samples.value = samples.toList()
   }
 
-  override suspend fun hasUserLiked(sampleId: Int): Boolean {
+  override suspend fun hasUserLiked(sampleId: String): Boolean {
     return likedSamples.contains(sampleId)
   }
 
-  override suspend fun addComment(sampleId: Int, author: String, text: String) {
+  override suspend fun addComment(sampleId: String, author: String, text: String) {
     val flow = _commentsMap.getOrPut(sampleId) { MutableStateFlow(emptyList()) }
     val currentComments = flow.value.toMutableList()
     val newComment = Comment(author = author, text = text, timestamp = Timestamp.now())
@@ -75,7 +75,7 @@ class FakeSampleRepository(initialSamples: List<Sample> = emptyList()) : SampleR
     }
   }
 
-  override fun observeComments(sampleId: Int): Flow<List<Comment>> {
+  override fun observeComments(sampleId: String): Flow<List<Comment>> {
     return _commentsMap.getOrPut(sampleId) { MutableStateFlow(emptyList()) }.asStateFlow()
   }
 }
