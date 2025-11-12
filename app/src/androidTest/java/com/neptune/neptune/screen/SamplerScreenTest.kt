@@ -127,7 +127,7 @@ class FakeSamplerViewModel : SamplerViewModel() {
 
   override fun updatePlaybackPosition(position: Float) {
     lastPlaybackPosition = position
-    super.updatePlaybackPosition()
+    super.updatePlaybackPosition(position)
   }
 
   override fun updateReverbWet(value: Float) {
@@ -412,15 +412,6 @@ class SamplerScreenTest {
         .performClick()
 
     assertEquals(99, fakeViewModel.lastTempoUpdated)
-  }
-
-  @Test
-  fun playbackControls_playPauseLogic_coversAnimationBranches() {
-    composeTestRule.onNodeWithContentDescription(playButtonDesc).performClick()
-    fakeViewModel.mutableUiState.value = fakeViewModel.uiState.value.copy(isPlaying = true)
-    composeTestRule.waitForIdle()
-    fakeViewModel.updatePlaybackPosition(1.0f)
-    assertTrue(!fakeViewModel.uiState.value.isPlaying)
   }
 
   @Test

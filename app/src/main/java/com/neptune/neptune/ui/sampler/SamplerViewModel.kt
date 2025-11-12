@@ -111,7 +111,11 @@ open class SamplerViewModel() : ViewModel() {
 
     val newPosition =
         if (durationMillis > 0) {
-          positionMillis.toFloat() / durationMillis.toFloat()
+          if (positionMillis >= durationMillis) {
+            0.0f
+          } else {
+            positionMillis.toFloat() / durationMillis.toFloat()
+          }
         } else {
           0.0f
         }

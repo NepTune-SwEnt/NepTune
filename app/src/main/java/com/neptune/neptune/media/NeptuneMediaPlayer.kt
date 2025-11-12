@@ -16,6 +16,10 @@ class NeptuneMediaPlayer() {
 
   fun setOnCompletionListener(listener: () -> Unit) {
     this.onCompletionCallback = listener
+    mediaPlayer?.setOnCompletionListener { player ->
+      player.seekTo(0)
+      onCompletionCallback?.invoke()
+    }
   }
 
   private var onPreparedCallback: (() -> Unit)? = null
