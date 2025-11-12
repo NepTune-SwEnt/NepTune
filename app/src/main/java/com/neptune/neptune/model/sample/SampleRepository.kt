@@ -56,7 +56,7 @@ interface SampleRepository {
    * @param sampleId the ID of the sample
    * @return a Flow lists of comments
    */
-  suspend fun observeComments(sampleId: Int): Flow<List<Comment>>
+  fun observeComments(sampleId: Int): Flow<List<Comment>>
 
   /**
    * Check if the user has already liked a sample.

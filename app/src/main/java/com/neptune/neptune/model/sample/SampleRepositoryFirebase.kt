@@ -56,7 +56,7 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
       "SampleRepositoryFirebase.toggleLike: Sample with id=$sampleId doesn't exist"
     }
     db.runTransaction { transaction ->
-          val likeSnapshot = transaction.get(likeDoc)
+          val likeSnapshot = transaction[likeDoc]
           val sampleSnapshot = transaction[sampleDoc]
           val currentLikes = sampleSnapshot.getLong("likes") ?: 0L
 
@@ -65,7 +65,7 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
             transaction.delete(likeDoc)
             transaction.update(sampleDoc, "likes", maxOf(0, currentLikes - 1))
           } else {
-            transaction.set(likeDoc, mapOf("liked" to true))
+            transaction[likeDoc] = mapOf("liked" to true)
             transaction.update(sampleDoc, "likes", currentLikes + 1)
           }
         }
@@ -99,7 +99,7 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
     sampleDoc.update("comments", currentCount + 1).await()
   }
   /** Observe the comment of a sample */
-  override suspend fun observeComments(sampleId: Int): Flow<List<Comment>> = callbackFlow {
+  override fun observeComments(sampleId: Int): Flow<List<Comment>> = callbackFlow {
     val listener =
         samples
             .document(sampleId.toString())

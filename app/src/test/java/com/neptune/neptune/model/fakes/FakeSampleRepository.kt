@@ -71,7 +71,7 @@ class FakeSampleRepository(initialSamples: List<Sample> = emptyList()) : SampleR
     }
   }
 
-  override suspend fun observeComments(sampleId: Int): Flow<List<Comment>> {
+  override fun observeComments(sampleId: Int): Flow<List<Comment>> {
     return _commentsMap.getOrPut(sampleId) { MutableStateFlow(emptyList()) }.asStateFlow()
   }
 }

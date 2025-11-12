@@ -55,10 +55,10 @@ class MainViewModel(
   private var observeUserJob: Job? = null // Proposed by gemini
 
   private val _comments = MutableStateFlow<List<Comment>>(emptyList())
-  val comments: MutableStateFlow<List<Comment>> = _comments
+  val comments: StateFlow<List<Comment>> = _comments
 
   private val _likedSamples = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
-  val likedSamples: MutableStateFlow<Map<Int, Boolean>> = _likedSamples
+  val likedSamples: StateFlow<Map<Int, Boolean>> = _likedSamples
 
   init {
     if (useMockData) {
