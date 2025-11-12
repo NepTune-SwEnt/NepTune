@@ -17,6 +17,7 @@ import androidx.compose.ui.test.performTextInput
 import com.google.firebase.Timestamp
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepositoryVar
+import com.neptune.neptune.model.project.TotalProjectItemsRepositoryCompose
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -28,40 +29,43 @@ class ProjectListScreenTest {
   @get:Rule val composeTestRule = createComposeRule()
 
   private lateinit var viewModel: ProjectListViewModel
-  private lateinit var repository: ProjectItemsRepositoryVar
+  private lateinit var localRepository: ProjectItemsRepositoryVar
+  private lateinit var cloudRepository: ProjectItemsRepositoryVar
   private val navCalls = mutableListOf<String>()
 
   @Before
   fun setUp() {
     navCalls.clear()
 
-    repository = ProjectItemsRepositoryVar()
+    localRepository = ProjectItemsRepositoryVar()
+    cloudRepository = ProjectItemsRepositoryVar()
     runBlocking {
       // create three projects with controlled timestamps and favorite flag
-      repository.addProject(
+      cloudRepository.addProject(
           ProjectItem(
-              id = "1",
+              uid = "1",
               name = "Old",
               description = "Old desc",
               isFavorite = false,
               lastUpdated = Timestamp(1, 0)))
-      repository.addProject(
+      cloudRepository.addProject(
           ProjectItem(
-              id = "2",
+              uid = "2",
               name = "Fav",
               description = "Favorite item",
               isFavorite = true,
               lastUpdated = Timestamp(2, 0)))
-      repository.addProject(
+      cloudRepository.addProject(
           ProjectItem(
-              id = "3",
+              uid = "3",
               name = "New",
               description = "New item",
               isFavorite = false,
               lastUpdated = Timestamp(3, 0)))
     }
 
-    viewModel = ProjectListViewModel(repository)
+    viewModel =
+        ProjectListViewModel(TotalProjectItemsRepositoryCompose(localRepository, cloudRepository))
 
     // Single setContent call per test lifecycle — inject navCalls collector here
     composeTestRule.setContent {
@@ -114,11 +118,12 @@ class ProjectListScreenTest {
   fun renamingProjectUpdatesUi() {
     // Open menu for project 1 and choose Rename
     composeTestRule.onNodeWithTag("menu_1").performClick()
-    composeTestRule.onNodeWithText("Rename").performClick()
+    composeTestRule.onNodeWithTag(ProjectListScreenTestTags.RENAME_BUTTON).performClick()
 
     // Input new name and confirm
+    composeTestRule.onNodeWithText("New name").performTextClearance()
     composeTestRule.onNodeWithText("New name").performTextInput("Old Renamed")
-    composeTestRule.onNodeWithText("Confirm").performClick()
+    composeTestRule.onNodeWithTag(ProjectListScreenTestTags.CONFIRM_DIALOG).performClick()
 
     composeTestRule.waitForIdle()
 
@@ -132,7 +137,9 @@ class ProjectListScreenTest {
 
     // Open menu for project 3 and choose Change description
     composeTestRule.onNodeWithTag("menu_3").performClick()
-    composeTestRule.onNodeWithText("Change description").performClick()
+    composeTestRule
+        .onNodeWithTag(ProjectListScreenTestTags.CHANGE_DESCRIPTION_BUTTON)
+        .performClick()
 
     // Input new description and confirm
     composeTestRule
@@ -141,13 +148,13 @@ class ProjectListScreenTest {
     composeTestRule
         .onNodeWithTag(ProjectListScreenTestTags.DESCRIPTION_TEXT_FIELD)
         .performTextInput(newDesc)
-    composeTestRule.onNodeWithText("Confirm").performClick()
+    composeTestRule.onNodeWithTag(ProjectListScreenTestTags.CONFIRM_DIALOG).performClick()
 
     composeTestRule.waitForIdle()
 
     // Verify repository has the updated description
     runBlocking {
-      val p = repository.getProject("3")
+      val p = cloudRepository.getProject("3")
       Log.i(
           "change_description_updates_repositoryTest",
           "Project after description change: ${p.description}")
@@ -159,7 +166,8 @@ class ProjectListScreenTest {
   fun deleteProjectRemovesItemFromUi() {
     // Delete project 1
     composeTestRule.onNodeWithTag("menu_1").performClick()
-    composeTestRule.onNodeWithText("Delete").performClick()
+    composeTestRule.onNodeWithTag(ProjectListScreenTestTags.DELETE_BUTTON).performClick()
+    composeTestRule.onNodeWithTag(ProjectListScreenTestTags.CONFIRM_DIALOG).performClick()
 
     composeTestRule.waitForIdle()
 

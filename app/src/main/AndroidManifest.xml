@@ -7,9 +7,10 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="android.resource" />
         </intent>
-    </queries><application
-    android:name=".NepTuneApplication"
-    android:allowBackup="true"
+    </queries>
+    <application
+        android:name=".NepTuneApplication"
+        android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
