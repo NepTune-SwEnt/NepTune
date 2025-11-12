@@ -79,7 +79,10 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
         comments = (get("comments") as? Number)?.toInt() ?: 0,
         downloads = (get("downloads") as? Number)?.toInt() ?: 0,
         uriString = getString("uriString").orEmpty(),
-        ownerId = ownerId)
+        ownerId = ownerId,
+        storageZipPath = getString("storageZipPath").orEmpty(),
+        storageImagePath = getString("storageImagePath").orEmpty(),
+        storagePreviewSamplePath = getString("storagePreviewSamplePath").orEmpty(),)
   }
 
   private fun Sample.toMap(): Map<String, Any> =
@@ -93,5 +96,8 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
           "comments" to comments,
           "downloads" to downloads,
           "uriString" to uriString,
-          "ownerId" to ownerId)
+          "ownerId" to ownerId,
+          "storageZipPath" to storageZipPath,
+          "storageImagePath" to storageImagePath,
+          "storagePreviewSamplePath" to storagePreviewSamplePath,)
 }
