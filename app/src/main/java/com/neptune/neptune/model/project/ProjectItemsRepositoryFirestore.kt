@@ -14,7 +14,6 @@ const val PROJECT_ITEMS_COLLECTION_PATH = "projects"
 data class SampleDocument(
     val name: String,
     val description: String,
-    @get:PropertyName("isStoredInCloud") val isStoredInCloud: Boolean,
     @get:PropertyName("isFavorite") val isFavorite: Boolean,
     val tags: List<String>,
     val audioPreviewUri: String?,
@@ -28,7 +27,6 @@ fun ProjectItem.toSample(): SampleDocument {
   return SampleDocument(
       name = name,
       description = description,
-      isStoredInCloud = isStoredInCloud,
       isFavorite = isFavorite,
       tags = tags,
       audioPreviewUri = audioPreviewUri,
