@@ -55,7 +55,7 @@ class FakeSampleRepository(initialSamples: List<Sample> = emptyList()) : SampleR
     return likedSamples.contains(sampleId)
   }
 
-  override suspend fun addComments(sampleId: Int, author: String, text: String) {
+  override suspend fun addComment(sampleId: Int, author: String, text: String) {
     val flow = _commentsMap.getOrPut(sampleId) { MutableStateFlow(emptyList()) }
     val currentComments = flow.value.toMutableList()
     val newComment = Comment(author = author, text = text, timestamp = Timestamp.now())

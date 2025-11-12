@@ -134,7 +134,7 @@ class SampleRepositoryFirebaseTest {
     repository.addSample(sample)
 
     // Add a comment
-    repository.addComments(3, "Alice", "Hello world!")
+    repository.addComment(3, "Alice", "Hello world!")
 
     // Observe the comments in real time
     val commentsFlow = repository.observeComments(3)

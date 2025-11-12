@@ -81,7 +81,7 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
   }
 
   /** Add a new comment */
-  override suspend fun addComments(sampleId: Int, author: String, text: String) {
+  override suspend fun addComment(sampleId: Int, author: String, text: String) {
     val sampleDoc = samples.document(sampleId.toString())
     val snapshot = sampleDoc.get().await()
 
