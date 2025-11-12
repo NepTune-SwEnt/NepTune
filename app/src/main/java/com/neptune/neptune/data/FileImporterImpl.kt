@@ -36,12 +36,6 @@ class FileImporterImpl(
   private val fileImporterTag = "FileImporter"
   private val defaultBaseName = "audio"
 
-  // Single source of truth: add new formats here (one line)
-  private val supportedFormats: Map<String, String> =
-      mapOf("mp3" to "audio/mpeg", "wav" to "audio/wav", "m4a" to "audio/mp4")
-  private val allowedExts = supportedFormats.keys
-  private val allowedMimes = supportedFormats.values.toSet()
-  private val supportedLabel = supportedFormats.keys.joinToString("/") { it.uppercase() }
 
   @RequiresApi(Build.VERSION_CODES.Q)
   override suspend fun importFile(sourceUri: URI): FileImporter.ImportedFile =
@@ -113,8 +107,8 @@ class FileImporterImpl(
         // Derive base/extension and mime
         val ext = file.extension.lowercase()
         val mime =
-            mimeFromExt(ext)
-                ?: throw UnsupportedAudioFormat("Only $supportedLabel are supported. Got ext=$ext")
+            AudioFormats.mimeFromExt(ext)
+                ?: throw UnsupportedAudioFormat("Only $AudioFormats.supportedLabel are supported. Got ext=$ext")
 
         val rawBase = file.nameWithoutExtension
         val base =
@@ -175,12 +169,6 @@ class FileImporterImpl(
             durationMs = duration ?: 0L)
       }
 
-  // Pick extension for a given MIME (ex : "audio/mpeg" -> "mp3")
-  private fun extFromMime(mime: String?): String? =
-      mime?.let { m -> supportedFormats.entries.firstOrNull { it.value == m }?.key }
-
-  // Pick MIME for a given extension (ex : "mp3" -> "audio/mpeg")
-  private fun mimeFromExt(ext: String?): String? = ext?.let { supportedFormats[it] }
 
   // Ensures the file is one of the supported formats by MIME and/or extension; derives a sane name.
   private fun resolveAndValidateAudio(uri: Uri): ParsedFromUri {
@@ -201,11 +189,11 @@ class FileImporterImpl(
 
     val extFromName = display?.substringAfterLast('.', "")?.lowercase().orEmpty()
     val extFromPath = displayFromPath?.substringAfterLast('.', "")?.lowercase().orEmpty()
-    val extFromMime = extFromMime(crMime).orEmpty()
+    val extFromMime = AudioFormats.extFromMime(crMime).orEmpty()
 
     val ext =
         sequenceOf(extFromName, extFromMime, extFromPath)
-            .firstOrNull { it in allowedExts }
+            .firstOrNull { it in AudioFormats.allowedExts }
             .orEmpty()
 
     val rawBase =
@@ -221,17 +209,17 @@ class FileImporterImpl(
 
     val normalizedMime: String? =
         when {
-          crMime in allowedMimes -> crMime
-          ext.isNotEmpty() -> mimeFromExt(ext)
+          crMime in AudioFormats.allowedMimes -> crMime
+          ext.isNotEmpty() -> AudioFormats.mimeFromExt(ext)
           else -> null
         }
 
-    if (normalizedMime !in allowedMimes) {
+    if (normalizedMime !in AudioFormats.allowedMimes) {
       throw UnsupportedAudioFormat(
-          "Only $supportedLabel are supported. Got mime=$crMime name=$display")
+          "Only $AudioFormats.supportedLabel are supported. Got mime=$crMime name=$display")
     }
 
-    val finalExt = extFromMime(normalizedMime) ?: ext.ifEmpty { allowedExts.first() }
+    val finalExt = AudioFormats.extFromMime(normalizedMime) ?: ext.ifEmpty { AudioFormats.allowedExts.first() }
 
     return ParsedFromUri(normalizedMime!!, base, finalExt)
   }
