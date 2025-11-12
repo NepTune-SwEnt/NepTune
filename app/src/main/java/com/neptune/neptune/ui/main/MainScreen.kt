@@ -579,6 +579,8 @@ fun CommentDialog(
                 LazyColumn(
                     modifier =
                         Modifier.weight(1f)
+                            .fillMaxWidth()
+                            .heightIn(min = 200.dp)
                             .padding(vertical = 8.dp)
                             .testTag(MainScreenTestTags.COMMENT_LIST),
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
