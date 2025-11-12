@@ -125,9 +125,7 @@ class FileImporterImpl(
                 .replace(Regex("[^A-Za-z0-9._-]+"), "_")
                 .replace(Regex("_+"), "_")
                 .trim('_', '.', ' ')
-                .ifEmpty {
-                  defaultBaseName
-                }
+                .ifEmpty { defaultBaseName }
 
         val dir = paths.audioWorkspace()
         val target = uniqueFile(dir, "${base}.${ext}")
@@ -220,9 +218,7 @@ class FileImporterImpl(
             .replace(Regex("[^A-Za-z0-9._-]+"), "_")
             .replace(Regex("_+"), "_")
             .trim('_', '.', ' ')
-            .ifEmpty {
-              defaultBaseName
-            }
+            .ifEmpty { defaultBaseName }
 
     val normalizedMime: String? =
         when {
