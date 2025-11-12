@@ -70,6 +70,7 @@ object SamplerTestTags {
 
   const val PITCH_SELECTOR = "pitchSelector"
   const val TEMPO_SELECTOR = "tempoSelector"
+  const val TIME_SIGNATURE_SELECTOR = "timeSignatureSelector"
 
   const val KNOB_REVERB_WET = "knobReverbWet"
   const val KNOB_REVERB_SIZE = "knobReverbSize"
@@ -237,6 +238,15 @@ fun PlaybackAndWaveformControls(
                       Modifier.border(
                               2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
                           .testTag(SamplerTestTags.TEMPO_SELECTOR))
+              Spacer(modifier = Modifier.width(8.dp))
+
+              // Time signature dropdown placed next to tempo
+              TimeSignatureSelector(
+                  selected = uiState.timeSignature,
+                  onSelect = { viewModel.updateTimeSignature(it) },
+                  modifier = Modifier
+                      .border(2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
+                      .testTag(SamplerTestTags.TIME_SIGNATURE_SELECTOR))
             }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -295,6 +305,43 @@ fun PitchTempoSelector(
               modifier = Modifier.size(24.dp).clickable(onClick = onDecrease))
         }
       }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TimeSignatureSelector(
+    selected: String,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+  var expanded by remember { mutableStateOf(false) }
+  val options = listOf("4/4", "3/4", "2/4", "6/8", "5/4")
+
+  Box(modifier = modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clickable { expanded = true }
+            .padding(horizontal = 8.dp, vertical = 4.dp)) {
+          Text(text = "Time", color = NepTuneTheme.colors.smallText, fontSize = 16.sp)
+          Text(
+              text = selected,
+              color = NepTuneTheme.colors.smallText,
+              fontSize = 16.sp,
+              modifier = Modifier.padding(start = 6.dp))
+          Icon(
+              imageVector = Icons.Default.ArrowDropDown,
+              contentDescription = "Open",
+              tint = NepTuneTheme.colors.accentPrimary,
+              modifier = Modifier.size(20.dp))
+        }
+
+    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+      options.forEach { opt ->
+        DropdownMenuItem(text = { Text(opt) }, onClick = { onSelect(opt); expanded = false })
+      }
+    }
+  }
 }
 
 @Composable
