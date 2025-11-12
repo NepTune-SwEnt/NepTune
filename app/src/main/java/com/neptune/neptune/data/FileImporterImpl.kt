@@ -212,8 +212,7 @@ class FileImporterImpl(
         (display ?: defaultBaseName).removeSuffix(if (ext.isNotEmpty()) ".${'$'}ext" else "")
     val base =
         rawBase
-            // remove all whitespace entirely
-            .replace(Regex("\\s+"), "")
+            .replace(Regex("\\s+"), "_")
             // replace invalid chars with '_' and collapse consecutive underscores
             .replace(Regex("[^A-Za-z0-9._-]+"), "_")
             .replace(Regex("_+"), "_")
