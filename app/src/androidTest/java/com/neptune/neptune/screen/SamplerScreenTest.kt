@@ -28,7 +28,6 @@ import androidx.compose.ui.test.swipeWithVelocity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.test.platform.app.InstrumentationRegistry
 import com.neptune.neptune.MainActivity
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
@@ -222,7 +221,6 @@ class SamplerScreenTest {
     val factory = SamplerViewModelFactory(fakeViewModel)
 
     composeTestRule.activity.setContent {
-      val context = InstrumentationRegistry.getInstrumentation().targetContext
       val mediaPlayer = NeptuneMediaPlayer()
       CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
         SampleAppTheme {

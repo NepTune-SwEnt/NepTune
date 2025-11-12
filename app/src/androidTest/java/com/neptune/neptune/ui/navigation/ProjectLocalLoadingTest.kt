@@ -2,7 +2,6 @@ package com.neptune.neptune.ui.navigation
 
 import android.net.Uri
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -10,9 +9,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.test.platform.app.InstrumentationRegistry
 import com.google.firebase.Timestamp
 import com.neptune.neptune.MainActivity
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.NeptuneApp
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.project.ProjectItem
@@ -36,7 +35,7 @@ import org.junit.Rule
 import org.junit.Test
 
 private fun copyAssetToFile(assetPath: String, targetFile: File) {
-  val context = InstrumentationRegistry.getInstrumentation().targetContext
+  val context = NepTuneApplication.appContext
   context.assets.open(assetPath).use { input ->
     FileOutputStream(targetFile).use { output -> input.copyTo(output) }
   }
@@ -94,15 +93,9 @@ class LocalProjectLoadingTest {
   private val ASSET_ZIP_PATH = "fakeProject.zip"
   private val TARGET_PROJECT_ID = "42"
 
-  @Composable
-  private fun getSamplerViewModelInstance(): SamplerViewModel {
-    return viewModel()
-  }
-
   @Before
   fun setUp() {
-    val context = InstrumentationRegistry.getInstrumentation().targetContext
-
+    val context = NepTuneApplication.appContext
     assetZipFile = File(context.cacheDir, "test_${ASSET_ZIP_PATH}")
     context.assets.open(ASSET_ZIP_PATH).use { inputStream ->
       FileOutputStream(assetZipFile).use { outputStream -> inputStream.copyTo(outputStream) }
@@ -147,7 +140,7 @@ class LocalProjectLoadingTest {
   @Test
   fun loadProjectData_updatesUiStateWithRealExtractor() = runBlocking {
     val viewModel = SamplerViewModel()
-    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    val context = NepTuneApplication.appContext
     val zipFile = File(context.cacheDir, "fakeProject.zip")
     copyAssetToFile("fakeProject.zip", zipFile)
 
@@ -160,18 +153,6 @@ class LocalProjectLoadingTest {
     assertEquals(0.6f, state.sustain, 0.001f)
     assertEquals(4, state.compRatio)
   }
-}
-
-class TestableSamplerViewModel(private val player: NeptuneMediaPlayer) : SamplerViewModel() {
-
-  init {
-    player.setOnCompletionListener {
-      _uiState.update { it.copy(isPlaying = false, playbackPosition = 0f) }
-    }
-  }
-
-  override val mediaPlayer: NeptuneMediaPlayer
-    get() = player
 }
 
 class SamplerViewModelTogglePlayTest {
@@ -192,8 +173,7 @@ class SamplerViewModelTogglePlayTest {
 
   @Test
   fun togglePlayPause_firstPlay_startsPlayingFromZero() {
-
-    {
+    runBlocking {
       viewModel.togglePlayPause()
       val state = viewModel.uiState.value
       assertTrue("Should be playing", state.isPlaying)
@@ -205,7 +185,6 @@ class SamplerViewModelTogglePlayTest {
 
   @Test
   fun togglePlayPause_whenPlaying_pauses() {
-
     runBlocking {
       fakePlayer.isPlayingState = true
       viewModel.togglePlayPause()
