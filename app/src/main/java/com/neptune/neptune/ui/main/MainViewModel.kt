@@ -3,21 +3,18 @@ package com.neptune.neptune.ui.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.storage.FirebaseStorage
 import com.neptune.neptune.data.ImageStorageRepository
+import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
@@ -33,7 +30,9 @@ class MainViewModel(
     private val repo: SampleRepository = SampleRepositoryProvider.repository,
     private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
     private val useMockData: Boolean = false,
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
+    private val imageRepo: ImageStorageRepository = ImageStorageRepository(),
+    private val storageService: StorageService = StorageService(FirebaseStorage.getInstance())
 ) : ViewModel() {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
   val discoverSamples: MutableStateFlow<List<Sample>> = _discoverSamples
@@ -41,7 +40,6 @@ class MainViewModel(
   private val _followedSamples = MutableStateFlow<List<Sample>>(emptyList())
   val followedSamples: StateFlow<List<Sample>> = _followedSamples
 
-  private val imageRepo = ImageStorageRepository()
   private val _userAvatar = MutableStateFlow<Any?>(null)
   val userAvatar: StateFlow<Any?> = _userAvatar.asStateFlow()
 
@@ -51,7 +49,11 @@ class MainViewModel(
         _currentUserFlow.value = firebaseAuth.currentUser
       }
 
-  private var observeUserJob: Job? = null // Proposed by gemini
+  private val avatarFileName: String?
+    get() = auth.currentUser?.uid?.let { "avatar_$it.jpg" }
+
+  private val avatarStoragePath: String?
+    get() = auth.currentUser?.uid?.let { "avatars/$it.jpg" }
 
   init {
     if (useMockData) {
@@ -61,7 +63,7 @@ class MainViewModel(
       loadSamplesFromFirebase()
     }
     auth.addAuthStateListener(authListener)
-    observeUser()
+    forceRefreshAndLoadAvatar()
   }
 
   private fun loadSamplesFromFirebase() {
@@ -77,7 +79,7 @@ class MainViewModel(
   }
 
   fun onResume() {
-    observeUser()
+    forceRefreshAndLoadAvatar()
   }
 
   override fun onCleared() {
@@ -85,38 +87,30 @@ class MainViewModel(
     auth.removeAuthStateListener(authListener)
   }
 
-  /**
-   * View the profile and verify the local avatar. Give priority to the local (modified) avatar over
-   * the remote avatar. This function was made using AI assistance
-   */
-  @OptIn(ExperimentalCoroutinesApi::class)
-  private fun observeUser() {
-    observeUserJob?.cancel()
-    observeUserJob =
-        viewModelScope.launch {
-          _currentUserFlow
-              .flatMapLatest { firebaseUser ->
-                if (firebaseUser == null) {
-                  flowOf(null)
-                } else {
-                  profileRepo.observeProfile().map { profile ->
-                    val dynamicFileName = "avatar_${firebaseUser.uid}.jpg"
-                    val localUri = imageRepo.getImageUri(dynamicFileName)
-                    if (localUri != null) {
-                      localUri
-                          .buildUpon()
-                          .appendQueryParameter("t", System.currentTimeMillis().toString())
-                          .build()
-                    } else if (profile?.avatarUrl != null) {
-                      profile.avatarUrl
-                    } else {
-                      null
-                    }
-                  }
-                }
-              }
-              .collectLatest { avatar -> _userAvatar.value = avatar }
+  private fun forceRefreshAndLoadAvatar() {
+    viewModelScope.launch {
+      val storagePath = avatarStoragePath
+      val fileName = avatarFileName
+
+      if (storagePath != null && fileName != null) {
+        val downloadUrl = storageService.getDownloadUrl(storagePath)
+
+        if (downloadUrl != null) {
+          imageRepo.saveImageFromUrl(downloadUrl, fileName)
         }
+      }
+
+      val localUri = if (fileName != null) imageRepo.getImageUri(fileName) else null
+      if (localUri != null) {
+        _userAvatar.value =
+            localUri
+                .buildUpon()
+                .appendQueryParameter("t", System.currentTimeMillis().toString())
+                .build()
+      } else {
+        _userAvatar.value = null
+      }
+    }
   }
 
   fun onLikeClicked(sample: Sample, isLiked: Boolean) {
