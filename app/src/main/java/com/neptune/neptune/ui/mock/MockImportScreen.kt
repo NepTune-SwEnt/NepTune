@@ -3,6 +3,7 @@ package com.neptune.neptune.ui.mock
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
@@ -183,10 +184,10 @@ fun MockImportScreen(
           if (!deleted) {
             onDeleteFailed?.invoke()
             // provide the same toast behavior as before
-            android.widget.Toast.makeText(
+            Toast.makeText(
                     context,
                     "Could not delete temporary file ${proposedFileToImport?.absolutePath}",
-                    android.widget.Toast.LENGTH_SHORT)
+                    Toast.LENGTH_SHORT)
                 .show()
           }
           showNameDialog = false
