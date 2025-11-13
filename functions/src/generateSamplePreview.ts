@@ -84,6 +84,7 @@ export const generateSamplePreview = onObjectFinalized(
 
     } catch (error) {
       logger.error("Failed to generate preview", {sampleId, error});
+      throw error;
     } finally {
       await rm(tmpRoot, {recursive: true, force: true});
     }
