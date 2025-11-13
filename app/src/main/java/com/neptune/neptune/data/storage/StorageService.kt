@@ -8,9 +8,11 @@ import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 // This class was made using AI assistance.
 class StorageService(
@@ -72,10 +74,12 @@ class StorageService(
    */
   suspend fun uploadFileAndGetUrl(localUri: Uri, storagePath: String): String {
     try {
-      val fileRef = storageRef.child(storagePath)
-      fileRef.putFile(localUri).await()
-      val downloadUrl = fileRef.downloadUrl.await()
-      return downloadUrl.toString()
+      return withContext(Dispatchers.IO) {
+        val fileRef = storageRef.child(storagePath)
+        fileRef.putFile(localUri).await()
+        val downloadUrl = fileRef.downloadUrl.await()
+        downloadUrl.toString()
+      }
     } catch (e: Exception) {
       throw Exception("Failed to upload file: ${e.message}", e)
     }
@@ -85,24 +89,36 @@ class StorageService(
     if (fileUrl.isBlank()) return
 
     try {
-      val fileRef = storage.getReferenceFromUrl(fileUrl)
-      fileRef.delete().await()
+      withContext(Dispatchers.IO) {
+        val fileRef = storage.getReferenceFromUrl(fileUrl)
+        fileRef.delete().await()
+      }
     } catch (e: Exception) {
       Log.w("StorageService", "Failed to delete old file: $fileUrl", e)
     }
   }
 
   /** Retrieves the display name of a file from its Content URI. */
-  private fun getFileNameFromUri(uri: Uri): String? {
+  private suspend fun getFileNameFromUri(uri: Uri): String? {
     if (uri.scheme == "content") {
-      NepTuneApplication.appContext.contentResolver.query(uri, null, null, null, null)?.use { cursor
-        ->
-        if (cursor.moveToFirst()) {
-          val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-          if (nameIndex != -1) {
-            return cursor.getString(nameIndex)
+      val contentName =
+          withContext(Dispatchers.IO) {
+            NepTuneApplication.appContext.contentResolver.query(uri, null, null, null, null)?.use {
+                cursor ->
+              if (cursor.moveToFirst()) {
+                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (nameIndex != -1) {
+                  cursor.getString(nameIndex)
+                } else {
+                  null
+                }
+              } else {
+                null
+              }
+            }
           }
-        }
+      if (contentName != null) {
+        return contentName
       }
     }
     return uri.lastPathSegment?.substringAfterLast('/')
