@@ -25,9 +25,59 @@ jobs:
 
       - name: Make Gradle executable
         run: chmod +x ./gradlew
+      - name: Decode private key and certificate, create keystore
+        env:
+          SIGNING_PRIVATE_KEY: ${{ secrets.SIGNING_PRIVATE_KEY }}
+          SIGNING_CERTIFICATE: ${{ secrets.SIGNING_CERTIFICATE }}
+        run: |
+          # Create a temporary directory for the keystore
+          mkdir -p ~/.keystore
 
-      - name: Print sha1 fingerprint
-        run: ./gradlew signingReport
+          # Decode the private key and certificate from the secrets and save them as PEM files
+          echo "$SIGNING_PRIVATE_KEY" > ~/.keystore/private_key.pem
+          echo "$SIGNING_CERTIFICATE" > ~/.keystore/certificate.pem
+
+          # Create a PKCS12 keystore from the private key and certificate
+          openssl pkcs12 -export \
+            -inkey ~/.keystore/private_key.pem \
+            -in ~/.keystore/certificate.pem \
+            -out ~/.keystore/test-release.p12 \
+            -name testalias \
+            -passout pass:testpass
+
+          # Convert the PKCS12 keystore to JKS format (which Android uses)
+          keytool -importkeystore \
+            -srckeystore ~/.keystore/test-release.p12 \
+            -srcstorepass testpass \
+            -srcstoretype PKCS12 \
+            -destkeystore ~/.keystore/test-release.keystore \
+            -deststoretype JKS \
+            -storepass testpass \
+            -keypass testpass \
+            -alias testalias
+
+          # Set the path to the keystore as an environment variable
+          echo "KEYSTORE_FILE=$(readlink -f ~/.keystore/test-release.keystore)" >> $GITHUB_ENV
+
+      - name: Build APK Release with Custom Key
+        env:
+          KEYSTORE_PASSWORD: testpass
+          KEY_ALIAS: testalias
+          KEY_PASSWORD: testpass
+        run: |
+          echo "Keystore_file is: $KEYSTORE_FILE" && \
+          echo $(readlink -f ~/.keystore/test-release.keystore) &&
+          ./gradlew clean assembleRelease --info
+
+      - name: Extract SHA-1 Fingerprint from Release Keystore
+        id: extract_sha
+        run: |
+          SHA1=$(keytool -list -v \
+              -keystore $KEYSTORE_FILE \
+              -alias testalias \
+              -storepass testpass | grep 'SHA1' | awk '{print $2}')
+          echo "SHA1=${SHA1}" >> $GITHUB_ENV
+          echo "SHA1 fingerprint: ${SHA1}"
 
       - name: Decode Keystore
         run: |
