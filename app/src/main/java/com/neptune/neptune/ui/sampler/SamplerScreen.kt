@@ -1242,9 +1242,7 @@ fun InitialSetupDialog(viewModel: SamplerViewModel) {
       text = {
         Column(
             modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-              Text(
-                  "Define the project pitch and tempo",
-                  style = MaterialTheme.typography.bodyLarge)
+              Text("Define the project pitch and tempo", style = MaterialTheme.typography.bodyLarge)
               OutlinedTextField(
                   value = uiState.inputTempo.toString(),
                   onValueChange = { newValue ->
