@@ -201,4 +201,25 @@ class SamplerViewModelTogglePlayTest {
     val state = viewModel.uiState.value
     assertEquals(0f, state.playbackPosition)
   }
+
+  @Test
+  fun loadProjectWithoutTempoPitch_showsInitialSetupDialog() = runBlocking {
+    val viewModel = SamplerViewModel()
+    val context = NepTuneApplication.appContext
+    val zipFile = File(context.cacheDir, "fakeProject2.zip")
+
+    copyAssetToFile("fakeProject2.zip", zipFile)
+
+    viewModel.loadProjectData(zipFile.absolutePath)
+    delay(500)
+
+    val state = viewModel.uiState.value
+
+    assertTrue("Initial setup dialog should be shown", state.showInitialSetupDialog)
+    assertEquals(state.tempo, state.inputTempo)
+    assertEquals(state.pitchNote, state.inputPitchNote)
+    assertEquals(state.pitchOctave, state.inputPitchOctave)
+
+    assertNotNull("Audio URI should be set even if tempo/pitch missing", state.currentAudioUri)
+  }
 }

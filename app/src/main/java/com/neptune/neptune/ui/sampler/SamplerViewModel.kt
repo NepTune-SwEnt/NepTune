@@ -24,7 +24,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.FileOutputStream
 
 enum class SamplerTab {
   BASICS,
@@ -72,7 +71,11 @@ data class SamplerUiState(
     val compAttack: Float = 0.010f,
     val compDecay: Float = 0.100f,
     val currentAudioUri: Uri? = null,
-    val audioDurationMillis: Int = 4000
+    val audioDurationMillis: Int = 4000,
+    val showInitialSetupDialog: Boolean = false,
+    val inputTempo: Int = 120,
+    val inputPitchNote: String = "C",
+    val inputPitchOctave: Int = 4
 ) {
   val fullPitch: String
     get() = "$pitchNote$pitchOctave"
@@ -232,8 +235,29 @@ open class SamplerViewModel() : ViewModel() {
     _uiState.update { it.copy(pitch = newPitch) }
   }
 
+  fun updateInputPitch(note: String, octave: Int) {
+    _uiState.update {
+      it.copy(inputPitchNote = note, inputPitchOctave = octave.coerceIn(minOctave, maxOctave))
+    }
+  }
+
   open fun updateTempo(newTempo: Int) {
     _uiState.update { it.copy(tempo = newTempo) }
+  }
+
+  fun updateInputTempo(newTempo: Int) {
+    _uiState.update { it.copy(inputTempo = newTempo.coerceIn(50, 200)) }
+  }
+
+  fun confirmInitialSetup() {
+    val currentState = _uiState.value
+    _uiState.update {
+      it.copy(
+          tempo = currentState.inputTempo,
+          pitchNote = currentState.inputPitchNote,
+          pitchOctave = currentState.inputPitchOctave,
+          showInitialSetupDialog = false)
+    }
   }
 
   open fun saveSampler() {}
@@ -272,6 +296,44 @@ open class SamplerViewModel() : ViewModel() {
       }
 
       currentState.copy(pitchNote = NOTE_ORDER[newIndex], pitchOctave = newOctave)
+    }
+  }
+
+  fun increaseInputPitch() {
+    _uiState.update { currentState ->
+      val currentIndex = NOTE_ORDER.indexOf(currentState.inputPitchNote)
+      var newIndex = currentIndex + 1
+      var newOctave = currentState.inputPitchOctave
+
+      if (currentState.inputPitchNote == "B" && currentState.inputPitchOctave == maxOctave) {
+        return@update currentState
+      }
+
+      if (newIndex >= NOTE_ORDER.size) {
+        newIndex = 0
+        newOctave++
+      }
+
+      currentState.copy(inputPitchNote = NOTE_ORDER[newIndex], inputPitchOctave = newOctave)
+    }
+  }
+
+  fun decreaseInputPitch() {
+    _uiState.update { currentState ->
+      val currentIndex = NOTE_ORDER.indexOf(currentState.inputPitchNote)
+      var newIndex = currentIndex - 1
+      var newOctave = currentState.inputPitchOctave
+
+      if (currentState.inputPitchNote == "C" && currentState.inputPitchOctave == minOctave) {
+        return@update currentState
+      }
+
+      if (newIndex < 0) {
+        newIndex = NOTE_ORDER.size - 1
+        newOctave--
+      }
+
+      currentState.copy(inputPitchNote = NOTE_ORDER[newIndex], inputPitchOctave = newOctave)
     }
   }
 
@@ -419,59 +481,115 @@ open class SamplerViewModel() : ViewModel() {
         val zipFile = File(zipFilePath)
         val metadata: SamplerProjectMetadata = extractor.extractMetadata(zipFile)
         val audioFileName = metadata.audioFiles.firstOrNull()?.name
+
         val audioUri =
             if (audioFileName != null) {
               extractor.extractAudioFile(zipFile, context, audioFileName)
             } else {
               null
             }
+
         val sampleDuration = mediaPlayer.getDuration()
         Log.d("SamplerViewModel", "Audio URI chargée: $audioUri")
+
         val paramMap = metadata.parameters.associate { it.type to it.value }
 
-        _uiState.update { current ->
-          val newEqBands = current.eqBands.toMutableList()
-          EQ_FREQUENCIES.forEachIndexed { index, _ ->
-            paramMap["eq_band_$index"]?.let { gain ->
-              newEqBands[index] = gain.coerceIn(EQ_GAIN_MIN, EQ_GAIN_MAX)
+        val tempoValue = paramMap["tempo"]
+        val pitchValue = paramMap["pitch"]
+
+        val tempoFound = tempoValue != null
+        val pitchFound = pitchValue != null
+        val needsSetup = !tempoFound || !pitchFound
+
+        if (needsSetup) {
+          _uiState.update { current ->
+            val newEqBands = current.eqBands.toMutableList()
+            EQ_FREQUENCIES.forEachIndexed { index, _ ->
+              paramMap["eq_band_$index"]?.let { gain ->
+                newEqBands[index] = gain.coerceIn(EQ_GAIN_MIN, EQ_GAIN_MAX)
+              }
             }
+            current.copy(
+                showInitialSetupDialog = true,
+                attack = paramMap["attack"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.attack,
+                decay = paramMap["decay"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.decay,
+                sustain = paramMap["sustain"]?.coerceIn(0f, ADSR_MAX_SUSTAIN) ?: current.sustain,
+                release = paramMap["release"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.release,
+                reverbWet = paramMap["reverbWet"]?.coerceIn(0f, 1f) ?: current.reverbWet,
+                reverbSize =
+                    paramMap["reverbSize"]?.coerceIn(0.1f, REVERB_SIZE_MAX) ?: current.reverbSize,
+                reverbWidth = paramMap["reverbWidth"]?.coerceIn(0f, 1f) ?: current.reverbWidth,
+                reverbDepth = paramMap["reverbDepth"]?.coerceIn(0f, 1f) ?: current.reverbDepth,
+                reverbPredelay =
+                    paramMap["reverbPredelay"]?.coerceIn(0f, PREDELAY_MAX_MS)
+                        ?: current.reverbPredelay,
+                compThreshold =
+                    paramMap["compThreshold"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)
+                        ?: current.compThreshold,
+                compRatio =
+                    paramMap["compRatio"]?.let { it.roundToInt().coerceIn(1, 20) }
+                        ?: current.compRatio,
+                compKnee = paramMap["compKnee"]?.coerceIn(0f, COMP_KNEE_MAX) ?: current.compKnee,
+                compGain =
+                    paramMap["compGain"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)
+                        ?: current.compGain,
+                compAttack =
+                    paramMap["compAttack"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compAttack,
+                compDecay = paramMap["compDecay"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compDecay,
+                eqBands = newEqBands.toList(),
+                inputTempo = current.tempo,
+                inputPitchNote = current.pitchNote,
+                inputPitchOctave = current.pitchOctave,
+                currentAudioUri = audioUri,
+                audioDurationMillis =
+                    if (sampleDuration > 0) sampleDuration else DEFAULT_SAMPLE_TIME)
           }
+        } else {
+          _uiState.update { current ->
+            val newEqBands = current.eqBands.toMutableList()
+            EQ_FREQUENCIES.forEachIndexed { index, _ ->
+              paramMap["eq_band_$index"]?.let { gain ->
+                newEqBands[index] = gain.coerceIn(EQ_GAIN_MIN, EQ_GAIN_MAX)
+              }
+            }
 
-          val loadedPitchNote = paramMap["pitchNote"]?.let { NOTE_ORDER[it.roundToInt()] }
-          val loadedPitchOctave = paramMap["pitchOctave"]?.roundToInt()
+            val loadedPitchNote = NOTE_ORDER[pitchValue!!.roundToInt() % NOTE_ORDER.size]
+            val loadedPitchOctave = 4 // ou récupéré plus tard via pitchValue si tu veux raffiner
 
-          current.copy(
-              attack = paramMap["attack"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.attack,
-              decay = paramMap["decay"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.decay,
-              sustain = paramMap["sustain"]?.coerceIn(0f, ADSR_MAX_SUSTAIN) ?: current.sustain,
-              release = paramMap["release"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.release,
-              reverbWet = paramMap["reverbWet"]?.coerceIn(0f, 1f) ?: current.reverbWet,
-              reverbSize =
-                  paramMap["reverbSize"]?.coerceIn(0.1f, REVERB_SIZE_MAX) ?: current.reverbSize,
-              reverbWidth = paramMap["reverbWidth"]?.coerceIn(0f, 1f) ?: current.reverbWidth,
-              reverbDepth = paramMap["reverbDepth"]?.coerceIn(0f, 1f) ?: current.reverbDepth,
-              reverbPredelay =
-                  paramMap["reverbPredelay"]?.coerceIn(0f, PREDELAY_MAX_MS)
-                      ?: current.reverbPredelay,
-              compThreshold =
-                  paramMap["compThreshold"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)
-                      ?: current.compThreshold,
-              compRatio =
-                  paramMap["compRatio"]?.let { ratioFloat ->
-                    ratioFloat.roundToInt().coerceIn(1, 20)
-                  } ?: current.compRatio,
-              compKnee = paramMap["compKnee"]?.coerceIn(0f, COMP_KNEE_MAX) ?: current.compKnee,
-              compGain =
-                  paramMap["compGain"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX) ?: current.compGain,
-              compAttack =
-                  paramMap["compAttack"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compAttack,
-              compDecay = paramMap["compDecay"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compDecay,
-              eqBands = newEqBands.toList(),
-            tempo = paramMap["tempo"]?.roundToInt() ?: current.tempo,
-            pitchNote = loadedPitchNote ?: current.pitchNote,
-            pitchOctave = loadedPitchOctave?.coerceIn(minOctave, maxOctave) ?: current.pitchOctave,
-              currentAudioUri = audioUri,
-              audioDurationMillis = if (sampleDuration > 0) sampleDuration else DEFAULT_SAMPLE_TIME)
+            current.copy(
+                attack = paramMap["attack"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.attack,
+                decay = paramMap["decay"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.decay,
+                sustain = paramMap["sustain"]?.coerceIn(0f, ADSR_MAX_SUSTAIN) ?: current.sustain,
+                release = paramMap["release"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.release,
+                reverbWet = paramMap["reverbWet"]?.coerceIn(0f, 1f) ?: current.reverbWet,
+                reverbSize =
+                    paramMap["reverbSize"]?.coerceIn(0.1f, REVERB_SIZE_MAX) ?: current.reverbSize,
+                reverbWidth = paramMap["reverbWidth"]?.coerceIn(0f, 1f) ?: current.reverbWidth,
+                reverbDepth = paramMap["reverbDepth"]?.coerceIn(0f, 1f) ?: current.reverbDepth,
+                reverbPredelay =
+                    paramMap["reverbPredelay"]?.coerceIn(0f, PREDELAY_MAX_MS)
+                        ?: current.reverbPredelay,
+                compThreshold =
+                    paramMap["compThreshold"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)
+                        ?: current.compThreshold,
+                compRatio =
+                    paramMap["compRatio"]?.let { it.roundToInt().coerceIn(1, 20) }
+                        ?: current.compRatio,
+                compKnee = paramMap["compKnee"]?.coerceIn(0f, COMP_KNEE_MAX) ?: current.compKnee,
+                compGain =
+                    paramMap["compGain"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)
+                        ?: current.compGain,
+                compAttack =
+                    paramMap["compAttack"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compAttack,
+                compDecay = paramMap["compDecay"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compDecay,
+                eqBands = newEqBands.toList(),
+                tempo = tempoValue!!.roundToInt().coerceIn(50, 200),
+                pitchNote = loadedPitchNote,
+                pitchOctave = loadedPitchOctave,
+                currentAudioUri = audioUri,
+                audioDurationMillis =
+                    if (sampleDuration > 0) sampleDuration else DEFAULT_SAMPLE_TIME)
+          }
         }
       } catch (e: Exception) {
         Log.e("SamplerViewModel", "Échec du chargement du projet ZIP: ${e.message}", e)
@@ -479,49 +597,61 @@ open class SamplerViewModel() : ViewModel() {
     }
   }
 
+  open fun saveProjectData(zipFilePath: String): Job {
+    return viewModelScope.launch { saveProjectDataSync(zipFilePath) }
+  }
+
   fun saveProjectDataSync(zipFilePath: String) {
     try {
       val state = _uiState.value
-      val audioFileName = state.currentAudioUri?.lastPathSegment ?: "sample.wav"
+      val audioUri = state.currentAudioUri
 
-      val metadata = SamplerProjectMetadata(
-        audioFiles = listOf(
-          AudioFileMetadata(
-            name = audioFileName,
-            volume = 1.0f,
-            durationSeconds = state.audioDurationMillis / 1000f
-          )
-        ),
-        parameters = listOf(
-          ParameterMetadata("attack", state.attack, audioFileName),
-          ParameterMetadata("decay", state.decay, audioFileName),
-          ParameterMetadata("sustain", state.sustain, audioFileName),
-          ParameterMetadata("release", state.release, audioFileName),
-          ParameterMetadata("compRatio", state.compRatio.toFloat(), audioFileName),
-          ParameterMetadata("reverbWet", state.reverbWet, audioFileName),
-          ParameterMetadata("reverbSize", state.reverbSize, audioFileName),
-          ParameterMetadata("reverbDepth", state.reverbDepth, audioFileName),
-          ParameterMetadata("reverbWidth", state.reverbWidth, audioFileName),
-          ParameterMetadata("compGain", state.compGain, audioFileName),
-          ParameterMetadata("compThreshold", state.compThreshold, audioFileName),
-          ParameterMetadata("tempo", state.tempo.toFloat(), "global"),
-          ParameterMetadata("pitchNote", state.pitchNote.toFloatOrNull() ?: 0f, "global"),
-          ParameterMetadata("pitchOctave", state.pitchOctave.toFloat(), "global")
-        )
-      )
+      if (audioUri == null) {
+        Log.e("SamplerViewModel", "Aucun audio à sauvegarder, opération annulée.")
+        return
+      }
+
+      val audioFile = File(audioUri.path ?: "")
+      if (!audioFile.exists()) {
+        Log.e("SamplerViewModel", "Le fichier audio n'existe pas : ${audioFile.path}")
+        return
+      }
+
+      val metadata =
+          SamplerProjectMetadata(
+              audioFiles =
+                  listOf(
+                      AudioFileMetadata(
+                          name = audioFile.name,
+                          volume = 1.0f,
+                          durationSeconds = state.audioDurationMillis / 1000f)),
+              parameters =
+                  listOf(
+                      ParameterMetadata("attack", state.attack, audioFile.name),
+                      ParameterMetadata("decay", state.decay, audioFile.name),
+                      ParameterMetadata("sustain", state.sustain, audioFile.name),
+                      ParameterMetadata("release", state.release, audioFile.name),
+                      ParameterMetadata("compRatio", state.compRatio.toFloat(), audioFile.name),
+                      ParameterMetadata("reverbWet", state.reverbWet, audioFile.name),
+                      ParameterMetadata("reverbSize", state.reverbSize, audioFile.name),
+                      ParameterMetadata("reverbDepth", state.reverbDepth, audioFile.name),
+                      ParameterMetadata("reverbWidth", state.reverbWidth, audioFile.name),
+                      ParameterMetadata("compGain", state.compGain, audioFile.name),
+                      ParameterMetadata("compThreshold", state.compThreshold, audioFile.name),
+                      ParameterMetadata("tempo", state.tempo.toFloat(), "global"),
+                      ParameterMetadata(
+                          "pitch",
+                          NOTE_ORDER.indexOf(state.pitchNote).toFloat() +
+                              (state.pitchOctave * NOTE_ORDER.size),
+                          "global")))
 
       val zipFile = File(zipFilePath)
-      ProjectWriter().writeProject(zipFile, metadata)
+      ProjectWriter()
+          .writeProject(zipFile = zipFile, metadata = metadata, audioFiles = listOf(audioFile))
 
-      Log.i("SamplerViewModel", "Projet sauvegardé dans ${zipFile.absolutePath}")
+      Log.i("SamplerViewModel", "Projet sauvegardé avec succès : ${zipFile.absolutePath}")
     } catch (e: Exception) {
-      Log.e("SamplerViewModel", "Échec de la sauvegarde du projet ZIP: ${e.message}", e)
-    }
-  }
-
-  open fun saveProjectData(zipFilePath: String): Job {
-    return viewModelScope.launch {
-      saveProjectDataSync(zipFilePath)
+      Log.e("SamplerViewModel", "Échec de la sauvegarde du projet ZIP : ${e.message}", e)
     }
   }
 }

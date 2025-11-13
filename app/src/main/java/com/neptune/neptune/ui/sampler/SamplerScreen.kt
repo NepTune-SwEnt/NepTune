@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -136,6 +137,10 @@ fun SamplerScreen(
     }
   }
 
+  if (uiState.showInitialSetupDialog) {
+    InitialSetupDialog(viewModel)
+  }
+
   Scaffold(
       containerColor = NepTuneTheme.colors.background,
       modifier = Modifier.testTag(SamplerTestTags.SCREEN_CONTAINER),
@@ -144,13 +149,13 @@ fun SamplerScreen(
       PlaybackAndWaveformControls(
           isPlaying = uiState.isPlaying,
           onTogglePlayPause = viewModel::togglePlayPause,
-          onSave =  {
-              if (decodedZipPath != null) {
-                  viewModel.saveProjectData(decodedZipPath)
-                  Log.i("SamplerScreen", "Project saved in $decodedZipPath")
-              } else {
-                  Log.w("SamplerScreen", "No project path found for saving")
-              }
+          onSave = {
+            if (decodedZipPath != null) {
+              viewModel.saveProjectData(decodedZipPath)
+              Log.i("SamplerScreen", "Project saved in $decodedZipPath")
+            } else {
+              Log.w("SamplerScreen", "No project path found for saving")
+            }
           },
           pitch = uiState.fullPitch,
           tempo = uiState.tempo,
@@ -1225,6 +1230,71 @@ fun TimeDisplay(playbackPosition: Float, audioDurationMillis: Int, modifier: Mod
       style = MaterialTheme.typography.bodySmall,
       color = NepTuneTheme.colors.smallText,
       modifier = modifier.testTag(SamplerTestTags.TIME_DISPLAY))
+}
+
+@Composable
+fun InitialSetupDialog(viewModel: SamplerViewModel) {
+  val uiState by viewModel.uiState.collectAsState()
+
+  AlertDialog(
+      onDismissRequest = {},
+      title = { Text("Setup requis") },
+      text = {
+        Column(
+            modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+              Text(
+                  "Veuillez définir le Pitch et le Tempo du projet.",
+                  style = MaterialTheme.typography.bodyLarge)
+
+              // --- Champ du TEMPO ---
+              OutlinedTextField(
+                  value = uiState.inputTempo.toString(),
+                  onValueChange = { newValue ->
+                    newValue.toIntOrNull()?.let { viewModel.updateInputTempo(it) }
+                  },
+                  label = { Text("Tempo (BPM)") },
+                  keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                  modifier = Modifier.fillMaxWidth())
+
+              PitchDragField(
+                  pitchNote = uiState.inputPitchNote,
+                  pitchOctave = uiState.inputPitchOctave,
+                  onPitchUp = { viewModel.increaseInputPitch() },
+                  onPitchDown = { viewModel.decreaseInputPitch() })
+            }
+      },
+      confirmButton = { Button(onClick = viewModel::confirmInitialSetup) { Text("Confirmer") } })
+}
+
+@Composable
+fun PitchDragField(
+    pitchNote: String,
+    pitchOctave: Int,
+    onPitchUp: () -> Unit,
+    onPitchDown: () -> Unit
+) {
+  var lastY by remember { mutableStateOf<Float?>(null) }
+
+  OutlinedTextField(
+      value = "$pitchNote$pitchOctave",
+      onValueChange = {},
+      label = { Text("Pitch (slide ↑↓)") },
+      readOnly = true,
+      modifier =
+          Modifier.fillMaxWidth().pointerInput(Unit) {
+            detectVerticalDragGestures(
+                onDragStart = { lastY = null },
+                onVerticalDrag = { _, dragAmount ->
+                  if (dragAmount < -20) {
+                    onPitchUp()
+                    lastY = null
+                  } else if (dragAmount > 20) {
+                    onPitchDown()
+                    lastY = null
+                  }
+                },
+                onDragEnd = { lastY = null })
+          })
 }
 
 @Composable
