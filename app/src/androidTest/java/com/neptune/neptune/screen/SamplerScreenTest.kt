@@ -28,7 +28,6 @@ import androidx.compose.ui.test.swipeWithVelocity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.test.platform.app.InstrumentationRegistry
 import com.neptune.neptune.MainActivity
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
@@ -47,7 +46,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-class FakeSamplerViewModel : SamplerViewModel() {
+open class FakeSamplerViewModel : SamplerViewModel() {
   var isAttackUpdated = false
   var isDecayUpdated = false
   var isSustainUpdated = false
@@ -222,7 +221,6 @@ class SamplerScreenTest {
     val factory = SamplerViewModelFactory(fakeViewModel)
 
     composeTestRule.activity.setContent {
-      val context = InstrumentationRegistry.getInstrumentation().targetContext
       val mediaPlayer = NeptuneMediaPlayer()
       CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
         SampleAppTheme {
@@ -415,15 +413,6 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun playbackControls_playPauseLogic_coversAnimationBranches() {
-    composeTestRule.onNodeWithContentDescription(playButtonDesc).performClick()
-    fakeViewModel.mutableUiState.value = fakeViewModel.uiState.value.copy(isPlaying = true)
-    composeTestRule.waitForIdle()
-    fakeViewModel.updatePlaybackPosition(1.0f)
-    assertTrue(!fakeViewModel.uiState.value.isPlaying)
-  }
-
-  @Test
   fun adsrKnobs_allDrag_callsAllUpdateFunctions() {
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(currentTab = SamplerTab.BASICS)
@@ -492,5 +481,37 @@ class SamplerScreenTest {
     ratioFieldNode.performTextInput("10")
     assertEquals(10, fakeViewModel.uiState.value.compRatio)
     assertTrue("updateCompRatio should be true", fakeViewModel.isCompRatioUpdated)
+  }
+
+  @Test
+  fun updatePlaybackPosition_durationIsZero_setsZero() {
+    fakeViewModel.mutableUiState.value =
+        fakeViewModel.uiState.value.copy(audioDurationMillis = 0, playbackPosition = 0.5f)
+    composeTestRule.waitForIdle()
+    fakeViewModel.updatePlaybackPosition()
+    assertEquals(0.0f, fakeViewModel.uiState.value.playbackPosition, 0.001f)
+  }
+
+  @Test
+  fun increasePitch_wrapsToNextOctave() {
+
+    fakeViewModel.mutableUiState.value =
+        fakeViewModel.uiState.value.copy(pitchNote = "B", pitchOctave = 4)
+    composeTestRule.waitForIdle()
+    fakeViewModel.increasePitch()
+    assertEquals("C", fakeViewModel.uiState.value.pitchNote)
+    assertEquals(5, fakeViewModel.uiState.value.pitchOctave)
+    assertTrue("IncreasePitch should have been called.", fakeViewModel.isIncreasePitchCalled)
+  }
+
+  @Test
+  fun decreasePitch_wrapsToPreviousOctave() {
+    fakeViewModel.mutableUiState.value =
+        fakeViewModel.uiState.value.copy(pitchNote = "C", pitchOctave = 5)
+    composeTestRule.waitForIdle()
+    fakeViewModel.decreasePitch()
+    assertEquals("B", fakeViewModel.uiState.value.pitchNote)
+    assertEquals(4, fakeViewModel.uiState.value.pitchOctave)
+    assertTrue("DecreasePitch should have been called.", fakeViewModel.isDecreasePitchCalled)
   }
 }

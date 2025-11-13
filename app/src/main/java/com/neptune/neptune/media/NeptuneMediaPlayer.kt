@@ -6,7 +6,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.core.net.toUri
 import com.neptune.neptune.NepTuneApplication
 
-class NeptuneMediaPlayer() {
+open class NeptuneMediaPlayer() {
   val context = NepTuneApplication.appContext
 
   private var mediaPlayer: MediaPlayer? = null
@@ -16,6 +16,16 @@ class NeptuneMediaPlayer() {
 
   fun setOnCompletionListener(listener: () -> Unit) {
     this.onCompletionCallback = listener
+    mediaPlayer?.setOnCompletionListener { player ->
+      player.seekTo(0)
+      onCompletionCallback?.invoke()
+    }
+  }
+
+  private var onPreparedCallback: (() -> Unit)? = null
+
+  open fun setOnPreparedListener(listener: () -> Unit) {
+    this.onPreparedCallback = listener
   }
 
   /**
@@ -24,7 +34,7 @@ class NeptuneMediaPlayer() {
    *
    * @param uri The URI of the audio to play.
    */
-  fun play(uri: Uri) {
+  open fun play(uri: Uri) {
     if (mediaPlayer == null) {
       mediaPlayer =
           MediaPlayer().apply {
@@ -33,8 +43,11 @@ class NeptuneMediaPlayer() {
               player.seekTo(0)
               onCompletionCallback?.invoke()
             }
+            setOnPreparedListener {
+              start()
+              onPreparedCallback?.invoke()
+            }
             prepareAsync()
-            setOnPreparedListener { start() }
           }
     } else {
       mediaPlayer?.let {
@@ -45,6 +58,10 @@ class NeptuneMediaPlayer() {
         it.setOnCompletionListener { player ->
           player.seekTo(0)
           onCompletionCallback?.invoke()
+        }
+        it.setOnPreparedListener {
+          it.start()
+          onPreparedCallback?.invoke()
         }
         it.setDataSource(context, uri)
         it.prepareAsync()
@@ -59,7 +76,7 @@ class NeptuneMediaPlayer() {
    *
    * @param uri The URI of the audio to play or pause.
    */
-  fun togglePlay(uri: Uri) {
+  open fun togglePlay(uri: Uri) {
     if (currentUri == uri) {
       if (isPlaying()) {
         pause()
@@ -81,7 +98,7 @@ class NeptuneMediaPlayer() {
   }
 
   /** Pause the current audio playback. */
-  fun pause() {
+  open fun pause() {
     mediaPlayer?.let {
       if (it.isPlaying) {
         it.pause()
@@ -90,7 +107,7 @@ class NeptuneMediaPlayer() {
   }
 
   /** Resume the paused audio playback. */
-  fun resume() {
+  open fun resume() {
     mediaPlayer?.let {
       if (!it.isPlaying) {
         it.start()
@@ -115,7 +132,7 @@ class NeptuneMediaPlayer() {
    *
    * @return True if playing, false otherwise.
    */
-  fun isPlaying(): Boolean {
+  open fun isPlaying(): Boolean {
     return mediaPlayer?.isPlaying ?: false
   }
 
@@ -124,7 +141,7 @@ class NeptuneMediaPlayer() {
    *
    * @param position Position in milliseconds to seek to.
    */
-  fun goTo(position: Int) {
+  open fun goTo(position: Int) {
     mediaPlayer?.seekTo(position)
   }
 
@@ -133,7 +150,7 @@ class NeptuneMediaPlayer() {
    *
    * @return Duration in milliseconds, or -1 if no audio is loaded.
    */
-  fun getDuration(): Int {
+  open fun getDuration(): Int {
     return mediaPlayer?.duration ?: -1
   }
 
@@ -142,7 +159,7 @@ class NeptuneMediaPlayer() {
    *
    * @return Current position in milliseconds, or -1 if no audio is loaded.
    */
-  fun getCurrentPosition(): Int {
+  open fun getCurrentPosition(): Int {
     return mediaPlayer?.currentPosition ?: -1
   }
 
@@ -151,7 +168,7 @@ class NeptuneMediaPlayer() {
    *
    * @return The current URI, or null if no audio is loaded.
    */
-  fun getCurrentUri(): Uri? {
+  open fun getCurrentUri(): Uri? {
     return currentUri
   }
 

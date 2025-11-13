@@ -80,7 +80,7 @@ open class SamplerViewModel() : ViewModel() {
 
   private val context: Context = NepTuneApplication.appContext
 
-  private val mediaPlayer = NeptuneMediaPlayer()
+  open val mediaPlayer = NeptuneMediaPlayer()
 
   init {
     mediaPlayer.setOnCompletionListener {
@@ -107,13 +107,17 @@ open class SamplerViewModel() : ViewModel() {
     _uiState.update { it.copy(currentTab = tab) }
   }
 
-  private fun updatePlaybackPosition() {
+  fun updatePlaybackPosition() {
     val positionMillis = mediaPlayer.getCurrentPosition()
     val durationMillis = _uiState.value.audioDurationMillis
 
     val newPosition =
         if (durationMillis > 0) {
-          positionMillis.toFloat() / durationMillis.toFloat()
+          if (positionMillis >= durationMillis) {
+            0.0f
+          } else {
+            positionMillis.toFloat() / durationMillis.toFloat()
+          }
         } else {
           0.0f
         }
@@ -143,37 +147,52 @@ open class SamplerViewModel() : ViewModel() {
     if (currentUri == null) return
 
     val currentState = _uiState.value
+    val wasPlayingBefore = mediaPlayer.isPlaying()
 
     val shouldResetFromEnd = currentState.playbackPosition >= 0.99f
     val isNearZero = currentState.playbackPosition < 0.01f
+    val isFirstPlay = mediaPlayer.getCurrentUri() != currentUri
 
     val durationMillis = currentState.audioDurationMillis
     val currentUIPositionNorm = currentState.playbackPosition
     val seekPositionMillis = (currentUIPositionNorm * durationMillis).roundToInt()
 
-    if (mediaPlayer.isPlaying()) {
+    mediaPlayer.togglePlay(currentUri)
+
+    if (wasPlayingBefore) {
+
       mediaPlayer.pause()
       stopPlaybackTicker()
     } else {
-      val targetSeekPosition =
-          if (shouldResetFromEnd || isNearZero) {
-            0
-          } else {
-            seekPositionMillis
-          }
+      val targetSeekPosition = if (shouldResetFromEnd || isNearZero) 0 else seekPositionMillis
 
-      if (mediaPlayer.getCurrentUri() == currentUri) {
+      if (isFirstPlay) {
+        mediaPlayer.setOnPreparedListener {
+          val duration = mediaPlayer.getDuration()
+          _uiState.update { state ->
+            state.copy(
+                isPlaying = true,
+                playbackPosition = 0f,
+                audioDurationMillis = if (duration > 0) duration else state.audioDurationMillis)
+          }
+          startPlaybackTicker()
+        }
+
+        mediaPlayer.play(currentUri)
+      } else {
         mediaPlayer.goTo(targetSeekPosition)
         mediaPlayer.resume()
-      } else {
-        mediaPlayer.play(currentUri)
-        mediaPlayer.goTo(targetSeekPosition)
+        startPlaybackTicker()
       }
 
       startPlaybackTicker()
     }
+
     _uiState.update { state ->
-      val newIsPlaying = mediaPlayer.isPlaying()
+      val isStartingPlay = !wasPlayingBefore && !mediaPlayer.isPlaying()
+
+      val newIsPlaying = if (isStartingPlay) true else mediaPlayer.isPlaying()
+
       val realDuration = mediaPlayer.getDuration()
       val newDuration = if (realDuration > 0) realDuration else state.audioDurationMillis
       val didReset = shouldResetFromEnd || isNearZero
