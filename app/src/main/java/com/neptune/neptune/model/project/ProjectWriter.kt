@@ -13,14 +13,6 @@ class ProjectWriter {
     ignoreUnknownKeys = true
     isLenient = true
   }
-
-  /**
-   * Écrit le projet dans un fichier ZIP.
-   *
-   * @param zipFile Fichier ZIP cible (doit être dans un dossier writeable, ex: cacheDir)
-   * @param metadata Métadonnées du projet à sauvegarder
-   * @param audioFiles Liste de fichiers audio à inclure dans le ZIP
-   */
   fun writeProject(
       zipFile: File,
       metadata: SamplerProjectMetadata,

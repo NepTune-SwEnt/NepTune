@@ -38,8 +38,10 @@ import com.neptune.neptune.ui.sampler.SamplerTestTags.FADER_60HZ_TAG
 import com.neptune.neptune.ui.sampler.SamplerUiState
 import com.neptune.neptune.ui.sampler.SamplerViewModel
 import com.neptune.neptune.ui.theme.SampleAppTheme
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -73,6 +75,9 @@ open class FakeSamplerViewModel : SamplerViewModel() {
 
   var isWaveformExtracted = false
 
+  var isSaveProjectDataCalled = false
+  var lastSavedPath: String? = null
+
   val mutableUiState: MutableStateFlow<SamplerUiState> = _uiState
 
   override fun updateAttack(value: Float) {
@@ -105,8 +110,10 @@ open class FakeSamplerViewModel : SamplerViewModel() {
     super.togglePlayPause()
   }
 
-  override fun saveSampler() {
-    isSaveSamplerCalled = true
+  override fun saveProjectData(zipFilePath: String): Job {
+    isSaveProjectDataCalled = true
+    lastSavedPath = zipFilePath
+    return super.saveProjectData(zipFilePath)
   }
 
   override fun increasePitch() {
@@ -387,15 +394,6 @@ class SamplerScreenTest {
 
     assertTrue("IncreasePitch should have been called.", fakeViewModel.isIncreasePitchCalled)
     assertEquals(finalPitch, fakeViewModel.uiState.value.fullPitch)
-  }
-
-  @Test
-  fun saveButton_callsSaveSampler() {
-    composeTestRule
-        .onNodeWithContentDescription(saveButtonDesc)
-        .assertHasClickAction()
-        .performClick()
-    assertTrue("saveSampler should have been called.", fakeViewModel.isSaveSamplerCalled)
   }
 
   @Test

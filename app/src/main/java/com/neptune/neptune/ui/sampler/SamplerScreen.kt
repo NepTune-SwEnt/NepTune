@@ -1238,15 +1238,13 @@ fun InitialSetupDialog(viewModel: SamplerViewModel) {
 
   AlertDialog(
       onDismissRequest = {},
-      title = { Text("Setup requis") },
+      title = { Text("Setup required") },
       text = {
         Column(
             modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
               Text(
-                  "Veuillez définir le Pitch et le Tempo du projet.",
+                  "Define the project pitch and tempo",
                   style = MaterialTheme.typography.bodyLarge)
-
-              // --- Champ du TEMPO ---
               OutlinedTextField(
                   value = uiState.inputTempo.toString(),
                   onValueChange = { newValue ->
@@ -1263,7 +1261,7 @@ fun InitialSetupDialog(viewModel: SamplerViewModel) {
                   onPitchDown = { viewModel.decreaseInputPitch() })
             }
       },
-      confirmButton = { Button(onClick = viewModel::confirmInitialSetup) { Text("Confirmer") } })
+      confirmButton = { Button(onClick = viewModel::confirmInitialSetup) { Text("Confirm") } })
 }
 
 @Composable

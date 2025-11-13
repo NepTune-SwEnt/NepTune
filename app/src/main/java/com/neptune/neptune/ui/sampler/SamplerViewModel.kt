@@ -554,7 +554,7 @@ open class SamplerViewModel() : ViewModel() {
             }
 
             val loadedPitchNote = NOTE_ORDER[pitchValue!!.roundToInt() % NOTE_ORDER.size]
-            val loadedPitchOctave = 4 // ou récupéré plus tard via pitchValue si tu veux raffiner
+            val loadedPitchOctave = 4
 
             current.copy(
                 attack = paramMap["attack"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.attack,
