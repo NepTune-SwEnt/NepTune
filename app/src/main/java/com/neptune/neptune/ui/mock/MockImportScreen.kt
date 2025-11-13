@@ -71,7 +71,12 @@ private val appTextStyle =
 @SuppressLint("VisibleForTests")
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun MockImportScreen(vm: ImportViewModel = viewModel(), recorder: NeptuneRecorder? = null) {
+fun MockImportScreen(
+    vm: ImportViewModel = viewModel(),
+    recorder: NeptuneRecorder? = null,
+    testRecordedFile: File? = null,
+    onDeleteFailed: (() -> Unit)? = null
+) {
   val items by vm.library.collectAsState(initial = emptyList())
 
   val pickAudio =
@@ -88,6 +93,16 @@ fun MockImportScreen(vm: ImportViewModel = viewModel(), recorder: NeptuneRecorde
   var showNameDialog by remember { mutableStateOf(false) }
   var proposedFileToImport by remember { mutableStateOf<File?>(null) }
   var projectName by remember { mutableStateOf("") }
+
+  // If a test provides a recorded file, open the name dialog immediately so tests can exercise
+  // the dialog actions without going through recording flow.
+  LaunchedEffect(testRecordedFile) {
+    testRecordedFile?.let {
+      proposedFileToImport = it
+      projectName = it.nameWithoutExtension
+      showNameDialog = true
+    }
+  }
 
   val permissionLauncher =
       rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) {
@@ -220,7 +235,15 @@ fun MockImportScreen(vm: ImportViewModel = viewModel(), recorder: NeptuneRecorde
               modifier = Modifier.testTag(MockImportTestTags.BUTTON_CANCEL),
               onClick = {
                 // If dismissed, cancel import and delete the recorded file
-                fileToImport.delete()
+                if (!fileToImport.delete()) {
+                  // notify test hook if present
+                  onDeleteFailed?.invoke()
+                  android.widget.Toast.makeText(
+                          context,
+                          "Could not delete temporary file ${fileToImport.absolutePath}",
+                          android.widget.Toast.LENGTH_SHORT)
+                      .show()
+                }
                 showNameDialog = false
                 proposedFileToImport = null
               }) {

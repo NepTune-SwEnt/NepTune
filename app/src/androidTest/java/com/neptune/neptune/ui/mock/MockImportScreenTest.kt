@@ -15,6 +15,7 @@ import com.neptune.neptune.ui.picker.ImportViewModel
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.junit.Before
@@ -155,5 +156,66 @@ class MockImportScreenTest {
     composeRule.onNodeWithTag(MockImportTestTags.BUTTON_CANCEL, true).assertIsDisplayed()
     composeRule.onNodeWithTag(MockImportTestTags.BUTTON_CANCEL, true).performClick()
     composeRule.onNodeWithTag(MockImportTestTags.EMPTY_LIST, true).assertIsDisplayed()
+  }
+
+  @Test
+  fun cancelInvokesOnDeleteFailedWhenFileDeleteFails() {
+    var deleteFailedCalled = false
+
+    // Create a File instance that reports delete() failure.
+    val fakeFile =
+        object : File("/nonexistent/fake-recording.m4a") {
+          override fun delete(): Boolean = false
+        }
+
+    composeRule.setContent {
+      MockImportScreen(
+          vm = vm,
+          recorder = mockk(relaxed = true),
+          testRecordedFile = fakeFile,
+          onDeleteFailed = { deleteFailedCalled = true })
+    }
+
+    // The name dialog should be visible because we passed testRecordedFile
+    composeRule.onNodeWithTag(MockImportTestTags.BUTTON_CANCEL, true).assertIsDisplayed()
+
+    // Click cancel which will attempt to delete the file -> should call onDeleteFailed
+    composeRule.onNodeWithTag(MockImportTestTags.BUTTON_CANCEL, true).performClick()
+
+    // Verify the hook was invoked
+    composeRule.runOnIdle {
+      org.junit.Assert.assertTrue("onDeleteFailed should be invoked", deleteFailedCalled)
+    }
+
+    // After dismiss, empty list should be visible again
+    composeRule.onNodeWithTag(MockImportTestTags.EMPTY_LIST, true).assertIsDisplayed()
+  }
+
+  @Test
+  fun confirmSanitizesNameAndImportsRenamedFile() {
+    // Create a File instance that pretends to be a recorded file and succeeds when renameTo is
+    // called.
+    val fakeFile =
+        object : File("/tmp/My Recording.m4a") {
+          override fun renameTo(dest: File): Boolean {
+            // Simulate successful rename (the production code will then pass 'dest' to the
+            // ViewModel)
+            return true
+          }
+        }
+
+    composeRule.setContent {
+      MockImportScreen(vm = vm, recorder = mockk(relaxed = true), testRecordedFile = fakeFile)
+    }
+
+    // The confirm button should be visible in the name dialog
+    composeRule.onNodeWithTag(MockImportTestTags.BUTTON_CREATE, true).assertIsDisplayed()
+
+    // Click confirm which should sanitize the name "My Recording" -> "My_Recording.m4a" and call
+    // ViewModel
+    composeRule.onNodeWithTag(MockImportTestTags.BUTTON_CREATE, true).performClick()
+
+    // Verify that importRecordedFile was called with a file whose name matches the sanitized name
+    verify { vm.importRecordedFile(match { it.name == "My_Recording.m4a" }) }
   }
 }
