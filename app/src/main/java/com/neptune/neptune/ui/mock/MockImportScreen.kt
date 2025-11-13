@@ -121,25 +121,34 @@ fun MockImportScreen(
       floatingActionButton = {
         RecordControls(
             isRecording = isRecording,
-             onToggleRecord = {
-               // Toggle recording: start or stop and handle produced file
-               if (isRecording) {
-                 val recorded = try { actualRecorder.stop() } catch (_: Exception) { null }
-                 if (recorded != null) {
-                   proposedFileToImport = recorded
-                   projectName = recorded.nameWithoutExtension
-                   showNameDialog = true
-                 }
-               } else {
-                 if (hasAudioPermission) {
-                   try { actualRecorder.start() } catch (_: Exception) { /* ignore */ }
-                 } else {
-                   permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                 }
-               }
-               isRecording = actualRecorder.isRecording
-             },
-             onImportAudio = { pickAudio.launch(arrayOf("audio/*")) })
+            onToggleRecord = {
+              // Toggle recording: start or stop and handle produced file
+              if (isRecording) {
+                val recorded =
+                    try {
+                      actualRecorder.stop()
+                    } catch (_: Exception) {
+                      null
+                    }
+                if (recorded != null) {
+                  proposedFileToImport = recorded
+                  projectName = recorded.nameWithoutExtension
+                  showNameDialog = true
+                }
+              } else {
+                if (hasAudioPermission) {
+                  try {
+                    actualRecorder.start()
+                  } catch (_: Exception) {
+                    /* ignore */
+                  }
+                } else {
+                  permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
+              }
+              isRecording = actualRecorder.isRecording
+            },
+            onImportAudio = { pickAudio.launch(arrayOf("audio/*")) })
       }) { padding ->
         if (items.isEmpty()) {
           Column(
@@ -159,89 +168,90 @@ fun MockImportScreen(
       }
 
   // Name dialog
-   if (showNameDialog && proposedFileToImport != null) {
-     NameProjectDialog(
-         projectName = projectName,
-         onNameChange = { projectName = it },
-         onConfirm = { name ->
-           val finalFile = sanitizeAndRename(proposedFileToImport!!, name)
-           vm.importRecordedFile(finalFile)
-           showNameDialog = false
-           proposedFileToImport = null
-         },
-         onCancel = {
-           val deleted = proposedFileToImport?.delete() ?: true
-           if (!deleted) {
-             onDeleteFailed?.invoke()
-             // provide the same toast behavior as before
-             android.widget.Toast.makeText(
-                     context,
-                     "Could not delete temporary file ${proposedFileToImport?.absolutePath}",
-                     android.widget.Toast.LENGTH_SHORT)
-                 .show()
-           }
-           showNameDialog = false
-           proposedFileToImport = null
-         })
-   }
- }
+  if (showNameDialog && proposedFileToImport != null) {
+    NameProjectDialog(
+        projectName = projectName,
+        onNameChange = { projectName = it },
+        onConfirm = { name ->
+          val finalFile = sanitizeAndRename(proposedFileToImport!!, name)
+          vm.importRecordedFile(finalFile)
+          showNameDialog = false
+          proposedFileToImport = null
+        },
+        onCancel = {
+          val deleted = proposedFileToImport?.delete() ?: true
+          if (!deleted) {
+            onDeleteFailed?.invoke()
+            // provide the same toast behavior as before
+            android.widget.Toast.makeText(
+                    context,
+                    "Could not delete temporary file ${proposedFileToImport?.absolutePath}",
+                    android.widget.Toast.LENGTH_SHORT)
+                .show()
+          }
+          showNameDialog = false
+          proposedFileToImport = null
+        })
+  }
+}
 
- @Composable
- private fun RecordControls(
-     isRecording: Boolean,
-     onToggleRecord: () -> Unit,
-     onImportAudio: () -> Unit,
- ) {
-   Column(horizontalAlignment = Alignment.End) {
-     FloatingActionButton(
-         onClick = onToggleRecord,
-         modifier = Modifier.padding(bottom = padding).testTag(MockImportTestTags.BUTTON_RECORD)) {
-           Icon(
-               if (isRecording) Icons.Filled.Stop else Icons.Filled.Mic,
-               contentDescription = if (isRecording) "Stop recording" else "Start recording",
-               modifier = Modifier.testTag(if (isRecording) MockImportTestTags.STOP_ICON else MockImportTestTags.MIC_ICON))
-         }
-     ExtendedFloatingActionButton(onClick = onImportAudio) {
-       Text("Import audio", style = appTextStyle)
-     }
-   }
- }
+@Composable
+private fun RecordControls(
+    isRecording: Boolean,
+    onToggleRecord: () -> Unit,
+    onImportAudio: () -> Unit,
+) {
+  Column(horizontalAlignment = Alignment.End) {
+    FloatingActionButton(
+        onClick = onToggleRecord,
+        modifier = Modifier.padding(bottom = padding).testTag(MockImportTestTags.BUTTON_RECORD)) {
+          Icon(
+              if (isRecording) Icons.Filled.Stop else Icons.Filled.Mic,
+              contentDescription = if (isRecording) "Stop recording" else "Start recording",
+              modifier =
+                  Modifier.testTag(
+                      if (isRecording) MockImportTestTags.STOP_ICON
+                      else MockImportTestTags.MIC_ICON))
+        }
+    ExtendedFloatingActionButton(onClick = onImportAudio) {
+      Text("Import audio", style = appTextStyle)
+    }
+  }
+}
 
- @Composable
- private fun NameProjectDialog(
-     projectName: String,
-     onNameChange: (String) -> Unit,
-     onConfirm: (String) -> Unit,
-     onCancel: () -> Unit,
- ) {
-   AlertDialog(
-       onDismissRequest = onCancel,
-       title = { Text("Name project", style = appTextStyle) },
-       text = {
-         Column {
-           Text("Enter a name for the new project", style = appTextStyle)
-           Spacer(Modifier.height(8.dp))
-           TextField(
-               value = projectName,
-               onValueChange = onNameChange,
-               modifier = Modifier.fillMaxWidth().testTag(MockImportTestTags.NAME_FIELD))
-         }
-       },
-       confirmButton = {
-         Button(
-             modifier = Modifier.testTag(MockImportTestTags.BUTTON_CREATE),
-             onClick = { onConfirm(projectName) }) {
-               Text("Create", style = appTextStyle)
-             }
-       },
-       dismissButton = {
-         Button(
-             modifier = Modifier.testTag(MockImportTestTags.BUTTON_CANCEL),
-             onClick = onCancel) {
-               Text("Cancel / Delete", style = appTextStyle)
-             }
-       })
- }
+@Composable
+private fun NameProjectDialog(
+    projectName: String,
+    onNameChange: (String) -> Unit,
+    onConfirm: (String) -> Unit,
+    onCancel: () -> Unit,
+) {
+  AlertDialog(
+      onDismissRequest = onCancel,
+      title = { Text("Name project", style = appTextStyle) },
+      text = {
+        Column {
+          Text("Enter a name for the new project", style = appTextStyle)
+          Spacer(Modifier.height(8.dp))
+          TextField(
+              value = projectName,
+              onValueChange = onNameChange,
+              modifier = Modifier.fillMaxWidth().testTag(MockImportTestTags.NAME_FIELD))
+        }
+      },
+      confirmButton = {
+        Button(
+            modifier = Modifier.testTag(MockImportTestTags.BUTTON_CREATE),
+            onClick = { onConfirm(projectName) }) {
+              Text("Create", style = appTextStyle)
+            }
+      },
+      dismissButton = {
+        Button(modifier = Modifier.testTag(MockImportTestTags.BUTTON_CANCEL), onClick = onCancel) {
+          Text("Cancel / Delete", style = appTextStyle)
+        }
+      })
+}
 
 // Helper: sanitize a project name and attempt to rename the provided file accordingly.
 private fun sanitizeAndRename(fileToImport: File, projectName: String): File {
@@ -259,7 +269,12 @@ private fun sanitizeAndRename(fileToImport: File, projectName: String): File {
     // avoid overwrite
     fileToImport
   } else {
-    val moved = try { fileToImport.renameTo(desiredFile) } catch (_: Exception) { false }
+    val moved =
+        try {
+          fileToImport.renameTo(desiredFile)
+        } catch (_: Exception) {
+          false
+        }
     if (moved) desiredFile else fileToImport
   }
 }

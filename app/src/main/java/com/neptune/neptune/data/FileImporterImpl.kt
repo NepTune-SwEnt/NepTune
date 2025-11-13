@@ -49,7 +49,7 @@ class FileImporterImpl(
         if (isFile) {
           // For file:// URIs, copy directly from the file system
           val srcFile = File(safUri.path ?: sourceUri.path ?: "")
-            require(!(!srcFile.exists() || !srcFile.isFile)) { "Source file does not exist: $safUri" }
+          require(!(!srcFile.exists() || !srcFile.isFile)) { "Source file does not exist: $safUri" }
           srcFile.inputStream().use { input ->
             FileOutputStream(target).use { output -> input.copyTo(output) }
           }
@@ -80,7 +80,7 @@ class FileImporterImpl(
                     try {
                       mmr.release()
                     } catch (_: Exception) {
-                        // ignore
+                      // ignore
                     }
                   }
                 }
@@ -100,7 +100,7 @@ class FileImporterImpl(
   // New method: import a file created by the in-app recorder
   override suspend fun importRecorded(file: File): FileImporter.ImportedFile =
       withContext(io) {
-          require(!(!file.exists() || !file.isFile)) { "Recorded file does not exist: ${file.path}" }
+        require(!(!file.exists() || !file.isFile)) { "Recorded file does not exist: ${file.path}" }
         // Derive base/extension and mime
         val ext = file.extension.lowercase()
         val mime =
@@ -132,7 +132,7 @@ class FileImporterImpl(
               Log.w(fileImporterTag, "Could not delete original recorded file: ${file.path}")
             }
           } catch (_: Exception) {
-                // ignore
+            // ignore
           }
         }
 
@@ -146,7 +146,7 @@ class FileImporterImpl(
                     try {
                       mmr.release()
                     } catch (_: Exception) {
-                        // ignore
+                      // ignore
                     }
                   }
                 }
