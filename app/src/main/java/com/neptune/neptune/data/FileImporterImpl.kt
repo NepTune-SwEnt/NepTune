@@ -49,9 +49,7 @@ class FileImporterImpl(
         if (isFile) {
           // For file:// URIs, copy directly from the file system
           val srcFile = File(safUri.path ?: sourceUri.path ?: "")
-          if (!srcFile.exists() || !srcFile.isFile) {
-            throw IllegalArgumentException("Source file does not exist: $safUri")
-          }
+            require(!(!srcFile.exists() || !srcFile.isFile)) { "Source file does not exist: $safUri" }
           srcFile.inputStream().use { input ->
             FileOutputStream(target).use { output -> input.copyTo(output) }
           }
@@ -81,7 +79,9 @@ class FileImporterImpl(
                   } finally {
                     try {
                       mmr.release()
-                    } catch (_: Exception) {}
+                    } catch (_: Exception) {
+                        // ignore
+                    }
                   }
                 }
                 .getOrNull()
@@ -100,9 +100,7 @@ class FileImporterImpl(
   // New method: import a file created by the in-app recorder
   override suspend fun importRecorded(file: File): FileImporter.ImportedFile =
       withContext(io) {
-        if (!file.exists() || !file.isFile)
-            throw IllegalArgumentException("Recorded file does not exist: ${file.path}")
-
+          require(!(!file.exists() || !file.isFile)) { "Recorded file does not exist: ${file.path}" }
         // Derive base/extension and mime
         val ext = file.extension.lowercase()
         val mime =
@@ -130,8 +128,12 @@ class FileImporterImpl(
             FileOutputStream(target).use { output -> input.copyTo(output) }
           }
           try {
-            file.delete()
-          } catch (_: Exception) {}
+            if (!file.delete()) {
+              Log.w(fileImporterTag, "Could not delete original recorded file: ${file.path}")
+            }
+          } catch (_: Exception) {
+                // ignore
+          }
         }
 
         val duration =
@@ -143,7 +145,9 @@ class FileImporterImpl(
                   } finally {
                     try {
                       mmr.release()
-                    } catch (_: Exception) {}
+                    } catch (_: Exception) {
+                        // ignore
+                    }
                   }
                 }
                 .getOrNull()
