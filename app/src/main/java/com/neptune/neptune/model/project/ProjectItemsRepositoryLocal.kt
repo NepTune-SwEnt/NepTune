@@ -78,8 +78,4 @@ class ProjectItemsRepositoryLocal(context: Context) : ProjectItemsRepository {
         }
         writeProjects(projects)
       }
-
-  override suspend fun getProjectDuration(projectID: String): Int {
-    TODO("Not yet implemented")
-  }
 }

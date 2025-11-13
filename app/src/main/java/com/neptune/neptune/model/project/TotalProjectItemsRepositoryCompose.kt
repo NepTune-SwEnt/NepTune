@@ -96,10 +96,6 @@ open class TotalProjectItemsRepositoryCompose(
     }
   }
 
-  override suspend fun getProjectDuration(projectID: String): Int {
-    TODO("Not yet implemented")
-  }
-
   override suspend fun getAllLocalProjects(): List<ProjectItem> {
     return localRepo.getAllProjects()
   }

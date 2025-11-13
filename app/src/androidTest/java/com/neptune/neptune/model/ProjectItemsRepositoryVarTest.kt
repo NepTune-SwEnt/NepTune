@@ -17,14 +17,14 @@ class ProjectItemsRepositoryVarTest {
   }
 
   @Test
-  fun getNewId_returnsUniqueIds() {
+  fun getNewIdReturnsUniqueIds() {
     val id1 = repository.getNewId()
     val id2 = repository.getNewId()
     assertNotEquals(id1, id2)
   }
 
   @Test
-  fun addProject_addsProjectSuccessfully() = runBlocking {
+  fun addProjectAddsProjectSuccessfully() = runBlocking {
     val project = ProjectItem(uid = "1", name = "Project 1")
     repository.addProject(project)
     val projects = repository.getAllProjects()
@@ -32,14 +32,14 @@ class ProjectItemsRepositoryVarTest {
   }
 
   @Test(expected = Exception::class)
-  fun addProject_throwsExceptionWhenIdAlreadyExists() = runBlocking {
+  fun addProjectThrowsExceptionWhenIdAlreadyExists() = runBlocking {
     val project = ProjectItem(uid = "1", name = "Project 1")
     repository.addProject(project)
     repository.addProject(project)
   }
 
   @Test
-  fun editProject_updatesProjectSuccessfully() = runBlocking {
+  fun editProjectUpdatesProjectSuccessfully() = runBlocking {
     val project = ProjectItem(uid = "1", name = "Project 1")
     repository.addProject(project)
     val updatedProject = ProjectItem(uid = "1", name = "Updated Project 1")
@@ -49,12 +49,12 @@ class ProjectItemsRepositoryVarTest {
   }
 
   @Test(expected = Exception::class)
-  fun editProject_throwsExceptionWhenProjectNotFound() = runBlocking {
+  fun editProjectThrowsExceptionWhenProjectNotFound() = runBlocking {
     repository.editProject("1", ProjectItem(uid = "1", name = "Nonexistent Project"))
   }
 
   @Test
-  fun deleteProject_removesProjectSuccessfully() = runBlocking {
+  fun deleteProjectRemovesProjectSuccessfully() = runBlocking {
     val project = ProjectItem(uid = "1", name = "Project 1")
     repository.addProject(project)
     repository.deleteProject("1")
@@ -63,12 +63,12 @@ class ProjectItemsRepositoryVarTest {
   }
 
   @Test(expected = Exception::class)
-  fun deleteProject_throwsExceptionWhenProjectNotFound() = runBlocking {
+  fun deleteProjectThrowsExceptionWhenProjectNotFound() = runBlocking {
     repository.deleteProject("1")
   }
 
   @Test
-  fun getProject_returnsCorrectProject() = runBlocking {
+  fun getProjectReturnsCorrectProject() = runBlocking {
     val project = ProjectItem(uid = "1", name = "Project 1")
     repository.addProject(project)
     val retrievedProject = repository.getProject("1")
@@ -76,12 +76,12 @@ class ProjectItemsRepositoryVarTest {
   }
 
   @Test(expected = Exception::class)
-  fun getProject_throwsExceptionWhenProjectNotFound(): Unit = runBlocking {
+  fun getProjectThrowsExceptionWhenProjectNotFound(): Unit = runBlocking {
     repository.getProject("1")
   }
 
   @Test
-  fun getAllProjects_returnsAllAddedProjects() = runBlocking {
+  fun getAllProjectsReturnsAllAddedProjects() = runBlocking {
     val project1 = ProjectItem(uid = "1", name = "Project 1")
     val project2 = ProjectItem(uid = "2", name = "Project 2")
     repository.addProject(project1)
