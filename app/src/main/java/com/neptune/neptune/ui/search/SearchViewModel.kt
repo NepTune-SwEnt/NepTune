@@ -1,9 +1,28 @@
 package com.neptune.neptune.ui.search
 
+import android.content.Context
+import android.os.Environment
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.storage.FirebaseStorage
+import com.neptune.neptune.data.ImageStorageRepository
+import com.neptune.neptune.data.storage.StorageService
+import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
+import com.neptune.neptune.model.sample.SampleRepository
+import com.neptune.neptune.model.sample.SampleRepositoryProvider
+import com.neptune.neptune.ui.main.SampleUiActions
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import java.io.File
+import kotlin.collections.plus
 
 /*
 Search ViewModel
@@ -14,10 +33,37 @@ Written with assistance from ChatGPT
  */
 
 const val NATURE_TAG = "#nature"
+val storage = FirebaseStorage.getInstance("gs://neptune-e2728.firebasestorage.app")
+val downloadsFolder: File =
+    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+val storageService: StorageService = StorageService(storage)
 
-open class SearchViewModel() : ViewModel() {
+open class SearchViewModel(private val repo: SampleRepository = SampleRepositoryProvider.repository,
+                           context: Context, private val useMockData: Boolean = false, private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
+                           private val storageService: StorageService = StorageService(storage),
+                           private val downloadsFolder: File =
+                               Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                          auth: FirebaseAuth = FirebaseAuth.getInstance()) : ViewModel() {
   private val _samples = MutableStateFlow<List<Sample>>(emptyList())
   val samples: StateFlow<List<Sample>> = _samples
+  val actions = SampleUiActions(repo, storageService, downloadsFolder, viewModelScope, context)
+    private val imageRepo = ImageStorageRepository()
+    private val _userAvatar = MutableStateFlow<Any?>(null)
+    val userAvatar: StateFlow<Any?> = _userAvatar.asStateFlow()
+
+    private val _currentUserFlow = MutableStateFlow(auth.currentUser)
+    private val authListener =
+        FirebaseAuth.AuthStateListener { firebaseAuth ->
+            _currentUserFlow.value = firebaseAuth.currentUser
+        }
+
+    private var observeUserJob: Job? = null // Proposed by gemini
+
+    private val _comments = MutableStateFlow<List<Comment>>(emptyList())
+    val comments: StateFlow<List<Comment>> = _comments
+
+    private val _likedSamples = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
+    val likedSamples: StateFlow<Map<Int, Boolean>> = _likedSamples
 
   // TO DO : Load data from real source
   private fun loadData() {
@@ -46,9 +92,61 @@ open class SearchViewModel() : ViewModel() {
                 210,
                 210))
   }
+  fun onDownloadSample(sample: Sample) {
+    viewModelScope.launch {
+        try{
+            actions.onDownloadClicked(sample)
+        } catch (e: Exception){
+            // Handle exception if needed
+        }
+    }
+  }
+  fun onLikeClick(sample: Sample, isLiked: Boolean) {
+      viewModelScope.launch {
+
+          // Check if already Liked
+          val alreadyLiked = repo.hasUserLiked(sample.id)
+
+          if (!alreadyLiked && isLiked) {
+              repo.toggleLike(sample.id, true)
+              _likedSamples.value = _likedSamples.value + (sample.id to true)
+          } else if (alreadyLiked && !isLiked) {
+              repo.toggleLike(sample.id, false)
+              _likedSamples.value = _likedSamples.value + (sample.id to false)
+          }
+      }
+  }
+    fun refreshLikeStates() {
+        viewModelScope.launch {
+            val allSamples = _samples.value
+
+            val updatedStates = mutableMapOf<Int, Boolean>()
+            for (sample in allSamples) {
+                val liked = repo.hasUserLiked(sample.id)
+                updatedStates[sample.id] = liked
+            }
+            _likedSamples.value = updatedStates
+        }
+    }
+
+    fun observeCommentsForSample(sampleId: Int) {
+        viewModelScope.launch { repo.observeComments(sampleId).collectLatest { _comments.value = it } }
+    }
+
+    fun addComment(sampleId: Int, text: String) {
+        viewModelScope.launch {
+            val profile = profileRepo.getProfile()
+            val username = profile?.username ?: "Anonymous"
+            repo.addComment(sampleId, username, text.trim())
+        }
+    }
 
   open fun search(query: String) {
-    loadData()
+    if (useMockData)
+        loadData()
+    else{
+        loadSamplesFromFirebase()
+    }
     val normalizedQuery = normalize(query)
     if (normalizedQuery.isEmpty()) {
       return
@@ -65,4 +163,12 @@ open class SearchViewModel() : ViewModel() {
     // FYI .toRegex allows to detect patterns in strings
     return text.lowercase().replace("\\p{M}".toRegex(), "").replace(Regex("[^a-z0-9]"), "").trim()
   }
+    fun loadSamplesFromFirebase() {
+        viewModelScope.launch{
+            val profile = profileRepo.getProfile()
+            val following = profile?.following.orEmpty()
+            _samples.value = repo.getSamples()
+            refreshLikeStates()
+        }
+    }
 }

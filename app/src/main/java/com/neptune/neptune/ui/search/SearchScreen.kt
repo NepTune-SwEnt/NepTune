@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.search
 
+import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,8 +18,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
@@ -78,12 +82,21 @@ class SearchScreenTestTagsPerSampleCard(private val idInColumn: Int = 0) : BaseS
   override val SAMPLE_DOWNLOADS
     get() = tag("sampleDownloads")
 }
+private fun factory(application: Application) =
+    object: ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(SearchViewModel::class.java)) {
+                @Suppress("UNCHECKED_CAST")
+                return SearchViewModel(context = application) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
+        }
+    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
-    searchViewModel: SearchViewModel = viewModel(),
-    clickHandlers: ClickHandlers = onClickFunctions(),
+    searchViewModel: SearchViewModel = viewModel(factory = factory(LocalContext.current.applicationContext as Application)),
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
 ) {
   val samples by searchViewModel.samples.collectAsState()
@@ -102,7 +115,7 @@ fun SearchScreen(
       content = { pd ->
         ScrollableColumnOfSamples(
             samples = samples,
-            clickHandlers = clickHandlers,
+            searchViewModel = searchViewModel,
             modifier = Modifier.padding(pd),
             mediaPlayer = mediaPlayer)
       })
@@ -112,7 +125,7 @@ fun SearchScreen(
 fun ScrollableColumnOfSamples(
     modifier: Modifier = Modifier,
     samples: List<Sample>,
-    clickHandlers: ClickHandlers,
+    searchViewModel: SearchViewModel,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
 ) {
   // Ensure the possibility to like in local
@@ -130,20 +143,18 @@ fun ScrollableColumnOfSamples(
           // change height and width if necessary
           val testTags = SearchScreenTestTagsPerSampleCard(idInColumn = sample.id)
           val isLiked = likedSamples.contains(sample.id)
-          val cardClickHanders =
+          val actions =
               onClickFunctions(
-                  onProfileClick = clickHandlers.onProfileClick,
-                  onCommentClick = clickHandlers.onCommentClick,
-                  onDownloadClick = clickHandlers.onDownloadClick,
+                  onDownloadClick = { searchViewModel.onDownloadSample(sample) },
                   onLikeClick = { isNowLiked ->
                     likedSamples =
                         if (isNowLiked) likedSamples + sample.id else likedSamples - sample.id
-                    clickHandlers.onLikeClick(isNowLiked)
+                    searchViewModel.onLikeClick(sample, isNowLiked)
                   })
           SampleCard(
               sample = sample,
               width = width,
-              clickHandlers = cardClickHanders,
+              clickHandlers = actions,
               isLiked = isLiked,
               testTags = testTags,
               mediaPlayer = mediaPlayer)

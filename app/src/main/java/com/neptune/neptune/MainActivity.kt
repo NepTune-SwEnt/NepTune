@@ -139,12 +139,7 @@ fun NeptuneApp(
                       SamplerScreen(zipFilePath = zipFilePath)
                     }
                 composable(Screen.Search.route) {
-                  SearchScreen(
-                      clickHandlers =
-                          onClickFunctions(
-                              onProfileClick = {
-                                navigationActions.navigateTo(Screen.OtherUserProfile)
-                              }))
+                  SearchScreen()
                 }
                 composable(Screen.Post.route) {
                   PostScreen(
