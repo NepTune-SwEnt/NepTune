@@ -13,6 +13,7 @@ class ProjectWriter {
     ignoreUnknownKeys = true
     isLenient = true
   }
+
   fun writeProject(
       zipFile: File,
       metadata: SamplerProjectMetadata,
