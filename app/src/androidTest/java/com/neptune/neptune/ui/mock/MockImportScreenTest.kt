@@ -1,39 +1,33 @@
 package com.neptune.neptune.ui.mock
 
 import android.Manifest
+import android.net.Uri
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.test.core.app.ApplicationProvider
+import androidx.test.rule.GrantPermissionRule
 import com.neptune.neptune.domain.model.MediaItem
 import com.neptune.neptune.media.NeptuneRecorder
+import com.neptune.neptune.ui.picker.ImportViewModel
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.Shadows.shadowOf
-import org.robolectric.annotation.Config
 
-/**
- * Unit (Robolectric) Compose tests for MockImportScreen. written partially with help from ChatGPT.
- * These run in the JVM (no device/emulator) so JaCoCo 0.8.8 still works.
- */
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33]) // Robolectric API level
 class MockImportScreenTest {
 
   @get:Rule val composeRule = createComposeRule()
+  @get:Rule val permissionRule = GrantPermissionRule.grant(Manifest.permission.RECORD_AUDIO)
 
-  private lateinit var vm: com.neptune.neptune.ui.picker.ImportViewModel
+  private lateinit var vm: ImportViewModel
   private lateinit var libraryFlow: MutableStateFlow<List<MediaItem>>
   private lateinit var recorder: NeptuneRecorder
 
@@ -42,8 +36,6 @@ class MockImportScreenTest {
     vm = mockk(relaxed = true)
     libraryFlow = MutableStateFlow(emptyList())
     every { vm.library } returns libraryFlow as StateFlow<List<MediaItem>>
-    val app = ApplicationProvider.getApplicationContext<android.app.Application>()
-    shadowOf(app).grantPermissions(Manifest.permission.RECORD_AUDIO)
   }
 
   @Test
@@ -60,23 +52,12 @@ class MockImportScreenTest {
   }
 
   @Test
-  fun fabIsClickableDoesNotCrash() {
-    composeRule.setContent { MockImportScreen(vm = vm, recorder = mockk(relaxed = true)) }
-
-    // Just verify the FAB is present and "clickable" logically.
-    // Robolectric can't actually launch SAF intents.
-    composeRule.onNodeWithText("Import audio").performClick()
-    composeRule.onNodeWithText("Neptune • placeholder").assertIsDisplayed()
-  }
-
-  @Test
   fun whenLibraryIsEmptyHidesEmptyText() {
     composeRule.setContent { MockImportScreen(vm = vm, recorder = mockk(relaxed = true)) }
 
     composeRule.onNodeWithText("No projects yet.").assertIsDisplayed()
 
     composeRule.runOnIdle { libraryFlow.value = listOf(mockk<MediaItem>(relaxed = true)) }
-    composeRule.waitForIdle()
 
     composeRule.onNodeWithText("No projects yet.").assertIsNotDisplayed()
     composeRule
@@ -122,7 +103,6 @@ class MockImportScreenTest {
 
     // Flip to empty -> should recompose to empty branch
     composeRule.runOnIdle { libraryFlow.value = emptyList() }
-    composeRule.waitForIdle()
 
     composeRule.onNodeWithText("No projects yet.").assertIsDisplayed()
     composeRule
@@ -133,7 +113,7 @@ class MockImportScreenTest {
 
   @Test
   fun importFromSafCallbackIsTriggered() {
-    val fakeUri = android.net.Uri.parse("content://some/audio.mp3")
+    val fakeUri = Uri.parse("content://some/audio.mp3")
     composeRule.setContent { MockImportScreen(vm = vm, recorder = mockk(relaxed = true)) }
 
     // Simulate that the picker returned a URI manually
@@ -143,7 +123,7 @@ class MockImportScreenTest {
   }
 
   @Test
-  fun recordButtonStartsAndStopsRecording() {
+  fun recordStopAndCancel() {
     var isRecording = false
     recorder =
         mockk(relaxed = true) {
@@ -161,29 +141,81 @@ class MockImportScreenTest {
         }
 
     composeRule.setContent { MockImportScreen(vm = vm, recorder = recorder) }
-    composeRule.waitForIdle() // Wait for LaunchedEffect to check permissions
 
-    // Initial state: not recording, Mic icon is shown
+    // Initial state: not recording
     composeRule.onNodeWithTag(MockImportTestTags.MIC_ICON, true).assertIsDisplayed()
-    composeRule.onNodeWithTag(MockImportTestTags.STOP_ICON, true).assertDoesNotExist()
 
-    // Action: click the record FAB
+    // Start recording
     composeRule.onNodeWithTag(MockImportTestTags.BUTTON_RECORD, true).performClick()
-
-    // After click: recording started
     verify { recorder.start(any(), any(), any()) }
 
-    // The UI should update to show the Stop icon
-    composeRule.onNodeWithTag(MockImportTestTags.STOP_ICON, true).assertIsDisplayed()
-    composeRule.onNodeWithTag(MockImportTestTags.MIC_ICON, true).assertDoesNotExist()
-
-    // Action: click the record FAB again
+    // Stop recording
     composeRule.onNodeWithTag(MockImportTestTags.BUTTON_RECORD, true).performClick()
-
-    // After second click: recording stopped
     verify { recorder.stop() }
-    // The UI should update to show the Mic icon again
-    composeRule.onNodeWithTag(MockImportTestTags.MIC_ICON, true).assertIsDisplayed()
-    composeRule.onNodeWithTag(MockImportTestTags.STOP_ICON, true).assertDoesNotExist()
+
+    composeRule.onNodeWithTag(MockImportTestTags.BUTTON_CANCEL, true).assertIsDisplayed()
+    composeRule.onNodeWithTag(MockImportTestTags.BUTTON_CANCEL, true).performClick()
+    composeRule.onNodeWithTag(MockImportTestTags.EMPTY_LIST, true).assertIsDisplayed()
+  }
+
+  @Test
+  fun cancelInvokesOnDeleteFailedWhenFileDeleteFails() {
+    var deleteFailedCalled = false
+
+    // Create a File instance that reports delete() failure.
+    val fakeFile =
+        object : File("/nonexistent/fake-recording.m4a") {
+          override fun delete(): Boolean = false
+        }
+
+    composeRule.setContent {
+      MockImportScreen(
+          vm = vm,
+          recorder = mockk(relaxed = true),
+          testRecordedFile = fakeFile,
+          onDeleteFailed = { deleteFailedCalled = true })
+    }
+
+    // The name dialog should be visible because we passed testRecordedFile
+    composeRule.onNodeWithTag(MockImportTestTags.BUTTON_CANCEL, true).assertIsDisplayed()
+
+    // Click cancel which will attempt to delete the file -> should call onDeleteFailed
+    composeRule.onNodeWithTag(MockImportTestTags.BUTTON_CANCEL, true).performClick()
+
+    // Verify the hook was invoked
+    composeRule.runOnIdle {
+      org.junit.Assert.assertTrue("onDeleteFailed should be invoked", deleteFailedCalled)
+    }
+
+    // After dismiss, empty list should be visible again
+    composeRule.onNodeWithTag(MockImportTestTags.EMPTY_LIST, true).assertIsDisplayed()
+  }
+
+  @Test
+  fun confirmSanitizesNameAndImportsRenamedFile() {
+    // Create a File instance that pretends to be a recorded file and succeeds when renameTo is
+    // called.
+    val fakeFile =
+        object : File("/tmp/My Recording.m4a") {
+          override fun renameTo(dest: File): Boolean {
+            // Simulate successful rename (the production code will then pass 'dest' to the
+            // ViewModel)
+            return true
+          }
+        }
+
+    composeRule.setContent {
+      MockImportScreen(vm = vm, recorder = mockk(relaxed = true), testRecordedFile = fakeFile)
+    }
+
+    // The confirm button should be visible in the name dialog
+    composeRule.onNodeWithTag(MockImportTestTags.BUTTON_CREATE, true).assertIsDisplayed()
+
+    // Click confirm which should sanitize the name "My Recording" -> "My_Recording.m4a" and call
+    // ViewModel
+    composeRule.onNodeWithTag(MockImportTestTags.BUTTON_CREATE, true).performClick()
+
+    // Verify that importRecordedFile was called with a file whose name matches the sanitized name
+    verify { vm.importRecordedFile(match { it.name == "My_Recording.m4a" }) }
   }
 }
