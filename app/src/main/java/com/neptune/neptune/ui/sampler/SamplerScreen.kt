@@ -87,6 +87,10 @@ object SamplerTestTags {
   const val EQ_FADER_BOX_INPUT = "eqFaderBoxInput"
   const val FADER_60HZ_TAG = "fader60Hz"
   const val CURVE_EDITOR_SCROLL_CONTAINER = "curveEditorScrollContainer"
+  const val INIT_SETUP_CONTAINER = "initSetupContainer"
+  const val INIT_TEMPO_SELECTOR = "initTempoSelector"
+  const val INIT_PITCH_SELECTOR = "initPitchSelector"
+  const val INIT_CONFIRM_BUTTON = "initConfirmButton"
 }
 
 val KnobBackground = Color.Black
@@ -1235,14 +1239,15 @@ fun TimeDisplay(playbackPosition: Float, audioDurationMillis: Int, modifier: Mod
 @Composable
 fun InitialSetupDialog(viewModel: SamplerViewModel) {
   val uiState by viewModel.uiState.collectAsState()
-
   AlertDialog(
       onDismissRequest = {},
       title = { Text("Setup required") },
       text = {
         Column(
-            modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            modifier = Modifier.fillMaxWidth().testTag(SamplerTestTags.INIT_SETUP_CONTAINER),
+            verticalArrangement = Arrangement.spacedBy(16.dp)) {
               Text("Define the project pitch and tempo", style = MaterialTheme.typography.bodyLarge)
+
               OutlinedTextField(
                   value = uiState.inputTempo.toString(),
                   onValueChange = { newValue ->
@@ -1250,16 +1255,23 @@ fun InitialSetupDialog(viewModel: SamplerViewModel) {
                   },
                   label = { Text("Tempo (BPM)") },
                   keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                  modifier = Modifier.fillMaxWidth())
+                  modifier = Modifier.fillMaxWidth().testTag(SamplerTestTags.INIT_TEMPO_SELECTOR))
 
               PitchDragField(
                   pitchNote = uiState.inputPitchNote,
                   pitchOctave = uiState.inputPitchOctave,
                   onPitchUp = { viewModel.increaseInputPitch() },
-                  onPitchDown = { viewModel.decreaseInputPitch() })
+                  onPitchDown = { viewModel.decreaseInputPitch() },
+                  modifier = Modifier.testTag(SamplerTestTags.INIT_PITCH_SELECTOR))
             }
       },
-      confirmButton = { Button(onClick = viewModel::confirmInitialSetup) { Text("Confirm") } })
+      confirmButton = {
+        Button(
+            onClick = viewModel::confirmInitialSetup,
+            modifier = Modifier.testTag(SamplerTestTags.INIT_CONFIRM_BUTTON)) {
+              Text("Confirm")
+            }
+      })
 }
 
 @Composable
@@ -1267,27 +1279,22 @@ fun PitchDragField(
     pitchNote: String,
     pitchOctave: Int,
     onPitchUp: () -> Unit,
-    onPitchDown: () -> Unit
+    onPitchDown: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
   var lastY by remember { mutableStateOf<Float?>(null) }
-
   OutlinedTextField(
       value = "$pitchNote$pitchOctave",
       onValueChange = {},
       label = { Text("Pitch (slide ↑↓)") },
       readOnly = true,
       modifier =
-          Modifier.fillMaxWidth().pointerInput(Unit) {
+          modifier.pointerInput(Unit) {
             detectVerticalDragGestures(
                 onDragStart = { lastY = null },
                 onVerticalDrag = { _, dragAmount ->
-                  if (dragAmount < -20) {
-                    onPitchUp()
-                    lastY = null
-                  } else if (dragAmount > 20) {
-                    onPitchDown()
-                    lastY = null
-                  }
+                  if (dragAmount < -20) onPitchUp().also { lastY = null }
+                  else if (dragAmount > 20) onPitchDown().also { lastY = null }
                 },
                 onDragEnd = { lastY = null })
           })
