@@ -22,6 +22,9 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
+      - name: Print sha1 fingerprint
+        run: ./gradlew signingReport
+
       - name: Build release APK
         run: ./gradlew assembleRelease
 
