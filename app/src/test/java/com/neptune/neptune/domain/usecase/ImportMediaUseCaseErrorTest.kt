@@ -27,6 +27,10 @@ private class ThrowingImporter : FileImporter {
   override suspend fun importFile(sourceUri: URI): FileImporter.ImportedFile {
     throw IllegalArgumentException("invalid URI for testing")
   }
+
+  override suspend fun importRecorded(file: File): FileImporter.ImportedFile {
+    throw IllegalArgumentException("invalid recorded file for testing")
+  }
 }
 
 private class CapturingRepo : MediaRepository {
