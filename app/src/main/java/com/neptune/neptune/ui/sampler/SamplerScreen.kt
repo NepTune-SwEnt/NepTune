@@ -244,9 +244,10 @@ fun PlaybackAndWaveformControls(
               TimeSignatureSelector(
                   selected = uiState.timeSignature,
                   onSelect = { viewModel.updateTimeSignature(it) },
-                  modifier = Modifier
-                      .border(2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
-                      .testTag(SamplerTestTags.TIME_SIGNATURE_SELECTOR))
+                  modifier =
+                      Modifier.border(
+                              2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
+                          .testTag(SamplerTestTags.TIME_SIGNATURE_SELECTOR))
             }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -320,9 +321,8 @@ fun TimeSignatureSelector(
   Box(modifier = modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .clickable { expanded = true }
-            .padding(horizontal = 8.dp, vertical = 4.dp)) {
+        modifier =
+            Modifier.clickable { expanded = true }.padding(horizontal = 8.dp, vertical = 4.dp)) {
           Text(text = "Time", color = NepTuneTheme.colors.smallText, fontSize = 16.sp)
           Text(
               text = selected,
@@ -338,7 +338,12 @@ fun TimeSignatureSelector(
 
     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
       options.forEach { opt ->
-        DropdownMenuItem(text = { Text(opt) }, onClick = { onSelect(opt); expanded = false })
+        DropdownMenuItem(
+            text = { Text(opt) },
+            onClick = {
+              onSelect(opt)
+              expanded = false
+            })
       }
     }
   }
@@ -418,6 +423,9 @@ fun WaveformDisplay(
   val timelineLabelColor = NepTuneTheme.colors.smallText.copy(alpha = 0.8f)
   val timelineLabelColorInt = timelineLabelColor.toArgb()
   val timelineTextSizePx = localDensity.run { 12.sp.toPx() }
+  // capture theme colors to use inside Canvas (avoid calling composable from non-composable scope)
+  val accentPrimaryColor = NepTuneTheme.colors.accentPrimary
+  val smallTextColor = NepTuneTheme.colors.smallText
 
   Canvas(
       modifier =
@@ -458,6 +466,54 @@ fun WaveformDisplay(
               textSize = timelineTextSizePx
               textAlign = Paint.Align.LEFT // we'll position explicitly
             }
+
+        // Draw beat grid (primary and secondary beats) based on tempo and time signature
+        // Parse time signature like "4/4". If parsing fails, fallback to 4/4.
+        val tempoBPM = uiState.tempo.coerceAtLeast(1)
+        val tsParts = uiState.timeSignature.split('/')
+        val (tsNum, tsDen) =
+            if (tsParts.size == 2) {
+              val n = tsParts[0].toIntOrNull() ?: 4
+              val d = tsParts[1].toIntOrNull() ?: 4
+              Pair(n.coerceAtLeast(1), d.coerceAtLeast(1))
+            } else {
+              Pair(4, 4)
+            }
+
+        // seconds per beat unit where BPM is assumed to reference a quarter-note by default.
+        // secondsPerBeat = 60 / BPM * (4 / denominator)
+        val secondsPerBeat = 60f / tempoBPM.toFloat() * (4f / tsDen.toFloat())
+        val totalDurationSec = audioDurationMillis.toFloat() / 1000f
+
+        if (secondsPerBeat > 0f && totalDurationSec > 0f) {
+          // compute how many beats fit into the audio
+          val beatCount = (totalDurationSec / secondsPerBeat).toInt().coerceAtLeast(1)
+          for (beatIndex in 0..beatCount) {
+            val timeSec = beatIndex * secondsPerBeat
+            if (timeSec > totalDurationSec) break
+
+            // Map time (seconds) to canvas x using the full floating totalDurationSec for accuracy
+            val xPos = paddingPx + (timeSec / totalDurationSec) * contentWidth
+
+            val beatInMeasure = if (tsNum > 0) beatIndex % tsNum else beatIndex
+            val isPrimary = beatInMeasure == 0
+
+            // Primary beats (downbeats) are slightly stronger.
+            if (isPrimary) {
+              drawLine(
+                  color = accentPrimaryColor.copy(alpha = 0.25f),
+                  start = Offset(xPos, 0f),
+                  end = Offset(xPos, height),
+                  strokeWidth = 1.5f)
+            } else {
+              drawLine(
+                  color = smallTextColor.copy(alpha = 0.10f),
+                  start = Offset(xPos, 0f),
+                  end = Offset(xPos, height),
+                  strokeWidth = 0.8f)
+            }
+          }
+        }
 
         // Calculate label step to avoid overlapping labels horizontally
         val minLabelSpacingPx = 24.dp.toPx()
