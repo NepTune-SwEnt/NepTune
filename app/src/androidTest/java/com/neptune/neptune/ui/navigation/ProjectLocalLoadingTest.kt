@@ -69,13 +69,13 @@ class LocalProjectLoadingTest {
   }
 
   @Test
-  fun endToEnd_loadProject_setsCorrectAudioDuration() {
+  fun endToEndLoadProjectSetsCorrectAudioDuration() {
     composeTestRule.onNodeWithTag("project_$TARGET_PROJECT_ID").performClick()
     composeTestRule.mainClock.advanceTimeBy(500L)
     composeTestRule.waitForIdle()
     composeTestRule
         .onNodeWithTag(SamplerTestTags.TIME_DISPLAY)
-        .assertTextContains(" / 04 s", substring = true)
+        .assertTextContains("00.00 / 04.00 s", substring = true)
         .assertIsDisplayed()
   }
 }
