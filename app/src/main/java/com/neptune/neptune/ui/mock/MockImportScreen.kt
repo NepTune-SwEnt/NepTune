@@ -56,6 +56,7 @@ object MockImportTestTags {
   const val BUTTON_CREATE = "ButtonCreate"
   const val BUTTON_CANCEL = "ButtonCancel"
   const val EMPTY_LIST = "EmptyList"
+  const val NAME_FIELD = "NameField"
 }
 
 val padding = 16.dp
@@ -70,13 +71,7 @@ private val appTextStyle =
 @SuppressLint("VisibleForTests")
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun MockImportScreen(
-    vm: ImportViewModel = viewModel(),
-    recorder: NeptuneRecorder? = null,
-    // When false (tests) the name dialog is suppressed to avoid flaky/infinite idling in
-    // Robolectric
-    enableNameDialog: Boolean = true
-) {
+fun MockImportScreen(vm: ImportViewModel = viewModel(), recorder: NeptuneRecorder? = null) {
   val items by vm.library.collectAsState(initial = emptyList())
 
   val pickAudio =
@@ -171,7 +166,7 @@ fun MockImportScreen(
       }
 
   // Name dialog
-  if (enableNameDialog && showNameDialog && proposedFileToImport != null) {
+  if (showNameDialog && proposedFileToImport != null) {
     val fileToImport = proposedFileToImport!!
     AlertDialog(
         onDismissRequest = { showNameDialog = false },
@@ -183,7 +178,7 @@ fun MockImportScreen(
             TextField(
                 value = projectName,
                 onValueChange = { projectName = it },
-                modifier = Modifier.fillMaxWidth())
+                modifier = Modifier.fillMaxWidth().testTag(MockImportTestTags.NAME_FIELD))
           }
         },
         confirmButton = {
