@@ -31,54 +31,63 @@ export const generateSamplePreview = onObjectFinalized(
 
     const tmpRoot = join(tmpdir(), `preview-${Date.now()}`);
     await mkdir(tmpRoot, {recursive: true});
-    const sourceZipPath = join(tmpRoot, "source.zip");
-    const bucket = getStorage().bucket(event.data.bucket);
-    await bucket.file(objectPath).download({destination: sourceZipPath});
 
-    const zip = new AdmZip(sourceZipPath);
-    const entries = zip.getEntries();
-    const audioEntry = entries.find((entry: AdmZip.IZipEntry) =>
-      /\.(wav|mp3)$/i.test(entry.entryName)
-    );
+    try {
+      const sourceZipPath = join(tmpRoot, "source.zip");
+      const bucket = getStorage().bucket(event.data.bucket);
+      await bucket.file(objectPath).download({destination: sourceZipPath});
 
-    const metadataEntry = entries.find((entry: AdmZip.IZipEntry) =>
-      entry.entryName.endsWith(".json")
-    );
+      const zip = new AdmZip(sourceZipPath);
+      const entries = zip.getEntries();
+      const audioEntry = entries.find((entry: AdmZip.IZipEntry) =>
+        /\.(wav|mp3)$/i.test(entry.entryName)
+      );
 
-    if (!audioEntry || !metadataEntry) {
-      logger.warn("Zip missing audio or metadata", {objectPath});
-      await rm(tmpRoot, {recursive: true, force: true});
-      return;
-    }
+      const metadataEntry = entries.find((entry: AdmZip.IZipEntry) =>
+        entry.entryName.endsWith(".json")
+      );
 
-    const audioSrc = join(tmpRoot, audioEntry.entryName);
-    await writeFile(audioSrc, audioEntry.getData());
-    const previewAudio = join(tmpRoot, "preview.mp3");
+      if (!audioEntry || !metadataEntry) {
+        logger.warn("Zip missing audio or metadata", {objectPath});
+        await rm(tmpRoot, {recursive: true, force: true});
+        return;
+      }
 
-    if (audioEntry.entryName.toLowerCase().endsWith(".wav")) {
-      await new Promise<void>((resolve, reject) => {
-        ffmpeg(audioSrc)
-          .audioBitrate("128k")
-          .format("mp3")
-          .save(previewAudio)
-          .on("end", () => resolve())
-          .on("error", reject);
+      const audioSrc = join(tmpRoot, audioEntry.entryName);
+      await writeFile(audioSrc, audioEntry.getData());
+      const previewAudio = join(tmpRoot, "preview.mp3");
+
+      if (audioEntry.entryName.toLowerCase().endsWith(".wav")) {
+        await new Promise<void>((resolve, reject) => {
+          ffmpeg(audioSrc)
+            .audioBitrate("128k")
+            .format("mp3")
+            .save(previewAudio)
+            .on("end", () => resolve())
+            .on("error", reject);
+        });
+      } else {
+        await copyFile(audioSrc, previewAudio);
+      }
+
+      await bucket.upload(previewAudio, {
+        destination: previewPath,
+        contentType: "audio/mpeg",
       });
-    } else {
-      await copyFile(audioSrc, previewAudio);
+
+      await getFirestore().collection("samples").doc(sampleId).set(
+        {storagePreviewSamplePath: previewPath},
+        {merge: true}
+      );
+
+      logger.info("Preview generated", {sampleId, previewPath});
+
+    } catch (error) {
+      logger.error("Failed to generate preview", {sampleId, error});
+    } finally {
+      await rm(tmpRoot, {recursive: true, force: true});
     }
 
-    await bucket.upload(previewAudio, {
-      destination: previewPath,
-      contentType: "audio/mpeg",
-    });
-
-    await getFirestore().collection("samples").doc(sampleId).update({
-      storagePreviewSamplePath: previewPath,
-    });
-
-    await rm(tmpRoot, {recursive: true, force: true});
-    logger.info("Preview generated", {sampleId, previewPath});
   }
 
 );
