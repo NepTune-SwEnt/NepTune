@@ -10,5 +10,8 @@ data class Sample(
     val comments: Int,
     val downloads: Int,
     val uriString: String = "",
-    val ownerId: String = ""
+    val ownerId: String = "",
+    val storageZipPath: String = "",
+    val storageImagePath: String = "",
+    val storagePreviewSamplePath: String = ""
 )
