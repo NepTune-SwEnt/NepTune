@@ -144,7 +144,14 @@ fun SamplerScreen(
       PlaybackAndWaveformControls(
           isPlaying = uiState.isPlaying,
           onTogglePlayPause = viewModel::togglePlayPause,
-          onSave = viewModel::saveSampler,
+          onSave =  {
+              if (decodedZipPath != null) {
+                  viewModel.saveProjectData(decodedZipPath)
+                  Log.i("SamplerScreen", "Project saved in $decodedZipPath")
+              } else {
+                  Log.w("SamplerScreen", "No project path found for saving")
+              }
+          },
           pitch = uiState.fullPitch,
           tempo = uiState.tempo,
           onPitchChange = viewModel::updatePitch,

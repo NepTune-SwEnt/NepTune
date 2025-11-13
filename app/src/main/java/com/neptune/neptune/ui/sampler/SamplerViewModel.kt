@@ -10,7 +10,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.media.NeptuneMediaPlayer
+import com.neptune.neptune.model.project.AudioFileMetadata
+import com.neptune.neptune.model.project.ParameterMetadata
 import com.neptune.neptune.model.project.ProjectExtractor
+import com.neptune.neptune.model.project.ProjectWriter
 import com.neptune.neptune.model.project.SamplerProjectMetadata
 import java.io.File
 import kotlin.math.abs
@@ -21,6 +24,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.FileOutputStream
 
 enum class SamplerTab {
   BASICS,
@@ -424,6 +428,7 @@ open class SamplerViewModel() : ViewModel() {
         val sampleDuration = mediaPlayer.getDuration()
         Log.d("SamplerViewModel", "Audio URI chargée: $audioUri")
         val paramMap = metadata.parameters.associate { it.type to it.value }
+
         _uiState.update { current ->
           val newEqBands = current.eqBands.toMutableList()
           EQ_FREQUENCIES.forEachIndexed { index, _ ->
@@ -431,6 +436,9 @@ open class SamplerViewModel() : ViewModel() {
               newEqBands[index] = gain.coerceIn(EQ_GAIN_MIN, EQ_GAIN_MAX)
             }
           }
+
+          val loadedPitchNote = paramMap["pitchNote"]?.let { NOTE_ORDER[it.roundToInt()] }
+          val loadedPitchOctave = paramMap["pitchOctave"]?.roundToInt()
 
           current.copy(
               attack = paramMap["attack"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.attack,
@@ -459,12 +467,61 @@ open class SamplerViewModel() : ViewModel() {
                   paramMap["compAttack"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compAttack,
               compDecay = paramMap["compDecay"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compDecay,
               eqBands = newEqBands.toList(),
+            tempo = paramMap["tempo"]?.roundToInt() ?: current.tempo,
+            pitchNote = loadedPitchNote ?: current.pitchNote,
+            pitchOctave = loadedPitchOctave?.coerceIn(minOctave, maxOctave) ?: current.pitchOctave,
               currentAudioUri = audioUri,
               audioDurationMillis = if (sampleDuration > 0) sampleDuration else DEFAULT_SAMPLE_TIME)
         }
       } catch (e: Exception) {
         Log.e("SamplerViewModel", "Échec du chargement du projet ZIP: ${e.message}", e)
       }
+    }
+  }
+
+  fun saveProjectDataSync(zipFilePath: String) {
+    try {
+      val state = _uiState.value
+      val audioFileName = state.currentAudioUri?.lastPathSegment ?: "sample.wav"
+
+      val metadata = SamplerProjectMetadata(
+        audioFiles = listOf(
+          AudioFileMetadata(
+            name = audioFileName,
+            volume = 1.0f,
+            durationSeconds = state.audioDurationMillis / 1000f
+          )
+        ),
+        parameters = listOf(
+          ParameterMetadata("attack", state.attack, audioFileName),
+          ParameterMetadata("decay", state.decay, audioFileName),
+          ParameterMetadata("sustain", state.sustain, audioFileName),
+          ParameterMetadata("release", state.release, audioFileName),
+          ParameterMetadata("compRatio", state.compRatio.toFloat(), audioFileName),
+          ParameterMetadata("reverbWet", state.reverbWet, audioFileName),
+          ParameterMetadata("reverbSize", state.reverbSize, audioFileName),
+          ParameterMetadata("reverbDepth", state.reverbDepth, audioFileName),
+          ParameterMetadata("reverbWidth", state.reverbWidth, audioFileName),
+          ParameterMetadata("compGain", state.compGain, audioFileName),
+          ParameterMetadata("compThreshold", state.compThreshold, audioFileName),
+          ParameterMetadata("tempo", state.tempo.toFloat(), "global"),
+          ParameterMetadata("pitchNote", state.pitchNote.toFloatOrNull() ?: 0f, "global"),
+          ParameterMetadata("pitchOctave", state.pitchOctave.toFloat(), "global")
+        )
+      )
+
+      val zipFile = File(zipFilePath)
+      ProjectWriter().writeProject(zipFile, metadata)
+
+      Log.i("SamplerViewModel", "Projet sauvegardé dans ${zipFile.absolutePath}")
+    } catch (e: Exception) {
+      Log.e("SamplerViewModel", "Échec de la sauvegarde du projet ZIP: ${e.message}", e)
+    }
+  }
+
+  open fun saveProjectData(zipFilePath: String): Job {
+    return viewModelScope.launch {
+      saveProjectDataSync(zipFilePath)
     }
   }
 }
