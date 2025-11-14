@@ -68,6 +68,7 @@ interface SampleRepository {
 
   /**
    * Increases the download count of a specific sample by one.
+   *
    * @param sampleId the ID of the sample
    */
   suspend fun increaseDownloadCount(sampleId: Int)

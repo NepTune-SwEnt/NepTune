@@ -31,7 +31,6 @@ import com.neptune.neptune.resources.C
 import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInViewModel
 import com.neptune.neptune.ui.main.MainScreen
-import com.neptune.neptune.ui.main.onClickFunctions
 import com.neptune.neptune.ui.mock.MockImportScreen
 import com.neptune.neptune.ui.mock.MockProfileScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
@@ -138,9 +137,7 @@ fun NeptuneApp(
                       val zipFilePath = backStackEntry.arguments?.getString("zipFilePath")
                       SamplerScreen(zipFilePath = zipFilePath)
                     }
-                composable(Screen.Search.route) {
-                  SearchScreen()
-                }
+                composable(Screen.Search.route) { SearchScreen() }
                 composable(Screen.Post.route) {
                   PostScreen(
                       goBack = { navigationActions.goBack() },
