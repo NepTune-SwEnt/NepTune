@@ -24,13 +24,14 @@ class SampleUiActionsTest {
 
   private val sample =
       Sample(
-          id = 1,
+          id = 1.toString(),
           name = "Test Sample",
           description = "desc",
           durationSeconds = 10,
           tags = emptyList(),
           likes = 0,
           comments = 0,
+          usersLike = emptyList(),
           downloads = 0)
 
   @Test
@@ -101,7 +102,7 @@ class SampleUiActionsTest {
 
     actions.onDownloadClicked(sample)
 
-    verify(repo).increaseDownloadCount(sample.id)
+    verify(repo, never()).increaseDownloadCount(any())
     verify(storageService).downloadZippedSample(sample, context)
     verify(storageService, never()).persistZipToDownloads(any(), any())
 

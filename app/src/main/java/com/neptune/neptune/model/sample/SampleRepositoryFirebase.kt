@@ -86,8 +86,8 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
     return likeDoc.exists()
   }
 
-  override suspend fun increaseDownloadCount(sampleId: Int) {
-    val sampleDoc = samples.document(sampleId.toString())
+  override suspend fun increaseDownloadCount(sampleId: String) {
+    val sampleDoc = samples.document(sampleId)
     val snapshot = sampleDoc.get().await()
     check(snapshot.exists()) {
       "SampleRepositoryFirebase.toggleLike: Sample with id=$sampleId doesn't exist"

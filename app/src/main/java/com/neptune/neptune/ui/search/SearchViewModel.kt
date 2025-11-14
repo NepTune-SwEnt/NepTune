@@ -73,8 +73,8 @@ open class SearchViewModel(
   val activeCommentSampleId: StateFlow<Int?> = _activeCommentSampleId.asStateFlow()
 
   fun onCommentClicked(sample: Sample) {
-    observeCommentsForSample(sample.id)
-    _activeCommentSampleId.value = sample.id
+    observeCommentsForSample(sample.id.toInt())
+    _activeCommentSampleId.value = sample.id.toInt()
   }
 
   fun onAddComment(sampleId: Int, text: String) {
@@ -188,9 +188,10 @@ open class SearchViewModel(
   }
 
   fun onLikeClick(sample: Sample, isLikedNow: Boolean) {
+    val sampleId = sample.id.toInt()
     viewModelScope.launch {
       repo.toggleLike(sample.id, isLikedNow)
-      _likedSamples.value = _likedSamples.value + (sample.id to isLikedNow)
+      _likedSamples.value = _likedSamples.value + (sampleId to isLikedNow)
     }
   }
 
@@ -200,14 +201,16 @@ open class SearchViewModel(
       val updatedStates = mutableMapOf<Int, Boolean>()
       for (sample in allSamples) {
         val liked = repo.hasUserLiked(sample.id)
-        updatedStates[sample.id] = liked
+        updatedStates[sample.id.toInt()] = liked
       }
       _likedSamples.value = updatedStates
     }
   }
 
   fun observeCommentsForSample(sampleId: Int) {
-    viewModelScope.launch { repo.observeComments(sampleId).collectLatest { _comments.value = it } }
+    viewModelScope.launch {
+      repo.observeComments(sampleId.toString()).collectLatest { _comments.value = it }
+    }
   }
 
   fun resetCommentSampleId() {
@@ -218,7 +221,7 @@ open class SearchViewModel(
     viewModelScope.launch {
       val profile = profileRepo.getProfile()
       val username = profile?.username ?: "Anonymous"
-      repo.addComment(sampleId, username, text.trim())
+      repo.addComment(sampleId.toString(), username, text.trim())
     }
   }
 

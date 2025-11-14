@@ -59,7 +59,7 @@ class FakeSampleRepository(initialSamples: List<Sample> = emptyList()) : SampleR
     return likedSamples.contains(sampleId)
   }
 
-  override suspend fun increaseDownloadCount(sampleId: Int) {
+  override suspend fun increaseDownloadCount(sampleId: String) {
     val index = samples.indexOfFirst { it.id == sampleId }
     if (index == -1) return
 

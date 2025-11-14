@@ -1,9 +1,13 @@
 package com.neptune.neptune.data.storage
 
 import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
+import android.util.Log
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageException
 import com.google.firebase.storage.StorageReference
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.model.sample.Sample
 import java.io.File
 import java.io.FileInputStream
@@ -11,11 +15,14 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.util.zip.ZipInputStream
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 class StorageService(val storage: FirebaseStorage) {
   private val storageRef = storage.reference
+  private val sampleRepo = com.neptune.neptune.model.sample.SampleRepositoryProvider.repository
 
   suspend fun exists(ref: StorageReference): Boolean {
     return try {
@@ -76,6 +83,7 @@ class StorageService(val storage: FirebaseStorage) {
       FileOutputStream(outFile).use { output -> input.copyTo(output) }
     }
     return outFile
+  }
 
   /**
    * Uploads sample zip and image files, cleans up old files, and updates the sample in the repo.
