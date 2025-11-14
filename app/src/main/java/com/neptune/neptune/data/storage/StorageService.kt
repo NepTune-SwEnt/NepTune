@@ -99,7 +99,7 @@ class StorageService(
   }
 
   /** Retrieves the display name of a file from its Content URI. */
-  private suspend fun getFileNameFromUri(uri: Uri): String? {
+  suspend fun getFileNameFromUri(uri: Uri): String? {
     if (uri.scheme == "content") {
       val contentName =
           withContext(Dispatchers.IO) {
@@ -122,5 +122,20 @@ class StorageService(
       }
     }
     return uri.lastPathSegment?.substringAfterLast('/')
+  }
+  /**
+   * Retrieves the download URL of a file from Storage.
+   *
+   * @param storagePath The full path to the file.
+   * @return The download URL, or null in case of an error.
+   */
+  suspend fun getDownloadUrl(storagePath: String): String? {
+    return try {
+      val fileRef = storageRef.child(storagePath)
+      fileRef.downloadUrl.await().toString()
+    } catch (e: Exception) {
+      Log.w("StorageService", "Failed to get download URL: $storagePath", e)
+      null
+    }
   }
 }
