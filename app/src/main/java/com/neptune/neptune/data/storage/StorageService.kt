@@ -99,7 +99,7 @@ class StorageService(
   }
 
   /** Retrieves the display name of a file from its Content URI. */
-  private suspend fun getFileNameFromUri(uri: Uri): String? {
+  suspend fun getFileNameFromUri(uri: Uri): String? {
     if (uri.scheme == "content") {
       val contentName =
           withContext(Dispatchers.IO) {

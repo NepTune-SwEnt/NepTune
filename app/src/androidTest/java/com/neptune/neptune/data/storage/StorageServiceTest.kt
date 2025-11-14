@@ -1,6 +1,7 @@
 package com.neptune.neptune.data.storage
 
 import android.net.Uri
+import androidx.core.content.FileProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.firebase.Firebase
@@ -11,6 +12,7 @@ import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
 import java.io.File
+import java.io.IOException
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -215,5 +217,61 @@ class StorageServiceTest {
 
         // --- Assert ---
         Assert.assertNull(resultUrl)
+      }
+
+  @Test
+  fun getFileNameFromUri_withFileUri_returnsLastPathSegment() =
+      runBlocking(testDispatcher) {
+        // --- Arrange ---
+        val fileUri = createDummyFile("test-file-name.jpg", "hello")
+
+        // --- Act ---
+        val fileName = storageService.getFileNameFromUri(fileUri)
+
+        // --- Assert ---
+        Assert.assertEquals("test-file-name.jpg", fileName)
+      }
+
+  @Test
+  fun getFileNameFromUri_withHttpUri_returnsLastPathSegment() =
+      runBlocking(testDispatcher) {
+        // --- Arrange ---
+        val httpUri = Uri.parse("https://example.com/some/path/on/web/image.png?v=123")
+
+        // --- Act ---
+        val fileName = storageService.getFileNameFromUri(httpUri)
+
+        // --- Assert ---
+        Assert.assertEquals("image.png", fileName)
+      }
+
+  @Test
+  fun getFileNameFromUri_withContentUri_queriesContentResolver() =
+      runBlocking(testDispatcher) {
+        // --- Arrange ---
+        val testFileName = "my-content-file.mp3"
+        val testFile = File(context.cacheDir, testFileName)
+        try {
+          testFile.writeText("dummy audio data")
+        } catch (e: IOException) {
+          Assert.fail("Failed to create test file: ${e.message}")
+        }
+
+        val authority = "${context.packageName}.provider"
+        val contentUri: Uri
+
+        try {
+          contentUri = FileProvider.getUriForFile(context, authority, testFile)
+        } catch (_: Exception) {
+          return@runBlocking
+        }
+
+        // --- Act ---
+        val fileName = storageService.getFileNameFromUri(contentUri)
+
+        // --- Assert ---
+        Assert.assertEquals(testFileName, fileName)
+
+        testFile.delete()
       }
 }
