@@ -118,7 +118,7 @@ class LocalProjectLoadingTest {
   }
 
   @Test
-  fun projectClick_loadsSamplerKnobsCorrectly() {
+  fun projectClickLoadsSamplerKnobsCorrectly() {
     composeTestRule.onNodeWithTag("project_$TARGET_PROJECT_ID").performClick()
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithText("COMP").performClick()
@@ -138,7 +138,7 @@ class LocalProjectLoadingTest {
   }
 
   @Test
-  fun loadProjectData_updatesUiStateWithRealExtractor() = runBlocking {
+  fun loadProjectDataUpdatesUiStateWithRealExtractor() = runBlocking {
     val viewModel = SamplerViewModel()
     val context = NepTuneApplication.appContext
     val zipFile = File(context.cacheDir, "fakeProject.zip")
@@ -172,7 +172,7 @@ class SamplerViewModelTogglePlayTest {
   }
 
   @Test
-  fun togglePlayPause_firstPlay_startsPlayingFromZero() {
+  fun togglePlayPauseFirstPlayStartsPlayingFromZero() {
     runBlocking {
       viewModel.togglePlayPause()
       val state = viewModel.uiState.value
@@ -184,7 +184,7 @@ class SamplerViewModelTogglePlayTest {
   }
 
   @Test
-  fun togglePlayPause_whenPlaying_pauses() {
+  fun togglePlayPauseWhenPlayingPauses() {
     runBlocking {
       fakePlayer.isPlayingState = true
       viewModel.togglePlayPause()
@@ -195,10 +195,31 @@ class SamplerViewModelTogglePlayTest {
   }
 
   @Test
-  fun togglePlayPause_whenNearEnd_resetsPosition() = runBlocking {
+  fun togglePlayPauseWhenNearEndResetsPosition() = runBlocking {
     viewModel._uiState.update { it.copy(playbackPosition = 0.99f) }
     viewModel.togglePlayPause()
     val state = viewModel.uiState.value
     assertEquals(0f, state.playbackPosition)
+  }
+
+  @Test
+  fun loadProjectWithoutTempoPitchShowsInitialSetupDialog() = runBlocking {
+    val viewModel = SamplerViewModel()
+    val context = NepTuneApplication.appContext
+    val zipFile = File(context.cacheDir, "fakeProject2.zip")
+
+    copyAssetToFile("fakeProject2.zip", zipFile)
+
+    viewModel.loadProjectData(zipFile.absolutePath)
+    delay(500)
+
+    val state = viewModel.uiState.value
+
+    assertTrue("Initial setup dialog should be shown", state.showInitialSetupDialog)
+    assertEquals(state.tempo, state.inputTempo)
+    assertEquals(state.pitchNote, state.inputPitchNote)
+    assertEquals(state.pitchOctave, state.inputPitchOctave)
+
+    assertNotNull("Audio URI should be set even if tempo/pitch missing", state.currentAudioUri)
   }
 }
