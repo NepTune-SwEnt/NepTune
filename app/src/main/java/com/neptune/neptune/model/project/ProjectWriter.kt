@@ -9,10 +9,7 @@ import kotlinx.serialization.json.Json
 
 class ProjectWriter {
 
-  private val json = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-  }
+  private val json = Json {}
 
   fun writeProject(
       zipFile: File,
@@ -47,7 +44,13 @@ class ProjectWriter {
         }
       }
     }
-    if (zipFile.exists()) zipFile.delete()
-    tempZip.renameTo(zipFile)
+    if (zipFile.exists()) {
+      zipFile.delete()
+    }
+    val success = tempZip.renameTo(zipFile)
+    if (!success) {
+      tempZip.copyTo(zipFile, overwrite = true)
+      tempZip.delete()
+    }
   }
 }

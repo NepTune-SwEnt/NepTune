@@ -118,7 +118,7 @@ class LocalProjectLoadingTest {
   }
 
   @Test
-  fun projectClick_loadsSamplerKnobsCorrectly() {
+  fun projectClickLoadsSamplerKnobsCorrectly() {
     composeTestRule.onNodeWithTag("project_$TARGET_PROJECT_ID").performClick()
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithText("COMP").performClick()
@@ -127,7 +127,7 @@ class LocalProjectLoadingTest {
   }
 
   @Test
-  fun endToEnd_loadProject_setsCorrectAudioDuration() {
+  fun endToEndLoadProjectSetsCorrectAudioDuration() {
     composeTestRule.onNodeWithTag("project_$TARGET_PROJECT_ID").performClick()
     composeTestRule.mainClock.advanceTimeBy(500L)
     composeTestRule.waitForIdle()
@@ -138,7 +138,7 @@ class LocalProjectLoadingTest {
   }
 
   @Test
-  fun loadProjectData_updatesUiStateWithRealExtractor() = runBlocking {
+  fun loadProjectDataUpdatesUiStateWithRealExtractor() = runBlocking {
     val viewModel = SamplerViewModel()
     val context = NepTuneApplication.appContext
     val zipFile = File(context.cacheDir, "fakeProject.zip")
@@ -172,7 +172,7 @@ class SamplerViewModelTogglePlayTest {
   }
 
   @Test
-  fun togglePlayPause_firstPlay_startsPlayingFromZero() {
+  fun togglePlayPauseFirstPlayStartsPlayingFromZero() {
     runBlocking {
       viewModel.togglePlayPause()
       val state = viewModel.uiState.value
@@ -184,7 +184,7 @@ class SamplerViewModelTogglePlayTest {
   }
 
   @Test
-  fun togglePlayPause_whenPlaying_pauses() {
+  fun togglePlayPauseWhenPlayingPauses() {
     runBlocking {
       fakePlayer.isPlayingState = true
       viewModel.togglePlayPause()
@@ -195,7 +195,7 @@ class SamplerViewModelTogglePlayTest {
   }
 
   @Test
-  fun togglePlayPause_whenNearEnd_resetsPosition() = runBlocking {
+  fun togglePlayPauseWhenNearEndResetsPosition() = runBlocking {
     viewModel._uiState.update { it.copy(playbackPosition = 0.99f) }
     viewModel.togglePlayPause()
     val state = viewModel.uiState.value
@@ -203,7 +203,7 @@ class SamplerViewModelTogglePlayTest {
   }
 
   @Test
-  fun loadProjectWithoutTempoPitch_showsInitialSetupDialog() = runBlocking {
+  fun loadProjectWithoutTempoPitchShowsInitialSetupDialog() = runBlocking {
     val viewModel = SamplerViewModel()
     val context = NepTuneApplication.appContext
     val zipFile = File(context.cacheDir, "fakeProject2.zip")

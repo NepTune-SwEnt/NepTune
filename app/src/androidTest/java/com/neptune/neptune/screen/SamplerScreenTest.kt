@@ -238,7 +238,7 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun samplerScreen_displaysAllCoreElementsAndControls() {
+  fun samplerScreenDisplaysAllCoreElementsAndControls() {
     openSection("ADSR Envelope Controls")
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(SamplerTestTags.SCREEN_CONTAINER).assertIsDisplayed()
@@ -253,7 +253,7 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun adsrKnobs_callsAllUpdateFunctions() {
+  fun adsrKnobsCallsAllUpdateFunctions() {
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(currentTab = SamplerTab.BASICS)
 
@@ -277,7 +277,7 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun reverbKnobs_callsAllUpdateFunctions() {
+  fun reverbKnobsCallsAllUpdateFunctions() {
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(currentTab = SamplerTab.BASICS)
     openSection("Reverb Controls")
@@ -304,7 +304,7 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun eqFader_drag_callsUpdateEqBand() {
+  fun eqFaderDragCallsUpdateEqBand() {
     composeTestRule.onNodeWithText("EQ").performClick()
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(currentTab = SamplerTab.EQ)
@@ -353,7 +353,7 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun playbackControls_manualDrag_callsUpdatePlaybackPosition() {
+  fun playbackControlsManualDragCallsUpdatePlaybackPosition() {
     val waveformNode = composeTestRule.onNodeWithTag(SamplerTestTags.WAVEFORM_DISPLAY)
     waveformNode.performTouchInput {
       swipeWithVelocity(start = center, end = center + Offset(x = 50f, y = 0f), endVelocity = 0f)
@@ -363,7 +363,7 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun tabs_allClicks_callsSelectTabAndLoadsContent() {
+  fun tabsAllClicksCallsSelectTabAndLoadsContent() {
     composeTestRule.onNodeWithText("EQ").performClick()
     assertEquals(SamplerTab.EQ, fakeViewModel.isSelectTabCalled)
 
@@ -372,7 +372,7 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun pitchControls_maxMinLimits_callsIncreaseDecrease() {
+  fun pitchControlsMaxMinLimitsCallsIncreaseDecrease() {
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(pitchNote = "C", pitchOctave = 1)
     composeTestRule.waitForIdle()
@@ -394,7 +394,7 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun tempoSelector_downArrow_callsUpdateTempo() {
+  fun tempoSelectorDownArrowCallsUpdateTempo() {
     fakeViewModel.mutableUiState.value = fakeViewModel.uiState.value.copy(tempo = 100)
     composeTestRule.waitForIdle()
     composeTestRule
@@ -408,7 +408,7 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun adsrKnobs_allDrag_callsAllUpdateFunctions() {
+  fun adsrKnobsAllDragCallsAllUpdateFunctions() {
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(currentTab = SamplerTab.BASICS)
     composeTestRule.waitForIdle()
@@ -433,7 +433,7 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun compressorControls_callsAllUpdateFunctions() {
+  fun compressorControlsCallsAllUpdateFunctions() {
     composeTestRule.onNodeWithText("COMP").performClick()
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(currentTab = SamplerTab.COMP)
@@ -463,7 +463,7 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun ratioInputField_validInput_callsUpdateCompRatio() {
+  fun ratioInputFieldValidInputCallsUpdateCompRatio() {
     composeTestRule.onNodeWithText("COMP").performClick()
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(currentTab = SamplerTab.COMP)
@@ -479,7 +479,7 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun updatePlaybackPosition_durationIsZero_setsZero() {
+  fun updatePlaybackPositionDurationIsZeroSetsZero() {
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(audioDurationMillis = 0, playbackPosition = 0.5f)
     composeTestRule.waitForIdle()
@@ -488,7 +488,7 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun increasePitch_wrapsToNextOctave() {
+  fun increasePitchWrapsToNextOctave() {
 
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(pitchNote = "B", pitchOctave = 4)
@@ -500,7 +500,7 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun decreasePitch_wrapsToPreviousOctave() {
+  fun decreasePitchWrapsToPreviousOctave() {
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(pitchNote = "C", pitchOctave = 5)
     composeTestRule.waitForIdle()

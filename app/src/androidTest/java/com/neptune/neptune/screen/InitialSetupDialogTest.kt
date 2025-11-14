@@ -36,7 +36,7 @@ class InitialSetupDialogTest {
   }
 
   @Test
-  fun initialSetupDialog_pitchButtons_updateViewModel() {
+  fun initialSetupDialogPitchButtonsUpdateViewModel() {
 
     assertEquals("C", viewModel.uiState.value.inputPitchNote)
     assertEquals(4, viewModel.uiState.value.inputPitchOctave)
@@ -55,7 +55,7 @@ class InitialSetupDialogTest {
   }
 
   @Test
-  fun initialSetupDialog_tempoInput_updatesViewModel() {
+  fun initialSetupDialogTempoInputUpdatesViewModel() {
 
     composeRule.onNodeWithTag(SamplerTestTags.INIT_TEMPO_SELECTOR).performTextInput("150")
 
@@ -64,7 +64,7 @@ class InitialSetupDialogTest {
   }
 
   @Test
-  fun initialSetupDialog_confirmButton_appliesChanges() {
+  fun initialSetupDialog_confirmButtonAppliesChanges() {
     composeRule.onNodeWithTag("PITCH_UP_BUTTON").performClick()
     composeRule.onNodeWithTag(SamplerTestTags.INIT_TEMPO_SELECTOR).performTextInput("140")
     composeRule.waitForIdle()
