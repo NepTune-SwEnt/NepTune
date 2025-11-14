@@ -49,6 +49,8 @@ class FakeProfileRepository(initial: Profile? = null) : ProfileRepository {
     profile = profile?.copy(bio = newBio)
   }
 
+  override suspend fun updateAvatarUrl(newUrl: String) {}
+
   override suspend fun uploadAvatar(localUri: Uri): String = ""
 
   override suspend fun addNewTag(tag: String) {

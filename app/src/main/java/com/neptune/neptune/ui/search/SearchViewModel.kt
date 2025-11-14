@@ -122,25 +122,45 @@ open class SearchViewModel(
     _samples.value =
         listOf(
             Sample(
-                1,
+                "1",
                 "Sample 1",
                 "This is a sample description 1",
                 21,
                 listOf(NATURE_TAG),
                 21,
+                emptyList(),
                 21,
                 21),
-            Sample(2, "Sample 2", "This is a sample description 2", 42, listOf("#sea"), 42, 42, 42),
-            Sample(3, "Sample 3", "sea", 12, listOf("#relax", NATURE_TAG), 12, 12, 12),
             Sample(
-                4, "nature", "This is a sample description 4", 2, listOf("#takeItEasy"), 1, 2, 1),
+                "2",
+                "Sample 2",
+                "This is a sample description 2",
+                42,
+                listOf("#sea"),
+                42,
+                emptyList(),
+                42,
+                42),
             Sample(
-                5,
+                "3", "Sample 3", "sea", 12, listOf("#relax", NATURE_TAG), 12, emptyList(), 12, 12),
+            Sample(
+                "4",
+                "nature",
+                "This is a sample description 4",
+                2,
+                listOf("#takeItEasy"),
+                1,
+                emptyList(),
+                2,
+                1),
+            Sample(
+                "5",
                 "Sample 5",
                 "This is a sample description 5",
                 75,
                 listOf(NATURE_TAG, "#forest"),
                 210,
+                usersLike = emptyList(),
                 210,
                 210))
   }

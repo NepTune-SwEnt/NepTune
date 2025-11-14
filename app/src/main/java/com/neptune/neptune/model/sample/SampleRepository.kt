@@ -20,6 +20,14 @@ interface SampleRepository {
   suspend fun getSamples(): List<Sample>
 
   /**
+   * Returns the corresponding sample from the Firestore database.
+   *
+   * @param sampleId the ID of the sample
+   * @return the sample
+   */
+  suspend fun getSample(sampleId: String): Sample
+
+  /**
    * Observes real-time updates for all samples in Firestore.
    *
    * @return a flow of lists of sample as they change
@@ -39,7 +47,7 @@ interface SampleRepository {
    * @param sampleId the ID of the sample
    * @param isLiked true to increment likes, false to decrement
    */
-  suspend fun toggleLike(sampleId: Int, isLiked: Boolean)
+  suspend fun toggleLike(sampleId: String, isLiked: Boolean)
 
   /**
    * Adds a new comment to a specific sample.
@@ -48,7 +56,7 @@ interface SampleRepository {
    * @param author the username of the person who comments
    * @param text the comment
    */
-  suspend fun addComment(sampleId: Int, author: String, text: String)
+  suspend fun addComment(sampleId: String, author: String, text: String)
 
   /**
    * Observes real-time comments of a specific sample.
@@ -56,7 +64,7 @@ interface SampleRepository {
    * @param sampleId the ID of the sample
    * @return a Flow lists of comments
    */
-  fun observeComments(sampleId: Int): Flow<List<Comment>>
+  fun observeComments(sampleId: String): Flow<List<Comment>>
 
   /**
    * Check if the user has already liked a sample.

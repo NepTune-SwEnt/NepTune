@@ -157,7 +157,7 @@ class SearchScreenAllTests {
     composeRule.setContent { SearchScreen(searchViewModel = vm, mediaPlayer = fakeMediaPlayer) }
     advanceDebounce()
 
-    val firstProfileIconTag = SearchScreenTestTagsPerSampleCard(1).SAMPLE_PROFILE_ICON
+    val firstProfileIconTag = SearchScreenTestTagsPerSampleCard("1").SAMPLE_PROFILE_ICON
     composeRule.onNodeWithTag(firstProfileIconTag).assertIsDisplayed().performClick()
     advanceDebounce()
   }
@@ -207,7 +207,7 @@ class SearchScreenAllTests {
     composeRule.setContent { SearchScreen(searchViewModel = vm, mediaPlayer = fakeMediaPlayer) }
     advanceDebounce()
 
-    val likeTag = SearchScreenTestTagsPerSampleCard(1).SAMPLE_LIKES
+    val likeTag = SearchScreenTestTagsPerSampleCard("1").SAMPLE_LIKES
     val likeNode = composeRule.onNodeWithTag(likeTag)
 
     // Initially should be "not liked"

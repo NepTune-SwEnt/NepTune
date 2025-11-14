@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.compose.runtime.compositionLocalOf
 import androidx.core.net.toUri
 import com.neptune.neptune.NepTuneApplication
+import kotlin.math.abs
 
 open class NeptuneMediaPlayer() {
   val context = NepTuneApplication.appContext
@@ -181,8 +182,8 @@ open class NeptuneMediaPlayer() {
    * @param sampleId The resource ID of the sample audio.
    * @return The URI pointing to the sample audio resource.
    */
-  fun getUriFromSampleId(sampleId: Int): Uri {
-    val recordNumber = (sampleId % 2) + 1
+  fun getUriFromSampleId(sampleId: String): Uri {
+    val recordNumber = (abs(sampleId.hashCode()) % 2) + 1
     return "android.resource://${context.packageName}/raw/record$recordNumber".toUri()
   }
 }

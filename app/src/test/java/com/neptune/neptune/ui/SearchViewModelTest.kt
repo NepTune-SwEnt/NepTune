@@ -47,7 +47,7 @@ class SearchViewModelTest {
 
     val ids = vm.samples.value.map { it.id }
     assertEquals(5, ids.size)
-    assertTrue(ids.containsAll(listOf(1, 2, 3, 4, 5)))
+    assertTrue(ids.containsAll(listOf("1", "2", "3", "4", "5")))
   }
 
   @Test
@@ -67,7 +67,7 @@ class SearchViewModelTest {
     // 4 name == "nature"
     // 5 has tag #nature
     val ids = vm.samples.value.map { it.id }.sorted()
-    assertEquals(listOf(1, 3, 4, 5), ids)
+    assertEquals(listOf("1", "3", "4", "5"), ids)
   }
 
   @Test
@@ -82,7 +82,7 @@ class SearchViewModelTest {
     vm.search("#NATURE") // hash and upper-case should be normalized away
 
     val ids = vm.samples.value.map { it.id }.sorted()
-    assertEquals(listOf(1, 3, 4, 5), ids)
+    assertEquals(listOf("1", "3", "4", "5"), ids)
   }
 
   @Test
@@ -99,7 +99,7 @@ class SearchViewModelTest {
     // 2 has tag #sea (tag match)
     // 3 has description "sea" (description match)
     val ids = vm.samples.value.map { it.id }.sorted()
-    assertEquals(listOf(2, 3), ids)
+    assertEquals(listOf("2", "3"), ids)
   }
 
   @Test
@@ -113,12 +113,12 @@ class SearchViewModelTest {
 
     vm.search("nature")
     val afterNature = vm.samples.value.map { it.id }.sorted()
-    assertEquals(listOf(1, 3, 4, 5), afterNature)
+    assertEquals(listOf("1", "3", "4", "5"), afterNature)
 
     // Should NOT filter within previous subset; loadData() runs again
     vm.search("sea")
     val afterSea = vm.samples.value.map { it.id }.sorted()
-    assertEquals(listOf(2, 3), afterSea)
+    assertEquals(listOf("2", "3"), afterSea)
   }
 
   @Test
@@ -131,11 +131,11 @@ class SearchViewModelTest {
             useMockData = true)
 
     vm.search("sea")
-    assertEquals(listOf(2, 3), vm.samples.value.map { it.id }.sorted())
+    assertEquals(listOf("2", "3"), vm.samples.value.map { it.id }.sorted())
 
     vm.search("") // clear => loadData then early return
     val ids = vm.samples.value.map { it.id }.sorted()
-    assertEquals(listOf(1, 2, 3, 4, 5), ids)
+    assertEquals(listOf("1", "2", "3", "4", "5"), ids)
   }
 
   @Test
