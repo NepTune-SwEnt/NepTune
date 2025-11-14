@@ -245,8 +245,8 @@ open class SamplerViewModel() : ViewModel() {
     _uiState.update { it.copy(tempo = newTempo) }
   }
 
-  fun updateInputTempo(newTempo: Int) {
-    _uiState.update { it.copy(inputTempo = newTempo.coerceIn(50, 200)) }
+  fun updateInputTempo(value: Int?) {
+    _uiState.update { current -> current.copy(inputTempo = value ?: 0) }
   }
 
   fun confirmInitialSetup() {

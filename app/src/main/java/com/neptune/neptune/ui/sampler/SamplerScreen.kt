@@ -9,7 +9,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -23,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -1249,15 +1249,22 @@ fun InitialSetupDialog(viewModel: SamplerViewModel) {
               Text("Define the project pitch and tempo", style = MaterialTheme.typography.bodyLarge)
 
               OutlinedTextField(
-                  value = uiState.inputTempo.toString(),
+                  value = if (uiState.inputTempo == 0) "" else uiState.inputTempo.toString(),
                   onValueChange = { newValue ->
-                    newValue.toIntOrNull()?.let { viewModel.updateInputTempo(it) }
+                    newValue.toIntOrNull()?.let { parsed -> viewModel.updateInputTempo(parsed) }
                   },
                   label = { Text("Tempo (BPM)") },
                   keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                  modifier = Modifier.fillMaxWidth().testTag(SamplerTestTags.INIT_TEMPO_SELECTOR))
+                  modifier =
+                      Modifier.fillMaxWidth()
+                          .testTag(SamplerTestTags.INIT_TEMPO_SELECTOR)
+                          .onFocusChanged { focusState ->
+                            if (focusState.isFocused) {
+                              viewModel.updateInputTempo(0) // clear dès que focus
+                            }
+                          })
 
-              PitchDragField(
+              PitchSelectorField(
                   pitchNote = uiState.inputPitchNote,
                   pitchOctave = uiState.inputPitchOctave,
                   onPitchUp = { viewModel.increaseInputPitch() },
@@ -1275,29 +1282,23 @@ fun InitialSetupDialog(viewModel: SamplerViewModel) {
 }
 
 @Composable
-fun PitchDragField(
+fun PitchSelectorField(
     pitchNote: String,
     pitchOctave: Int,
     onPitchUp: () -> Unit,
     onPitchDown: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-  var lastY by remember { mutableStateOf<Float?>(null) }
-  OutlinedTextField(
-      value = "$pitchNote$pitchOctave",
-      onValueChange = {},
-      label = { Text("Pitch (slide ↑↓)") },
-      readOnly = true,
-      modifier =
-          modifier.pointerInput(Unit) {
-            detectVerticalDragGestures(
-                onDragStart = { lastY = null },
-                onVerticalDrag = { _, dragAmount ->
-                  if (dragAmount < -20) onPitchUp().also { lastY = null }
-                  else if (dragAmount > 20) onPitchDown().also { lastY = null }
-                },
-                onDragEnd = { lastY = null })
-          })
+  Row(
+      modifier = modifier.fillMaxWidth().padding(vertical = 8.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("$pitchNote$pitchOctave", modifier = Modifier.weight(1f))
+        Button(onClick = onPitchUp, modifier = Modifier.testTag("PITCH_UP_BUTTON")) { Text("↑") }
+        Button(onClick = onPitchDown, modifier = Modifier.testTag("PITCH_DOWN_BUTTON")) {
+          Text("↓")
+        }
+      }
 }
 
 @Composable

@@ -1,98 +1,138 @@
 package com.neptune.neptune.ui.sampler
 
-import android.app.Application
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.neptune.neptune.screen.FakeMediaPlayer
-import com.neptune.neptune.screen.FakeSamplerViewModel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
 
-class SamplerViewModelFactory(
-    private val viewModel: FakeSamplerViewModel,
-    private val application: Application
-) : ViewModelProvider.Factory {
-  @Suppress("UNCHECKED_CAST")
-  override fun <T : ViewModel> create(modelClass: Class<T>): T {
-    if (modelClass.isAssignableFrom(SamplerViewModel::class.java)) {
-      return viewModel as T
-    }
-    throw IllegalArgumentException("Unknown ViewModel class")
-  }
-}
+@RunWith(AndroidJUnit4::class)
+class InitialSetupDialogTest {
 
-class SamplerViewModelInitialSetupTest {
+  @get:Rule val composeRule = createComposeRule()
 
-  private lateinit var viewModel: SamplerViewModel
-  private lateinit var fakePlayer: FakeMediaPlayer
+  lateinit var viewModel: SamplerViewModel
 
   @Before
   fun setup() {
-    fakePlayer = FakeMediaPlayer()
     viewModel = SamplerViewModel()
 
-    val mediaPlayerField = SamplerViewModel::class.java.getDeclaredField("mediaPlayer")
-    mediaPlayerField.isAccessible = true
-    mediaPlayerField.set(viewModel, fakePlayer)
     viewModel._uiState.value =
         viewModel._uiState.value.copy(
             inputTempo = 120,
             inputPitchNote = "C",
             inputPitchOctave = 4,
             showInitialSetupDialog = true)
+
+    composeRule.setContent { InitialSetupDialog(viewModel) }
   }
 
   @Test
-  fun testUpdateInputTempoSetsTempoWithinBounds() = runBlocking {
-    viewModel.updateInputTempo(150)
-    val state = viewModel.uiState.first()
-    assertEquals(150, state.inputTempo)
+  fun initialSetupDialog_pitchButtons_updateViewModel() {
 
-    viewModel.updateInputTempo(300) // Should clamp to 200
-    assertEquals(200, viewModel.uiState.first().inputTempo)
+    assertEquals("C", viewModel.uiState.value.inputPitchNote)
+    assertEquals(4, viewModel.uiState.value.inputPitchOctave)
 
-    viewModel.updateInputTempo(30) // Should clamp to 50
-    assertEquals(50, viewModel.uiState.first().inputTempo)
+    composeRule.onNodeWithTag("PITCH_UP_BUTTON").performClick()
+    composeRule.waitForIdle()
+
+    assertEquals("C#", viewModel.uiState.value.inputPitchNote)
+    assertEquals(4, viewModel.uiState.value.inputPitchOctave)
+
+    composeRule.onNodeWithTag("PITCH_DOWN_BUTTON").performClick()
+    composeRule.waitForIdle()
+
+    assertEquals("C", viewModel.uiState.value.inputPitchNote)
+    assertEquals(4, viewModel.uiState.value.inputPitchOctave)
   }
 
   @Test
-  fun testIncreaseInputPitchCyclesCorrectly() = runBlocking {
-    viewModel._uiState.value =
-        viewModel._uiState.value.copy(inputPitchNote = "C", inputPitchOctave = 4)
-    viewModel.increaseInputPitch()
-    val state = viewModel.uiState.first()
-    assertEquals("C#", state.inputPitchNote)
-    assertEquals(4, state.inputPitchOctave)
+  fun initialSetupDialog_tempoInput_updatesViewModel() {
+
+    composeRule.onNodeWithTag(SamplerTestTags.INIT_TEMPO_SELECTOR).performTextInput("150")
+
+    composeRule.waitForIdle()
+    assertEquals(150, viewModel.uiState.value.inputTempo)
   }
 
   @Test
-  fun testDecreaseInputPitchCyclesCorrectly() = runBlocking {
-    viewModel._uiState.value =
-        viewModel._uiState.value.copy(inputPitchNote = "C", inputPitchOctave = 4)
-    viewModel.decreaseInputPitch()
-    val state = viewModel.uiState.first()
-    assertEquals("B", state.inputPitchNote)
-    assertEquals(3, state.inputPitchOctave)
+  fun initialSetupDialog_confirmButton_appliesChanges() {
+    composeRule.onNodeWithTag("PITCH_UP_BUTTON").performClick()
+    composeRule.onNodeWithTag(SamplerTestTags.INIT_TEMPO_SELECTOR).performTextInput("140")
+    composeRule.waitForIdle()
+
+    composeRule.onNodeWithTag(SamplerTestTags.INIT_CONFIRM_BUTTON).performClick()
+    composeRule.waitForIdle()
+
+    assertEquals("C#", viewModel.uiState.value.pitchNote)
+    assertEquals(140, viewModel.uiState.value.tempo)
+    assertEquals(false, viewModel.uiState.value.showInitialSetupDialog)
   }
 
-  @Test
-  fun testConfirmInitialSetupUpdatesPitchAndTempo() = runBlocking {
-    viewModel._uiState.value =
-        viewModel._uiState.value.copy(
-            inputTempo = 123,
-            inputPitchNote = "D",
-            inputPitchOctave = 5,
-            showInitialSetupDialog = true)
+  class SamplerViewModelInitialSetupTest {
 
-    viewModel.confirmInitialSetup()
-    val state = viewModel.uiState.first()
-    assertEquals(123, state.tempo)
-    assertEquals("D", state.pitchNote)
-    assertEquals(5, state.pitchOctave)
-    assertEquals(false, state.showInitialSetupDialog)
+    private lateinit var viewModel: SamplerViewModel
+    private lateinit var fakePlayer: FakeMediaPlayer
+
+    @Before
+    fun setup() {
+      fakePlayer = FakeMediaPlayer()
+      viewModel = SamplerViewModel()
+
+      val mediaPlayerField = SamplerViewModel::class.java.getDeclaredField("mediaPlayer")
+      mediaPlayerField.isAccessible = true
+      mediaPlayerField.set(viewModel, fakePlayer)
+      viewModel._uiState.value =
+          viewModel._uiState.value.copy(
+              inputTempo = 120,
+              inputPitchNote = "C",
+              inputPitchOctave = 4,
+              showInitialSetupDialog = true)
+    }
+
+    @Test
+    fun testIncreaseInputPitchCyclesCorrectly() = runBlocking {
+      viewModel._uiState.value =
+          viewModel._uiState.value.copy(inputPitchNote = "C", inputPitchOctave = 4)
+      viewModel.increaseInputPitch()
+      val state = viewModel.uiState.first()
+      assertEquals("C#", state.inputPitchNote)
+      assertEquals(4, state.inputPitchOctave)
+    }
+
+    @Test
+    fun testDecreaseInputPitchCyclesCorrectly() = runBlocking {
+      viewModel._uiState.value =
+          viewModel._uiState.value.copy(inputPitchNote = "C", inputPitchOctave = 4)
+      viewModel.decreaseInputPitch()
+      val state = viewModel.uiState.first()
+      assertEquals("B", state.inputPitchNote)
+      assertEquals(3, state.inputPitchOctave)
+    }
+
+    @Test
+    fun testConfirmInitialSetupUpdatesPitchAndTempo() = runBlocking {
+      viewModel._uiState.value =
+          viewModel._uiState.value.copy(
+              inputTempo = 123,
+              inputPitchNote = "D",
+              inputPitchOctave = 5,
+              showInitialSetupDialog = true)
+
+      viewModel.confirmInitialSetup()
+      val state = viewModel.uiState.first()
+      assertEquals(123, state.tempo)
+      assertEquals("D", state.pitchNote)
+      assertEquals(5, state.pitchOctave)
+      assertEquals(false, state.showInitialSetupDialog)
+    }
   }
 }
