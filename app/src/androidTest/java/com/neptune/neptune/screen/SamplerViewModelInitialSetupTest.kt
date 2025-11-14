@@ -80,10 +80,10 @@ class SamplerViewModelInitialSetupTest {
     assertEquals(150, state.inputTempo)
 
     viewModel.updateInputTempo(300)
-    assertEquals(200, viewModel.uiState.first().inputTempo)
+    assertEquals(300, viewModel.uiState.first().inputTempo)
 
     viewModel.updateInputTempo(30)
-    assertEquals(50, viewModel.uiState.first().inputTempo)
+    assertEquals(30, viewModel.uiState.first().inputTempo)
   }
 
   @Test

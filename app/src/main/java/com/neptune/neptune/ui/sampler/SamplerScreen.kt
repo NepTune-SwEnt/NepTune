@@ -1260,7 +1260,7 @@ fun InitialSetupDialog(viewModel: SamplerViewModel) {
                           .testTag(SamplerTestTags.INIT_TEMPO_SELECTOR)
                           .onFocusChanged { focusState ->
                             if (focusState.isFocused) {
-                              viewModel.updateInputTempo(0) // clear dès que focus
+                              viewModel.updateInputTempo(0)
                             }
                           })
 
