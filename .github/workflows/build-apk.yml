@@ -7,103 +7,48 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-apk:
+    name: Build Debug APK
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    env:
+      DEBUG_STORE_PASSWORD: ${{ secrets.DEBUG_STORE_PASSWORD }}
+      DEBUG_KEY_ALIAS: ${{ secrets.DEBUG_KEY_ALIAS }}
+      DEBUG_KEY_PASSWORD: ${{ secrets.DEBUG_KEY_PASSWORD }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Decode secrets
+        env:
+          GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES" ]; then
+            echo "$GOOGLE_SERVICES" | base64 --decode > ./app/google-services.json
+          else
+            echo "::warning::GOOGLE_SERVICES secret is not set. google-services.json will not be created. Should be present after B2"
+          fi
+
+      - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 17
-          cache: gradle
+          distribution: "temurin"
+          java-version: "17"
 
       - name: Make Gradle executable
         run: chmod +x ./gradlew
-      - name: Decode private key and certificate, create keystore
-        env:
-          SIGNING_PRIVATE_KEY: ${{ secrets.SIGNING_PRIVATE_KEY }}
-          SIGNING_CERTIFICATE: ${{ secrets.SIGNING_CERTIFICATE }}
-        run: |
-          # Create a temporary directory for the keystore
-          mkdir -p ~/.keystore
 
-          # Decode the private key and certificate from the secrets and save them as PEM files
-          echo "$SIGNING_PRIVATE_KEY" > ~/.keystore/private_key.pem
-          echo "$SIGNING_CERTIFICATE" > ~/.keystore/certificate.pem
-
-          # Create a PKCS12 keystore from the private key and certificate
-          openssl pkcs12 -export \
-            -inkey ~/.keystore/private_key.pem \
-            -in ~/.keystore/certificate.pem \
-            -out ~/.keystore/test-release.p12 \
-            -name testalias \
-            -passout pass:testpass
-
-          # Convert the PKCS12 keystore to JKS format (which Android uses)
-          keytool -importkeystore \
-            -srckeystore ~/.keystore/test-release.p12 \
-            -srcstorepass testpass \
-            -srcstoretype PKCS12 \
-            -destkeystore ~/.keystore/test-release.keystore \
-            -deststoretype JKS \
-            -storepass testpass \
-            -keypass testpass \
-            -alias testalias
-
-          # Set the path to the keystore as an environment variable
-          echo "KEYSTORE_FILE=$(readlink -f ~/.keystore/test-release.keystore)" >> $GITHUB_ENV
-
-      - name: Build APK Release with Custom Key
-        env:
-          KEYSTORE_PASSWORD: testpass
-          KEY_ALIAS: testalias
-          KEY_PASSWORD: testpass
-        run: |
-          echo "Keystore_file is: $KEYSTORE_FILE" && \
-          echo $(readlink -f ~/.keystore/test-release.keystore) &&
-          ./gradlew clean assembleRelease --info
-
-      - name: Extract SHA-1 Fingerprint from Release Keystore
-        id: extract_sha
-        run: |
-          SHA1=$(keytool -list -v \
-              -keystore $KEYSTORE_FILE \
-              -alias testalias \
-              -storepass testpass | grep 'SHA1' | awk '{print $2}')
-          echo "SHA1=${SHA1}" >> $GITHUB_ENV
-          echo "SHA1 fingerprint: ${SHA1}"
-
-      - name: Decode Keystore
-        run: |
-          mkdir -p app
-          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > app/key-store.keystore
-          echo "KEYSTORE_PATH=${{ github.workspace }}/app/key-store.keystore" >> $GITHUB_ENV
-        env:
-          KEYSTORE_FILE: ${{ secrets.KEYSTORE_FILE }}
-
-      - name: Add google-services.json from secret
-        env:
-          GOOGLE_SERVICES_BASE64: ${{ secrets.GOOGLE_SERVICES }}
-        run: |
-          echo "$GOOGLE_SERVICES_BASE64" | base64 --decode > app/google-services.json
-          echo "google-services.json added"
-
-      - name: Build Signed Release APK
-        env:
-          KEYSTORE_PATH: ${{ env.KEYSTORE_PATH }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew clean assembleRelease --no-daemon
-
-      - name: Build debug APK
+      - name: Build Debug APK
         run: ./gradlew assembleDebug
+
+      - name: Sign Release
+        uses: r0adkll/sign-android-release@v1
+        with:
+          releaseDirectory: app/build/outputs/bundle/release
+          signingKeyBase64: ${{ secrets.KEYSTORE_SIGNING_KEY_B64 }}
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          alias: ${{ secrets.APP_NAME_KEY }}
+          keyPassword: ${{ secrets.APP_NAME_KEY_PASSWORD }}
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
