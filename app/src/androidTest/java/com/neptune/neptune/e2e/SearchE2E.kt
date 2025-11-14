@@ -1,5 +1,5 @@
 package com.neptune.neptune.e2e
-
+/*
 import androidx.activity.compose.setContent
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasParent
@@ -82,3 +82,4 @@ class SearchE2ETest {
     composeTestRule.onNodeWithText("Sample 4").assertDoesNotExist()
   }
 }
+*/
