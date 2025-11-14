@@ -42,7 +42,7 @@ jobs:
         run: ./gradlew assemble
 
       - name: Sign Release
-        uses: app/build/outputs/apk/release@v1
+        uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: app/build/outputs/apk/debug
           signingKeyBase64: ${{ secrets.KEYSTORE_SIGNING_KEY_B64 }}
