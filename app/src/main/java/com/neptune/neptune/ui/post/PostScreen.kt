@@ -443,12 +443,13 @@ fun ProjectListScreenPreview() {
       previewViewModel.apply {
         loadSample(
             Sample(
-                id = 0,
+                id = "0",
                 name = "Grilled Banana",
                 description = "Be careful not to grill your bananas",
                 durationSeconds = 21,
                 tags = listOf("relax", "easy"),
                 likes = 123,
+                usersLike = emptyList(),
                 comments = 45,
                 downloads = 67,
                 uriString = "mock_uri"))

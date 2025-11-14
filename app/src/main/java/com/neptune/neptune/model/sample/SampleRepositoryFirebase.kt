@@ -4,6 +4,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlin.String
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -28,6 +29,12 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
     return snap.documents.mapNotNull { it.toSampleOrNull() }
   }
 
+  override suspend fun getSample(sampleId: String): Sample {
+    val snap = samples.document(sampleId).get().await()
+    return snap.toSampleOrNull()
+        ?: throw Exception("SampleRepositoryFirebase: Sample with id=$sampleId doesn't exist")
+  }
+
   /** Observe samples in real time */
   override fun observeSamples(): Flow<List<Sample>> = callbackFlow {
     val reg =
@@ -42,11 +49,11 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
   }
 
   /** Toggle like (increment or decrement count) */
-  override suspend fun toggleLike(sampleId: Int, isLiked: Boolean) {
+  override suspend fun toggleLike(sampleId: String, isLiked: Boolean) {
     val userId =
         FirebaseAuth.getInstance().currentUser?.uid
             ?: throw IllegalStateException("User must be logged in to like a sample")
-    val sampleDoc = samples.document(sampleId.toString())
+    val sampleDoc = samples.document(sampleId)
     val likeDoc = sampleDoc.collection("likes").document(userId)
 
     val snapshot = sampleDoc.get().await()
@@ -73,16 +80,15 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
   }
 
   /** Check if the user has already like a sample */
-  override suspend fun hasUserLiked(sampleId: Int): Boolean {
+  override suspend fun hasUserLiked(sampleId: String): Boolean {
     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return false
-    val likeDoc =
-        samples.document(sampleId.toString()).collection("likes").document(userId).get().await()
+    val likeDoc = samples.document(sampleId).collection("likes").document(userId).get().await()
     return likeDoc.exists()
   }
 
   /** Add a new comment */
-  override suspend fun addComment(sampleId: Int, author: String, text: String) {
-    val sampleDoc = samples.document(sampleId.toString())
+  override suspend fun addComment(sampleId: String, author: String, text: String) {
+    val sampleDoc = samples.document(sampleId)
     val snapshot = sampleDoc.get().await()
 
     // Throws IllegalStateException if the document does not exist
@@ -99,10 +105,10 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
     sampleDoc.update("comments", currentCount + 1).await()
   }
   /** Observe the comment of a sample */
-  override fun observeComments(sampleId: Int): Flow<List<Comment>> = callbackFlow {
+  override fun observeComments(sampleId: String): Flow<List<Comment>> = callbackFlow {
     val listener =
         samples
-            .document(sampleId.toString())
+            .document(sampleId)
             .collection("comments")
             .orderBy("timestamp")
             .addSnapshotListener { snap, error ->
@@ -119,13 +125,13 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
 
   /** Adds a new sample (for testing). */
   override suspend fun addSample(sample: Sample) {
-    samples.document(sample.id.toString()).set(sample.toMap()).await()
+    samples.document(sample.id).set(sample.toMap()).await()
   }
 
   /** Converts a Firestore [DocumentSnapshot] to a [Sample] instance, or null if missing. */
   private fun DocumentSnapshot.toSampleOrNull(): Sample? {
     if (!exists()) return null
-    val id = (get("id") as? Number)?.toInt() ?: return null
+    val id = getString("id") ?: return null
     val tags = (get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
     val ownerId = getString("ownerId") ?: return null
     return Sample(
@@ -139,10 +145,11 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
         downloads = (get("downloads") as? Number)?.toInt() ?: 0,
         uriString = getString("uriString").orEmpty(),
         ownerId = ownerId,
+        isPublic = (get("isPublic") as? Boolean) ?: false,
+        usersLike = (get("usersLike") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
         storageZipPath = getString("storageZipPath").orEmpty(),
         storageImagePath = getString("storageImagePath").orEmpty(),
-        storagePreviewSamplePath = getString("storagePreviewSamplePath").orEmpty(),
-    )
+        storagePreviewSamplePath = getString("storagePreviewSamplePath").orEmpty())
   }
 
   private fun Sample.toMap(): Map<String, Any> =
@@ -157,8 +164,9 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
           "downloads" to downloads,
           "uriString" to uriString,
           "ownerId" to ownerId,
+          "isPublic" to isPublic,
+          "usersLike" to usersLike,
           "storageZipPath" to storageZipPath,
           "storageImagePath" to storageImagePath,
-          "storagePreviewSamplePath" to storagePreviewSamplePath,
-      )
+          "storagePreviewSamplePath" to storagePreviewSamplePath)
 }

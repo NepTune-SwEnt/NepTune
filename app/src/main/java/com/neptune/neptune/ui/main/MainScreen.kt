@@ -165,7 +165,7 @@ fun MainScreen(
   val userAvatar by mainViewModel.userAvatar.collectAsState()
   val likedSamples by mainViewModel.likedSamples.collectAsState()
   val comments by mainViewModel.comments.collectAsState()
-  var activeCommentSampleId by remember { mutableStateOf<Int?>(null) }
+  var activeCommentSampleId by remember { mutableStateOf<String?>(null) }
 
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
   val horizontalPadding = 30.dp
@@ -191,7 +191,7 @@ fun MainScreen(
     activeCommentSampleId = sample.id
   }
 
-  fun onAddComment(sampleId: Int, text: String) {
+  fun onAddComment(sampleId: String, text: String) {
     mainViewModel.addComment(sampleId, text)
     mainViewModel.observeCommentsForSample(sampleId)
   }
@@ -351,7 +351,7 @@ fun SectionHeader(title: String) {
 fun SampleCardRow(
     samples: List<Sample>,
     cardWidth: Dp,
-    likedSamples: Map<Int, Boolean> = emptyMap(),
+    likedSamples: Map<String, Boolean> = emptyMap(),
     onLikeClick: (Sample, Boolean) -> Unit = { _, _ -> },
     onCommentClick: (Sample) -> Unit = {},
 ) {
@@ -545,10 +545,10 @@ fun SampleCard(
 // Comment overlay
 @Composable
 fun CommentDialog(
-    sampleId: Int,
+    sampleId: String,
     comments: List<Comment>,
     onDismiss: () -> Unit,
-    onAddComment: (sampleId: Int, commentText: String) -> Unit
+    onAddComment: (sampleId: String, commentText: String) -> Unit
 ) {
   var commentText by remember { mutableStateOf("") }
 
