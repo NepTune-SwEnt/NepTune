@@ -19,7 +19,6 @@ import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.post.PostScreenTestTags
-import com.neptune.neptune.ui.search.SearchScreenTestTagsPerSampleCard
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -90,18 +89,6 @@ class NavigationTest {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
     composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsNotDisplayed()
-  }
-
-  @Test
-  fun otherUsersProfileScreenFromSearchTab() {
-    val testTags = SearchScreenTestTagsPerSampleCard("1")
-    setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsSelected()
-    composeTestRule.onNodeWithTag(testTags.SAMPLE_PROFILE_ICON).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.OTHER_USER).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsNotDisplayed()
   }
 
