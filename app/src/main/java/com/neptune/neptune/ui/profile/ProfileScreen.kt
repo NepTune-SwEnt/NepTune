@@ -91,6 +91,8 @@ object ProfileScreenTestTags {
   const val USERNAME = "profile/username"
   const val BIO = "profile/bio"
 
+    const val TAG = "profile/tag"
+
   const val FOLLOWERS_BLOCK = "profile/stat/followers"
   const val FOLLOWING_BLOCK = "profile/stat/following"
   const val POSTS_BLOCK = "profile/stat/posts"
@@ -277,6 +279,7 @@ private fun ProfileViewContent(
                   modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_VIEW_SECTION)) {
                     state.tags.forEach { tag ->
                       InputChip(
+                            modifier = Modifier.testTag(ProfileScreenTestTags.TAG + "/${tag.replace(' ', '_')}"),
                           selected = false,
                           onClick = {},
                           enabled = false,
