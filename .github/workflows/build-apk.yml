@@ -10,10 +10,6 @@ jobs:
   build-apk:
     name: Build Debug APK
     runs-on: ubuntu-latest
-    env:
-      DEBUG_STORE_PASSWORD: ${{ secrets.DEBUG_STORE_PASSWORD }}
-      DEBUG_KEY_ALIAS: ${{ secrets.DEBUG_KEY_ALIAS }}
-      DEBUG_KEY_PASSWORD: ${{ secrets.DEBUG_KEY_PASSWORD }}
 
     steps:
       - name: Checkout code
@@ -43,16 +39,18 @@ jobs:
 
       - name: Sign Release
         uses: r0adkll/sign-android-release@v1
+        id: sign_app
         with:
           releaseDirectory: app/build/outputs/apk/release
           signingKeyBase64: ${{ secrets.KEYSTORE_SIGNING_KEY_B64 }}
           keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
           alias: ${{ secrets.APP_NAME_KEY }}
           keyPassword: ${{ secrets.APP_NAME_KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "34.0.0"
 
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
+
+      - uses: actions/upload-artifact@v2
         with:
-          name: NeptuneApp-APK
-          path: |
-            app/build/outputs/apk/release/*.apk
+          name: Signed app apk
+          path: ${{steps.sign_app.outputs.signedReleaseFile}}
