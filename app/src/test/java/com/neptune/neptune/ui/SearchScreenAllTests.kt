@@ -143,7 +143,7 @@ class SearchScreenAllTests {
     }
     advanceDebounce()
 
-    val firstProfileIconTag = SearchScreenTestTagsPerSampleCard(1).SAMPLE_PROFILE_ICON
+    val firstProfileIconTag = SearchScreenTestTagsPerSampleCard("1").SAMPLE_PROFILE_ICON
     composeRule.onNodeWithTag(firstProfileIconTag).assertIsDisplayed().performClick()
     advanceDebounce()
     assert(profileClicks == 1)
@@ -201,7 +201,7 @@ class SearchScreenAllTests {
     }
     advanceDebounce()
 
-    val cardTags = SearchScreenTestTagsPerSampleCard(1)
+    val cardTags = SearchScreenTestTagsPerSampleCard("1")
     composeRule.onNodeWithTag(cardTags.SAMPLE_LIKES).performClick()
     composeRule.onNodeWithTag(cardTags.SAMPLE_COMMENTS).performClick()
     composeRule.onNodeWithTag(cardTags.SAMPLE_DOWNLOADS).performClick()
@@ -221,7 +221,7 @@ class SearchScreenAllTests {
     }
     advanceDebounce()
 
-    val likeTag = SearchScreenTestTagsPerSampleCard(1).SAMPLE_LIKES
+    val likeTag = SearchScreenTestTagsPerSampleCard("1").SAMPLE_LIKES
     val likeNode = composeRule.onNodeWithTag(likeTag)
     // Initially should be "not liked"
     likeNode.assert(hasStateDesc("not liked"))

@@ -8,6 +8,7 @@ import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
@@ -55,6 +56,12 @@ class MainViewModel(
   private val avatarStoragePath: String?
     get() = auth.currentUser?.uid?.let { "avatars/$it.jpg" }
 
+  private val _comments = MutableStateFlow<List<Comment>>(emptyList())
+  val comments: StateFlow<List<Comment>> = _comments
+
+  private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+  val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
+
   init {
     if (useMockData) {
       // If we are testing we load mock data
@@ -74,6 +81,8 @@ class MainViewModel(
       repo.observeSamples().collectLatest { samples ->
         _discoverSamples.value = samples.filter { it.ownerId !in following }
         _followedSamples.value = samples.filter { it.ownerId in following }
+
+        refreshLikeStates()
       }
     }
   }
@@ -114,7 +123,44 @@ class MainViewModel(
   }
 
   fun onLikeClicked(sample: Sample, isLiked: Boolean) {
-    viewModelScope.launch { repo.toggleLike(sample.id, isLiked) }
+    viewModelScope.launch {
+
+      // Check if already Liked
+      val alreadyLiked = repo.hasUserLiked(sample.id)
+
+      if (!alreadyLiked && isLiked) {
+        repo.toggleLike(sample.id, true)
+        _likedSamples.value = _likedSamples.value + (sample.id to true)
+      } else if (alreadyLiked && !isLiked) {
+        repo.toggleLike(sample.id, false)
+        _likedSamples.value = _likedSamples.value + (sample.id to false)
+      }
+    }
+  }
+
+  fun refreshLikeStates() {
+    viewModelScope.launch {
+      val allSamples = _discoverSamples.value + _followedSamples.value
+
+      val updatedStates = mutableMapOf<String, Boolean>()
+      for (sample in allSamples) {
+        val liked = repo.hasUserLiked(sample.id)
+        updatedStates[sample.id] = liked
+      }
+      _likedSamples.value = updatedStates
+    }
+  }
+
+  fun observeCommentsForSample(sampleId: String) {
+    viewModelScope.launch { repo.observeComments(sampleId).collectLatest { _comments.value = it } }
+  }
+
+  fun addComment(sampleId: String, text: String) {
+    viewModelScope.launch {
+      val profile = profileRepo.getProfile()
+      val username = profile?.username ?: "Anonymous"
+      repo.addComment(sampleId, username, text.trim())
+    }
   }
   // Mock Data
   private fun loadData() {

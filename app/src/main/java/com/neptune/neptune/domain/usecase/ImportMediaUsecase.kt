@@ -11,46 +11,44 @@ import java.io.File
 import java.net.URI
 import java.util.UUID
 
-/*
-   Use case to import a media file from an external URI into the app's local audio workspace.
-   This involves copying the file locally, packaging it into a .zip with a config.json, and
-   persisting a MediaItem that points to the .zip location.
-   Partially written with ChatGPT
-*/
 class ImportMediaUseCase(
     private val importer: FileImporter,
     private val repo: MediaRepository,
     private val packager: NeptunePackager
 ) {
   suspend operator fun invoke(sourceUriString: String): MediaItem {
-    // Copy picked audio (still needed to read bytes)
     val probe = importer.importFile(URI(sourceUriString))
     val localAudio = File(URI(probe.localUri.toString()))
+    return finalizeImport(localAudio, probe.durationMs)
+  }
 
-    // Create .zip with config.json + audio
+  // Overload for a File created by the in-app recorder. Uses importer.importRecorded
+  suspend operator fun invoke(recordedFile: File): MediaItem {
+    val probe = importer.importRecorded(recordedFile)
+    val localAudio = File(URI(probe.localUri.toString()))
+    return finalizeImport(localAudio, probe.durationMs)
+  }
+
+  private suspend fun finalizeImport(localAudio: File, durationMs: Long?): MediaItem {
     val projectZip =
         try {
-          packager.createProjectZip(audioFile = localAudio, durationMs = probe.durationMs)
+          packager.createProjectZip(audioFile = localAudio, durationMs = durationMs)
         } catch (e: Exception) {
-          // ensure we don't leak the copied audio if packaging fails
           runCatching { localAudio.delete() }
           throw e
         }
-    // remove the copied audio; project now owns the bytes
     runCatching { localAudio.delete() }
 
-    // Persist only the project file path
     val item =
         MediaItem(id = UUID.randomUUID().toString(), projectUri = projectZip.toURI().toString())
     repo.upsert(item)
 
-    // Add new MediaItem to repository in `projects.json`
     val vm = ProjectItemsRepositoryLocal(appContext)
     vm.addProject(
         ProjectItem(
             uid = vm.getNewId(),
             name = projectZip.nameWithoutExtension,
-            filePath = projectZip.toURI().toString()))
+            projectFilePath = projectZip.toURI().toString()))
     return item
   }
 }

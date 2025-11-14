@@ -45,7 +45,7 @@ object SearchScreenTestTags {
   const val SAMPLE_LIST = "sampleList"
 }
 
-class SearchScreenTestTagsPerSampleCard(private val idInColumn: Int = 0) : BaseSampleTestTags {
+class SearchScreenTestTagsPerSampleCard(private val idInColumn: String = "0") : BaseSampleTestTags {
   override val prefix = "SearchScreen"
 
   override fun tag(name: String) = "${prefix}/${name}_$idInColumn"
@@ -115,6 +115,8 @@ fun ScrollableColumnOfSamples(
     clickHandlers: ClickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
 ) {
+  // Ensure the possibility to like in local
+  var likedSamples by remember { mutableStateOf(setOf<String>()) }
   LazyColumn(
       modifier =
           modifier
@@ -126,12 +128,23 @@ fun ScrollableColumnOfSamples(
         val width = 300.dp
         items(samples) { sample ->
           // change height and width if necessary
-          val testTags =
-              SearchScreenTestTagsPerSampleCard(idInColumn = sample.id.toInt()) // TODO CHANGE THIS
+          val testTags = SearchScreenTestTagsPerSampleCard(idInColumn = sample.id)
+          val isLiked = likedSamples.contains(sample.id)
+          val cardClickHanders =
+              onClickFunctions(
+                  onProfileClick = clickHandlers.onProfileClick,
+                  onCommentClick = clickHandlers.onCommentClick,
+                  onDownloadClick = clickHandlers.onDownloadClick,
+                  onLikeClick = { isNowLiked ->
+                    likedSamples =
+                        if (isNowLiked) likedSamples + sample.id else likedSamples - sample.id
+                    clickHandlers.onLikeClick(isNowLiked)
+                  })
           SampleCard(
               sample = sample,
               width = width,
-              clickHandlers = clickHandlers,
+              clickHandlers = cardClickHanders,
+              isLiked = isLiked,
               testTags = testTags,
               mediaPlayer = mediaPlayer)
         }

@@ -27,6 +27,8 @@ import com.neptune.neptune.data.local.MediaDb
 import com.neptune.neptune.domain.model.MediaItem
 import com.neptune.neptune.domain.usecase.GetLibraryUseCase
 import com.neptune.neptune.domain.usecase.ImportMediaUseCase
+import java.io.File
+import java.net.URI
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -39,7 +41,32 @@ class ImportViewModel(private val importMedia: ImportMediaUseCase, getLibrary: G
   val library: StateFlow<List<MediaItem>> =
       getLibrary().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-  fun importFromSaf(uriString: String) = viewModelScope.launch { importMedia(uriString) }
+  // Accept either SAF/content URIs (string) or file:// URIs: for file URIs call the recorded-file
+  // overload
+  fun importFromSaf(uriString: String) =
+      viewModelScope.launch {
+        val parsed =
+            try {
+              URI(uriString)
+            } catch (_: Exception) {
+              null
+            }
+        if (parsed != null && parsed.scheme == "file") {
+          // use File overload
+          try {
+            val f = File(parsed)
+            importMedia(f)
+          } catch (_: Exception) {
+            // fallback to string-based import in case of any issue
+            importMedia(uriString)
+          }
+        } else {
+          importMedia(uriString)
+        }
+      }
+
+  // New convenience: import a File produced by the in-app recorder directly
+  fun importRecordedFile(file: File) = viewModelScope.launch { importMedia(file) }
 }
 
 class ImportVMFactory(

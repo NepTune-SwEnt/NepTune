@@ -47,6 +47,10 @@ private class DisappearingImporter(private val dir: File) : FileImporter {
         sizeBytes = 16L,
         durationMs = 500L)
   }
+
+  override suspend fun importRecorded(file: File): FileImporter.ImportedFile {
+    throw NotImplementedError("Not needed for this test")
+  }
 }
 
 @RunWith(RobolectricTestRunner::class)

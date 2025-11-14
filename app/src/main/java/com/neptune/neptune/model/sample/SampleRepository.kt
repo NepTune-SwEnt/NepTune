@@ -48,4 +48,29 @@ interface SampleRepository {
    * @param isLiked true to increment likes, false to decrement
    */
   suspend fun toggleLike(sampleId: String, isLiked: Boolean)
+
+  /**
+   * Adds a new comment to a specific sample.
+   *
+   * @param sampleId the ID of the sample
+   * @param author the username of the person who comments
+   * @param text the comment
+   */
+  suspend fun addComment(sampleId: String, author: String, text: String)
+
+  /**
+   * Observes real-time comments of a specific sample.
+   *
+   * @param sampleId the ID of the sample
+   * @return a Flow lists of comments
+   */
+  fun observeComments(sampleId: String): Flow<List<Comment>>
+
+  /**
+   * Check if the user has already liked a sample.
+   *
+   * @param sampleId the ID of the sample
+   * @return True if the user has already liked; false otherwise
+   */
+  suspend fun hasUserLiked(sampleId: String): Boolean
 }

@@ -45,13 +45,6 @@ interface TotalProjectItemsRepository {
    */
   suspend fun deleteProject(projectID: String)
 
-  /**
-   * Gets the duration of a project in some unit (e.g., seconds).
-   *
-   * @param projectID The ID of the project.
-   */
-  suspend fun getProjectDuration(projectID: String): Int
-
   /** Retrieves all projects stored locally. */
   suspend fun getAllLocalProjects(): List<ProjectItem>
 

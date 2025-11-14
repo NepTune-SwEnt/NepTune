@@ -175,11 +175,6 @@ class ProjectListViewModel(
   fun selectProject(project: ProjectItem) {
     _uiState.value = _uiState.value.copy(selectedProject = project.uid)
   }
-
-  /** Gets the duration of a project in "MM:SS" format. */
-  fun getProjectDuration(project: ProjectItem): String {
-    TODO("Not yet implemented")
-  }
 }
 
 /**

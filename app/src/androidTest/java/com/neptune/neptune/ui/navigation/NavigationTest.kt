@@ -95,7 +95,7 @@ class NavigationTest {
 
   @Test
   fun otherUsersProfileScreenFromSearchTab() {
-    val testTags = SearchScreenTestTagsPerSampleCard(1)
+    val testTags = SearchScreenTestTagsPerSampleCard("1")
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()

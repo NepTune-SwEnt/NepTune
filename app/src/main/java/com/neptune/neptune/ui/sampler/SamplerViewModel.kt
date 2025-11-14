@@ -1,12 +1,22 @@
 package com.neptune.neptune.ui.sampler
 
+import android.content.Context
+import android.media.MediaCodec
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.neptune.neptune.NepTuneApplication
+import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.project.ProjectExtractor
 import com.neptune.neptune.model.project.SamplerProjectMetadata
 import java.io.File
+import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -31,6 +41,8 @@ const val COMP_TIME_MAX = 1.0f
 const val COMP_THRESHOLD_DEFAULT = -10.0f
 const val COMP_KNEE_MAX = 20.0f
 
+const val DEFAULT_SAMPLE_TIME = 4000
+
 data class SamplerUiState(
     val isPlaying: Boolean = false,
     val currentTab: SamplerTab = SamplerTab.BASICS,
@@ -54,13 +66,31 @@ data class SamplerUiState(
     val compKnee: Float = 0.0f,
     val compGain: Float = 0.0f,
     val compAttack: Float = 0.010f,
-    val compDecay: Float = 0.100f
+    val compDecay: Float = 0.100f,
+    val currentAudioUri: Uri? = null,
+    val audioDurationMillis: Int = 4000
 ) {
   val fullPitch: String
     get() = "$pitchNote$pitchOctave"
 }
 
-open class SamplerViewModel : ViewModel() {
+open class SamplerViewModel() : ViewModel() {
+
+  private val context: Context = NepTuneApplication.appContext
+
+  open val mediaPlayer = NeptuneMediaPlayer()
+
+  init {
+    mediaPlayer.setOnCompletionListener {
+      viewModelScope.launch {
+        _uiState.update { currentState ->
+          currentState.copy(isPlaying = false, playbackPosition = 0.0f)
+        }
+      }
+    }
+  }
+
+  private var playbackTickerJob: Job? = null
 
   val _uiState = MutableStateFlow(SamplerUiState())
   val uiState: StateFlow<SamplerUiState> = _uiState
@@ -75,18 +105,107 @@ open class SamplerViewModel : ViewModel() {
     _uiState.update { it.copy(currentTab = tab) }
   }
 
-  open fun togglePlayPause() {
-    _uiState.update { currentState ->
-      val newIsPlaying = !currentState.isPlaying
-      val newPosition =
-          if (newIsPlaying && currentState.playbackPosition >= 1.0f) {
+  fun updatePlaybackPosition() {
+    val positionMillis = mediaPlayer.getCurrentPosition()
+    val durationMillis = _uiState.value.audioDurationMillis
+
+    val newPosition =
+        if (durationMillis > 0) {
+          if (positionMillis >= durationMillis) {
             0.0f
           } else {
-            currentState.playbackPosition
+            positionMillis.toFloat() / durationMillis.toFloat()
           }
+        } else {
+          0.0f
+        }
 
-      currentState.copy(isPlaying = newIsPlaying, playbackPosition = newPosition)
+    _uiState.update { it.copy(playbackPosition = newPosition) }
+  }
+
+  private fun startPlaybackTicker() {
+    playbackTickerJob?.cancel()
+    playbackTickerJob =
+        viewModelScope.launch {
+          while (mediaPlayer.isPlaying()) {
+            updatePlaybackPosition()
+            delay(100L)
+          }
+          updatePlaybackPosition()
+        }
+  }
+
+  private fun stopPlaybackTicker() {
+    playbackTickerJob?.cancel()
+    playbackTickerJob = null
+  }
+
+  open fun togglePlayPause() {
+    val currentUri = _uiState.value.currentAudioUri
+    if (currentUri == null) return
+
+    val currentState = _uiState.value
+    val wasPlayingBefore = mediaPlayer.isPlaying()
+
+    val shouldResetFromEnd = currentState.playbackPosition >= 0.99f
+    val isNearZero = currentState.playbackPosition < 0.01f
+    val isFirstPlay = mediaPlayer.getCurrentUri() != currentUri
+
+    val durationMillis = currentState.audioDurationMillis
+    val currentUIPositionNorm = currentState.playbackPosition
+    val seekPositionMillis = (currentUIPositionNorm * durationMillis).roundToInt()
+
+    mediaPlayer.togglePlay(currentUri)
+
+    if (wasPlayingBefore) {
+
+      mediaPlayer.pause()
+      stopPlaybackTicker()
+    } else {
+      val targetSeekPosition = if (shouldResetFromEnd || isNearZero) 0 else seekPositionMillis
+
+      if (isFirstPlay) {
+        mediaPlayer.setOnPreparedListener {
+          val duration = mediaPlayer.getDuration()
+          _uiState.update { state ->
+            state.copy(
+                isPlaying = true,
+                playbackPosition = 0f,
+                audioDurationMillis = if (duration > 0) duration else state.audioDurationMillis)
+          }
+          startPlaybackTicker()
+        }
+
+        mediaPlayer.play(currentUri)
+      } else {
+        mediaPlayer.goTo(targetSeekPosition)
+        mediaPlayer.resume()
+        startPlaybackTicker()
+      }
+
+      startPlaybackTicker()
     }
+
+    _uiState.update { state ->
+      val isStartingPlay = !wasPlayingBefore && !mediaPlayer.isPlaying()
+
+      val newIsPlaying = if (isStartingPlay) true else mediaPlayer.isPlaying()
+
+      val realDuration = mediaPlayer.getDuration()
+      val newDuration = if (realDuration > 0) realDuration else state.audioDurationMillis
+      val didReset = shouldResetFromEnd || isNearZero
+      val newPosition = if (newIsPlaying && didReset) 0.0f else state.playbackPosition
+
+      state.copy(
+          isPlaying = newIsPlaying,
+          playbackPosition = newPosition,
+          audioDurationMillis = newDuration)
+    }
+  }
+
+  override fun onCleared() {
+    super.onCleared()
+    mediaPlayer.stop()
   }
 
   open fun updateAttack(value: Float) {
@@ -216,15 +335,95 @@ open class SamplerViewModel : ViewModel() {
     _uiState.update { it.copy(compDecay = value.coerceIn(0.0f, COMP_TIME_MAX)) }
   }
 
-  fun loadProjectData(zipFilePath: String) {
+  open fun extractWaveform(uri: Uri, sampleRate: Int = 100): List<Float> {
+    val extractor = MediaExtractor()
+    extractor.setDataSource(context, uri, null)
+
+    var trackIndex = -1
+    var audioTrackFound = false
+    var i = 0
+    while (i < extractor.trackCount && !audioTrackFound) {
+      val format = extractor.getTrackFormat(i)
+      val mime = format.getString(MediaFormat.KEY_MIME)
+
+      if (mime?.startsWith("audio/") == true) {
+        trackIndex = i
+        extractor.selectTrack(i)
+        audioTrackFound = true
+      }
+      i++
+    }
+
+    if (trackIndex == -1) throw IllegalArgumentException("No audio track")
+
+    val format = extractor.getTrackFormat(trackIndex)
+    val codec = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
+    codec.configure(format, null, null, 0)
+    codec.start()
+
+    val waveform = mutableListOf<Float>()
+    val bufferInfo = MediaCodec.BufferInfo()
+    var isEOS = false
+
+    while (!isEOS) {
+      val inputIndex = codec.dequeueInputBuffer(10000)
+      if (inputIndex >= 0) {
+        val inputBuffer = codec.getInputBuffer(inputIndex)!!
+        val sampleSize = extractor.readSampleData(inputBuffer, 0)
+        if (sampleSize < 0) {
+          codec.queueInputBuffer(inputIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+          isEOS = true
+        } else {
+          codec.queueInputBuffer(inputIndex, 0, sampleSize, extractor.sampleTime, 0)
+          extractor.advance()
+        }
+      }
+
+      var outputIndex = codec.dequeueOutputBuffer(bufferInfo, 10000)
+      while (outputIndex >= 0) {
+        val outputBuffer = codec.getOutputBuffer(outputIndex)!!
+        val shortBuffer = outputBuffer.asShortBuffer()
+        val chunk = ShortArray(shortBuffer.remaining())
+        shortBuffer.get(chunk)
+
+        if (chunk.isNotEmpty()) {
+          val avgAmplitude = chunk.map { abs(it.toFloat()) }.average().toFloat()
+          val normalized = (avgAmplitude / Short.MAX_VALUE).coerceIn(0f, 1f)
+          if (!normalized.isNaN()) {
+            waveform.add(normalized)
+          }
+        }
+
+        codec.releaseOutputBuffer(outputIndex, false)
+        outputIndex = codec.dequeueOutputBuffer(bufferInfo, 0)
+      }
+    }
+
+    codec.stop()
+    codec.release()
+    extractor.release()
+
+    Log.d(
+        "WaveformDisplay",
+        "Waveform extracted: ${waveform.size} samples, min=${waveform.minOrNull()}, max=${waveform.maxOrNull()}")
+    return waveform
+  }
+
+  open fun loadProjectData(zipFilePath: String) {
     viewModelScope.launch {
       try {
         val zipFile = File(zipFilePath)
-
         val metadata: SamplerProjectMetadata = extractor.extractMetadata(zipFile)
-
+        val audioFileName = metadata.audioFiles.firstOrNull()?.name
+        val audioUri =
+            if (audioFileName != null) {
+              extractor.extractAudioFile(zipFile, context, audioFileName)
+            } else {
+              null
+            }
+        val sampleDuration = mediaPlayer.getDuration()
+        Log.d("SamplerViewModel", "Audio URI chargée: $audioUri")
         val paramMap = metadata.parameters.associate { it.type to it.value }
-
         _uiState.update { current ->
           val newEqBands = current.eqBands.toMutableList()
           EQ_FREQUENCIES.forEachIndexed { index, _ ->
@@ -259,7 +458,9 @@ open class SamplerViewModel : ViewModel() {
               compAttack =
                   paramMap["compAttack"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compAttack,
               compDecay = paramMap["compDecay"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compDecay,
-              eqBands = newEqBands.toList())
+              eqBands = newEqBands.toList(),
+              currentAudioUri = audioUri,
+              audioDurationMillis = if (sampleDuration > 0) sampleDuration else DEFAULT_SAMPLE_TIME)
         }
       } catch (e: Exception) {
         Log.e("SamplerViewModel", "Échec du chargement du projet ZIP: ${e.message}", e)
