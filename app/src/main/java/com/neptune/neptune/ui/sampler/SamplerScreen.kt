@@ -22,6 +22,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
@@ -443,7 +444,29 @@ fun WaveformDisplay(
   val accentPrimaryColor = NepTuneTheme.colors.accentPrimary
   val smallTextColor = NepTuneTheme.colors.smallText
 
-  Canvas(
+  // Compute beat count and related metrics in composable scope so tests can access it
+  val tempoBPM = uiState.tempo.coerceAtLeast(1)
+  val tsParts = uiState.timeSignature.split('/')
+  val (tsNum, tsDen) =
+      if (tsParts.size == 2) {
+        val n = tsParts[0].toIntOrNull() ?: 4
+        val d = tsParts[1].toIntOrNull() ?: 4
+        Pair(n.coerceAtLeast(1), d.coerceAtLeast(1))
+      } else {
+        Pair(4, 4)
+      }
+
+  val secondsPerBeat = 60f / tempoBPM.toFloat() * (4f / tsDen.toFloat())
+  val totalDurationSec = audioDurationMillis.toFloat() / 1000f
+  val computedBeatCount =
+      if (secondsPerBeat > 0f && totalDurationSec > 0f) {
+        (totalDurationSec / secondsPerBeat).toInt().coerceAtLeast(1)
+      } else {
+        0
+      }
+
+  // Expose beat count as an invisible text node for tests
+  Box(
       modifier =
           modifier.background(spectrogramBackground).padding(8.dp).pointerInput(Unit) {
             detectDragGestures(
@@ -458,175 +481,185 @@ fun WaveformDisplay(
                   latestOnPositionChange.value(newPosition.coerceIn(0f, 1f))
                 })
           }) {
-        val width = size.width
-        val height = size.height
-        val centerY = height / 2f
-        val contentWidth = width - (2 * paddingPx)
+        // Invisible beat info for tests
+        Text(
+            text = "beats:$computedBeatCount",
+            color = Color.Transparent,
+            modifier = Modifier.testTag("waveform_beat_info").alpha(0f))
 
-        val barWidth = 2.dp.toPx()
-        val numBars = 50
-        val gapWidth = (contentWidth - (numBars * barWidth)) / (numBars - 1).coerceAtLeast(1)
+        Canvas(modifier = Modifier.fillMaxSize()) {
+          val width = size.width
+          val height = size.height
+          val centerY = height / 2f
+          val contentWidth = width - (2 * paddingPx)
 
-        // Draw timeline ticks and second labels at the top
-        val totalSeconds = (audioDurationMillis / 1000L).coerceAtLeast(1L).toInt()
-        val pixelsPerSecond =
-            if (totalSeconds > 0) contentWidth / totalSeconds.toFloat() else contentWidth
-        // lift the timeline slightly above its previous position
-        val tickTop = (-5).dp.toPx()
-        val tickBottom = 5.dp.toPx()
+          val barWidth = 2.dp.toPx()
+          val numBars = 50
+          val gapWidth = (contentWidth - (numBars * barWidth)) / (numBars - 1).coerceAtLeast(1)
 
-        val textPaint =
-            Paint().apply {
-              isAntiAlias = true
-              color = timelineLabelColorInt
-              textSize = timelineTextSizePx
-              textAlign = Paint.Align.LEFT // we'll position explicitly
-            }
+          // Draw timeline ticks and second labels at the top
+          val totalSeconds = (audioDurationMillis / 1000L).coerceAtLeast(1L).toInt()
+          val pixelsPerSecond =
+              if (totalSeconds > 0) contentWidth / totalSeconds.toFloat() else contentWidth
+          // lift the timeline slightly above its previous position
+          val tickTop = (-5).dp.toPx()
+          val tickBottom = 5.dp.toPx()
 
-        // Draw beat grid (primary and secondary beats) based on tempo and time signature
-        // Parse time signature like "4/4". If parsing fails, fallback to 4/4.
-        val tempoBPM = uiState.tempo.coerceAtLeast(1)
-        val tsParts = uiState.timeSignature.split('/')
-        val (tsNum, tsDen) =
-            if (tsParts.size == 2) {
-              val n = tsParts[0].toIntOrNull() ?: 4
-              val d = tsParts[1].toIntOrNull() ?: 4
-              Pair(n.coerceAtLeast(1), d.coerceAtLeast(1))
-            } else {
-              Pair(4, 4)
-            }
+          val textPaint =
+              Paint().apply {
+                isAntiAlias = true
+                color = timelineLabelColorInt
+                textSize = timelineTextSizePx
+                textAlign = Paint.Align.LEFT // we'll position explicitly
+              }
 
-        // seconds per beat unit where BPM is assumed to reference a quarter-note by default.
-        // secondsPerBeat = 60 / BPM * (4 / denominator)
-        val secondsPerBeat = 60f / tempoBPM.toFloat() * (4f / tsDen.toFloat())
-        val totalDurationSec = audioDurationMillis.toFloat() / 1000f
+          // Draw beat grid (primary and secondary beats) based on tempo and time signature
+          // Parse time signature like "4/4". If parsing fails, fallback to 4/4.
+          val tempoBPM = uiState.tempo.coerceAtLeast(1)
+          val tsParts = uiState.timeSignature.split('/')
+          val (tsNum, tsDen) =
+              if (tsParts.size == 2) {
+                val n = tsParts[0].toIntOrNull() ?: 4
+                val d = tsParts[1].toIntOrNull() ?: 4
+                Pair(n.coerceAtLeast(1), d.coerceAtLeast(1))
+              } else {
+                Pair(4, 4)
+              }
 
-        // Make beat lines thicker and density-aware
-        val primaryBeatStroke = localDensity.run { 3.dp.toPx() }
-        val secondaryBeatStroke = localDensity.run { 1.5.dp.toPx() }
+          // seconds per beat unit where BPM is assumed to reference a quarter-note by default.
+          // secondsPerBeat = 60 / BPM * (4 / denominator)
+          val secondsPerBeat = 60f / tempoBPM.toFloat() * (4f / tsDen.toFloat())
+          val totalDurationSec = audioDurationMillis.toFloat() / 1000f
 
-        if (secondsPerBeat > 0f && totalDurationSec > 0f) {
-          // compute how many beats fit into the audio
-          val beatCount = (totalDurationSec / secondsPerBeat).toInt().coerceAtLeast(1)
-          for (beatIndex in 0..beatCount) {
-            val timeSec = beatIndex * secondsPerBeat
-            if (timeSec > totalDurationSec) break
+          // Make beat lines thicker and density-aware
+          val primaryBeatStroke = localDensity.run { 3.dp.toPx() }
+          val secondaryBeatStroke = localDensity.run { 1.5.dp.toPx() }
 
-            // Map time (seconds) to canvas x using the full floating totalDurationSec for accuracy
-            val xPos = paddingPx + (timeSec / totalDurationSec) * contentWidth
+          if (secondsPerBeat > 0f && totalDurationSec > 0f) {
+            // compute how many beats fit into the audio
+            val beatCount = (totalDurationSec / secondsPerBeat).toInt().coerceAtLeast(1)
+            for (beatIndex in 0..beatCount) {
+              val timeSec = beatIndex * secondsPerBeat
+              if (timeSec > totalDurationSec) break
 
-            val beatInMeasure = if (tsNum > 0) beatIndex % tsNum else beatIndex
-            val isPrimary = beatInMeasure == 0
+              // Map time (seconds) to canvas x using the full floating totalDurationSec for
+              // accuracy
+              val xPos = paddingPx + (timeSec / totalDurationSec) * contentWidth
 
-            // Primary beats (downbeats) are slightly stronger.
-            if (isPrimary) {
-              drawLine(
-                  color = accentPrimaryColor.copy(alpha = 0.25f),
-                  start = Offset(xPos, 0f),
-                  end = Offset(xPos, height),
-                  strokeWidth = primaryBeatStroke)
-            } else {
-              drawLine(
-                  color = smallTextColor.copy(alpha = 0.10f),
-                  start = Offset(xPos, 0f),
-                  end = Offset(xPos, height),
-                  strokeWidth = secondaryBeatStroke)
+              val beatInMeasure = if (tsNum > 0) beatIndex % tsNum else beatIndex
+              val isPrimary = beatInMeasure == 0
+
+              // Primary beats (downbeats) are slightly stronger.
+              if (isPrimary) {
+                drawLine(
+                    color = accentPrimaryColor.copy(alpha = 0.25f),
+                    start = Offset(xPos, 0f),
+                    end = Offset(xPos, height),
+                    strokeWidth = primaryBeatStroke)
+              } else {
+                drawLine(
+                    color = smallTextColor.copy(alpha = 0.10f),
+                    start = Offset(xPos, 0f),
+                    end = Offset(xPos, height),
+                    strokeWidth = secondaryBeatStroke)
+              }
             }
           }
-        }
 
-        // Calculate label step to avoid overlapping labels horizontally
-        val minLabelSpacingPx = 24.dp.toPx()
-        val labelStep = max(1, kotlin.math.ceil(minLabelSpacingPx / pixelsPerSecond).toInt())
+          // Calculate label step to avoid overlapping labels horizontally
+          val minLabelSpacingPx = 24.dp.toPx()
+          val labelStep = max(1, kotlin.math.ceil(minLabelSpacingPx / pixelsPerSecond).toInt())
 
-        val labelHorizontalPadding = 4.dp.toPx()
-        for (sec in 0..totalSeconds) {
-          val xPos = paddingPx + sec * pixelsPerSecond
-          // small tick for each second
+          val labelHorizontalPadding = 4.dp.toPx()
+          for (sec in 0..totalSeconds) {
+            val xPos = paddingPx + sec * pixelsPerSecond
+            // small tick for each second
+            drawLine(
+                color = timelineLabelColor,
+                start = Offset(xPos, tickTop),
+                end = Offset(xPos, tickBottom),
+                strokeWidth = 2f)
+
+            // draw a label only every `labelStep` seconds to avoid overlap
+            if (sec % labelStep == 0) {
+              val label = "${sec}s"
+
+              // measure label width
+              val labelWidth = textPaint.measureText(label)
+
+              // Preferred position: to the right of the tick
+              var labelX = xPos + labelHorizontalPadding
+
+              // If it would overflow past the right content bound, draw to the left of the tick
+              // instead
+              val rightBound = width - paddingPx
+              if (labelX + labelWidth > rightBound) {
+                // position so label's right edge sits left of the tick
+                labelX = xPos - labelHorizontalPadding - labelWidth
+                textPaint.textAlign = Paint.Align.LEFT
+              } else {
+                textPaint.textAlign = Paint.Align.LEFT
+              }
+
+              // Compute baseline relative to the tick bottom so vertical offset actually moves the
+              // labels.
+              // When offset is 0 the baseline sits just below the tickBottom + text height.
+              val labelVerticalOffset = 12.dp.toPx() // positive => move label *up*
+              val baselineFromTickBottom = tickBottom + timelineTextSizePx
+              // allow labels to move higher by lowering the minimum allowed baseline
+              val minLabelBaseline = timelineTextSizePx * 0.25f
+              val labelBaseline =
+                  max(minLabelBaseline, baselineFromTickBottom - labelVerticalOffset)
+
+              drawContext.canvas.nativeCanvas.drawText(label, labelX, labelBaseline, textPaint)
+            }
+          }
+
           drawLine(
-              color = timelineLabelColor,
-              start = Offset(xPos, tickTop),
-              end = Offset(xPos, tickBottom),
-              strokeWidth = 2f)
+              color = Color.Gray.copy(alpha = 0.5f),
+              start = Offset(paddingPx, centerY),
+              end = Offset(width - paddingPx, centerY),
+              strokeWidth = 1f)
 
-          // draw a label only every `labelStep` seconds to avoid overlap
-          if (sec % labelStep == 0) {
-            val label = "${sec}s"
+          if (waveform.isNotEmpty()) {
+            val maxAmplitude = waveform.maxOrNull() ?: 1f
+            waveform.forEachIndexed { i, amp ->
+              val normalized = (amp / maxAmplitude).coerceIn(0f, 1f)
+              val barHeight = normalized * (height - 2 * paddingPx) * 0.8f
+              val startX = paddingPx + i * (barWidth + gapWidth) + barWidth / 2
+              val startY = centerY - barHeight / 2
+              val endY = centerY + barHeight / 2
 
-            // measure label width
-            val labelWidth = textPaint.measureText(label)
-
-            // Preferred position: to the right of the tick
-            var labelX = xPos + labelHorizontalPadding
-
-            // If it would overflow past the right content bound, draw to the left of the tick
-            // instead
-            val rightBound = width - paddingPx
-            if (labelX + labelWidth > rightBound) {
-              // position so label's right edge sits left of the tick
-              labelX = xPos - labelHorizontalPadding - labelWidth
-              textPaint.textAlign = Paint.Align.LEFT
-            } else {
-              textPaint.textAlign = Paint.Align.LEFT
+              drawLine(
+                  color = soundWaveColor,
+                  start = Offset(startX, startY),
+                  end = Offset(startX, endY),
+                  strokeWidth = barWidth)
             }
+          } else {
+            for (i in 0 until 50) {
+              val simulatedAmplitude = (sin(i * 0.4f) * 0.3f + 0.5f).toFloat()
+              val barHeight = simulatedAmplitude * (height - 2 * paddingPx) * 0.7f
+              val startX = paddingPx + i * (barWidth + gapWidth) + barWidth / 2
+              val startY = centerY - barHeight / 2
+              val endY = centerY + barHeight / 2
 
-            // Compute baseline relative to the tick bottom so vertical offset actually moves the
-            // labels.
-            // When offset is 0 the baseline sits just below the tickBottom + text height.
-            val labelVerticalOffset = 12.dp.toPx() // positive => move label *up*
-            val baselineFromTickBottom = tickBottom + timelineTextSizePx
-            // allow labels to move higher by lowering the minimum allowed baseline
-            val minLabelBaseline = timelineTextSizePx * 0.25f
-            val labelBaseline = max(minLabelBaseline, baselineFromTickBottom - labelVerticalOffset)
-
-            drawContext.canvas.nativeCanvas.drawText(label, labelX, labelBaseline, textPaint)
+              drawLine(
+                  color = soundWaveColor.copy(alpha = 0.4f),
+                  start = Offset(startX, startY),
+                  end = Offset(startX, endY),
+                  strokeWidth = barWidth)
+            }
           }
+
+          val xPosition = contentWidth * currentAnimPosition + paddingPx
+
+          drawLine(
+              brush = SolidColor(playheadColor),
+              start = Offset(xPosition, paddingPx),
+              end = Offset(xPosition, height - paddingPx),
+              strokeWidth = playheadStrokeWidth)
         }
-
-        drawLine(
-            color = Color.Gray.copy(alpha = 0.5f),
-            start = Offset(paddingPx, centerY),
-            end = Offset(width - paddingPx, centerY),
-            strokeWidth = 1f)
-
-        if (waveform.isNotEmpty()) {
-          val maxAmplitude = waveform.maxOrNull() ?: 1f
-          waveform.forEachIndexed { i, amp ->
-            val normalized = (amp / maxAmplitude).coerceIn(0f, 1f)
-            val barHeight = normalized * (height - 2 * paddingPx) * 0.8f
-            val startX = paddingPx + i * (barWidth + gapWidth) + barWidth / 2
-            val startY = centerY - barHeight / 2
-            val endY = centerY + barHeight / 2
-
-            drawLine(
-                color = soundWaveColor,
-                start = Offset(startX, startY),
-                end = Offset(startX, endY),
-                strokeWidth = barWidth)
-          }
-        } else {
-          for (i in 0 until 50) {
-            val simulatedAmplitude = (sin(i * 0.4f) * 0.3f + 0.5f).toFloat()
-            val barHeight = simulatedAmplitude * (height - 2 * paddingPx) * 0.7f
-            val startX = paddingPx + i * (barWidth + gapWidth) + barWidth / 2
-            val startY = centerY - barHeight / 2
-            val endY = centerY + barHeight / 2
-
-            drawLine(
-                color = soundWaveColor.copy(alpha = 0.4f),
-                start = Offset(startX, startY),
-                end = Offset(startX, endY),
-                strokeWidth = barWidth)
-          }
-        }
-
-        val xPosition = contentWidth * currentAnimPosition + paddingPx
-
-        drawLine(
-            brush = SolidColor(playheadColor),
-            start = Offset(xPosition, paddingPx),
-            end = Offset(xPosition, height - paddingPx),
-            strokeWidth = playheadStrokeWidth)
       }
 }
 

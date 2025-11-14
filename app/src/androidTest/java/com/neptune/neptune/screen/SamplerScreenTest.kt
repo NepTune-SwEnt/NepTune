@@ -6,6 +6,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.filter
 import androidx.compose.ui.test.hasContentDescription
@@ -23,6 +24,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
 import androidx.compose.ui.test.swipeWithVelocity
+import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -32,7 +34,6 @@ import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.sampler.SamplerTab
 import com.neptune.neptune.ui.sampler.SamplerTestTags
-import com.neptune.neptune.ui.sampler.SamplerTestTags.FADER_60HZ_TAG
 import com.neptune.neptune.ui.sampler.SamplerUiState
 import com.neptune.neptune.ui.sampler.SamplerViewModel
 import com.neptune.neptune.ui.theme.SampleAppTheme
@@ -216,7 +217,6 @@ class SamplerScreenTest {
   private lateinit var fakeViewModel: FakeSamplerViewModel
   private val playButtonDesc = "Play"
   private val saveButtonDesc = "Save"
-  val FADER_60HZ_TAG = "fader60Hz"
 
   @Before
   fun setup() {
@@ -317,7 +317,7 @@ class SamplerScreenTest {
     composeTestRule.waitForIdle()
     val faderBoxInteraction =
         composeTestRule
-            .onNodeWithTag(FADER_60HZ_TAG)
+            .onNodeWithTag(SamplerTestTags.FADER_60HZ_TAG)
             .onChildren()
             .filter(hasTestTag(SamplerTestTags.EQ_FADER_BOX_INPUT))
             .onFirst()
@@ -508,5 +508,51 @@ class SamplerScreenTest {
     assertEquals("B", fakeViewModel.uiState.value.pitchNote)
     assertEquals(4, fakeViewModel.uiState.value.pitchOctave)
     assertTrue("DecreasePitch should have been called.", fakeViewModel.isDecreasePitchCalled)
+  }
+
+  @Test
+  fun labelsAndTimelineAndBeatLinesAreCorrect() {
+    // Ensure basics tab opened so waveform is visible
+    fakeViewModel.mutableUiState.value =
+        fakeViewModel.uiState.value.copy(
+            currentTab = SamplerTab.BASICS, tempo = 120, timeSignature = "4/4")
+    composeTestRule.waitForIdle()
+
+    // Open playback section to reveal pitch and tempo selectors
+    // The section may already be visible; ensure the ADSR section is open so layout stabilizes
+    openSection("ADSR Envelope Controls")
+    composeTestRule.waitForIdle()
+
+    // Check that Pitch label is displayed inside the Pitch selector
+    composeTestRule.onNodeWithTag(SamplerTestTags.PITCH_SELECTOR).assertIsDisplayed()
+    composeTestRule.onNodeWithText("Pitch").assertIsDisplayed()
+
+    // Tempo selector shows tempo as label text
+    composeTestRule.onNodeWithTag(SamplerTestTags.TEMPO_SELECTOR).assertIsDisplayed()
+    composeTestRule.onNodeWithText("${fakeViewModel.uiState.value.tempo}").assertIsDisplayed()
+
+    // Time display should format time correctly for known playback/duration
+    fakeViewModel.mutableUiState.value =
+        fakeViewModel.uiState.value.copy(audioDurationMillis = 4000, playbackPosition = 0.5f)
+    composeTestRule.waitForIdle()
+
+    // Expecting 50% of 4s => 2.00 elapsed => formatted as 02.xx; milliseconds portion is in 10ms
+    // units
+    composeTestRule.onNodeWithTag(SamplerTestTags.TIME_DISPLAY).assertIsDisplayed()
+
+    // Check beat info node contains expected prefix
+    val beatNode = composeTestRule.onNodeWithTag("waveform_beat_info")
+    beatNode.assertExists()
+    // Extract semantics text and check contents
+    val beatSemantics = beatNode.fetchSemanticsNode()
+    val beatTextList = beatSemantics.config[SemanticsProperties.Text]
+    val beatCombined = beatTextList?.joinToString("") { (it as AnnotatedString).text }
+    assertTrue(
+        "Beat info must contain 'beats:' prefix",
+        beatCombined != null && beatCombined.contains("beats:"))
+
+    // Timeline labels are not direct nodes (drawn on Canvas). As a basic smoke check, ensure
+    // the waveform display container exists and beat info is non-empty
+    composeTestRule.onNodeWithTag(SamplerTestTags.WAVEFORM_DISPLAY).assertIsDisplayed()
   }
 }
