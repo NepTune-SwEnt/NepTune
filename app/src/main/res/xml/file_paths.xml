@@ -1,4 +1,5 @@
 <!-- res/xml/file_paths.xml -->
 <paths>
     <external-files-path name="imports" path="imports/"/>
+    <cache-path name="shared_images" path="images_to_share/" />
 </paths>

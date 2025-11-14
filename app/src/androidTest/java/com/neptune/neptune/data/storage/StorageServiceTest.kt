@@ -220,7 +220,7 @@ class StorageServiceTest {
       }
 
   @Test
-  fun getFileNameFromUri_withFileUri_returnsLastPathSegment() =
+  fun getFileNameFromUriWithFileUriReturnsLastPathSegment() =
       runBlocking(testDispatcher) {
         // --- Arrange ---
         val fileUri = createDummyFile("test-file-name.jpg", "hello")
@@ -233,7 +233,7 @@ class StorageServiceTest {
       }
 
   @Test
-  fun getFileNameFromUri_withHttpUri_returnsLastPathSegment() =
+  fun getFileNameFromUriWithHttpUri_returnsLastPathSegment() =
       runBlocking(testDispatcher) {
         // --- Arrange ---
         val httpUri = Uri.parse("https://example.com/some/path/on/web/image.png?v=123")
@@ -246,23 +246,26 @@ class StorageServiceTest {
       }
 
   @Test
-  fun getFileNameFromUri_withContentUri_queriesContentResolver() =
+  fun getFileNameFromUriWithContentUriQueriesContentResolver() =
       runBlocking(testDispatcher) {
         // --- Arrange ---
         val testFileName = "my-content-file.mp3"
-        val testFile = File(context.cacheDir, testFileName)
+        val sharedDir = File(context.cacheDir, "images_to_share")
+        sharedDir.mkdirs()
+        val testFile = File(sharedDir, testFileName)
         try {
           testFile.writeText("dummy audio data")
         } catch (e: IOException) {
           Assert.fail("Failed to create test file: ${e.message}")
         }
 
-        val authority = "${context.packageName}.provider"
+        val authority = "${context.packageName}.fileprovider"
         val contentUri: Uri
 
         try {
           contentUri = FileProvider.getUriForFile(context, authority, testFile)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+          Assert.fail("FileProvider not set up in AndroidManifest.xml? ${e.message}")
           return@runBlocking
         }
 
