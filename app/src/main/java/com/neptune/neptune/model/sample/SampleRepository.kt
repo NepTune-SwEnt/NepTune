@@ -73,4 +73,11 @@ interface SampleRepository {
    * @return True if the user has already liked; false otherwise
    */
   suspend fun hasUserLiked(sampleId: String): Boolean
+
+  /**
+   * Increases the download count of a specific sample by one.
+   *
+   * @param sampleId the ID of the sample
+   */
+  suspend fun increaseDownloadCount(sampleId: String)
 }

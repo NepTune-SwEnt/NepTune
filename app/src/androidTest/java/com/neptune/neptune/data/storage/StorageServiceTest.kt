@@ -57,7 +57,7 @@ class StorageServiceTest {
     sampleRepo = SampleRepositoryProvider.repository
 
     // Initialize our service with the GLOBAL emulated Storage instance
-    storageService = StorageService(Firebase.storage, sampleRepo)
+    storageService = StorageService(Firebase.storage)
 
     // --- 3. Authenticate ---
     runBlocking { Firebase.auth.signInAnonymously().await() }

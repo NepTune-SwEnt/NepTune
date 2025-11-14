@@ -1,25 +1,47 @@
 package com.neptune.neptune.ui.search
 
+import android.app.Application
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import com.neptune.neptune.model.fakes.FakeProfileRepository
+import com.neptune.neptune.model.fakes.FakeSampleRepository
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /*
     Tests for SearchViewModel's search() functionality.
     Written with assistance from ChatGPT.
-
 */
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class SearchViewModelTest {
+  private val fakeSampleRepo = FakeSampleRepository()
+  private val fakeProfileRepo = FakeProfileRepository()
+  private val appContext: Context = ApplicationProvider.getApplicationContext<Application>()
 
   @Test
-  fun `initial samples are empty`() {
-    val vm = SearchViewModel()
+  fun initialSamplesAreEmpty() {
+    val vm =
+        SearchViewModel(
+            repo = fakeSampleRepo,
+            profileRepo = fakeProfileRepo,
+            context = appContext,
+            useMockData = true)
     assertTrue(vm.samples.value.isEmpty())
   }
 
   @Test
-  fun `search with empty query loads all 5 samples`() {
-    val vm = SearchViewModel()
+  fun searchWithEmptyQueryLoadsAllSamples() {
+    val vm =
+        SearchViewModel(
+            repo = fakeSampleRepo,
+            profileRepo = fakeProfileRepo,
+            context = appContext,
+            useMockData = true)
 
     vm.search("") // should call loadData() then early return
 
@@ -29,8 +51,13 @@ class SearchViewModelTest {
   }
 
   @Test
-  fun `search matches by name description and tags (nature)`() {
-    val vm = SearchViewModel()
+  fun searchMatchesByNameDescriptionAndTagsNature() {
+    val vm =
+        SearchViewModel(
+            repo = fakeSampleRepo,
+            profileRepo = fakeProfileRepo,
+            context = appContext,
+            useMockData = true)
 
     vm.search("nature")
 
@@ -44,8 +71,13 @@ class SearchViewModelTest {
   }
 
   @Test
-  fun `search matches by tag ignoring hash and case`() {
-    val vm = SearchViewModel()
+  fun searchMatchesByTagIgnoringHashAndCase() {
+    val vm =
+        SearchViewModel(
+            repo = fakeSampleRepo,
+            profileRepo = fakeProfileRepo,
+            context = appContext,
+            useMockData = true)
 
     vm.search("#NATURE") // hash and upper-case should be normalized away
 
@@ -54,8 +86,13 @@ class SearchViewModelTest {
   }
 
   @Test
-  fun `search matches by description (sea)`() {
-    val vm = SearchViewModel()
+  fun searchMatchesByDescriptionSea() {
+    val vm =
+        SearchViewModel(
+            repo = fakeSampleRepo,
+            profileRepo = fakeProfileRepo,
+            context = appContext,
+            useMockData = true)
 
     vm.search("sea")
 
@@ -66,8 +103,13 @@ class SearchViewModelTest {
   }
 
   @Test
-  fun `consecutive searches reset base data each time`() {
-    val vm = SearchViewModel()
+  fun consecutiveSearchesResetBaseDataEachTime() {
+    val vm =
+        SearchViewModel(
+            repo = fakeSampleRepo,
+            profileRepo = fakeProfileRepo,
+            context = appContext,
+            useMockData = true)
 
     vm.search("nature")
     val afterNature = vm.samples.value.map { it.id }.sorted()
@@ -80,8 +122,13 @@ class SearchViewModelTest {
   }
 
   @Test
-  fun `clearing query after a filter restores all results`() {
-    val vm = SearchViewModel()
+  fun clearingQueryAfterFilterRestoresAllResults() {
+    val vm =
+        SearchViewModel(
+            repo = fakeSampleRepo,
+            profileRepo = fakeProfileRepo,
+            context = appContext,
+            useMockData = true)
 
     vm.search("sea")
     assertEquals(listOf("2", "3"), vm.samples.value.map { it.id }.sorted())
@@ -92,8 +139,13 @@ class SearchViewModelTest {
   }
 
   @Test
-  fun `search with no matches returns empty list`() {
-    val vm = SearchViewModel()
+  fun searchWithNoMatchesReturnsEmptyList() {
+    val vm =
+        SearchViewModel(
+            repo = fakeSampleRepo,
+            profileRepo = fakeProfileRepo,
+            context = appContext,
+            useMockData = true)
 
     vm.search("nope-no-match-123")
 
@@ -103,8 +155,13 @@ class SearchViewModelTest {
   // ---- normalize() direct tests ----
 
   @Test
-  fun `normalize removes spaces punctuation and hashes and lowercases`() {
-    val vm = SearchViewModel()
+  fun normalizeRemovesNoiseAndLowercases() {
+    val vm =
+        SearchViewModel(
+            repo = fakeSampleRepo,
+            profileRepo = fakeProfileRepo,
+            context = appContext,
+            useMockData = true)
     assertEquals("nature", vm.normalize(" N a-T_U R E!! "))
     assertEquals("nature", vm.normalize("#Nature"))
     assertEquals("sea", vm.normalize(" s.e-a "))
@@ -112,8 +169,13 @@ class SearchViewModelTest {
   }
 
   @Test
-  fun `normalize trims`() {
-    val vm = SearchViewModel()
+  fun normalizeTrimsWhitespace() {
+    val vm =
+        SearchViewModel(
+            repo = fakeSampleRepo,
+            profileRepo = fakeProfileRepo,
+            context = appContext,
+            useMockData = true)
     assertEquals("abc", vm.normalize("  abc  "))
   }
 }

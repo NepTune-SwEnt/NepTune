@@ -86,6 +86,21 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
     return likeDoc.exists()
   }
 
+  override suspend fun increaseDownloadCount(sampleId: String) {
+    val sampleDoc = samples.document(sampleId)
+    val snapshot = sampleDoc.get().await()
+    check(snapshot.exists()) {
+      "SampleRepositoryFirebase.toggleLike: Sample with id=$sampleId doesn't exist"
+    }
+    db.runTransaction { transaction ->
+          val docSnapshot = transaction[sampleDoc]
+          val currentDownloads = docSnapshot.getLong("downloads") ?: 0L
+          val newDownloads = currentDownloads + 1
+          transaction.update(sampleDoc, "downloads", newDownloads)
+        }
+        .await()
+  }
+
   /** Add a new comment */
   override suspend fun addComment(sampleId: String, author: String, text: String) {
     val sampleDoc = samples.document(sampleId)

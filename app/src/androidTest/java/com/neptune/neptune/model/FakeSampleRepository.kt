@@ -59,6 +59,19 @@ class FakeSampleRepository(initialSamples: List<Sample> = emptyList()) : SampleR
     return likedSamples.contains(sampleId)
   }
 
+  override suspend fun increaseDownloadCount(sampleId: String) {
+    val index = samples.indexOfFirst { it.id == sampleId }
+    if (index == -1) return
+
+    val sample = samples[index]
+    val newDownloads = sample.downloads + 1
+
+    samples[index] = sample.copy(downloads = newDownloads)
+
+    // Emit new list for observers
+    _samples.value = samples.toList()
+  }
+
   override suspend fun addComment(sampleId: String, author: String, text: String) {
     val flow = _commentsMap.getOrPut(sampleId) { MutableStateFlow(emptyList()) }
     val currentComments = flow.value.toMutableList()

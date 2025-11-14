@@ -1,9 +1,13 @@
 package com.neptune.neptune.ui.main
 
+import android.content.Context
+import android.os.Environment
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
+import com.neptune.neptune.R
 import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
@@ -12,6 +16,7 @@ import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
+import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,15 +34,32 @@ import kotlinx.coroutines.launch
  */
 class MainViewModel(
     private val repo: SampleRepository = SampleRepositoryProvider.repository,
+    context: Context,
     private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
+    private val storageService: StorageService? = null,
     private val useMockData: Boolean = false,
+    downloadsFolder: File =
+        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val imageRepo: ImageStorageRepository = ImageStorageRepository(),
-    private val storageService: StorageService = StorageService(FirebaseStorage.getInstance())
 ) : ViewModel() {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
-  val discoverSamples: MutableStateFlow<List<Sample>> = _discoverSamples
+  val actions: SampleUiActions? =
+      if (useMockData) {
+        null
+      } else {
+        val storageService =
+            storageService
+                ?: run {
+                  val storage =
+                      FirebaseStorage.getInstance(context.getString(R.string.storage_path))
+                  StorageService(storage)
+                }
 
+        SampleUiActions(repo, storageService, downloadsFolder, context)
+      }
+
+  val discoverSamples: MutableStateFlow<List<Sample>> = _discoverSamples
   private val _followedSamples = MutableStateFlow<List<Sample>>(emptyList())
   val followedSamples: StateFlow<List<Sample>> = _followedSamples
 
@@ -102,7 +124,7 @@ class MainViewModel(
       val fileName = avatarFileName
 
       if (storagePath != null && fileName != null) {
-        val downloadUrl = storageService.getDownloadUrl(storagePath)
+        val downloadUrl = storageService?.getDownloadUrl(storagePath)
 
         if (downloadUrl != null) {
           imageRepo.saveImageFromUrl(downloadUrl, fileName)
@@ -118,6 +140,17 @@ class MainViewModel(
                 .build()
       } else {
         _userAvatar.value = null
+      }
+    }
+  }
+
+  fun onDownloadSample(sample: Sample) {
+    viewModelScope.launch {
+      try {
+        actions?.onDownloadClicked(sample)
+      } catch (e: Exception) {
+        Log.e("MainViewModel", "Error downloading sample: ${e.message}")
+        // Handle exception if needed
       }
     }
   }

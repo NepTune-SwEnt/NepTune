@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.search
 
+import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,14 +18,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.firebase.auth.FirebaseAuth
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
+import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
-import com.neptune.neptune.ui.main.ClickHandlers
+import com.neptune.neptune.ui.main.CommentDialog
 import com.neptune.neptune.ui.main.SampleCard
 import com.neptune.neptune.ui.main.onClickFunctions
 import com.neptune.neptune.ui.projectlist.SearchBar
@@ -79,11 +85,22 @@ class SearchScreenTestTagsPerSampleCard(private val idInColumn: String = "0") : 
     get() = tag("sampleDownloads")
 }
 
+private fun factory(application: Application) =
+    object : ViewModelProvider.Factory {
+      override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(SearchViewModel::class.java)) {
+          @Suppress("UNCHECKED_CAST")
+          return SearchViewModel(context = application, auth = FirebaseAuth.getInstance()) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+      }
+    }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
-    searchViewModel: SearchViewModel = viewModel(),
-    clickHandlers: ClickHandlers = onClickFunctions(),
+    searchViewModel: SearchViewModel =
+        viewModel(factory = factory(LocalContext.current.applicationContext as Application)),
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
 ) {
   val samples by searchViewModel.samples.collectAsState()
@@ -93,6 +110,9 @@ fun SearchScreen(
     searchViewModel.search(searchText)
   }
   val samplesStr = "Samples"
+  val likedSamples by searchViewModel.likedSamples.collectAsState()
+  val activeCommentSampleId by searchViewModel.activeCommentSampleId.collectAsState()
+  val comments by searchViewModel.comments.collectAsState()
   Scaffold(
       containerColor = NepTuneTheme.colors.background,
       modifier = Modifier.testTag(SearchScreenTestTags.SEARCH_SCREEN),
@@ -102,9 +122,13 @@ fun SearchScreen(
       content = { pd ->
         ScrollableColumnOfSamples(
             samples = samples,
-            clickHandlers = clickHandlers,
+            searchViewModel = searchViewModel,
             modifier = Modifier.padding(pd),
-            mediaPlayer = mediaPlayer)
+            mediaPlayer = mediaPlayer,
+            searchText = searchText,
+            likedSamples = likedSamples,
+            activeCommentSampleId = activeCommentSampleId,
+            comments = comments)
       })
 }
 
@@ -112,11 +136,14 @@ fun SearchScreen(
 fun ScrollableColumnOfSamples(
     modifier: Modifier = Modifier,
     samples: List<Sample>,
-    clickHandlers: ClickHandlers,
-    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
+    searchViewModel: SearchViewModel,
+    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
+    searchText: String = "",
+    likedSamples: Map<Int, Boolean> = emptyMap(),
+    activeCommentSampleId: Int? = null,
+    comments: List<Comment> = emptyList(),
 ) {
   // Ensure the possibility to like in local
-  var likedSamples by remember { mutableStateOf(setOf<String>()) }
   LazyColumn(
       modifier =
           modifier
@@ -129,24 +156,29 @@ fun ScrollableColumnOfSamples(
         items(samples) { sample ->
           // change height and width if necessary
           val testTags = SearchScreenTestTagsPerSampleCard(idInColumn = sample.id)
-          val isLiked = likedSamples.contains(sample.id)
-          val cardClickHanders =
+          val isLiked = likedSamples[sample.id.toInt()] == true
+          val actions =
               onClickFunctions(
-                  onProfileClick = clickHandlers.onProfileClick,
-                  onCommentClick = clickHandlers.onCommentClick,
-                  onDownloadClick = clickHandlers.onDownloadClick,
-                  onLikeClick = { isNowLiked ->
-                    likedSamples =
-                        if (isNowLiked) likedSamples + sample.id else likedSamples - sample.id
-                    clickHandlers.onLikeClick(isNowLiked)
-                  })
+                  onDownloadClick = { searchViewModel.onDownloadSample(sample) },
+                  onLikeClick = {
+                    val newIsLiked = !isLiked
+                    searchViewModel.onLikeClick(sample, newIsLiked)
+                  },
+                  onCommentClick = { searchViewModel.onCommentClicked(sample) })
           SampleCard(
               sample = sample,
               width = width,
-              clickHandlers = cardClickHanders,
-              isLiked = isLiked,
+              clickHandlers = actions,
+              isLiked = likedSamples[sample.id.toInt()] == true,
               testTags = testTags,
               mediaPlayer = mediaPlayer)
         }
-      }
+      } // Comment Overlay
+  if (activeCommentSampleId != null) {
+    CommentDialog(
+        sampleId = activeCommentSampleId.toString(),
+        comments = comments,
+        onDismiss = { searchViewModel.resetCommentSampleId() },
+        onAddComment = { id, text -> searchViewModel.onAddComment(id.toInt(), text) })
+  }
 }
