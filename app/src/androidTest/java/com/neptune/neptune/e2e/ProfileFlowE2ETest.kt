@@ -100,9 +100,9 @@ class ProfileFlowE2ETest {
     composeTestRule.onNodeWithTag(ProfileScreenTestTags.BIO).assertIsDisplayed()
     composeTestRule.onNodeWithTag(ProfileScreenTestTags.BIO).assertTextEquals("“$bio”")
     composeTestRule.onNodeWithTag(ProfileScreenTestTags.TAGS_VIEW_SECTION).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(ProfileScreenTestTags.TAG+"/"+tag1).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(ProfileScreenTestTags.TAG+"/"+tag1).assertTextContains(tag1)
-    composeTestRule.onNodeWithTag(ProfileScreenTestTags.TAG+"/"+tag2).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(ProfileScreenTestTags.TAG+"/"+tag2).assertTextContains(tag2)
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.TAG + "/" + tag1).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.TAG + "/" + tag1).assertTextContains(tag1)
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.TAG + "/" + tag2).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.TAG + "/" + tag2).assertTextContains(tag2)
   }
 }
