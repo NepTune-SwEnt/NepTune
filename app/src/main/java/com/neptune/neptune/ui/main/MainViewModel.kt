@@ -1,15 +1,21 @@
 package com.neptune.neptune.ui.main
 
+import android.content.Context
+import android.os.Environment
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.storage.FirebaseStorage
 import com.neptune.neptune.data.ImageStorageRepository
+import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
+import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,13 +38,31 @@ import kotlinx.coroutines.launch
  */
 class MainViewModel(
     private val repo: SampleRepository = SampleRepositoryProvider.repository,
+    context: Context,
     private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
+    storageService: StorageService? = null,
     private val useMockData: Boolean = false,
+    downloadsFolder: File =
+        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel() {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
-  val discoverSamples: MutableStateFlow<List<Sample>> = _discoverSamples
+  val actions: SampleUiActions? =
+      if (useMockData) {
+        null
+      } else {
+        val storageService =
+            storageService
+                ?: run {
+                  val storage =
+                      FirebaseStorage.getInstance("gs://neptune-e2728.firebasestorage.app")
+                  StorageService(storage)
+                }
 
+        SampleUiActions(repo, storageService, downloadsFolder, context)
+      }
+
+  val discoverSamples: MutableStateFlow<List<Sample>> = _discoverSamples
   private val _followedSamples = MutableStateFlow<List<Sample>>(emptyList())
   val followedSamples: StateFlow<List<Sample>> = _followedSamples
 
@@ -126,6 +150,17 @@ class MainViewModel(
               }
               .collectLatest { avatar -> _userAvatar.value = avatar }
         }
+  }
+
+  fun onDownloadSample(sample: Sample) {
+    viewModelScope.launch {
+      try {
+        actions?.onDownloadClicked(sample)
+      } catch (e: Exception) {
+        Log.e("MainViewModel", "Error downloading sample: ${e.message}")
+        // Handle exception if needed
+      }
+    }
   }
 
   fun onLikeClicked(sample: Sample, isLiked: Boolean) {

@@ -2,11 +2,11 @@ package com.neptune.neptune.ui.search
 
 import android.content.Context
 import android.os.Environment
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
-import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
@@ -15,58 +15,109 @@ import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
 import com.neptune.neptune.ui.main.SampleUiActions
-import kotlinx.coroutines.Job
+import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import java.io.File
-import kotlin.collections.plus
-
-/*
-Search ViewModel
-Holds the list of samples and performs search filtering
-Uses: MutableStateFlow to hold the list of samples
-Provides: search function to filter samples based on query
-Written with assistance from ChatGPT
- */
 
 const val NATURE_TAG = "#nature"
-val storage = FirebaseStorage.getInstance("gs://neptune-e2728.firebasestorage.app")
-val downloadsFolder: File =
-    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-val storageService: StorageService = StorageService(storage)
+/**
+ * Search ViewModel Handles search logic, data loading, and user interactions for the Search Screen.
+ * Uses: SampleRepository to fetch samples and manage likes/comments. Includes: Firebase
+ * authentication handling, sample filtering based on search queries,
+ *
+ * written with assistance from ChatGPT
+ */
+open class SearchViewModel(
+    private val repo: SampleRepository = SampleRepositoryProvider.repository,
+    private val context: Context,
+    private val useMockData: Boolean = false,
+    private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
+    explicitStorageService: StorageService? = null,
+    explicitDownloadsFolder: File? = null,
+    auth: FirebaseAuth? = null
+) : ViewModel() {
 
-open class SearchViewModel(private val repo: SampleRepository = SampleRepositoryProvider.repository,
-                           context: Context, private val useMockData: Boolean = false, private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
-                           private val storageService: StorageService = StorageService(storage),
-                           private val downloadsFolder: File =
-                               Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                          auth: FirebaseAuth = FirebaseAuth.getInstance()) : ViewModel() {
+  // ---------- Firebase auth (disabled in tests when useMockData = true) ----------
+
+  private val firebaseAuth: FirebaseAuth? =
+      if (useMockData) {
+        null
+      } else {
+        auth ?: FirebaseAuth.getInstance()
+      }
+
+  private val _currentUserFlow = MutableStateFlow(firebaseAuth?.currentUser)
+  val currentUserFlow: StateFlow<com.google.firebase.auth.FirebaseUser?> = _currentUserFlow
+
+  private val authListener: FirebaseAuth.AuthStateListener? =
+      firebaseAuth?.let {
+        FirebaseAuth.AuthStateListener { fbAuth -> _currentUserFlow.value = fbAuth.currentUser }
+      }
+
+  // ---------- Samples & likes / comments ----------
+
   private val _samples = MutableStateFlow<List<Sample>>(emptyList())
   val samples: StateFlow<List<Sample>> = _samples
-  val actions = SampleUiActions(repo, storageService, downloadsFolder, viewModelScope, context)
-    private val imageRepo = ImageStorageRepository()
-    private val _userAvatar = MutableStateFlow<Any?>(null)
-    val userAvatar: StateFlow<Any?> = _userAvatar.asStateFlow()
 
-    private val _currentUserFlow = MutableStateFlow(auth.currentUser)
-    private val authListener =
-        FirebaseAuth.AuthStateListener { firebaseAuth ->
-            _currentUserFlow.value = firebaseAuth.currentUser
-        }
+  private val _comments = MutableStateFlow<List<Comment>>(emptyList())
+  val comments: StateFlow<List<Comment>> = _comments
 
-    private var observeUserJob: Job? = null // Proposed by gemini
+  private val _likedSamples = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
+  val likedSamples: StateFlow<Map<Int, Boolean>> = _likedSamples
 
-    private val _comments = MutableStateFlow<List<Comment>>(emptyList())
-    val comments: StateFlow<List<Comment>> = _comments
+  private val _activeCommentSampleId = MutableStateFlow<Int?>(null)
+  val activeCommentSampleId: StateFlow<Int?> = _activeCommentSampleId.asStateFlow()
 
-    private val _likedSamples = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
-    val likedSamples: StateFlow<Map<Int, Boolean>> = _likedSamples
+  fun onCommentClicked(sample: Sample) {
+    observeCommentsForSample(sample.id)
+    _activeCommentSampleId.value = sample.id
+  }
 
-  // TO DO : Load data from real source
-  private fun loadData() {
+  fun onAddComment(sampleId: Int, text: String) {
+    addComment(sampleId, text)
+    observeCommentsForSample(sampleId)
+  }
+  // ---------- Actions (download, etc.) – disabled in tests ----------
+
+  val actions: SampleUiActions? =
+      if (useMockData) {
+        null
+      } else {
+        val storageService =
+            explicitStorageService
+                ?: run {
+                  val storage =
+                      FirebaseStorage.getInstance("gs://neptune-e2728.firebasestorage.app")
+                  StorageService(storage)
+                }
+
+        val downloadsFolder =
+            explicitDownloadsFolder
+                ?: Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+
+        SampleUiActions(repo, storageService, downloadsFolder, context)
+      }
+
+  init {
+    if (firebaseAuth != null && authListener != null) {
+      firebaseAuth.addAuthStateListener(authListener)
+    }
+  }
+
+  override fun onCleared() {
+    super.onCleared()
+    if (firebaseAuth != null && authListener != null) {
+      firebaseAuth.removeAuthStateListener(authListener)
+    }
+  }
+
+  // ---------- Data loading ----------
+
+  // Mock data for tests (your original loadData)
+  private fun loadMockData() {
     _samples.value =
         listOf(
             Sample(
@@ -92,65 +143,75 @@ open class SearchViewModel(private val repo: SampleRepository = SampleRepository
                 210,
                 210))
   }
-  fun onDownloadSample(sample: Sample) {
+
+  fun loadSamplesFromFirebase() {
     viewModelScope.launch {
-        try{
-            actions.onDownloadClicked(sample)
-        } catch (e: Exception){
-            // Handle exception if needed
-        }
+      _samples.value = repo.getSamples()
+      refreshLikeStates()
     }
   }
-  fun onLikeClick(sample: Sample, isLiked: Boolean) {
-      viewModelScope.launch {
 
-          // Check if already Liked
-          val alreadyLiked = repo.hasUserLiked(sample.id)
+  // ---------- Public API used by UI ----------
 
-          if (!alreadyLiked && isLiked) {
-              repo.toggleLike(sample.id, true)
-              _likedSamples.value = _likedSamples.value + (sample.id to true)
-          } else if (alreadyLiked && !isLiked) {
-              repo.toggleLike(sample.id, false)
-              _likedSamples.value = _likedSamples.value + (sample.id to false)
-          }
+  fun onDownloadSample(sample: Sample) {
+    val safeActions = actions ?: return // no-op in tests
+    viewModelScope.launch {
+      try {
+        safeActions.onDownloadClicked(sample)
+      } catch (e: Exception) {
+        Log.e("SearchViewModel", "Error downloading sample: ${e.message}")
+        // optional: log or expose error
       }
+    }
   }
-    fun refreshLikeStates() {
-        viewModelScope.launch {
-            val allSamples = _samples.value
 
-            val updatedStates = mutableMapOf<Int, Boolean>()
-            for (sample in allSamples) {
-                val liked = repo.hasUserLiked(sample.id)
-                updatedStates[sample.id] = liked
-            }
-            _likedSamples.value = updatedStates
-        }
+  fun onLikeClick(sample: Sample, isLikedNow: Boolean) {
+    viewModelScope.launch {
+      repo.toggleLike(sample.id, isLikedNow)
+      _likedSamples.value = _likedSamples.value + (sample.id to isLikedNow)
     }
+  }
 
-    fun observeCommentsForSample(sampleId: Int) {
-        viewModelScope.launch { repo.observeComments(sampleId).collectLatest { _comments.value = it } }
+  fun refreshLikeStates() {
+    viewModelScope.launch {
+      val allSamples = _samples.value
+      val updatedStates = mutableMapOf<Int, Boolean>()
+      for (sample in allSamples) {
+        val liked = repo.hasUserLiked(sample.id)
+        updatedStates[sample.id] = liked
+      }
+      _likedSamples.value = updatedStates
     }
+  }
 
-    fun addComment(sampleId: Int, text: String) {
-        viewModelScope.launch {
-            val profile = profileRepo.getProfile()
-            val username = profile?.username ?: "Anonymous"
-            repo.addComment(sampleId, username, text.trim())
-        }
+  fun observeCommentsForSample(sampleId: Int) {
+    viewModelScope.launch { repo.observeComments(sampleId).collectLatest { _comments.value = it } }
+  }
+
+  fun resetCommentSampleId() {
+    _activeCommentSampleId.value = null
+  }
+
+  fun addComment(sampleId: Int, text: String) {
+    viewModelScope.launch {
+      val profile = profileRepo.getProfile()
+      val username = profile?.username ?: "Anonymous"
+      repo.addComment(sampleId, username, text.trim())
     }
+  }
 
   open fun search(query: String) {
-    if (useMockData)
-        loadData()
-    else{
-        loadSamplesFromFirebase()
+    if (useMockData) {
+      loadMockData()
+    } else {
+      loadSamplesFromFirebase()
     }
+
     val normalizedQuery = normalize(query)
     if (normalizedQuery.isEmpty()) {
       return
     }
+
     _samples.value =
         _samples.value.filter {
           normalize(it.name).contains(normalizedQuery, ignoreCase = true) ||
@@ -158,17 +219,9 @@ open class SearchViewModel(private val repo: SampleRepository = SampleRepository
               it.tags.any { tag -> normalize(tag).contains(normalizedQuery, ignoreCase = true) }
         }
   }
+
   // Normalizes text by converting it to lowercase and removing non-alphanumeric characters.
   fun normalize(text: String): String {
-    // FYI .toRegex allows to detect patterns in strings
     return text.lowercase().replace("\\p{M}".toRegex(), "").replace(Regex("[^a-z0-9]"), "").trim()
   }
-    fun loadSamplesFromFirebase() {
-        viewModelScope.launch{
-            val profile = profileRepo.getProfile()
-            val following = profile?.following.orEmpty()
-            _samples.value = repo.getSamples()
-            refreshLikeStates()
-        }
-    }
 }

@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.main
 
+import android.app.Application
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -59,6 +60,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -137,11 +139,11 @@ object MainScreenTestTags : BaseSampleTestTags {
   const val COMMENT_LIST = "commentList"
 }
 
-private fun factory() =
+private fun factory(application: Application) =
     object : ViewModelProvider.Factory {
       override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
-          @Suppress("UNCHECKED_CAST") return MainViewModel() as T
+          @Suppress("UNCHECKED_CAST") return MainViewModel(context = application) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
       }
@@ -158,7 +160,8 @@ private fun factory() =
 fun MainScreen(
     navigateToProfile: () -> Unit = {},
     navigateToProjectList: () -> Unit = {},
-    mainViewModel: MainViewModel = viewModel(factory = factory())
+    mainViewModel: MainViewModel =
+        viewModel(factory = factory(LocalContext.current.applicationContext as Application))
 ) {
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
@@ -281,6 +284,7 @@ fun MainScreen(
                             samplesColumn.forEach { sample ->
                               val clickHandlers =
                                   onClickFunctions(
+                                      onDownloadClick = { mainViewModel.onDownloadSample(sample) },
                                       onLikeClick = { isLiked ->
                                         mainViewModel.onLikeClicked(sample, isLiked)
                                       },
@@ -306,7 +310,8 @@ fun MainScreen(
                       onLikeClick = { sample, isLiked ->
                         mainViewModel.onLikeClicked(sample, isLiked)
                       },
-                      onCommentClick = { sample -> onCommentClicked(sample) })
+                      onCommentClick = { sample -> onCommentClicked(sample) },
+                      onDownloadClick = { sample -> mainViewModel.onDownloadSample(sample) })
                 }
               }
           // Comment Overlay
@@ -354,6 +359,7 @@ fun SampleCardRow(
     likedSamples: Map<Int, Boolean> = emptyMap(),
     onLikeClick: (Sample, Boolean) -> Unit = { _, _ -> },
     onCommentClick: (Sample) -> Unit = {},
+    onDownloadClick: (Sample) -> Unit = {}
 ) {
   Row(
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -363,7 +369,8 @@ fun SampleCardRow(
           val clickHandlers =
               onClickFunctions(
                   onLikeClick = { isLiked -> onLikeClick(sample, isLiked) },
-                  onCommentClick = { onCommentClick(sample) })
+                  onCommentClick = { onCommentClick(sample) },
+                  onDownloadClick = { onDownloadClick(sample) })
           SampleCard(
               sample = sample, width = cardWidth, isLiked = isLiked, clickHandlers = clickHandlers)
         }

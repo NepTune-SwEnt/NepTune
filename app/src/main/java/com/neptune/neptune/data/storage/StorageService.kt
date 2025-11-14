@@ -1,6 +1,5 @@
 package com.neptune.neptune.data.storage
 
-
 import android.content.Context
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageException
@@ -9,12 +8,13 @@ import com.neptune.neptune.model.sample.Sample
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.IOException
 import java.util.zip.ZipInputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
-class StorageService(private val storage: FirebaseStorage) {
+class StorageService(val storage: FirebaseStorage) {
   private val storageRef = storage.reference
 
   suspend fun exists(ref: StorageReference): Boolean {
@@ -26,18 +26,19 @@ class StorageService(private val storage: FirebaseStorage) {
     }
   }
   // correct -> obtain path from Firestore and not Storage
+  @Throws(IOException::class)
   suspend fun downloadZippedSample(sample: Sample, context: Context): File =
-    withContext(Dispatchers.IO) {
-      val sampleRef = storageRef.child(sample.storageZipPath)
-      if (!exists(sampleRef))
-        throw IllegalArgumentException(
-          "Sample file not found in storage at : ${sample.storageZipPath}")
+      withContext(Dispatchers.IO) {
+        val sampleRef = storageRef.child(sample.storageZipPath)
+        if (!exists(sampleRef))
+            throw IllegalArgumentException(
+                "Sample file not found in storage at : ${sample.storageZipPath}")
 
-      val tmp = File(context.cacheDir, "${sample.name}.zip")
+        val tmp = File(context.cacheDir, "${sample.name}.zip")
 
-      sampleRef.getFile(tmp).await()
-      tmp
-    }
+        sampleRef.getFile(tmp).await()
+        tmp
+      }
 
   /**
    * Unzips [zipFile] into [outputDir] without creating subdirectories. All files are extracted
@@ -68,7 +69,7 @@ class StorageService(private val storage: FirebaseStorage) {
     }
 
     if (!hasAudio || !hasJson)
-      throw IllegalArgumentException("Archive missing required files in ${zipFile.name}")
+        throw IllegalArgumentException("Archive missing required files in ${zipFile.name}")
     // Now extract files
     val outFile = File(outputDir, zipFile.name)
     FileInputStream(zipFile).use { input ->

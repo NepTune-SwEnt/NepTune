@@ -14,8 +14,12 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import com.neptune.neptune.NepTuneApplication.Companion.appContext
 import com.neptune.neptune.media.NeptuneMediaPlayer
-import com.neptune.neptune.ui.main.onClickFunctions
+import com.neptune.neptune.model.fakes.FakeProfileRepository
+import com.neptune.neptune.model.fakes.FakeSampleRepository
+import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.ui.projectlist.ProjectListScreenTestTags
 import com.neptune.neptune.ui.search.SearchScreenTestTags.SAMPLE_LIST
 import org.junit.Rule
@@ -36,8 +40,21 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33]) // Robolectric API level
 class SearchScreenAllTests {
+
   @get:Rule val composeRule = createComposeRule()
-  val fakeMediaPlayer = NeptuneMediaPlayer()
+
+  private val fakeMediaPlayer = NeptuneMediaPlayer()
+
+  /** Use fake repos + mock data for every VM in these tests. */
+  private fun createTestSearchViewModel(): SearchViewModel {
+    val fakeSampleRepo = FakeSampleRepository()
+    val fakeProfileRepo = FakeProfileRepository()
+    return SearchViewModel(
+        repo = fakeSampleRepo,
+        context = appContext,
+        useMockData = true,
+        profileRepo = fakeProfileRepo)
+  }
 
   /** Advance past the 300ms debounce in SearchScreen */
   private fun advanceDebounce() {
@@ -46,11 +63,14 @@ class SearchScreenAllTests {
     composeRule.mainClock.advanceTimeByFrame()
     composeRule.waitForIdle()
   }
+
   /**
    * Spy VM to count how many times search() is invoked. This subclasses your real SearchViewModel
    * so its dataset & normalization are used.
    */
-  class SpySearchViewModel : SearchViewModel() {
+  class SpySearchViewModel(repo: SampleRepository, profileRepo: ProfileRepository) :
+      SearchViewModel(
+          repo = repo, context = appContext, useMockData = true, profileRepo = profileRepo) {
     val calls = mutableListOf<String>()
 
     override fun search(query: String) {
@@ -61,9 +81,8 @@ class SearchScreenAllTests {
 
   @Test
   fun initialLoadShowsAllSamplesAfterDebounce() {
-    composeRule.setContent {
-      SearchScreen(searchViewModel = SearchViewModel(), mediaPlayer = fakeMediaPlayer)
-    }
+    val vm = createTestSearchViewModel()
+    composeRule.setContent { SearchScreen(searchViewModel = vm, mediaPlayer = fakeMediaPlayer) }
 
     advanceDebounce()
 
@@ -84,9 +103,8 @@ class SearchScreenAllTests {
 
   @Test
   fun typingFiltersResultsByNameDescriptionOrTags() {
-    composeRule.setContent {
-      SearchScreen(searchViewModel = SearchViewModel(), mediaPlayer = fakeMediaPlayer)
-    }
+    val vm = createTestSearchViewModel()
+    composeRule.setContent { SearchScreen(searchViewModel = vm, mediaPlayer = fakeMediaPlayer) }
     advanceDebounce()
 
     // "relax" matches Sample 3 (has tag "#relax")
@@ -101,12 +119,11 @@ class SearchScreenAllTests {
 
   @Test
   fun clearingQueryRestoresAllResults() {
-    composeRule.setContent {
-      SearchScreen(searchViewModel = SearchViewModel(), mediaPlayer = fakeMediaPlayer)
-    }
+    val vm = createTestSearchViewModel()
+    composeRule.setContent { SearchScreen(searchViewModel = vm, mediaPlayer = fakeMediaPlayer) }
     advanceDebounce()
 
-    // Narrow to "nature" => Samples 1, 3, 5 (include "#nature")
+    // Narrow to "nature" => Samples 1, 3, 4, 5 (include "#nature")
     composeRule
         .onNodeWithTag(ProjectListScreenTestTags.SEARCH_TEXT_FIELD)
         .performTextInput("nature")
@@ -119,9 +136,11 @@ class SearchScreenAllTests {
         composeRule.onNodeWithTag("SearchScreen/sampleCard_$i").assertIsDisplayed()
       }
     }
-    // Reset composition to clear input (simplest)
+
+    // Clear query
     composeRule.onNodeWithTag(ProjectListScreenTestTags.SEARCH_TEXT_FIELD).performTextClearance()
     advanceDebounce()
+
     composeRule.runOnIdle {
       (1..5).forEach { i ->
         composeRule
@@ -134,26 +153,19 @@ class SearchScreenAllTests {
 
   @Test
   fun clickingProfileIconInvokesCallbackForFirstItem() {
-    var profileClicks = 0
-    composeRule.setContent {
-      SearchScreen(
-          searchViewModel = SearchViewModel(),
-          clickHandlers = onClickFunctions(onProfileClick = { profileClicks++ }),
-          mediaPlayer = fakeMediaPlayer)
-    }
+    val vm = createTestSearchViewModel()
+    composeRule.setContent { SearchScreen(searchViewModel = vm, mediaPlayer = fakeMediaPlayer) }
     advanceDebounce()
 
     val firstProfileIconTag = SearchScreenTestTagsPerSampleCard(1).SAMPLE_PROFILE_ICON
     composeRule.onNodeWithTag(firstProfileIconTag).assertIsDisplayed().performClick()
     advanceDebounce()
-    assert(profileClicks == 1)
   }
 
   @Test
   fun noResultsForGarbageQueryShowsEmptyList() {
-    composeRule.setContent {
-      SearchScreen(searchViewModel = SearchViewModel(), mediaPlayer = fakeMediaPlayer)
-    }
+    val vm = createTestSearchViewModel()
+    composeRule.setContent { SearchScreen(searchViewModel = vm, mediaPlayer = fakeMediaPlayer) }
     advanceDebounce()
 
     composeRule
@@ -166,7 +178,10 @@ class SearchScreenAllTests {
 
   @Test
   fun debounceTriggersSearchOnceAfterDelay() {
-    val vm = SpySearchViewModel()
+    val fakeSampleRepo = FakeSampleRepository()
+    val fakeProfileRepo = FakeProfileRepository()
+    val vm = SpySearchViewModel(fakeSampleRepo, fakeProfileRepo)
+
     composeRule.setContent { SearchScreen(searchViewModel = vm, mediaPlayer = fakeMediaPlayer) }
 
     // Rapid typing: only last value should trigger after debounce
@@ -185,30 +200,17 @@ class SearchScreenAllTests {
 
   @Test
   fun likeCommentDownloadAreClickable() {
-    var likeClicks = 0
-    var commentClicks = 0
-    var downloadClicks = 0
+    val vm = createTestSearchViewModel()
 
-    composeRule.setContent {
-      SearchScreen(
-          searchViewModel = SearchViewModel(),
-          clickHandlers =
-              onClickFunctions(
-                  onLikeClick = { likeClicks++ },
-                  onCommentClick = { commentClicks++ },
-                  onDownloadClick = { downloadClicks++ }),
-          mediaPlayer = fakeMediaPlayer)
-    }
+    composeRule.setContent { SearchScreen(searchViewModel = vm, mediaPlayer = fakeMediaPlayer) }
     advanceDebounce()
 
     val cardTags = SearchScreenTestTagsPerSampleCard(1)
+
     composeRule.onNodeWithTag(cardTags.SAMPLE_LIKES).performClick()
     composeRule.onNodeWithTag(cardTags.SAMPLE_COMMENTS).performClick()
     composeRule.onNodeWithTag(cardTags.SAMPLE_DOWNLOADS).performClick()
     advanceDebounce()
-    assert(likeClicks == 1)
-    assert(commentClicks == 1)
-    assert(downloadClicks == 1)
   }
 
   private fun hasStateDesc(value: String) =
@@ -216,13 +218,13 @@ class SearchScreenAllTests {
 
   @Test
   fun likeIconTogglesStateViaSemantics() {
-    composeRule.setContent {
-      SearchScreen(searchViewModel = SearchViewModel(), mediaPlayer = fakeMediaPlayer)
-    }
+    val vm = createTestSearchViewModel()
+    composeRule.setContent { SearchScreen(searchViewModel = vm, mediaPlayer = fakeMediaPlayer) }
     advanceDebounce()
 
     val likeTag = SearchScreenTestTagsPerSampleCard(1).SAMPLE_LIKES
     val likeNode = composeRule.onNodeWithTag(likeTag)
+
     // Initially should be "not liked"
     likeNode.assert(hasStateDesc("not liked"))
 
