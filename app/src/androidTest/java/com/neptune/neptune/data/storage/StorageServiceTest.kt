@@ -1,6 +1,7 @@
 package com.neptune.neptune.data.storage
 
 import android.net.Uri
+import androidx.core.content.FileProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.firebase.Firebase
@@ -11,6 +12,7 @@ import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
 import java.io.File
+import java.io.IOException
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -182,5 +184,97 @@ class StorageServiceTest {
         Assert.assertTrue(updatedSample.storageZipPath.contains("samples%2F${sampleId}.zip"))
         Assert.assertTrue(
             updatedSample.storageImagePath.contains("samples%2F${sampleId}%2F$newImageName"))
+      }
+
+  @Test
+  fun getDownloadUrlWhenFileExistsReturnsCorrectUrl() =
+      runBlocking(testDispatcher) {
+        // --- Arrange ---
+        val testUri = createDummyFile("test-download.txt", "hello")
+        val testPath = "public/test-download.txt"
+
+        // 1. Upload a file so it exists in storage
+        val expectedUrl = storageService.uploadFileAndGetUrl(testUri, testPath)
+        Assert.assertNotNull(expectedUrl)
+
+        // --- Act ---
+        // 2. Try to get the URL using the function under test
+        val actualUrl = storageService.getDownloadUrl(testPath)
+
+        // --- Assert ---
+        Assert.assertNotNull(actualUrl)
+        Assert.assertEquals(expectedUrl, actualUrl)
+      }
+
+  @Test
+  fun getDownloadUrlWhenFileDoesNotExistReturnsNull() =
+      runBlocking(testDispatcher) {
+        // --- Arrange ---
+        val nonExistentPath = "folder/does-not-exist-${UUID.randomUUID()}.txt"
+
+        // --- Act ---
+        val resultUrl = storageService.getDownloadUrl(nonExistentPath)
+
+        // --- Assert ---
+        Assert.assertNull(resultUrl)
+      }
+
+  @Test
+  fun getFileNameFromUriWithFileUriReturnsLastPathSegment() =
+      runBlocking(testDispatcher) {
+        // --- Arrange ---
+        val fileUri = createDummyFile("test-file-name.jpg", "hello")
+
+        // --- Act ---
+        val fileName = storageService.getFileNameFromUri(fileUri)
+
+        // --- Assert ---
+        Assert.assertEquals("test-file-name.jpg", fileName)
+      }
+
+  @Test
+  fun getFileNameFromUriWithHttpUri_returnsLastPathSegment() =
+      runBlocking(testDispatcher) {
+        // --- Arrange ---
+        val httpUri = Uri.parse("https://example.com/some/path/on/web/image.png?v=123")
+
+        // --- Act ---
+        val fileName = storageService.getFileNameFromUri(httpUri)
+
+        // --- Assert ---
+        Assert.assertEquals("image.png", fileName)
+      }
+
+  @Test
+  fun getFileNameFromUriWithContentUriQueriesContentResolver() =
+      runBlocking(testDispatcher) {
+        // --- Arrange ---
+        val testFileName = "my-content-file.mp3"
+        val sharedDir = File(context.cacheDir, "images_to_share")
+        sharedDir.mkdirs()
+        val testFile = File(sharedDir, testFileName)
+        try {
+          testFile.writeText("dummy audio data")
+        } catch (e: IOException) {
+          Assert.fail("Failed to create test file: ${e.message}")
+        }
+
+        val authority = "${context.packageName}.fileprovider"
+        val contentUri: Uri
+
+        try {
+          contentUri = FileProvider.getUriForFile(context, authority, testFile)
+        } catch (e: Exception) {
+          Assert.fail("FileProvider not set up in AndroidManifest.xml? ${e.message}")
+          return@runBlocking
+        }
+
+        // --- Act ---
+        val fileName = storageService.getFileNameFromUri(contentUri)
+
+        // --- Assert ---
+        Assert.assertEquals(testFileName, fileName)
+
+        testFile.delete()
       }
 }

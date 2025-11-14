@@ -23,9 +23,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
@@ -46,6 +43,7 @@ class MainViewModel(
     downloadsFolder: File =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val imageRepo: ImageStorageRepository = ImageStorageRepository(),
 ) : ViewModel() {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
   val actions: SampleUiActions? =
@@ -67,7 +65,6 @@ class MainViewModel(
   private val _followedSamples = MutableStateFlow<List<Sample>>(emptyList())
   val followedSamples: StateFlow<List<Sample>> = _followedSamples
 
-  private val imageRepo = ImageStorageRepository()
   private val _userAvatar = MutableStateFlow<Any?>(null)
   val userAvatar: StateFlow<Any?> = _userAvatar.asStateFlow()
 
@@ -77,7 +74,11 @@ class MainViewModel(
         _currentUserFlow.value = firebaseAuth.currentUser
       }
 
-  private var observeUserJob: Job? = null // Proposed by gemini
+  private val avatarFileName: String?
+    get() = auth.currentUser?.uid?.let { "avatar_$it.jpg" }
+
+  private val avatarStoragePath: String?
+    get() = auth.currentUser?.uid?.let { "profile_pictures/$it.jpg" }
 
   private val _comments = MutableStateFlow<List<Comment>>(emptyList())
   val comments: StateFlow<List<Comment>> = _comments
@@ -93,7 +94,7 @@ class MainViewModel(
       loadSamplesFromFirebase()
     }
     auth.addAuthStateListener(authListener)
-    observeUser()
+    forceRefreshAndLoadAvatar()
   }
 
   private fun loadSamplesFromFirebase() {
@@ -111,7 +112,7 @@ class MainViewModel(
   }
 
   fun onResume() {
-    observeUser()
+    forceRefreshAndLoadAvatar()
   }
 
   override fun onCleared() {
@@ -119,38 +120,30 @@ class MainViewModel(
     auth.removeAuthStateListener(authListener)
   }
 
-  /**
-   * View the profile and verify the local avatar. Give priority to the local (modified) avatar over
-   * the remote avatar. This function was made using AI assistance
-   */
-  @OptIn(ExperimentalCoroutinesApi::class)
-  private fun observeUser() {
-    observeUserJob?.cancel()
-    observeUserJob =
-        viewModelScope.launch {
-          _currentUserFlow
-              .flatMapLatest { firebaseUser ->
-                if (firebaseUser == null) {
-                  flowOf(null)
-                } else {
-                  profileRepo.observeProfile().map { profile ->
-                    val dynamicFileName = "avatar_${firebaseUser.uid}.jpg"
-                    val localUri = imageRepo.getImageUri(dynamicFileName)
-                    if (localUri != null) {
-                      localUri
-                          .buildUpon()
-                          .appendQueryParameter("t", System.currentTimeMillis().toString())
-                          .build()
-                    } else if (profile?.avatarUrl != null) {
-                      profile.avatarUrl
-                    } else {
-                      null
-                    }
-                  }
-                }
-              }
-              .collectLatest { avatar -> _userAvatar.value = avatar }
+  private fun forceRefreshAndLoadAvatar() {
+    viewModelScope.launch {
+      val storagePath = avatarStoragePath
+      val fileName = avatarFileName
+
+      if (storagePath != null && fileName != null) {
+        val downloadUrl = storageService.getDownloadUrl(storagePath)
+
+        if (downloadUrl != null) {
+          imageRepo.saveImageFromUrl(downloadUrl, fileName)
         }
+      }
+
+      val localUri = if (fileName != null) imageRepo.getImageUri(fileName) else null
+      if (localUri != null) {
+        _userAvatar.value =
+            localUri
+                .buildUpon()
+                .appendQueryParameter("t", System.currentTimeMillis().toString())
+                .build()
+      } else {
+        _userAvatar.value = null
+      }
+    }
   }
 
   fun onDownloadSample(sample: Sample) {

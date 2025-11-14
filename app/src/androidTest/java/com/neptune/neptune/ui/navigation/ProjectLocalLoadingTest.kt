@@ -133,7 +133,7 @@ class LocalProjectLoadingTest {
     composeTestRule.waitForIdle()
     composeTestRule
         .onNodeWithTag(SamplerTestTags.TIME_DISPLAY)
-        .assertTextContains(" / 04 s", substring = true)
+        .assertTextContains("00.00 / 04.00 s", substring = true)
         .assertIsDisplayed()
   }
 
