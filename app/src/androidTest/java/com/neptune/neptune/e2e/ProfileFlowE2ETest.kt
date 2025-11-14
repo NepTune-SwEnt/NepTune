@@ -2,6 +2,7 @@ package com.neptune.neptune.e2e
 
 import androidx.activity.compose.setContent
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -68,11 +69,26 @@ class ProfileFlowE2ETest {
     composeTestRule.onNodeWithTag(ProfileScreenTestTags.EDIT_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
-    val username = "E2EETestUser"
+    val name = "E2EETestUser"
+    val bio = "Yo"
+    val tag1 = "tag1"
+    val tag2 = "tag2"
 
     // Modify fields
     composeTestRule.onNodeWithTag(ProfileScreenTestTags.FIELD_NAME).performTextClearance()
-    composeTestRule.onNodeWithTag(ProfileScreenTestTags.FIELD_NAME).performTextInput(username)
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.FIELD_NAME).performTextInput(name)
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.FIELD_BIO).performTextClearance()
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.FIELD_BIO).performTextInput(bio)
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.FIELD_ADD_TAG).performTextClearance()
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.FIELD_ADD_TAG).performTextInput(tag1)
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.ADD_TAG_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.FIELD_ADD_TAG).performTextClearance()
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.FIELD_ADD_TAG).performTextInput(tag2)
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.ADD_TAG_BUTTON).performClick()
+    composeTestRule.waitForIdle()
 
     // Save
     composeTestRule.onNodeWithTag(ProfileScreenTestTags.SAVE_BUTTON).performClick()
@@ -80,6 +96,13 @@ class ProfileFlowE2ETest {
 
     // Verify the new name is displayed in view mode
     composeTestRule.onNodeWithTag(ProfileScreenTestTags.NAME).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(ProfileScreenTestTags.NAME).assertTextEquals(username)
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.NAME).assertTextEquals(name)
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.BIO).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.BIO).assertTextEquals("“$bio”")
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.TAGS_VIEW_SECTION).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.TAG+"/"+tag1).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.TAG+"/"+tag1).assertTextContains(tag1)
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.TAG+"/"+tag2).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.TAG+"/"+tag2).assertTextContains(tag2)
   }
 }
