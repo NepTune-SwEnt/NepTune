@@ -126,7 +126,7 @@ class StorageService(
   /**
    * Retrieves the download URL of a file from Storage.
    *
-   * @param storagePath The full path to the file (e.g., "avatars/USER_ID.jpg").
+   * @param storagePath The full path to the file.
    * @return The download URL, or null in case of an error.
    */
   suspend fun getDownloadUrl(storagePath: String): String? {
