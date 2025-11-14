@@ -57,8 +57,8 @@ class MainViewModel(
   private val _comments = MutableStateFlow<List<Comment>>(emptyList())
   val comments: StateFlow<List<Comment>> = _comments
 
-  private val _likedSamples = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
-  val likedSamples: StateFlow<Map<Int, Boolean>> = _likedSamples
+  private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+  val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
 
   init {
     if (useMockData) {
@@ -148,7 +148,7 @@ class MainViewModel(
     viewModelScope.launch {
       val allSamples = _discoverSamples.value + _followedSamples.value
 
-      val updatedStates = mutableMapOf<Int, Boolean>()
+      val updatedStates = mutableMapOf<String, Boolean>()
       for (sample in allSamples) {
         val liked = repo.hasUserLiked(sample.id)
         updatedStates[sample.id] = liked
@@ -157,11 +157,11 @@ class MainViewModel(
     }
   }
 
-  fun observeCommentsForSample(sampleId: Int) {
+  fun observeCommentsForSample(sampleId: String) {
     viewModelScope.launch { repo.observeComments(sampleId).collectLatest { _comments.value = it } }
   }
 
-  fun addComment(sampleId: Int, text: String) {
+  fun addComment(sampleId: String, text: String) {
     viewModelScope.launch {
       val profile = profileRepo.getProfile()
       val username = profile?.username ?: "Anonymous"
@@ -173,31 +173,66 @@ class MainViewModel(
     _discoverSamples.value =
         listOf(
             Sample(
-                1, "Sample 1", "This is a sample description 1", 21, listOf("#nature"), 21, 21, 21),
-            Sample(2, "Sample 2", "This is a sample description 2", 42, listOf("#sea"), 42, 42, 42),
+                "1",
+                "Sample 1",
+                "This is a sample description 1",
+                21,
+                listOf("#nature"),
+                21,
+                usersLike = emptyList(),
+                21,
+                21),
             Sample(
-                3, "Sample 3", "This is a sample description 3", 12, listOf("#relax"), 12, 12, 12),
+                "2",
+                "Sample 2",
+                "This is a sample description 2",
+                42,
+                listOf("#sea"),
+                42,
+                usersLike = emptyList(),
+                42,
+                42),
             Sample(
-                4, "Sample 4", "This is a sample description 4", 2, listOf("#takeItEasy"), 1, 2, 1),
+                "3",
+                "Sample 3",
+                "This is a sample description 3",
+                12,
+                listOf("#relax"),
+                12,
+                usersLike = emptyList(),
+                12,
+                12),
+            Sample(
+                "4",
+                "Sample 4",
+                "This is a sample description 4",
+                2,
+                listOf("#takeItEasy"),
+                1,
+                usersLike = emptyList(),
+                2,
+                1),
         )
     _followedSamples.value =
         listOf(
             Sample(
-                5,
+                "5",
                 "Sample 5",
                 "This is a sample description 5",
                 75,
                 listOf("#nature", "#forest"),
                 210,
+                usersLike = emptyList(),
                 210,
                 210),
             Sample(
-                6,
+                "6",
                 "Sample 6",
                 "This is a sample description 6",
                 80,
                 listOf("#nature"),
                 420,
+                usersLike = emptyList(),
                 420,
                 420),
         )

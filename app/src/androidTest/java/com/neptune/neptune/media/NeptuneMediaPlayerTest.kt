@@ -171,8 +171,8 @@ class NeptuneMediaPlayerTest {
 
   @Test
   fun testGetUriFromSampleId() {
-    val uri1 = mediaPlayer.getUriFromSampleId(0)
-    val uri2 = mediaPlayer.getUriFromSampleId(1)
+    val uri1 = mediaPlayer.getUriFromSampleId("0")
+    val uri2 = mediaPlayer.getUriFromSampleId("1")
 
     assert(uri1 == "android.resource://${context.packageName}/raw/record1".toUri())
     assert(uri2 == "android.resource://${context.packageName}/raw/record2".toUri())

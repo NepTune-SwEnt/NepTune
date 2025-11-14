@@ -4,6 +4,7 @@ import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.neptune.neptune.data.ImageStorageRepository
+import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.fakes.FakeProfileRepository
 import com.neptune.neptune.ui.profile.ProfileMode
 import com.neptune.neptune.ui.profile.ProfileViewModel
@@ -46,17 +47,20 @@ class ProfileViewModelTest {
   private lateinit var mockFirebaseUser: FirebaseUser
   private lateinit var mockImageRepo: ImageStorageRepository
 
+  private lateinit var mockStorageService: StorageService
+
   @Before
   fun setup() {
     fakeRepo = FakeProfileRepository()
     mockAuth = mock()
     mockFirebaseUser = mock()
     mockImageRepo = mock()
+    mockStorageService = mock()
 
     whenever(mockAuth.currentUser).thenReturn(mockFirebaseUser)
     whenever(mockFirebaseUser.uid).thenReturn("fake_user_id_for_test")
 
-    viewModel = ProfileViewModel(fakeRepo, mockAuth, mockImageRepo)
+    viewModel = ProfileViewModel(fakeRepo, mockAuth, mockImageRepo, mockStorageService)
   }
 
   @Test
