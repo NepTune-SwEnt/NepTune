@@ -21,8 +21,13 @@ import kotlinx.coroutines.tasks.await
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
+import java.io.FileOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 // This class was made using AI assistance.
 @ExperimentalCoroutinesApi
@@ -62,7 +67,8 @@ class StorageServiceTest {
     // --- 3. Authenticate ---
     runBlocking { Firebase.auth.signInAnonymously().await() }
   }
-
+  @get:Rule
+  val tempFolder = TemporaryFolder()
   @After
   fun tearDown() = runBlocking {
     // --- 4. Clean up emulators after each test ---
@@ -92,6 +98,27 @@ class StorageServiceTest {
     file.deleteOnExit() // Clean up the local file
     return Uri.fromFile(file)
   }
+  private fun createZip(
+    name: String,
+    vararg entries: Pair<String, String> // (fileName, content)
+  ): File {
+    val zipFile = tempFolder.newFile(name)
+    ZipOutputStream(FileOutputStream(zipFile)).use { zos ->
+      for ((entryName, content) in entries) {
+        val entry = ZipEntry(entryName)
+        zos.putNextEntry(entry)
+        zos.write(content.toByteArray())
+        zos.closeEntry()
+      }
+    }
+    return zipFile
+  }
+  val zipFile = createZip(
+    name = "sample_pack.zip",
+    "kick.mp3" to "AUDIO",
+    "config.json" to """{"bpm": 120}"""
+  )
+  val outputDir = tempFolder.newFolder("downloads")
 
   @Test
   fun uploadFileAndGetUrlSuccessReturnsDownloadURL() =
