@@ -183,4 +183,37 @@ class StorageServiceTest {
         Assert.assertTrue(
             updatedSample.storageImagePath.contains("samples%2F${sampleId}%2F$newImageName"))
       }
+
+  @Test
+  fun getDownloadUrlWhenFileExistsReturnsCorrectUrl() =
+      runBlocking(testDispatcher) {
+        // --- Arrange ---
+        val testUri = createDummyFile("test-download.txt", "hello")
+        val testPath = "public/test-download.txt"
+
+        // 1. Upload a file so it exists in storage
+        val expectedUrl = storageService.uploadFileAndGetUrl(testUri, testPath)
+        Assert.assertNotNull(expectedUrl)
+
+        // --- Act ---
+        // 2. Try to get the URL using the function under test
+        val actualUrl = storageService.getDownloadUrl(testPath)
+
+        // --- Assert ---
+        Assert.assertNotNull(actualUrl)
+        Assert.assertEquals(expectedUrl, actualUrl)
+      }
+
+  @Test
+  fun getDownloadUrlWhenFileDoesNotExistReturnsNull() =
+      runBlocking(testDispatcher) {
+        // --- Arrange ---
+        val nonExistentPath = "folder/does-not-exist-${UUID.randomUUID()}.txt"
+
+        // --- Act ---
+        val resultUrl = storageService.getDownloadUrl(nonExistentPath)
+
+        // --- Assert ---
+        Assert.assertNull(resultUrl)
+      }
 }
