@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
@@ -67,7 +68,12 @@ class ProfileFlowE2ETest {
     composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithTag(ProfileScreenTestTags.EDIT_BUTTON).performClick()
-    composeTestRule.waitForIdle()
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule
+          .onAllNodesWithTag(ProfileScreenTestTags.FIELD_NAME)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
 
     val name = "E2EETestUser"
     val bio = "Yo"
@@ -92,8 +98,12 @@ class ProfileFlowE2ETest {
 
     // Save
     composeTestRule.onNodeWithTag(ProfileScreenTestTags.SAVE_BUTTON).performClick()
-    composeTestRule.waitForIdle()
-
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      composeTestRule
+          .onAllNodesWithTag(ProfileScreenTestTags.NAME)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
     // Verify the new name is displayed in view mode
     composeTestRule.onNodeWithTag(ProfileScreenTestTags.NAME).assertIsDisplayed()
     composeTestRule.onNodeWithTag(ProfileScreenTestTags.NAME).assertTextEquals(name)
