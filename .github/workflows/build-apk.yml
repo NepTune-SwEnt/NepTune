@@ -39,12 +39,12 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug
+        run: ./gradlew assemble
 
       - name: Sign Release
-        uses: r0adkll/sign-android-release@v1
+        uses: app/build/outputs/apk/release@v1
         with:
-          releaseDirectory: app/build/outputs/bundle/release
+          releaseDirectory: app/build/outputs/apk/debug
           signingKeyBase64: ${{ secrets.KEYSTORE_SIGNING_KEY_B64 }}
           keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
           alias: ${{ secrets.APP_NAME_KEY }}
