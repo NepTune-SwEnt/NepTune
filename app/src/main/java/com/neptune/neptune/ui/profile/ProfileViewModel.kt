@@ -4,7 +4,9 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.storage.FirebaseStorage
 import com.neptune.neptune.data.ImageStorageRepository
+import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
@@ -29,11 +31,14 @@ private fun normalizeTag(s: String) = s.trim().lowercase().replace(Regex("\\s+")
  * username, bio). Simulates save operations (to be replaced with repository calls).
  *
  * @param repo The profile repository for data operations.
+ *
+ * This class was created using AI assistance.
  */
 class ProfileViewModel(
     private val repo: ProfileRepository = ProfileRepositoryProvider.repository,
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val imageRepo: ImageStorageRepository = ImageStorageRepository()
+    private val imageRepo: ImageStorageRepository = ImageStorageRepository(),
+    private val storageService: StorageService = StorageService(FirebaseStorage.getInstance())
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(ProfileUiState())
@@ -51,6 +56,10 @@ class ProfileViewModel(
    */
   private val avatarFileName: String?
     get() = auth.currentUser?.uid?.let { "avatar_$it.jpg" }
+
+  /** Generates the *Firebase Storage* path for the avatar. */
+  private val avatarStoragePath: String?
+    get() = auth.currentUser?.uid?.let { "profile_pictures/$it.jpg" }
 
   /** Latest snapshot we saw from Firestore, used to detect changes on save. */
   private var snapshot: Profile? = null
@@ -121,25 +130,25 @@ class ProfileViewModel(
   }
 
   /** Call this to save the new avatar */
-  fun saveAvatar() {
+  private suspend fun saveAvatar() {
     val uriToSave = _tempAvatarUri.value ?: return
-    viewModelScope.launch {
-      val fileName = avatarFileName
-      if (fileName == null) {
-        _uiState.value = _uiState.value.copy(error = "User not logged in.")
-        return@launch
-      }
 
-      try {
-        val savedFile = imageRepo.saveImageFromUri(uriToSave, fileName)
-        if (savedFile != null) {
-          loadInitialLocalAvatar()
-          _tempAvatarUri.value = null
-        }
-      } catch (_: Exception) {
-        _uiState.value = _uiState.value.copy(error = "Impossible to save the avatar.")
-      }
+    val storagePath = avatarStoragePath
+    val localCacheFileName = avatarFileName
+
+    if (storagePath == null || localCacheFileName == null) {
+      _uiState.value = _uiState.value.copy(error = "User not logged in.")
+      return
     }
+
+    val downloadUrl = storageService.uploadFileAndGetUrl(uriToSave, storagePath)
+
+    repo.updateAvatarUrl(downloadUrl)
+
+    imageRepo.saveImageFromUri(uriToSave, localCacheFileName)
+
+    loadInitialLocalAvatar()
+    _tempAvatarUri.value = null
   }
 
   /** Call this once after auth to ensure profile exists (first login). */

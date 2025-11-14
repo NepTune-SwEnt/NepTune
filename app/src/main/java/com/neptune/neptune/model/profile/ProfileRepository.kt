@@ -73,6 +73,13 @@ interface ProfileRepository {
   suspend fun updateBio(newBio: String)
 
   /**
+   * Updates just the avatarUrl of profiles/{uid}, without touching other fields.
+   *
+   * @param newUrl the new avatar URL
+   */
+  suspend fun updateAvatarUrl(newUrl: String)
+
+  /**
    * Adds a new tag to profiles/{uid}.tags, avoiding duplicates.
    *
    * @param tag the new tag to add

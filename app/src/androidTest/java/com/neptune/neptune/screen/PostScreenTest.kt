@@ -47,12 +47,13 @@ class PostScreenTest {
         PostViewModel().apply {
           loadSample(
               Sample(
-                  id = 1,
+                  id = "1",
                   name = "Test Sample",
                   description = "Sample description",
                   durationSeconds = 12,
                   tags = listOf("tag1", "tag2"),
                   likes = 10,
+                  usersLike = emptyList(),
                   comments = 5,
                   downloads = 3,
                   uriString = "mock_uri"))

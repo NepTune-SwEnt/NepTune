@@ -245,6 +245,13 @@ class ProfileRepositoryFirebase(
     profiles.document(uid).update("bio", newBio).await()
   }
 
+  /** Updates only the `avatarUrl` field of the current user's profile. */
+  override suspend fun updateAvatarUrl(newUrl: String) {
+    val currentUser = Firebase.auth.currentUser
+    val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
+    profiles.document(uid).update("avatarUrl", newUrl).await()
+  }
+
   /** Adds a new tag to the current user's profile. */
   override suspend fun addNewTag(tag: String) {
     val currentUser = Firebase.auth.currentUser
