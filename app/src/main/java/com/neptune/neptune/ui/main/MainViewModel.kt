@@ -17,8 +17,6 @@ import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
 import java.io.File
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,11 +36,11 @@ class MainViewModel(
     private val repo: SampleRepository = SampleRepositoryProvider.repository,
     context: Context,
     private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
-    storageService: StorageService? = null,
+    private val storageService: StorageService? = null,
     private val useMockData: Boolean = false,
     downloadsFolder: File =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val imageRepo: ImageStorageRepository = ImageStorageRepository(),
 ) : ViewModel() {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
@@ -126,7 +124,7 @@ class MainViewModel(
       val fileName = avatarFileName
 
       if (storagePath != null && fileName != null) {
-        val downloadUrl = storageService.getDownloadUrl(storagePath)
+        val downloadUrl = storageService?.getDownloadUrl(storagePath)
 
         if (downloadUrl != null) {
           imageRepo.saveImageFromUrl(downloadUrl, fileName)
