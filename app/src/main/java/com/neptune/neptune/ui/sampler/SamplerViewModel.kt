@@ -75,7 +75,8 @@ data class SamplerUiState(
     val showInitialSetupDialog: Boolean = false,
     val inputTempo: Int = 120,
     val inputPitchNote: String = "C",
-    val inputPitchOctave: Int = 4
+    val inputPitchOctave: Int = 4,
+    val timeSignature: String = "4/4"
 ) {
   val fullPitch: String
     get() = "$pitchNote$pitchOctave"
@@ -243,6 +244,11 @@ open class SamplerViewModel() : ViewModel() {
 
   open fun updateTempo(newTempo: Int) {
     _uiState.update { it.copy(tempo = newTempo) }
+  }
+
+  // New: update selected time signature
+  open fun updateTimeSignature(newSignature: String) {
+    _uiState.update { it.copy(timeSignature = newSignature) }
   }
 
   fun updateInputTempo(value: Int?) {
