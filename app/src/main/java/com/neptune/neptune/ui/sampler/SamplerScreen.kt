@@ -485,6 +485,10 @@ fun WaveformDisplay(
         val secondsPerBeat = 60f / tempoBPM.toFloat() * (4f / tsDen.toFloat())
         val totalDurationSec = audioDurationMillis.toFloat() / 1000f
 
+        // Make beat lines thicker and density-aware
+        val primaryBeatStroke = localDensity.run { 3.dp.toPx() }
+        val secondaryBeatStroke = localDensity.run { 1.5.dp.toPx() }
+
         if (secondsPerBeat > 0f && totalDurationSec > 0f) {
           // compute how many beats fit into the audio
           val beatCount = (totalDurationSec / secondsPerBeat).toInt().coerceAtLeast(1)
@@ -504,13 +508,13 @@ fun WaveformDisplay(
                   color = accentPrimaryColor.copy(alpha = 0.25f),
                   start = Offset(xPos, 0f),
                   end = Offset(xPos, height),
-                  strokeWidth = 1.5f)
+                  strokeWidth = primaryBeatStroke)
             } else {
               drawLine(
                   color = smallTextColor.copy(alpha = 0.10f),
                   start = Offset(xPos, 0f),
                   end = Offset(xPos, height),
-                  strokeWidth = 0.8f)
+                  strokeWidth = secondaryBeatStroke)
             }
           }
         }
