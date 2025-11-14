@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
+import com.neptune.neptune.R
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
@@ -90,7 +91,7 @@ open class SearchViewModel(
             explicitStorageService
                 ?: run {
                   val storage =
-                      FirebaseStorage.getInstance("gs://neptune-e2728.firebasestorage.app")
+                      FirebaseStorage.getInstance(context.getString(R.string.storage_path))
                   StorageService(storage)
                 }
 

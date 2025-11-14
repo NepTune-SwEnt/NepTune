@@ -2,5 +2,6 @@
     <string name="app_name">NepTuneApp</string>
     <string name="title_activity_main">NepTune</string>
     <string name="title_activity_second">NepTuneSecondActivity</string>
+    <string name="storage_path">"gs://neptune-e2728.firebasestorage.app"</string>
     <string name="oauth_client_id" translatable="false">371886131647-gjahnjvi9g1amv7befbskm5j4rmitq4r.apps.googleusercontent.com</string>
 </resources>
