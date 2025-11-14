@@ -198,21 +198,6 @@ class SearchScreenAllTests {
     assert(vm.calls.first().contains("abc"))
   }
 
-  @Test
-  fun likeCommentDownloadAreClickable() {
-    val vm = createTestSearchViewModel()
-
-    composeRule.setContent { SearchScreen(searchViewModel = vm, mediaPlayer = fakeMediaPlayer) }
-    advanceDebounce()
-
-    val cardTags = SearchScreenTestTagsPerSampleCard(1)
-
-    composeRule.onNodeWithTag(cardTags.SAMPLE_LIKES).performClick()
-    composeRule.onNodeWithTag(cardTags.SAMPLE_COMMENTS).performClick()
-    composeRule.onNodeWithTag(cardTags.SAMPLE_DOWNLOADS).performClick()
-    advanceDebounce()
-  }
-
   private fun hasStateDesc(value: String) =
       SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, value)
 

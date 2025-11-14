@@ -159,10 +159,7 @@ fun ScrollableColumnOfSamples(
           val isLiked = likedSamples[sample.id] == true
           val actions =
               onClickFunctions(
-                  onDownloadClick = {
-                    searchViewModel.onDownloadSample(sample)
-                    searchViewModel.search(searchText)
-                  },
+                  onDownloadClick = { searchViewModel.onDownloadSample(sample) },
                   onLikeClick = {
                     val newIsLiked = !isLiked
                     searchViewModel.onLikeClick(sample, newIsLiked)

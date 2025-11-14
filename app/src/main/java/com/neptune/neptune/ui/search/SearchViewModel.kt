@@ -64,7 +64,7 @@ open class SearchViewModel(
 
   private val _comments = MutableStateFlow<List<Comment>>(emptyList())
   val comments: StateFlow<List<Comment>> = _comments
-
+  private var query = ""
   private val _likedSamples = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<Int, Boolean>> = _likedSamples
 
@@ -158,6 +158,7 @@ open class SearchViewModel(
     viewModelScope.launch {
       try {
         safeActions.onDownloadClicked(sample)
+        search(query)
       } catch (e: Exception) {
         Log.e("SearchViewModel", "Error downloading sample: ${e.message}")
         // optional: log or expose error
@@ -201,6 +202,7 @@ open class SearchViewModel(
   }
 
   open fun search(query: String) {
+    this.query = query
     if (useMockData) {
       loadMockData()
     } else {
