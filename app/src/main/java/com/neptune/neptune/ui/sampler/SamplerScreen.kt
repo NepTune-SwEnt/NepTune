@@ -22,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -86,6 +87,10 @@ object SamplerTestTags {
   const val EQ_FADER_BOX_INPUT = "eqFaderBoxInput"
   const val FADER_60HZ_TAG = "fader60Hz"
   const val CURVE_EDITOR_SCROLL_CONTAINER = "curveEditorScrollContainer"
+  const val INIT_SETUP_CONTAINER = "initSetupContainer"
+  const val INIT_TEMPO_SELECTOR = "initTempoSelector"
+  const val INIT_PITCH_SELECTOR = "initPitchSelector"
+  const val INIT_CONFIRM_BUTTON = "initConfirmButton"
 }
 
 val KnobBackground = Color.Black
@@ -136,6 +141,10 @@ fun SamplerScreen(
     }
   }
 
+  if (uiState.showInitialSetupDialog) {
+    InitialSetupDialog(viewModel)
+  }
+
   Scaffold(
       containerColor = NepTuneTheme.colors.background,
       modifier = Modifier.testTag(SamplerTestTags.SCREEN_CONTAINER),
@@ -144,7 +153,14 @@ fun SamplerScreen(
       PlaybackAndWaveformControls(
           isPlaying = uiState.isPlaying,
           onTogglePlayPause = viewModel::togglePlayPause,
-          onSave = viewModel::saveSampler,
+          onSave = {
+            if (decodedZipPath != null) {
+              viewModel.saveProjectData(decodedZipPath)
+              Log.i("SamplerScreen", "Project saved in $decodedZipPath")
+            } else {
+              Log.w("SamplerScreen", "No project path found for saving")
+            }
+          },
           pitch = uiState.fullPitch,
           tempo = uiState.tempo,
           onPitchChange = viewModel::updatePitch,
@@ -1218,6 +1234,71 @@ fun TimeDisplay(playbackPosition: Float, audioDurationMillis: Int, modifier: Mod
       style = MaterialTheme.typography.bodySmall,
       color = NepTuneTheme.colors.smallText,
       modifier = modifier.testTag(SamplerTestTags.TIME_DISPLAY))
+}
+
+@Composable
+fun InitialSetupDialog(viewModel: SamplerViewModel) {
+  val uiState by viewModel.uiState.collectAsState()
+  AlertDialog(
+      onDismissRequest = {},
+      title = { Text("Setup required") },
+      text = {
+        Column(
+            modifier = Modifier.fillMaxWidth().testTag(SamplerTestTags.INIT_SETUP_CONTAINER),
+            verticalArrangement = Arrangement.spacedBy(16.dp)) {
+              Text("Define the project pitch and tempo", style = MaterialTheme.typography.bodyLarge)
+
+              OutlinedTextField(
+                  value = if (uiState.inputTempo == 0) "" else uiState.inputTempo.toString(),
+                  onValueChange = { newValue ->
+                    newValue.toIntOrNull()?.let { parsed -> viewModel.updateInputTempo(parsed) }
+                  },
+                  label = { Text("Tempo (BPM)") },
+                  keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                  modifier =
+                      Modifier.fillMaxWidth()
+                          .testTag(SamplerTestTags.INIT_TEMPO_SELECTOR)
+                          .onFocusChanged { focusState ->
+                            if (focusState.isFocused) {
+                              viewModel.updateInputTempo(0)
+                            }
+                          })
+
+              PitchSelectorField(
+                  pitchNote = uiState.inputPitchNote,
+                  pitchOctave = uiState.inputPitchOctave,
+                  onPitchUp = { viewModel.increaseInputPitch() },
+                  onPitchDown = { viewModel.decreaseInputPitch() },
+                  modifier = Modifier.testTag(SamplerTestTags.INIT_PITCH_SELECTOR))
+            }
+      },
+      confirmButton = {
+        Button(
+            onClick = viewModel::confirmInitialSetup,
+            modifier = Modifier.testTag(SamplerTestTags.INIT_CONFIRM_BUTTON)) {
+              Text("Confirm")
+            }
+      })
+}
+
+@Composable
+fun PitchSelectorField(
+    pitchNote: String,
+    pitchOctave: Int,
+    onPitchUp: () -> Unit,
+    onPitchDown: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+  Row(
+      modifier = modifier.fillMaxWidth().padding(vertical = 8.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("$pitchNote$pitchOctave", modifier = Modifier.weight(1f))
+        Button(onClick = onPitchUp, modifier = Modifier.testTag("PITCH_UP_BUTTON")) { Text("↑") }
+        Button(onClick = onPitchDown, modifier = Modifier.testTag("PITCH_DOWN_BUTTON")) {
+          Text("↓")
+        }
+      }
 }
 
 @Composable
