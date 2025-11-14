@@ -246,36 +246,6 @@ class StorageServiceTest {
       }
 
   @Test
-  fun getFileNameFromUriWithContentUriAueriesContentResolver() =
-      runBlocking(testDispatcher) {
-        // --- Arrange ---
-        val testFileName = "my-content-file.mp3"
-        val testFile = File(context.cacheDir, testFileName)
-        try {
-          testFile.writeText("dummy audio data")
-        } catch (e: IOException) {
-          Assert.fail("Failed to create test file: ${e.message}")
-        }
-
-        val authority = "${context.packageName}.provider"
-        val contentUri: Uri
-
-        try {
-          contentUri = FileProvider.getUriForFile(context, authority, testFile)
-        } catch (_: Exception) {
-          return@runBlocking
-        }
-
-        // --- Act ---
-        val fileName = storageService.getFileNameFromUri(contentUri)
-
-        // --- Assert ---
-        Assert.assertEquals(testFileName, fileName)
-
-        testFile.delete()
-      }
-
-  @Test
   fun getFileNameFromUriWithContentUriQueriesContentResolver() =
       runBlocking(testDispatcher) {
         // --- Arrange ---
