@@ -54,7 +54,7 @@ class MainViewModel(
     get() = auth.currentUser?.uid?.let { "avatar_$it.jpg" }
 
   private val avatarStoragePath: String?
-    get() = auth.currentUser?.uid?.let { "avatars/$it.jpg" }
+    get() = auth.currentUser?.uid?.let { "profile_pictures/$it.jpg" }
 
   private val _comments = MutableStateFlow<List<Comment>>(emptyList())
   val comments: StateFlow<List<Comment>> = _comments
