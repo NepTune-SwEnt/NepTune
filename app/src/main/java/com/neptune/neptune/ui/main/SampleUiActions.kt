@@ -37,18 +37,17 @@ class SampleUiActions(
   @Throws(IOException::class)
   suspend fun onDownloadClicked(sample: Sample) {
     if (downloadBusy.value) return
-    repo.increaseDownloadCount(sample.id)
     downloadBusy.value = true
     downloadError.value = null
     try {
       val zip = withContext(ioDispatcher) { storageService.downloadZippedSample(sample, context) }
-      withContext(ioDispatcher) { storageService.unzipSample(zip, downloadsFolder) }
+      withContext(ioDispatcher) { storageService.persistZipToDownloads(zip, downloadsFolder) }
+      repo.increaseDownloadCount(sample.id)
     } catch (e: SecurityException) {
       downloadError.value = "Storage permission required: ${e.message}"
     } catch (e: IOException) {
       downloadError.value = "File error: ${e.message}"
     } catch (e: Exception) {
-      downloadError.value = "Download failed: ${e.message}"
       downloadError.value = "Download failed: ${e.message}"
       Log.e("SampleActions", "Download failed", e)
     } finally {

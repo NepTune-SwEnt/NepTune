@@ -49,7 +49,7 @@ class StorageService(val storage: FirebaseStorage) {
    * @throws IllegalArgumentException if no audio or no json file is found
    * @throws java.io.IOException for I/O errors or unsafe paths
    */
-  fun unzipSample(zipFile: File, outputDir: File): File {
+  fun persistZipToDownloads(zipFile: File, outputDir: File): File {
     require(zipFile.isFile) { "zipFile must be a file: ${zipFile.path}" }
 
     var hasAudio = false

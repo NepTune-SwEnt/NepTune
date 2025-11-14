@@ -54,7 +54,7 @@ class SampleUiActionsTest {
 
     verify(repo).increaseDownloadCount(sample.id)
     verify(storageService).downloadZippedSample(sample, context)
-    verify(storageService).unzipSample(zipFile, downloadsFolder)
+    verify(storageService).persistZipToDownloads(zipFile, downloadsFolder)
 
     assertFalse(actions.downloadBusy.value)
     assertNull(actions.downloadError.value)
@@ -78,7 +78,7 @@ class SampleUiActionsTest {
 
     verify(repo, never()).increaseDownloadCount(any())
     verify(storageService, never()).downloadZippedSample(any(), any())
-    verify(storageService, never()).unzipSample(any(), any())
+    verify(storageService, never()).persistZipToDownloads(any(), any())
 
     assertTrue(actions.downloadBusy.value)
     assertNull(actions.downloadError.value)
@@ -103,7 +103,7 @@ class SampleUiActionsTest {
 
     verify(repo).increaseDownloadCount(sample.id)
     verify(storageService).downloadZippedSample(sample, context)
-    verify(storageService, never()).unzipSample(any(), any())
+    verify(storageService, never()).persistZipToDownloads(any(), any())
 
     assertFalse(actions.downloadBusy.value)
 
