@@ -89,6 +89,7 @@ import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.theme.NepTuneTheme
+import com.neptune.neptune.util.formatTime
 
 object MainScreenTestTags : BaseSampleTestTags {
   override val prefix = "MainScreen"
@@ -593,14 +594,28 @@ fun CommentDialog(
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                       items(comments) { comment ->
                         Column {
-                          Text(
-                              text = "${comment.author}:",
-                              style =
-                                  TextStyle(
-                                      fontSize = 18.sp,
-                                      fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                      fontWeight = FontWeight(300),
-                                      color = NepTuneTheme.colors.onBackground))
+                          Row(
+                              verticalAlignment = Alignment.CenterVertically,
+                              horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    text = "${comment.author}:",
+                                    style =
+                                        TextStyle(
+                                            fontSize = 18.sp,
+                                            fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                            fontWeight = FontWeight(300),
+                                            color = NepTuneTheme.colors.onBackground))
+                                Text(
+                                    text = formatTime(comment.timestamp),
+                                    style =
+                                        TextStyle(
+                                            fontSize = 14.sp,
+                                            fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                            fontWeight = FontWeight(300),
+                                            color =
+                                                NepTuneTheme.colors.onBackground.copy(
+                                                    alpha = 0.9f)))
+                              }
                           Text(
                               text = comment.text,
                               style =
