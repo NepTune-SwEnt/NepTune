@@ -28,6 +28,16 @@ class BottomNavigationMenuTest {
         .onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB)
         .assertIsDisplayed()
         .assertIsNotEnabled()
+
+    composeTestRule
+        .onNodeWithTag(NavigationTestTags.SEARCH_TAB)
+        .assertIsDisplayed()
+        .assertIsNotEnabled()
+
+    composeTestRule
+        .onNodeWithTag(NavigationTestTags.IMPORT_FILE_TAB)
+        .assertIsDisplayed()
+        .assertIsNotEnabled()
   }
 
   @Test
@@ -42,6 +52,8 @@ class BottomNavigationMenuTest {
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE_TAB).assertIsDisplayed()
   }
 
   @Test
@@ -56,24 +68,64 @@ class BottomNavigationMenuTest {
     // Assert that the Main tab is marked as selected
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
 
-    // Assert that the Edit tab is NOT selected
+    // Assert that the other tab are NOT selected
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsNotSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsNotSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE_TAB).assertIsNotSelected()
+  }
+
+  @Test
+  fun bottomNavigationMenu_SearchTabIsSelected_whenScreenIsSearchScreen() {
+    composeTestRule.setContent {
+      val navController = rememberNavController()
+      val navigationActions = NavigationActions(navController)
+      // Set the current screen to Search Screen
+      BottomNavigationMenu(screen = Screen.Search, navigationActions = navigationActions)
+    }
+
+    // Assert that the Search tab is marked as selected
+    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsSelected()
+
+    // Assert that the other tab are NOT selected
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsNotSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE_TAB).assertIsNotSelected()
+  }
+
+  @Test
+  fun bottomNavigationMenu_ImportTabIsSelected_whenScreenIsImport() {
+    composeTestRule.setContent {
+      val navController = rememberNavController()
+      val navigationActions = NavigationActions(navController)
+      // Set the current screen to Import
+      BottomNavigationMenu(screen = Screen.ImportFile, navigationActions = navigationActions)
+    }
+
+    // Assert that the Import tab is marked as selected
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE_TAB).assertIsSelected()
+
+    // Assert that the other tab are NOT selected
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsNotSelected()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsNotSelected()
   }
 
   @Test
-  fun bottomNavigationMenu_editTabIsSelected_whenScreenIsEdit() {
+  fun bottomNavigationMenu_ProjectTabIsSelected_whenScreenIsProjectList() {
     composeTestRule.setContent {
       val navController = rememberNavController()
       val navigationActions = NavigationActions(navController)
-      // Set the current screen to Edit
+      // Set the current screen to ProjectList
       BottomNavigationMenu(screen = Screen.ProjectList, navigationActions = navigationActions)
     }
 
-    // Assert that the Edit tab is marked as selected
+    // Assert that the Project tab is marked as selected
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsSelected()
 
-    // Assert that the Main tab is NOT selected
+    // Assert that the other tab are NOT selected
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsNotSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE_TAB).assertIsNotSelected()
   }
 
   @Test

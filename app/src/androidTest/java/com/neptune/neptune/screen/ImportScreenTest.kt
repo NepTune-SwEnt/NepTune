@@ -2,6 +2,7 @@ package com.neptune.neptune.screen
 
 import android.Manifest
 import android.net.Uri
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -41,39 +42,59 @@ class ImportScreenTest {
     every { vm.library } returns libraryFlow as StateFlow<List<MediaItem>>
   }
 
+  private fun launchScreen(
+      recorder: NeptuneRecorder = mockk(relaxed = true),
+      testFile: File? = null,
+      onDeleteFailed: (() -> Unit)? = null,
+      goBack: () -> Unit = {},
+  ) {
+    composeRule.setContent {
+      ImportScreen(
+          vm = vm,
+          recorder = recorder,
+          testRecordedFile = testFile,
+          onDeleteFailed = onDeleteFailed,
+          goBack = goBack,
+      )
+    }
+  }
+
   @Test
   fun topAppBarAndFabAreVisibleInEmptyState() {
-    composeRule.setContent { ImportScreen(vm = vm, recorder = mockk(relaxed = true)) }
+    launchScreen()
+    // Back button
+    composeRule.onNodeWithTag(ImportScreenTestTags.BACK_BUTTON).assertIsDisplayed()
 
-    composeRule.onNodeWithText("Neptune • placeholder").assertIsDisplayed()
+    // Empty list text
     composeRule.onNodeWithText("No projects yet.").assertIsDisplayed()
     composeRule
         .onNodeWithText(
             "Tap “Import audio” to create a .neptune project (zip with config.json + audio).")
         .assertIsDisplayed()
+    // FAB
     composeRule.onNodeWithText("Import audio").assertIsDisplayed()
   }
 
   @Test
   fun whenLibraryIsEmptyHidesEmptyText() {
-    composeRule.setContent { ImportScreen(vm = vm, recorder = mockk(relaxed = true)) }
+    launchScreen()
 
-    composeRule.onNodeWithText("No projects yet.").assertIsDisplayed()
+    composeRule.onNodeWithTag(ImportScreenTestTags.EMPTY_LIST).assertIsDisplayed()
 
     composeRule.runOnIdle { libraryFlow.value = listOf(mockk<MediaItem>(relaxed = true)) }
 
-    composeRule.onNodeWithText("No projects yet.").assertIsNotDisplayed()
+    composeRule.onNodeWithTag(ImportScreenTestTags.EMPTY_LIST).assertIsNotDisplayed()
     composeRule
         .onNodeWithText(
             "Tap “Import audio” to create a .neptune project (zip with config.json + audio).")
         .assertIsNotDisplayed()
-    composeRule.onNodeWithText("Neptune • placeholder").assertIsDisplayed()
+    composeRule.onNodeWithTag(ImportScreenTestTags.BACK_BUTTON).assertIsDisplayed()
     composeRule.onNodeWithText("Import audio").assertIsDisplayed()
   }
 
   @Test
   fun doesNotCallImportWithoutActivityResult() {
-    composeRule.setContent { ImportScreen(vm = vm, recorder = mockk(relaxed = true)) }
+    launchScreen()
 
     verify(exactly = 0) { vm.importFromSaf(any()) }
   }
@@ -82,7 +103,7 @@ class ImportScreenTest {
   fun whenLibraryIsNonEmptyShowsListBranchImmediately() {
     // Start non-empty so the first composition goes straight to ProjectList branch
     libraryFlow.value = listOf(mockk<MediaItem>(relaxed = true))
-    composeRule.setContent { ImportScreen(vm = vm, recorder = mockk(relaxed = true)) }
+    launchScreen()
 
     // Empty-state texts should NOT be visible
     composeRule.onNodeWithText("No projects yet.").assertIsNotDisplayed()
@@ -92,7 +113,6 @@ class ImportScreenTest {
         .assertIsNotDisplayed()
 
     // App bar & FAB still present
-    composeRule.onNodeWithText("Neptune • placeholder").assertIsDisplayed()
     composeRule.onNodeWithText("Import audio").assertIsDisplayed()
   }
 
@@ -100,14 +120,14 @@ class ImportScreenTest {
   fun listBranchThenBackToEmptyRendersEmptyStateAgain() {
     // Start non-empty -> list branch
     libraryFlow.value = listOf(mockk<MediaItem>(relaxed = true))
-    composeRule.setContent { ImportScreen(vm = vm, recorder = mockk(relaxed = true)) }
+    launchScreen()
 
-    composeRule.onNodeWithText("No projects yet.").assertIsNotDisplayed()
+    composeRule.onNodeWithTag(ImportScreenTestTags.EMPTY_LIST).assertIsNotDisplayed()
 
     // Flip to empty -> should recompose to empty branch
     composeRule.runOnIdle { libraryFlow.value = emptyList() }
 
-    composeRule.onNodeWithText("No projects yet.").assertIsDisplayed()
+    composeRule.onNodeWithTag(ImportScreenTestTags.EMPTY_LIST).assertIsDisplayed()
     composeRule
         .onNodeWithText(
             "Tap “Import audio” to create a .neptune project (zip with config.json + audio).")
@@ -117,7 +137,7 @@ class ImportScreenTest {
   @Test
   fun importFromSafCallbackIsTriggered() {
     val fakeUri = Uri.parse("content://some/audio.mp3")
-    composeRule.setContent { ImportScreen(vm = vm, recorder = mockk(relaxed = true)) }
+    launchScreen()
 
     // Simulate that the picker returned a URI manually
     fakeUri.let { vm.importFromSaf(it.toString()) }
@@ -143,7 +163,7 @@ class ImportScreenTest {
               }
         }
 
-    composeRule.setContent { ImportScreen(vm = vm, recorder = recorder) }
+    launchScreen(recorder = recorder)
 
     // Initial state: not recording
     composeRule.onNodeWithTag(ImportScreenTestTags.MIC_ICON, true).assertIsDisplayed()
@@ -171,13 +191,7 @@ class ImportScreenTest {
           override fun delete(): Boolean = false
         }
 
-    composeRule.setContent {
-      ImportScreen(
-          vm = vm,
-          recorder = mockk(relaxed = true),
-          testRecordedFile = fakeFile,
-          onDeleteFailed = { deleteFailedCalled = true })
-    }
+    launchScreen(testFile = fakeFile, onDeleteFailed = { deleteFailedCalled = true })
 
     // The name dialog should be visible because we passed testRecordedFile
     composeRule.onNodeWithTag(ImportScreenTestTags.BUTTON_CANCEL, true).assertIsDisplayed()
@@ -207,9 +221,7 @@ class ImportScreenTest {
           }
         }
 
-    composeRule.setContent {
-      ImportScreen(vm = vm, recorder = mockk(relaxed = true), testRecordedFile = fakeFile)
-    }
+    launchScreen(testFile = fakeFile)
 
     // The confirm button should be visible in the name dialog
     composeRule.onNodeWithTag(ImportScreenTestTags.BUTTON_CREATE, true).assertIsDisplayed()
@@ -220,5 +232,16 @@ class ImportScreenTest {
 
     // Verify that importRecordedFile was called with a file whose name matches the sanitized name
     verify { vm.importRecordedFile(match { it.name == "My_Recording.m4a" }) }
+  }
+
+  /** Verify that the mic button and Import audio button are clickable */
+  @Test
+  fun canClickOnButton() {
+    launchScreen()
+    composeRule.onNodeWithTag(ImportScreenTestTags.BUTTON_RECORD).assertHasClickAction()
+    composeRule
+        .onNodeWithTag(ImportScreenTestTags.IMPORT_AUDIO_BUTTON)
+        .assertHasClickAction()
+        .performClick()
   }
 }
