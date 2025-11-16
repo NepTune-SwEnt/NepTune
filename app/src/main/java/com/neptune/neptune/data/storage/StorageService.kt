@@ -110,7 +110,7 @@ class StorageService(val storage: FirebaseStorage) {
 
     val newStorageZipPath = "samples/${sampleId}.zip"
     val newStorageImagePath =
-        if (localImageUri != null) "samples/${sampleId}/${getFileNameFromUri(localImageUri)}"
+        if (localImageUri != null) "sample_image/${sampleId}/${getFileNameFromUri(localImageUri)}"
         else null
 
     coroutineScope {
