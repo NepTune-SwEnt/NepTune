@@ -1,4 +1,4 @@
-package com.neptune.neptune.ui.mock
+package com.neptune.neptune.ui.picker
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -46,11 +47,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
 import com.neptune.neptune.data.StoragePaths
 import com.neptune.neptune.media.NeptuneRecorder
-import com.neptune.neptune.ui.picker.ImportViewModel
-import com.neptune.neptune.ui.picker.ProjectList
 import java.io.File
 
-object MockImportTestTags {
+object ImportScreenTestTags {
   const val BUTTON_RECORD = "RecordFAB"
   const val MIC_ICON = "MicIcon"
   const val STOP_ICON = "StopIcon"
@@ -70,9 +69,9 @@ private val appTextStyle =
         fontWeight = FontWeight(400))
 
 @SuppressLint("VisibleForTests")
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MockImportScreen(
+fun ImportScreen(
     vm: ImportViewModel = viewModel(),
     recorder: NeptuneRecorder? = null,
     testRecordedFile: File? = null,
@@ -156,7 +155,7 @@ fun MockImportScreen(
               Modifier.padding(padding)
                   .fillMaxSize()
                   .padding(24.dp)
-                  .testTag(MockImportTestTags.EMPTY_LIST)) {
+                  .testTag(ImportScreenTestTags.EMPTY_LIST)) {
                 Text("No projects yet.", style = appTextStyle)
                 Spacer(Modifier.height(8.dp))
                 Text(
@@ -205,14 +204,14 @@ private fun RecordControls(
   Column(horizontalAlignment = Alignment.End) {
     FloatingActionButton(
         onClick = onToggleRecord,
-        modifier = Modifier.padding(bottom = padding).testTag(MockImportTestTags.BUTTON_RECORD)) {
+        modifier = Modifier.padding(bottom = padding).testTag(ImportScreenTestTags.BUTTON_RECORD)) {
           Icon(
               if (isRecording) Icons.Filled.Stop else Icons.Filled.Mic,
               contentDescription = if (isRecording) "Stop recording" else "Start recording",
               modifier =
                   Modifier.testTag(
-                      if (isRecording) MockImportTestTags.STOP_ICON
-                      else MockImportTestTags.MIC_ICON))
+                      if (isRecording) ImportScreenTestTags.STOP_ICON
+                      else ImportScreenTestTags.MIC_ICON))
         }
     ExtendedFloatingActionButton(onClick = onImportAudio) {
       Text("Import audio", style = appTextStyle)
@@ -237,20 +236,21 @@ private fun NameProjectDialog(
           TextField(
               value = projectName,
               onValueChange = onNameChange,
-              modifier = Modifier.fillMaxWidth().testTag(MockImportTestTags.NAME_FIELD))
+              modifier = Modifier.fillMaxWidth().testTag(ImportScreenTestTags.NAME_FIELD))
         }
       },
       confirmButton = {
         Button(
-            modifier = Modifier.testTag(MockImportTestTags.BUTTON_CREATE),
+            modifier = Modifier.testTag(ImportScreenTestTags.BUTTON_CREATE),
             onClick = { onConfirm(projectName) }) {
               Text("Create", style = appTextStyle)
             }
       },
       dismissButton = {
-        Button(modifier = Modifier.testTag(MockImportTestTags.BUTTON_CANCEL), onClick = onCancel) {
-          Text("Cancel / Delete", style = appTextStyle)
-        }
+        Button(
+            modifier = Modifier.testTag(ImportScreenTestTags.BUTTON_CANCEL), onClick = onCancel) {
+              Text("Cancel / Delete", style = appTextStyle)
+            }
       })
 }
 
