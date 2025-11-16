@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavBackStackEntry
 import com.neptune.neptune.R
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
@@ -69,6 +70,7 @@ fun getTabForRoute(route: String?): Tab? {
 fun BottomNavigationMenu(
     screen: Screen = Screen.Main,
     navigationActions: NavigationActions? = null,
+    navBackStackEntry: NavBackStackEntry? = null
 ) {
   if (!screen.showBottomBar) {
     return
@@ -82,6 +84,19 @@ fun BottomNavigationMenu(
         modifier = Modifier.testTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU),
         containerColor = NepTuneTheme.colors.background) {
           tabs.forEach { tab ->
+            val isSelected: Boolean =
+                when (tab.destination) {
+                  Screen.ProjectList -> {
+                    val onProjectListScreen = (screen == Screen.ProjectList)
+                    val purposeIsEdit =
+                        (navBackStackEntry?.arguments?.getString("purpose") == "edit")
+
+                    onProjectListScreen && purposeIsEdit
+                  }
+                  else -> {
+                    tab == getTabForRoute(screen.route)
+                  }
+                }
             NavigationBarItem(
                 icon = {
                   Icon(
@@ -92,7 +107,7 @@ fun BottomNavigationMenu(
                 },
                 alwaysShowLabel = false,
                 label = { Text(tab.name) },
-                selected = tab == getTabForRoute(screen.route),
+                selected = isSelected,
                 onClick = { navigationActions?.navigateTo(tab.destination) },
                 enabled = navigationActions != null,
                 modifier = Modifier.testTag(tab.testTag),

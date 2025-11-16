@@ -107,7 +107,10 @@ fun NeptuneApp(
   CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
     Scaffold(
         bottomBar = {
-          BottomNavigationMenu(navigationActions = navigationActions, screen = currentScreen)
+          BottomNavigationMenu(
+              navigationActions = navigationActions,
+              screen = currentScreen,
+              navBackStackEntry = navBackStackEntry)
         },
         containerColor = NepTuneTheme.colors.background,
         content = { innerPadding ->
