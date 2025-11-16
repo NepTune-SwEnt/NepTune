@@ -51,6 +51,8 @@ import com.neptune.neptune.ui.settings.SettingsViewModelFactory
 import com.neptune.neptune.ui.settings.ThemeDataStore
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.ui.theme.SampleAppTheme
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 class MainActivity : ComponentActivity() {
 
@@ -117,9 +119,9 @@ fun NeptuneApp(
                 composable(Screen.Main.route) {
                   MainScreen(
                       navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
-                      // TODO: Change back to ProjectList when navigation from
-                      // Main->ProjectList->PostScreen is implemented
-                      navigateToProjectList = { navigationActions.navigateTo(Screen.Post) })
+                      navigateToProjectList = {
+                        navigationActions.navigateTo(Screen.ProjectList.route + "?purpose=post")
+                      })
                 }
                 composable(Screen.Profile.route) {
                   ProfileRoute(
@@ -127,7 +129,7 @@ fun NeptuneApp(
                       goBack = { navigationActions.goBack() })
                 }
                 composable(
-                    route = Screen.Edit.route,
+                    route = Screen.Edit.route + "/{zipFilePath}",
                     arguments =
                         listOf(
                             navArgument("zipFilePath") {
@@ -138,23 +140,53 @@ fun NeptuneApp(
                       SamplerScreen(zipFilePath = zipFilePath)
                     }
                 composable(Screen.Search.route) { SearchScreen() }
-                composable(Screen.Post.route) {
-                  PostScreen(
-                      goBack = { navigationActions.goBack() },
-                      navigateToMainScreen = { navigationActions.navigateTo(Screen.Main) })
-                }
+                composable(
+                    route = Screen.Post.route + "?projectId={projectId}",
+                    arguments =
+                        listOf(
+                            navArgument("projectId") {
+                              type = NavType.StringType
+                              nullable = true
+                            })) { backStackEntry ->
+                      val projectId = backStackEntry.arguments?.getString("projectId")
+
+                      PostScreen(
+                          goBack = { navigationActions.goBack() },
+                          navigateToMainScreen = { navigationActions.navigateTo(Screen.Main) },
+                          projectId = projectId)
+                    }
                 composable(Screen.ImportFile.route) { MockImportScreen(importViewModel) }
                 composable(Screen.SignIn.route) {
                   SignInScreen(
                       signInViewModel = signInViewModel,
                       navigateMain = { navigationActions.navigateTo(Screen.Main) })
                 }
-                composable(Screen.ProjectList.route) {
-                  ProjectListScreen(
-                      navigateToSampler = { filePath ->
-                        navigationActions.navigateTo(Screen.Edit.createRoute(filePath))
-                      })
-                }
+                composable(
+                    route = Screen.ProjectList.route + "?purpose={purpose}",
+                    arguments =
+                        listOf(
+                            navArgument("purpose") {
+                              type = NavType.StringType
+                              defaultValue = "edit"
+                            })) { backStackEntry ->
+                      val purpose = backStackEntry.arguments?.getString("purpose") ?: "edit"
+                      ProjectListScreen(
+                          onProjectClick = { projectItem ->
+                            when (purpose) {
+                              "post" -> {
+                                navigationActions.navigateTo(
+                                    Screen.Post.route + "?projectId=${projectItem.uid}")
+                              }
+                              else -> {
+                                val pathToSend = projectItem.projectFilePath ?: projectItem.uid
+                                val encodedFilePath =
+                                    URLEncoder.encode(pathToSend, StandardCharsets.UTF_8.name())
+                                navigationActions.navigateTo(
+                                    Screen.Edit.route + "/$encodedFilePath")
+                              }
+                            }
+                          })
+                    }
                 composable(Screen.Settings.route) {
                   SettingsScreen(
                       goBack = { navigationActions.goBack() },
