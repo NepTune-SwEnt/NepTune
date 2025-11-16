@@ -158,6 +158,14 @@ class PostViewModel(
       }
     }
   }
+
+  /** Switches the visibility of the post between Public (true) and My followers (false). */
+  fun toggleAudience() {
+    _uiState.update { currentState ->
+      val currentSample = currentState.sample
+      currentState.copy(sample = currentSample.copy(isPublic = !currentSample.isPublic))
+    }
+  }
 }
 
 /**
@@ -179,6 +187,5 @@ data class PostUiState(
             comments = 0,
             downloads = 0,
             uriString = ""),
-    val audience: String = "Followers",
     val isUploading: Boolean = false
 )

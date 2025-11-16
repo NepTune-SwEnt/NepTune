@@ -352,7 +352,11 @@ fun PostScreen(
 
               // Audience
               Row(
-                  modifier = Modifier.fillMaxWidth().testTag(PostScreenTestTags.AUDIENCE_ROW),
+                  modifier =
+                      Modifier.fillMaxWidth()
+                          .testTag(PostScreenTestTags.AUDIENCE_ROW)
+                          .clickable { postViewModel.toggleAudience() }
+                          .padding(8.dp),
                   horizontalArrangement = Arrangement.SpaceBetween,
                   verticalAlignment = Alignment.CenterVertically) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -372,7 +376,7 @@ fun PostScreen(
                                   fontSize = 28.sp))
                     }
                     Text(
-                        text = uiState.audience,
+                        text = if (uiState.sample.isPublic) "Public" else "My followers",
                         style =
                             TextStyle(
                                 color = NepTuneTheme.colors.onBackground,
