@@ -48,7 +48,7 @@ class PostViewModel(
     viewModelScope.launch {
       try {
         val project = projectRepository.getProject(projectId)
-        val zipFilePath = project.projectFileUri
+        val zipFilePath = project.projectFilePath
         if (zipFilePath.isNullOrEmpty()) {
           Log.e("PostViewModel", "The project don't have a file")
           return@launch
@@ -56,7 +56,7 @@ class PostViewModel(
         val zipFile = File(zipFilePath)
         localZipUri = zipFile.toUri()
         // TODO: change the durationSeconds to the actual duration of the project
-        val durationSeconds = 21
+        val durationSeconds = 0
         val sample =
             Sample(
                 id = project.uid,
@@ -68,7 +68,7 @@ class PostViewModel(
                 likes = 0,
                 usersLike = emptyList(),
                 comments = 0,
-                downloads = 0) // isPublic button
+                downloads = 0)
 
         _uiState.update { it.copy(sample = sample) }
       } catch (e: Exception) {
