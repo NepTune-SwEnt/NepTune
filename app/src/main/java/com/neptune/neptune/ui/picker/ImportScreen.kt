@@ -7,24 +7,29 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -34,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
@@ -47,9 +53,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
 import com.neptune.neptune.data.StoragePaths
 import com.neptune.neptune.media.NeptuneRecorder
+import com.neptune.neptune.ui.theme.NepTuneTheme
 import java.io.File
 
 object ImportScreenTestTags {
+  const val IMPORT_SCREEN = "ImportScreen"
   const val BUTTON_RECORD = "RecordFAB"
   const val MIC_ICON = "MicIcon"
   const val STOP_ICON = "StopIcon"
@@ -57,17 +65,17 @@ object ImportScreenTestTags {
   const val BUTTON_CANCEL = "ButtonCancel"
   const val EMPTY_LIST = "EmptyList"
   const val NAME_FIELD = "NameField"
+
+  const val IMPORT_AUDIO_BUTTON = "ImportAudioFAB"
+
+  const val BACK_BUTTON = "BackButton"
 }
 
-val padding = 16.dp
-
-// Shared text style used across this screen to match app typography
-private val appTextStyle =
-    TextStyle(
-        fontSize = 19.sp,
-        fontFamily = FontFamily(Font(R.font.markazi_text)),
-        fontWeight = FontWeight(400))
-
+/**
+ * Composable function representing the Import Screen. This has been written with the help of LLMs.
+ *
+ * @author Angéline Bignens
+ */
 @SuppressLint("VisibleForTests")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,16 +83,17 @@ fun ImportScreen(
     vm: ImportViewModel = viewModel(),
     recorder: NeptuneRecorder? = null,
     testRecordedFile: File? = null,
-    onDeleteFailed: (() -> Unit)? = null
+    onDeleteFailed: (() -> Unit)? = null,
+    goBack: () -> Unit,
 ) {
   val items by vm.library.collectAsState(initial = emptyList())
+  val context = LocalContext.current
 
   val pickAudio =
       rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { vm.importFromSaf(it.toString()) }
       }
 
-  val context = LocalContext.current
   val actualRecorder = recorder ?: remember { NeptuneRecorder(context, StoragePaths(context)) }
   var isRecording by remember { mutableStateOf(actualRecorder.isRecording) }
   var hasAudioPermission by remember { mutableStateOf(false) }
@@ -117,7 +126,21 @@ fun ImportScreen(
   }
 
   Scaffold(
-      topBar = { TopAppBar(title = { Text("Neptune • placeholder", style = appTextStyle) }) },
+      topBar = {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+              IconButton(
+                  onClick = goBack,
+                  modifier = Modifier.size(64.dp).testTag(ImportScreenTestTags.BACK_BUTTON)) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBackIosNew,
+                        contentDescription = "Go Back",
+                        modifier = Modifier.size(32.dp),
+                        tint = NepTuneTheme.colors.onBackground)
+                  }
+            }
+      },
       floatingActionButton = {
         RecordControls(
             isRecording = isRecording,
@@ -149,18 +172,32 @@ fun ImportScreen(
               isRecording = actualRecorder.isRecording
             },
             onImportAudio = { pickAudio.launch(arrayOf("audio/*")) })
-      }) { padding ->
+      },
+      containerColor = NepTuneTheme.colors.background) { padding ->
         if (items.isEmpty()) {
           Column(
               Modifier.padding(padding)
                   .fillMaxSize()
-                  .padding(24.dp)
-                  .testTag(ImportScreenTestTags.EMPTY_LIST)) {
-                Text("No projects yet.", style = appTextStyle)
-                Spacer(Modifier.height(8.dp))
+                  .padding(horizontal = 24.dp, vertical = 5.dp)
+                  .testTag(ImportScreenTestTags.IMPORT_SCREEN)) {
+                Text(
+                    "No projects yet.",
+                    modifier = Modifier.testTag(ImportScreenTestTags.EMPTY_LIST),
+                    style =
+                        TextStyle(
+                            fontSize = 25.sp,
+                            fontFamily = FontFamily(Font(R.font.markazi_text)),
+                            fontWeight = FontWeight(400),
+                            color = NepTuneTheme.colors.onBackground))
+                Spacer(Modifier.height(10.dp))
                 Text(
                     "Tap “Import audio” to create a .neptune project (zip with config.json + audio).",
-                    style = appTextStyle)
+                    style =
+                        TextStyle(
+                            fontSize = 21.sp,
+                            fontFamily = FontFamily(Font(R.font.markazi_text)),
+                            fontWeight = FontWeight(400),
+                            color = NepTuneTheme.colors.onBackground.copy(alpha = 0.75f)))
               }
         } else {
           ProjectList(items, Modifier.padding(padding))
@@ -204,18 +241,37 @@ private fun RecordControls(
   Column(horizontalAlignment = Alignment.End) {
     FloatingActionButton(
         onClick = onToggleRecord,
-        modifier = Modifier.padding(bottom = padding).testTag(ImportScreenTestTags.BUTTON_RECORD)) {
+        containerColor = NepTuneTheme.colors.postButton,
+        modifier =
+            Modifier.shadow(
+                    elevation = 4.dp,
+                    spotColor = NepTuneTheme.colors.shadow,
+                    ambientColor = NepTuneTheme.colors.shadow)
+                .padding(bottom = 16.dp)
+                .testTag(ImportScreenTestTags.BUTTON_RECORD)) {
           Icon(
               if (isRecording) Icons.Filled.Stop else Icons.Filled.Mic,
               contentDescription = if (isRecording) "Stop recording" else "Start recording",
               modifier =
-                  Modifier.testTag(
-                      if (isRecording) ImportScreenTestTags.STOP_ICON
-                      else ImportScreenTestTags.MIC_ICON))
+                  Modifier.size(32.dp)
+                      .testTag(
+                          if (isRecording) ImportScreenTestTags.STOP_ICON
+                          else ImportScreenTestTags.MIC_ICON),
+              tint = NepTuneTheme.colors.onBackground)
         }
-    ExtendedFloatingActionButton(onClick = onImportAudio) {
-      Text("Import audio", style = appTextStyle)
-    }
+    ExtendedFloatingActionButton(
+        onClick = onImportAudio,
+        containerColor = NepTuneTheme.colors.postButton,
+        modifier = Modifier.testTag(ImportScreenTestTags.IMPORT_AUDIO_BUTTON)) {
+          Text(
+              "Import audio",
+              style =
+                  TextStyle(
+                      fontSize = 28.sp,
+                      fontFamily = FontFamily(Font(R.font.markazi_text)),
+                      fontWeight = FontWeight(400),
+                      color = NepTuneTheme.colors.onBackground))
+        }
   }
 }
 
@@ -228,28 +284,80 @@ private fun NameProjectDialog(
 ) {
   AlertDialog(
       onDismissRequest = onCancel,
-      title = { Text("Name project", style = appTextStyle) },
+      containerColor = NepTuneTheme.colors.listBackground,
+      title = {
+        Text(
+            "Name project",
+            style =
+                TextStyle(
+                    fontSize = 26.sp,
+                    fontFamily = FontFamily(Font(R.font.markazi_text)),
+                    fontWeight = FontWeight(500),
+                    color = NepTuneTheme.colors.onBackground))
+      },
       text = {
         Column {
-          Text("Enter a name for the new project", style = appTextStyle)
+          Text(
+              "Enter a name for the new project",
+              style =
+                  TextStyle(
+                      fontSize = 21.sp,
+                      fontFamily = FontFamily(Font(R.font.markazi_text)),
+                      fontWeight = FontWeight(300),
+                      color = NepTuneTheme.colors.onBackground.copy(0.9f)))
           Spacer(Modifier.height(8.dp))
           TextField(
               value = projectName,
               onValueChange = onNameChange,
-              modifier = Modifier.fillMaxWidth().testTag(ImportScreenTestTags.NAME_FIELD))
+              modifier = Modifier.fillMaxWidth().testTag(ImportScreenTestTags.NAME_FIELD),
+              textStyle =
+                  TextStyle(
+                      fontSize = 20.sp,
+                      fontFamily = FontFamily(Font(R.font.markazi_text)),
+                      color = NepTuneTheme.colors.onBackground),
+              colors =
+                  TextFieldDefaults.colors(
+                      focusedContainerColor = NepTuneTheme.colors.background,
+                      unfocusedContainerColor = NepTuneTheme.colors.background,
+                      focusedIndicatorColor = NepTuneTheme.colors.accentPrimary,
+                      unfocusedIndicatorColor = NepTuneTheme.colors.onBackground,
+                      focusedTextColor = NepTuneTheme.colors.onBackground,
+                      unfocusedTextColor = NepTuneTheme.colors.onBackground,
+                      cursorColor = NepTuneTheme.colors.accentPrimary))
         }
       },
       confirmButton = {
         Button(
             modifier = Modifier.testTag(ImportScreenTestTags.BUTTON_CREATE),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = NepTuneTheme.colors.soundWave,
+                    contentColor = NepTuneTheme.colors.background),
             onClick = { onConfirm(projectName) }) {
-              Text("Create", style = appTextStyle)
+              Text(
+                  "Create",
+                  style =
+                      TextStyle(
+                          fontSize = 22.sp,
+                          fontFamily = FontFamily(Font(R.font.markazi_text)),
+                          fontWeight = FontWeight(400)))
             }
       },
       dismissButton = {
         Button(
-            modifier = Modifier.testTag(ImportScreenTestTags.BUTTON_CANCEL), onClick = onCancel) {
-              Text("Cancel / Delete", style = appTextStyle)
+            modifier = Modifier.testTag(ImportScreenTestTags.BUTTON_CANCEL),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = NepTuneTheme.colors.soundWave,
+                    contentColor = NepTuneTheme.colors.background),
+            onClick = onCancel) {
+              Text(
+                  "Cancel / Delete",
+                  style =
+                      TextStyle(
+                          fontSize = 22.sp,
+                          fontFamily = FontFamily(Font(R.font.markazi_text)),
+                          fontWeight = FontWeight(400)))
             }
       })
 }
