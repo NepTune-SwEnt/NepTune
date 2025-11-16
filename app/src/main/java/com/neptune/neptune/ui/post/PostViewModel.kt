@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
 import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.R
@@ -74,7 +75,8 @@ class PostViewModel(
                 likes = 0,
                 usersLike = emptyList(),
                 comments = 0,
-                downloads = 0)
+                downloads = 0,
+                ownerId = FirebaseAuth.getInstance().currentUser?.uid ?: "")
 
         _uiState.update { it.copy(sample = sample) }
       } catch (e: Exception) {
@@ -157,7 +159,7 @@ class PostViewModel(
     viewModelScope.launch {
       try {
         storageService.uploadSampleFiles(_uiState.value.sample, localZipUri, localImageUri.value)
-          _uiState.update { it.copy(isUploading = false, postComplete = true) }
+        _uiState.update { it.copy(isUploading = false, postComplete = true) }
       } catch (e: Exception) {
         Log.e("PostViewModel", "error on upload", e)
         _uiState.update { it.copy(isUploading = false) }
