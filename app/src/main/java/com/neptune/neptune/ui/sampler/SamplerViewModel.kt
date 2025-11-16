@@ -484,7 +484,9 @@ open class SamplerViewModel() : ViewModel() {
   open fun loadProjectData(zipFilePath: String) {
     viewModelScope.launch {
       try {
-        val zipFile = File(zipFilePath)
+          val cleanPath =
+              zipFilePath.removePrefix("file:").removePrefix("file://")
+          val zipFile = File(cleanPath)
         val metadata: SamplerProjectMetadata = extractor.extractMetadata(zipFile)
         val audioFileName = metadata.audioFiles.firstOrNull()?.name
 
