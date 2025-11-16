@@ -55,19 +55,20 @@ open class NavigationActions(
    * @return The current screen
    */
   fun currentScreen(route: String?): Screen {
-    return when (route) {
-      Screen.Main.route -> Screen.Main
-      Screen.Edit.route -> Screen.Edit
-      Screen.Profile.route -> Screen.Profile
-      Screen.Search.route -> Screen.Search
-      Screen.Post.route -> Screen.Post
-      Screen.SignIn.route -> Screen.SignIn
-      Screen.ProjectList.route -> Screen.ProjectList
-      Screen.Settings.route -> Screen.Settings
-      Screen.SettingsTheme.route -> Screen.SettingsTheme
-      Screen.SettingsAccount.route -> Screen.SettingsAccount
-      Screen.ImportFile.route -> Screen.ImportFile
-      Screen.OtherUserProfile.route -> Screen.OtherUserProfile
+    return when {
+      route == null -> Screen.SignIn // Sécurité
+      route.startsWith("edit_screen/") -> Screen.Edit
+      route.startsWith(Screen.Post.route) -> Screen.Post
+      route.startsWith(Screen.ProjectList.route) -> Screen.ProjectList
+      route == Screen.Main.route -> Screen.Main
+      route == Screen.Profile.route -> Screen.Profile
+      route == Screen.Search.route -> Screen.Search
+      route == Screen.SignIn.route -> Screen.SignIn
+      route == Screen.Settings.route -> Screen.Settings
+      route == Screen.SettingsTheme.route -> Screen.SettingsTheme
+      route == Screen.SettingsAccount.route -> Screen.SettingsAccount
+      route == Screen.ImportFile.route -> Screen.ImportFile
+      route == Screen.OtherUserProfile.route -> Screen.OtherUserProfile
       else -> Screen.SignIn
     }
   }
