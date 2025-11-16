@@ -48,12 +48,18 @@ class PostViewModel(
     viewModelScope.launch {
       try {
         val project = projectRepository.getProject(projectId)
-        val zipFilePath = project.projectFilePath
-        if (zipFilePath.isNullOrEmpty()) {
+        val rawPath = project.projectFilePath
+        if (rawPath.isNullOrEmpty()) {
           Log.e("PostViewModel", "The project don't have a file")
           return@launch
         }
-        val zipFile = File(zipFilePath)
+        val cleanPath =
+            if (rawPath.startsWith("file:")) {
+              rawPath.toUri().path ?: rawPath
+            } else {
+              rawPath
+            }
+        val zipFile = File(cleanPath)
         localZipUri = zipFile.toUri()
         // TODO: change the durationSeconds to the actual duration of the project
         val durationSeconds = 0
@@ -151,9 +157,9 @@ class PostViewModel(
     viewModelScope.launch {
       try {
         storageService.uploadSampleFiles(_uiState.value.sample, localZipUri, localImageUri.value)
+          _uiState.update { it.copy(isUploading = false, postComplete = true) }
       } catch (e: Exception) {
         Log.e("PostViewModel", "error on upload", e)
-      } finally {
         _uiState.update { it.copy(isUploading = false) }
       }
     }
@@ -172,7 +178,8 @@ class PostViewModel(
  * Represents the UI state of the Post screen
  *
  * @property sample The sample being posted
- * @property audience The selected audience for the post
+ * @property isUploading Indicates if the post is currently being uploaded
+ * @property postComplete Indicates if the post has been successfully completed
  */
 data class PostUiState(
     val sample: Sample =
@@ -187,5 +194,6 @@ data class PostUiState(
             comments = 0,
             downloads = 0,
             uriString = ""),
-    val isUploading: Boolean = false
+    val isUploading: Boolean = false,
+    val postComplete: Boolean = false
 )

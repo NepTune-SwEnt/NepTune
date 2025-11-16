@@ -117,6 +117,11 @@ fun PostScreen(
       postViewModel.loadProject(projectId)
     }
   }
+  LaunchedEffect(uiState.postComplete) {
+    if (uiState.postComplete) {
+      navigateToMainScreen()
+    }
+  }
 
   val mediaPlayer = LocalMediaPlayer.current
 
@@ -389,10 +394,7 @@ fun PostScreen(
 
               // Post Button
               Button(
-                  onClick = {
-                    postViewModel.submitPost()
-                    navigateToMainScreen()
-                  },
+                  onClick = { postViewModel.submitPost() },
                   enabled = uiState.sample.name.isNotBlank() && !uiState.isUploading,
                   modifier =
                       Modifier.fillMaxWidth().height(55.dp).testTag(PostScreenTestTags.POST_BUTTON),
