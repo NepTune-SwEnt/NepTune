@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -50,6 +51,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,6 +92,9 @@ import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.formatTime
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 object MainScreenTestTags : BaseSampleTestTags {
   override val prefix = "MainScreen"
@@ -559,6 +564,8 @@ fun CommentDialog(
     onAddComment: (sampleId: String, commentText: String) -> Unit
 ) {
   var commentText by remember { mutableStateOf("") }
+  val listScrollingState = rememberLazyListState()
+  val coroutineScope = rememberCoroutineScope()
 
   Dialog(onDismissRequest = onDismiss) {
     Card(
@@ -585,6 +592,7 @@ fun CommentDialog(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp))
 
                 LazyColumn(
+                    state = listScrollingState,
                     modifier =
                         Modifier.weight(1f)
                             .fillMaxWidth()
@@ -666,6 +674,10 @@ fun CommentDialog(
                             if (commentText.isNotBlank()) {
                               onAddComment(sampleId, commentText)
                               commentText = ""
+                              coroutineScope.launch {
+                                delay(1000)
+                                listScrollingState.animateScrollToItem(comments.size)
+                              }
                             }
                           },
                           shape = RoundedCornerShape(15.dp),
