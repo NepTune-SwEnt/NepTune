@@ -1,9 +1,12 @@
 package com.neptune.neptune.ui.post
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.neptune.neptune.data.ImageStorageRepository
+import com.neptune.neptune.model.project.TotalProjectItemsRepository
+import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.model.sample.Sample
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +20,10 @@ import kotlinx.coroutines.launch
  *
  * @author Angéline Bignens
  */
-class PostViewModel() : ViewModel() {
+class PostViewModel(
+    private val projectRepository: TotalProjectItemsRepository =
+        TotalProjectItemsRepositoryProvider.repository,
+) : ViewModel() {
   private val _uiState = MutableStateFlow(PostUiState())
   val uiState: StateFlow<PostUiState> = _uiState.asStateFlow()
 
@@ -26,6 +32,31 @@ class PostViewModel() : ViewModel() {
 
   private val imageRepo = ImageStorageRepository()
 
+  /** Loads a project by its ID and converts it into a Sample. */
+  fun loadProject(projectId: String) {
+    viewModelScope.launch {
+      try {
+        val project = projectRepository.getProject(projectId)
+
+        val sample =
+            Sample(
+                id = project.uid,
+                name = project.name,
+                description = project.description,
+                tags = project.tags,
+                durationSeconds = 0,
+                uriString = project.projectFileUri ?: "",
+                likes = 0,
+                usersLike = emptyList(),
+                comments = 0,
+                downloads = 0) // isPublic button
+
+        _uiState.update { it.copy(sample = sample) }
+      } catch (e: Exception) {
+        Log.e("PostViewModel", "Error when downloading the project", e)
+      }
+    }
+  }
   /**
    * Loads a sample
    *

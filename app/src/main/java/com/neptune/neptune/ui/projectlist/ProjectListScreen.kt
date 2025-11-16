@@ -66,8 +66,6 @@ import com.neptune.neptune.R
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.ui.theme.NepTuneTheme
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import kotlinx.coroutines.runBlocking
 
 object ProjectListScreenTestTags {
@@ -92,7 +90,7 @@ private const val SEARCHBAR_FONT_SIZE = 21
  * LLMs.
  *
  * @param credentialManager Manages user credentials.
- * @param navigateToSampler Lambda function to navigate to the sampler screen.
+ * @param onProjectClick Lambda function to navigate.
  * @param projectListViewModel ViewModel managing the state of the project list.
  * @author Uri Jaquet
  */
@@ -100,7 +98,7 @@ private const val SEARCHBAR_FONT_SIZE = 21
 @Composable
 fun ProjectListScreen(
     credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
-    navigateToSampler: (zipFilePath: String) -> Unit = {},
+    onProjectClick: (ProjectItem) -> Unit = {},
     projectListViewModel: ProjectListViewModel = viewModel(),
 ) {
   val uiState by projectListViewModel.uiState.collectAsState()
@@ -133,7 +131,7 @@ fun ProjectListScreen(
                   selectedProject = selectedProjects,
                   modifier = Modifier.padding(it),
                   projectListViewModel = projectListViewModel,
-                  navigateToSampler = navigateToSampler)
+                  onProjectClick = onProjectClick)
             }
       })
 }
@@ -145,7 +143,7 @@ fun ProjectListScreen(
  * @param selectedProject ID of the currently selected project, if any.
  * @param modifier Modifier for styling.
  * @param projectListViewModel ViewModel managing the state of the project list.
- * @param navigateToSampler Lambda function to navigate to the sampler screen.
+ * @param onProjectClick Lambda function to navigate.
  * @author Uri Jaquet
  */
 @Composable
@@ -154,7 +152,7 @@ fun ProjectList(
     projects: List<ProjectItem>,
     selectedProject: String? = null,
     projectListViewModel: ProjectListViewModel,
-    navigateToSampler: (zipFilePath: String) -> Unit = {},
+    onProjectClick: (ProjectItem) -> Unit = {},
 ) {
   val colorSearchBar = NepTuneTheme.colors.searchBar
   Column(
@@ -173,7 +171,7 @@ fun ProjectList(
           ProjectListItem(
               project = project,
               selectedProject = selectedProject,
-              openProject = navigateToSampler,
+              onProjectClick = onProjectClick,
               projectListViewModel = projectListViewModel)
         }
       }
@@ -187,7 +185,7 @@ fun ProjectList(
  *
  * @param project The ProjectItem to display.
  * @param selectedProject ID of the currently selected project, if any.
- * @param openProject Lambda function to open the selected project.
+ * @param onProjectClick Lambda function to open the selected project.
  * @param projectListViewModel ViewModel managing the state of the project list.
  * @author Uri Jaquet
  */
@@ -195,7 +193,7 @@ fun ProjectList(
 fun ProjectListItem(
     project: ProjectItem,
     selectedProject: String? = null,
-    openProject: (zipFilePath: String) -> Unit = {},
+    onProjectClick: (ProjectItem) -> Unit = {},
     projectListViewModel: ProjectListViewModel,
 ) {
   val backGroundColor =
@@ -209,10 +207,7 @@ fun ProjectListItem(
               .clickable(
                   onClick = {
                     projectListViewModel.selectProject(project)
-                    val pathToSend = project.projectFilePath ?: project.uid
-                    val encodedFilePath =
-                        URLEncoder.encode(pathToSend, StandardCharsets.UTF_8.name())
-                    openProject(encodedFilePath)
+                    onProjectClick(project)
                   })
               .drawBehind {
                 drawLine(
@@ -536,14 +531,14 @@ fun SearchBar(
  * Preview function for the ProjectListScreen composable.
  *
  * @param navigateBack Lambda function to navigate back (default is empty).
- * @param navigateToSampler Lambda function to navigate to the sampler screen (default is empty).
+ * @param onProjectClick Lambda function to navigate to the sampler screen (default is empty).
  * @author Uri Jaquet
  */
 @Preview
 @Composable
 fun ProjectListScreenPreview(
     navigateBack: () -> Unit = {},
-    navigateToSampler: (zipFilePath: String) -> Unit = {},
+    onProjectClick: (ProjectItem) -> Unit = {},
 ) {
   val repo = TotalProjectItemsRepositoryProvider.repository
   runBlocking {
@@ -576,5 +571,5 @@ fun ProjectListScreenPreview(
   }
   val vm = ProjectListViewModel(projectRepository = repo)
 
-  ProjectListScreen(projectListViewModel = vm, navigateToSampler = navigateToSampler)
+  ProjectListScreen(projectListViewModel = vm, onProjectClick = onProjectClick)
 }

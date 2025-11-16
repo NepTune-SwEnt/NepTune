@@ -90,8 +90,8 @@ object PostScreenTestTags {
 @Composable
 fun PostScreen(
     goBack: () -> Unit = {},
-    navigateToProjectList: () -> Unit = {},
     navigateToMainScreen: () -> Unit = {},
+    projectId: String? = null,
     postViewModel: PostViewModel = viewModel()
 ) {
   val uiState by postViewModel.uiState.collectAsState()
@@ -112,6 +112,12 @@ fun PostScreen(
     tagText = text
     selectionTagText = TextRange(text.length)
   }
+  LaunchedEffect(projectId) {
+    if (projectId != null) {
+      postViewModel.loadProject(projectId)
+    }
+  }
+
   val mediaPlayer = LocalMediaPlayer.current
 
   Scaffold(
@@ -134,35 +140,6 @@ fun PostScreen(
                     contentDescription = "Back",
                     tint = NepTuneTheme.colors.onBackground)
               }
-            },
-            // Select Project Box
-            actions = {
-              Button(
-                  onClick = navigateToProjectList,
-                  colors =
-                      ButtonDefaults.buttonColors(
-                          containerColor = NepTuneTheme.colors.listBackground,
-                          contentColor = NepTuneTheme.colors.searchBar),
-                  shape = RoundedCornerShape(8.dp),
-                  contentPadding = PaddingValues(start = 10.dp),
-                  modifier =
-                      Modifier.height(40.dp)
-                          .width(320.dp)
-                          .padding(end = 20.dp)
-                          .testTag(PostScreenTestTags.SELECT_PROJECT_BUTTON)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Start,
-                        modifier = Modifier.fillMaxWidth()) {
-                          Text(
-                              "Select another Project",
-                              style =
-                                  TextStyle(
-                                      fontSize = 25.sp,
-                                      fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                      fontWeight = FontWeight(200)))
-                        }
-                  }
             },
             colors =
                 TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -458,10 +435,6 @@ fun ProjectListScreenPreview() {
   val fakeMediaPlayer = NeptuneMediaPlayer()
 
   CompositionLocalProvider(LocalMediaPlayer provides fakeMediaPlayer) {
-    PostScreen(
-        goBack = {},
-        navigateToProjectList = {},
-        navigateToMainScreen = {},
-        postViewModel = previewViewModel)
+    PostScreen(goBack = {}, navigateToMainScreen = {}, postViewModel = previewViewModel)
   }
 }
