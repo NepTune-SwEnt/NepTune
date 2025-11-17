@@ -73,6 +73,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -446,6 +447,8 @@ fun SampleCard(
                 Text(
                     text = sample.name,
                     color = NepTuneTheme.colors.onBackground,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.testTag(testTags.SAMPLE_USERNAME),
                     style =
                         TextStyle(
@@ -474,7 +477,10 @@ fun SampleCard(
                 Text(
                     sample.name,
                     color = NepTuneTheme.colors.onBackground,
-                    modifier = Modifier.padding(start = 6.dp).testTag(testTags.SAMPLE_NAME),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier =
+                        Modifier.padding(start = 6.dp).weight(1f).testTag(testTags.SAMPLE_NAME),
                     style =
                         TextStyle(
                             fontSize = 10.sp,
