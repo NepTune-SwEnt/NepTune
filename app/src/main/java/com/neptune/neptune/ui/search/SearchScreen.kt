@@ -139,8 +139,8 @@ fun ScrollableColumnOfSamples(
     searchViewModel: SearchViewModel,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
     searchText: String = "",
-    likedSamples: Map<Int, Boolean> = emptyMap(),
-    activeCommentSampleId: Int? = null,
+    likedSamples: Map<String, Boolean> = emptyMap(),
+    activeCommentSampleId: String? = null,
     comments: List<Comment> = emptyList(),
 ) {
   // Ensure the possibility to like in local
@@ -156,7 +156,7 @@ fun ScrollableColumnOfSamples(
         items(samples) { sample ->
           // change height and width if necessary
           val testTags = SearchScreenTestTagsPerSampleCard(idInColumn = sample.id)
-          val isLiked = likedSamples[sample.id.toInt()] == true
+          val isLiked = likedSamples[sample.id] == true
           val actions =
               onClickFunctions(
                   onDownloadClick = { searchViewModel.onDownloadSample(sample) },
@@ -169,16 +169,16 @@ fun ScrollableColumnOfSamples(
               sample = sample,
               width = width,
               clickHandlers = actions,
-              isLiked = likedSamples[sample.id.toInt()] == true,
+              isLiked = likedSamples[sample.id] == true,
               testTags = testTags,
               mediaPlayer = mediaPlayer)
         }
       } // Comment Overlay
   if (activeCommentSampleId != null) {
     CommentDialog(
-        sampleId = activeCommentSampleId.toString(),
+        sampleId = activeCommentSampleId,
         comments = comments,
         onDismiss = { searchViewModel.resetCommentSampleId() },
-        onAddComment = { id, text -> searchViewModel.onAddComment(id.toInt(), text) })
+        onAddComment = { id, text -> searchViewModel.onAddComment(id, text) })
   }
 }
