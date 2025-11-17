@@ -89,11 +89,10 @@ fun BottomNavigationMenu(
                   Screen.ProjectList -> {
                     val onProjectListScreen = (screen == Screen.ProjectList)
                     val purposeIsEdit = (currentScreenArguments?.getString("purpose") == "edit")
-
                     onProjectListScreen && purposeIsEdit
                   }
                   else -> {
-                    tab == getTabForRoute(screen.route)
+                    tab.destination.route == screen.route
                   }
                 }
             NavigationBarItem(
@@ -107,7 +106,13 @@ fun BottomNavigationMenu(
                 alwaysShowLabel = false,
                 label = { Text(tab.name) },
                 selected = isSelected,
-                onClick = { navigationActions?.navigateTo(tab.destination) },
+                onClick = {
+                  if (tab.destination == Screen.ProjectList) {
+                    navigationActions?.navigateTo(Screen.ProjectList.createRoute("edit"))
+                  } else {
+                    navigationActions?.navigateTo(tab.destination)
+                  }
+                },
                 enabled = navigationActions != null,
                 modifier = Modifier.testTag(tab.testTag),
                 colors =

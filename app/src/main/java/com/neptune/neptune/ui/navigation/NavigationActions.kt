@@ -20,9 +20,13 @@ sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
 
   object Search : Screen(route = "search")
 
-  object Post : Screen(route = "post")
+  object Post : Screen(route = "post/{projectId}") {
+    fun createRoute(projectId: String): String = "post/$projectId"
+  }
 
-  object ProjectList : Screen(route = "project_list")
+  object ProjectList : Screen(route = "project_list/{purpose}") {
+    fun createRoute(purpose: String): String = "project_list/$purpose"
+  }
 
   object Profile : Screen(route = "profile", showBottomBar = false)
 
@@ -56,10 +60,10 @@ open class NavigationActions(
    */
   fun currentScreen(route: String?): Screen {
     return when {
-      route == null -> Screen.SignIn // Sécurité
+      route == null -> Screen.SignIn
       route.startsWith("edit_screen/") -> Screen.Edit
-      route.startsWith(Screen.Post.route) -> Screen.Post
-      route.startsWith(Screen.ProjectList.route) -> Screen.ProjectList
+      route.startsWith("post/") -> Screen.Post
+      route.startsWith("project_list/") -> Screen.ProjectList
       route == Screen.Main.route -> Screen.Main
       route == Screen.Profile.route -> Screen.Profile
       route == Screen.Search.route -> Screen.Search

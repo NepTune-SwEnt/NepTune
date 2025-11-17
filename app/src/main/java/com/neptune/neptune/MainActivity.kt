@@ -144,7 +144,7 @@ fun NeptuneApp(
                     }
                 composable(Screen.Search.route) { SearchScreen() }
                 composable(
-                    route = Screen.Post.route + "?projectId={projectId}",
+                    route = Screen.Post.route,
                     arguments =
                         listOf(
                             navArgument("projectId") {
@@ -165,7 +165,7 @@ fun NeptuneApp(
                       navigateMain = { navigationActions.navigateTo(Screen.Main) })
                 }
                 composable(
-                    route = Screen.ProjectList.route + "?purpose={purpose}",
+                    route = Screen.ProjectList.route,
                     arguments =
                         listOf(
                             navArgument("purpose") {
@@ -178,7 +178,7 @@ fun NeptuneApp(
                             when (purpose) {
                               "post" -> {
                                 navigationActions.navigateTo(
-                                    Screen.Post.route + "?projectId=${projectItem.uid}")
+                                    Screen.Post.createRoute(projectItem.uid))
                               }
                               else -> {
                                 val pathToSend = projectItem.projectFilePath ?: projectItem.uid
