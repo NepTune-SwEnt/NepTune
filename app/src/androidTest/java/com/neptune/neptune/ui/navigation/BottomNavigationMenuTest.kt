@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.navigation
 
+import android.os.Bundle
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
@@ -62,17 +63,19 @@ class BottomNavigationMenuTest {
 
   @Test
   fun bottomNavigationMenu_editTabIsSelected_whenScreenIsEdit() {
+    val args = Bundle().apply { putString("purpose", "edit") }
+
     composeTestRule.setContent {
       val navController = rememberNavController()
       val navigationActions = NavigationActions(navController)
-      // Set the current screen to Edit
-      BottomNavigationMenu(screen = Screen.ProjectList, navigationActions = navigationActions)
+
+      BottomNavigationMenu(
+          screen = Screen.ProjectList,
+          navigationActions = navigationActions,
+          currentScreenArguments = args)
     }
 
-    // Assert that the Edit tab is marked as selected
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsSelected()
-
-    // Assert that the Main tab is NOT selected
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
   }
 

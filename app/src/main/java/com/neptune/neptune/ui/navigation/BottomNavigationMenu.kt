@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.navigation
 
+import android.os.Bundle
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
@@ -14,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavBackStackEntry
 import com.neptune.neptune.R
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
@@ -70,7 +70,7 @@ fun getTabForRoute(route: String?): Tab? {
 fun BottomNavigationMenu(
     screen: Screen = Screen.Main,
     navigationActions: NavigationActions? = null,
-    navBackStackEntry: NavBackStackEntry? = null
+    currentScreenArguments: Bundle? = null
 ) {
   if (!screen.showBottomBar) {
     return
@@ -88,8 +88,7 @@ fun BottomNavigationMenu(
                 when (tab.destination) {
                   Screen.ProjectList -> {
                     val onProjectListScreen = (screen == Screen.ProjectList)
-                    val purposeIsEdit =
-                        (navBackStackEntry?.arguments?.getString("purpose") == "edit")
+                    val purposeIsEdit = (currentScreenArguments?.getString("purpose") == "edit")
 
                     onProjectListScreen && purposeIsEdit
                   }

@@ -69,10 +69,7 @@ class PostScreenTest {
     composeTestRule.setContent {
       CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
         PostScreen(
-            goBack = goBack,
-            navigateToProjectList = navigateToProjectList,
-            navigateToMainScreen = navigateToMainScreen,
-            postViewModel = viewModel)
+            goBack = goBack, navigateToMainScreen = navigateToMainScreen, postViewModel = viewModel)
       }
     }
   }

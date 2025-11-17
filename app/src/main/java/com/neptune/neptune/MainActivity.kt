@@ -110,7 +110,7 @@ fun NeptuneApp(
           BottomNavigationMenu(
               navigationActions = navigationActions,
               screen = currentScreen,
-              navBackStackEntry = navBackStackEntry)
+              currentScreenArguments = navBackStackEntry?.arguments)
         },
         containerColor = NepTuneTheme.colors.background,
         content = { innerPadding ->
