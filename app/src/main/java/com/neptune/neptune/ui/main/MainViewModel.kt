@@ -36,7 +36,8 @@ class MainViewModel(
     private val repo: SampleRepository = SampleRepositoryProvider.repository,
     context: Context,
     private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
-    private val storageService: StorageService? = null,
+    private var storageService: StorageService =
+        StorageService(FirebaseStorage.getInstance(context.getString(R.string.storage_path))),
     private val useMockData: Boolean = false,
     downloadsFolder: File =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
@@ -48,14 +49,6 @@ class MainViewModel(
       if (useMockData) {
         null
       } else {
-        val storageService =
-            storageService
-                ?: run {
-                  val storage =
-                      FirebaseStorage.getInstance(context.getString(R.string.storage_path))
-                  StorageService(storage)
-                }
-
         SampleUiActions(repo, storageService, downloadsFolder, context)
       }
 
@@ -124,7 +117,7 @@ class MainViewModel(
       val fileName = avatarFileName
 
       if (storagePath != null && fileName != null) {
-        val downloadUrl = storageService?.getDownloadUrl(storagePath)
+        val downloadUrl = storageService.getDownloadUrl(storagePath)
 
         if (downloadUrl != null) {
           imageRepo.saveImageFromUrl(downloadUrl, fileName)
