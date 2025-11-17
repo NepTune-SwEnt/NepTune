@@ -30,6 +30,14 @@ import kotlinx.coroutines.launch
 class PostViewModel(
     private val projectRepository: TotalProjectItemsRepository =
         TotalProjectItemsRepositoryProvider.repository,
+    private val storageService: StorageService? =
+        StorageService(
+            FirebaseStorage.getInstance(
+                NepTuneApplication.appContext.getString(
+                    R.string
+                        .storage_path))), // Make nullable or provide a default if needed, but
+                                          // injection is key
+    private val imageRepo: ImageStorageRepository = ImageStorageRepository()
 ) : ViewModel() {
   private val _uiState = MutableStateFlow(PostUiState())
   val uiState: StateFlow<PostUiState> = _uiState.asStateFlow()
@@ -37,12 +45,7 @@ class PostViewModel(
   private val _localImageUri = MutableStateFlow<Uri?>(null)
   val localImageUri: StateFlow<Uri?> = _localImageUri.asStateFlow()
 
-  private val imageRepo = ImageStorageRepository()
-
   private lateinit var localZipUri: Uri
-  private val storage =
-      FirebaseStorage.getInstance(NepTuneApplication.appContext.getString(R.string.storage_path))
-  private val storageService = StorageService(storage)
 
   /** Loads a project by its ID and converts it into a Sample. */
   fun loadProject(projectId: String) {
@@ -158,7 +161,7 @@ class PostViewModel(
     _uiState.update { it.copy(isUploading = true) }
     viewModelScope.launch {
       try {
-        storageService.uploadSampleFiles(_uiState.value.sample, localZipUri, localImageUri.value)
+        storageService?.uploadSampleFiles(_uiState.value.sample, localZipUri, localImageUri.value)
         _uiState.update { it.copy(isUploading = false, postComplete = true) }
       } catch (e: Exception) {
         Log.e("PostViewModel", "error on upload", e)

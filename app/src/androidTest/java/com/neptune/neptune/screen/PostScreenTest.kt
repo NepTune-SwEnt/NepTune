@@ -61,10 +61,7 @@ class PostScreenTest {
     mediaPlayer = NeptuneMediaPlayer()
   }
 
-  private fun setContent(
-      goBack: () -> Unit = {},
-      navigateToMainScreen: () -> Unit = {}
-  ) {
+  private fun setContent(goBack: () -> Unit = {}, navigateToMainScreen: () -> Unit = {}) {
     composeTestRule.setContent {
       CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
         PostScreen(
