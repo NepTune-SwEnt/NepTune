@@ -34,9 +34,8 @@ class PostViewModel(
         StorageService(
             FirebaseStorage.getInstance(
                 NepTuneApplication.appContext.getString(
-                    R.string
-                        .storage_path))), // Make nullable or provide a default if needed, but
-                                          // injection is key
+                    R.string.storage_path))), // Make nullable or provide a default if needed, but
+    // injection is key
     private val imageRepo: ImageStorageRepository = ImageStorageRepository()
 ) : ViewModel() {
   private val _uiState = MutableStateFlow(PostUiState())
