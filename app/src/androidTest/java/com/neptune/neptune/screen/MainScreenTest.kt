@@ -16,6 +16,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
+import androidx.test.espresso.Espresso
 import com.google.firebase.Timestamp
 import com.neptune.neptune.NepTuneApplication.Companion.appContext
 import com.neptune.neptune.media.LocalMediaPlayer
@@ -187,7 +188,9 @@ class MainScreenTest {
 
     // Verify it appears
     composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_LIST).assertIsDisplayed()
-
+    try {
+      Espresso.closeSoftKeyboard()
+    } catch (_: Exception) {}
     composeTestRule.onNodeWithText("Banana").assertIsDisplayed()
   }
 
