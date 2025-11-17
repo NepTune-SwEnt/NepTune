@@ -66,18 +66,18 @@ open class SearchViewModel(
   private val _comments = MutableStateFlow<List<Comment>>(emptyList())
   val comments: StateFlow<List<Comment>> = _comments
   private var query = ""
-  private val _likedSamples = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
-  val likedSamples: StateFlow<Map<Int, Boolean>> = _likedSamples
+  private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+  val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
 
-  private val _activeCommentSampleId = MutableStateFlow<Int?>(null)
-  val activeCommentSampleId: StateFlow<Int?> = _activeCommentSampleId.asStateFlow()
+  private val _activeCommentSampleId = MutableStateFlow<String?>(null)
+  val activeCommentSampleId: StateFlow<String?> = _activeCommentSampleId.asStateFlow()
 
   fun onCommentClicked(sample: Sample) {
-    observeCommentsForSample(sample.id.toInt())
-    _activeCommentSampleId.value = sample.id.toInt()
+    observeCommentsForSample(sample.id)
+    _activeCommentSampleId.value = sample.id
   }
 
-  fun onAddComment(sampleId: Int, text: String) {
+  fun onAddComment(sampleId: String, text: String) {
     addComment(sampleId, text)
     observeCommentsForSample(sampleId)
   }
@@ -188,7 +188,7 @@ open class SearchViewModel(
   }
 
   fun onLikeClick(sample: Sample, isLikedNow: Boolean) {
-    val sampleId = sample.id.toInt()
+    val sampleId = sample.id
     viewModelScope.launch {
       repo.toggleLike(sample.id, isLikedNow)
       _likedSamples.value = _likedSamples.value + (sampleId to isLikedNow)
@@ -198,30 +198,28 @@ open class SearchViewModel(
   fun refreshLikeStates() {
     viewModelScope.launch {
       val allSamples = _samples.value
-      val updatedStates = mutableMapOf<Int, Boolean>()
+      val updatedStates = mutableMapOf<String, Boolean>()
       for (sample in allSamples) {
         val liked = repo.hasUserLiked(sample.id)
-        updatedStates[sample.id.toInt()] = liked
+        updatedStates[sample.id] = liked
       }
       _likedSamples.value = updatedStates
     }
   }
 
-  fun observeCommentsForSample(sampleId: Int) {
-    viewModelScope.launch {
-      repo.observeComments(sampleId.toString()).collectLatest { _comments.value = it }
-    }
+  fun observeCommentsForSample(sampleId: String) {
+    viewModelScope.launch { repo.observeComments(sampleId).collectLatest { _comments.value = it } }
   }
 
   fun resetCommentSampleId() {
     _activeCommentSampleId.value = null
   }
 
-  fun addComment(sampleId: Int, text: String) {
+  fun addComment(sampleId: String, text: String) {
     viewModelScope.launch {
       val profile = profileRepo.getProfile()
       val username = profile?.username ?: "Anonymous"
-      repo.addComment(sampleId.toString(), username, text.trim())
+      repo.addComment(sampleId, username, text.trim())
     }
   }
 
