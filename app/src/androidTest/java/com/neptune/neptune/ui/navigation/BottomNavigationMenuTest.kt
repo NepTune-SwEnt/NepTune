@@ -92,20 +92,26 @@ class BottomNavigationMenuTest {
 
   @Test
   fun bottomNavigationMenu_clickOnTab_navigatesToCorrectScreen() {
-    var navigatedTo: Screen? = null
+    var capturedRoute: String? = null
     var fakeNavigationActions: NavigationActions
+
     composeTestRule.setContent {
       val navController = rememberNavController()
       fakeNavigationActions =
           object : NavigationActions(navController) {
             override fun navigateTo(screen: Screen) {
-              navigatedTo = screen
+              capturedRoute = screen.route
+            }
+
+            override fun navigateTo(route: String) {
+              capturedRoute = route
             }
           }
       BottomNavigationMenu(screen = Screen.Main, navigationActions = fakeNavigationActions)
     }
+
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
-    assert(navigatedTo == Screen.ProjectList)
+    assert(capturedRoute == "project_list/edit")
   }
 
   @Test
