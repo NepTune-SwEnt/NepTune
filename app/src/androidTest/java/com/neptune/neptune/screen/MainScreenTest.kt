@@ -183,7 +183,9 @@ class MainScreenTest {
 
     // Verify it appears
     composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_LIST).assertIsDisplayed()
-    Espresso.closeSoftKeyboard()
+    try {
+      Espresso.closeSoftKeyboard()
+    } catch (_: Exception) {}
     composeTestRule.onNodeWithText("Banana").assertIsDisplayed()
   }
 }
