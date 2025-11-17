@@ -14,7 +14,6 @@ import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.project.TotalProjectItemsRepository
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.model.sample.Sample
-import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,7 +43,8 @@ class PostViewModel(
   private val _localImageUri = MutableStateFlow<Uri?>(null)
   val localImageUri: StateFlow<Uri?> = _localImageUri.asStateFlow()
 
-  private lateinit var localZipUri: Uri
+  private val _localZipUri = MutableStateFlow<Uri?>(null)
+  val localZipUri: StateFlow<Uri?> = _localZipUri.asStateFlow()
 
   /** Loads a project by its ID and converts it into a Sample. */
   fun loadProject(projectId: String) {
@@ -56,14 +56,7 @@ class PostViewModel(
           Log.e("PostViewModel", "The project don't have a file")
           return@launch
         }
-        val cleanPath =
-            if (rawPath.startsWith("file:")) {
-              rawPath.toUri().path ?: rawPath
-            } else {
-              rawPath
-            }
-        val zipFile = File(cleanPath)
-        localZipUri = zipFile.toUri()
+        _localZipUri.value = rawPath.toUri()
         // TODO: change the durationSeconds to the actual duration of the project
         val durationSeconds = 0
         val sample =
@@ -157,10 +150,15 @@ class PostViewModel(
     if (_uiState.value.isUploading) {
       return
     }
+    val currentZipUri = _localZipUri.value
+    if (currentZipUri == null) {
+      Log.e("PostViewModel", "Cannot submit: No zip file loaded")
+      return
+    }
     _uiState.update { it.copy(isUploading = true) }
     viewModelScope.launch {
       try {
-        storageService?.uploadSampleFiles(_uiState.value.sample, localZipUri, localImageUri.value)
+        storageService?.uploadSampleFiles(_uiState.value.sample, currentZipUri, localImageUri.value)
         _uiState.update { it.copy(isUploading = false, postComplete = true) }
       } catch (e: Exception) {
         Log.e("PostViewModel", "error on upload", e)
