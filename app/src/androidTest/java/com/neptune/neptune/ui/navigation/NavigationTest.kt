@@ -1,6 +1,8 @@
 package com.neptune.neptune.ui.navigation
 
+import android.net.Uri
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
@@ -14,11 +16,23 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.navigation.compose.rememberNavController
 import com.neptune.neptune.NeptuneApp
+import com.neptune.neptune.media.LocalMediaPlayer
+import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.FakeProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainScreenTestTags
+import com.neptune.neptune.ui.main.MainViewModel
+import com.neptune.neptune.ui.post.PostScreen
 import com.neptune.neptune.ui.post.PostScreenTestTags
+import com.neptune.neptune.ui.post.PostUiState
+import com.neptune.neptune.ui.post.PostViewModel
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -153,22 +167,62 @@ class NavigationTest {
   }
 
   @Test
-  fun postButtonNavigateToPostScreen() {
-    setContent()
+  fun postButton_triggersNavigationToProjectList() {
+    val navigateToProjectListMock = mockk<() -> Unit>(relaxed = true)
+
+    val mockViewModel = mockk<MainViewModel>(relaxed = true)
+
+    every { mockViewModel.discoverSamples } returns MutableStateFlow(emptyList())
+    every { mockViewModel.followedSamples } returns MutableStateFlow(emptyList())
+    every { mockViewModel.userAvatar } returns MutableStateFlow(null)
+    every { mockViewModel.likedSamples } returns MutableStateFlow(emptyMap())
+    every { mockViewModel.comments } returns MutableStateFlow(emptyList())
+
+    composeTestRule.setContent {
+      MainScreen(navigateToProjectList = navigateToProjectListMock, mainViewModel = mockViewModel)
+    }
+
     composeTestRule.onNodeWithTag(MainScreenTestTags.POST_BUTTON).performClick()
-    composeTestRule.onNodeWithTag(PostScreenTestTags.POST_SCREEN).assertIsDisplayed()
+
+    verify(exactly = 1) { navigateToProjectListMock() }
   }
 
   @Test
   fun postButtonNavigateToMainScreen() {
+    val navigateToMainMock = mockk<() -> Unit>(relaxed = true)
+    val mockMediaPlayer = mockk<NeptuneMediaPlayer>(relaxed = true)
+    val mockViewModel = mockk<PostViewModel>(relaxed = true)
+
+    val uiStateFlow = MutableStateFlow(PostUiState())
+    val imageUriFlow = MutableStateFlow<Uri?>(null)
+
+    every { mockViewModel.uiState } returns uiStateFlow
+    every { mockViewModel.localImageUri } returns imageUriFlow
+
+    every { mockViewModel.updateTitle(any<String>()) } answers
+        {
+          val newTitle = firstArg<String>()
+          uiStateFlow.update { it.copy(sample = it.sample.copy(name = newTitle)) }
+        }
+
+    every { mockViewModel.submitPost() } answers
+        {
+          uiStateFlow.update { it.copy(postComplete = true) }
+        }
+
     composeTestRule.setContent {
-      NeptuneApp(navController = rememberNavController(), startDestination = Screen.Post.route)
+      CompositionLocalProvider(LocalMediaPlayer provides mockMediaPlayer) {
+        PostScreen(navigateToMainScreen = navigateToMainMock, postViewModel = mockViewModel)
+      }
     }
+
     composeTestRule
         .onNodeWithTag(PostScreenTestTags.TITLE_FIELD)
         .performTextReplacement("Sweetie Banana")
+    composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(PostScreenTestTags.POST_BUTTON).performScrollTo().performClick()
-    composeTestRule.onNodeWithTag(MainScreenTestTags.MAIN_SCREEN).assertIsDisplayed()
+    composeTestRule.waitForIdle()
+    verify(exactly = 1) { navigateToMainMock() }
   }
 
   /** Test that the main screen has a bottom bar */
