@@ -28,7 +28,6 @@ import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.navigation.NavigationTestTags
-import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -222,10 +221,8 @@ class MainScreenTest {
             Comment("F", "a6", now))
 
     composeTestRule.runOnUiThread {
-      runBlocking {
-        testComments.forEach { comment ->
-          fakeSampleRepo.addComment(sampleId, comment.author, comment.text, comment.timestamp!!)
-        }
+      testComments.forEach { comment ->
+        fakeSampleRepo.addComment(sampleId, comment.author, comment.text, comment.timestamp!!)
       }
       viewModel.observeCommentsForSample(sampleId)
     }

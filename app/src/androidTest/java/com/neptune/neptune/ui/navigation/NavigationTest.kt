@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.navigation
 
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
@@ -61,16 +62,17 @@ class NavigationTest {
     runBlocking {
       db = FirebaseFirestore.getInstance()
       auth = FirebaseAuth.getInstance()
+
       try {
         db.useEmulator(host, firestorePort)
       } catch (e: IllegalStateException) {
-        "database emulator not running?"
+        Log.e("TestSetup", "Database emulator not running?", e)
       }
 
       try {
         auth.useEmulator(host, authPort)
       } catch (e: IllegalStateException) {
-        "auth emulator not running?"
+        Log.e("TestSetup", "Auth emulator not running?", e)
       }
 
       runCatching { auth.signOut() }

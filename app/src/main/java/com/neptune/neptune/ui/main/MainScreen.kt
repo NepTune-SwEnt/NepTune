@@ -47,11 +47,11 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -93,8 +93,6 @@ import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.formatTime
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 object MainScreenTestTags : BaseSampleTestTags {
   override val prefix = "MainScreen"
@@ -570,7 +568,12 @@ fun CommentDialog(
 ) {
   var commentText by remember { mutableStateOf("") }
   val listScrollingState = rememberLazyListState()
-  val coroutineScope = rememberCoroutineScope()
+
+  LaunchedEffect(comments.size) {
+    if (comments.isNotEmpty()) {
+      listScrollingState.animateScrollToItem(comments.lastIndex)
+    }
+  }
 
   Dialog(onDismissRequest = onDismiss) {
     Card(
@@ -619,7 +622,7 @@ fun CommentDialog(
                                             fontWeight = FontWeight(300),
                                             color = NepTuneTheme.colors.onBackground))
                                 Text(
-                                    text = formatTime(comment.timestamp),
+                                    text = "• " + formatTime(comment.timestamp),
                                     style =
                                         TextStyle(
                                             fontSize = 14.sp,
@@ -679,10 +682,6 @@ fun CommentDialog(
                             if (commentText.isNotBlank()) {
                               onAddComment(sampleId, commentText)
                               commentText = ""
-                              coroutineScope.launch {
-                                delay(1000)
-                                listScrollingState.animateScrollToItem(comments.size)
-                              }
                             }
                           },
                           shape = RoundedCornerShape(15.dp),

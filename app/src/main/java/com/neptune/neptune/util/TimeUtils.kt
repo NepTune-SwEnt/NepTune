@@ -25,11 +25,11 @@ fun formatTime(timestamp: Timestamp?): String {
   val years = days / 365
 
   return when {
-    minutes < 1 -> "• just now"
-    minutes < 60 -> "• ${minutes}min ago"
-    hours < 24 -> "• ${hours}h ago"
-    days < 30 -> "• ${days}d ago"
-    months < 12 -> "• ${months}mo ago"
-    else -> "• ${years}y ago"
+    minutes < 1 -> "just now"
+    minutes < 60 -> "${minutes}min ago"
+    hours < 24 -> "${hours}h ago"
+    days < 30 -> "${days}d ago"
+    days < 365 -> "${months}mo ago"
+    else -> "${years}y ago"
   }
 }

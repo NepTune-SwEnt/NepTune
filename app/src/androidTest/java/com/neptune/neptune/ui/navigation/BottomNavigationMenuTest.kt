@@ -15,7 +15,7 @@ class BottomNavigationMenuTest {
   @get:Rule val composeTestRule = createComposeRule()
 
   @Test
-  fun bottomNavigationMenu_allTabsAreDisabled_whenNavigationActionsAreNull() {
+  fun bottomNavigationMenuAllTabsAreDisabledWhenNavigationActionsAreNull() {
     composeTestRule.setContent { BottomNavigationMenu() }
 
     // Verify that both tabs are displayed but are not enabled (not clickable).
@@ -41,7 +41,7 @@ class BottomNavigationMenuTest {
   }
 
   @Test
-  fun bottomNavigationMenu_displaysCorrectly_withValidNavigationActions() {
+  fun bottomNavigationMenuDisplaysCorrectlyWithValidNavigationActions() {
     composeTestRule.setContent {
       val navController = rememberNavController()
       val navigationActions = NavigationActions(navController)
@@ -57,7 +57,7 @@ class BottomNavigationMenuTest {
   }
 
   @Test
-  fun bottomNavigationMenu_mainTabIsSelected_whenScreenIsMain() {
+  fun bottomNavigationMenuMainTabIsSelectedWhenScreenIsMain() {
     composeTestRule.setContent {
       val navController = rememberNavController()
       val navigationActions = NavigationActions(navController)
@@ -75,7 +75,7 @@ class BottomNavigationMenuTest {
   }
 
   @Test
-  fun bottomNavigationMenu_SearchTabIsSelected_whenScreenIsSearchScreen() {
+  fun bottomNavigationMenuSearchTabIsSelectedWhenScreenIsSearchScreen() {
     composeTestRule.setContent {
       val navController = rememberNavController()
       val navigationActions = NavigationActions(navController)
@@ -93,7 +93,7 @@ class BottomNavigationMenuTest {
   }
 
   @Test
-  fun bottomNavigationMenu_ImportTabIsSelected_whenScreenIsImport() {
+  fun bottomNavigationMenuImportTabIsSelectedWhenScreenIsImport() {
     composeTestRule.setContent {
       val navController = rememberNavController()
       val navigationActions = NavigationActions(navController)
@@ -111,7 +111,7 @@ class BottomNavigationMenuTest {
   }
 
   @Test
-  fun bottomNavigationMenu_ProjectTabIsSelected_whenScreenIsProjectList() {
+  fun bottomNavigationMenuProjectTabIsSelectedWhenScreenIsProjectList() {
     composeTestRule.setContent {
       val navController = rememberNavController()
       val navigationActions = NavigationActions(navController)
@@ -129,7 +129,7 @@ class BottomNavigationMenuTest {
   }
 
   @Test
-  fun bottomNavigationMenu_isHidden_whenScreenShouldNotShowIt() {
+  fun bottomNavigationMenuIsHiddenWhenScreenShouldNotShowIt() {
     composeTestRule.setContent {
       // Use the Profile screen, which should hide the bottom bar.
       BottomNavigationMenu(screen = Screen.Profile, navigationActions = null)
@@ -140,7 +140,7 @@ class BottomNavigationMenuTest {
   }
 
   @Test
-  fun bottomNavigationMenu_clickOnTab_navigatesToCorrectScreen() {
+  fun bottomNavigationMenuClickOnTabNavigatesToCorrectScreen() {
     var navigatedTo: Screen? = null
     var fakeNavigationActions: NavigationActions
     composeTestRule.setContent {
@@ -158,7 +158,7 @@ class BottomNavigationMenuTest {
   }
 
   @Test
-  fun bottomNavigationMenu_returnsNullForUnknownRoute() {
+  fun bottomNavigationMenuReturnsNullForUnknownRoute() {
     val unknownTab = getTabForRoute("unknown_route")
     assert(unknownTab == null)
   }
