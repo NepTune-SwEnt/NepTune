@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.ui.sampler.SamplerTestTags.CURVE_EDITOR_SCROLL_CONTAINER
 import com.neptune.neptune.ui.sampler.SamplerTestTags.FADER_60HZ_TAG
@@ -1478,48 +1479,113 @@ fun TimeDisplay(playbackPosition: Float, audioDurationMillis: Int, modifier: Mod
 
 @Composable
 fun InitialSetupDialog(viewModel: SamplerViewModel) {
-  val uiState by viewModel.uiState.collectAsState()
-  AlertDialog(
-      onDismissRequest = {},
-      title = { Text("Setup required") },
-      text = {
-        Column(
-            modifier = Modifier.fillMaxWidth().testTag(SamplerTestTags.INIT_SETUP_CONTAINER),
-            verticalArrangement = Arrangement.spacedBy(16.dp)) {
-              Text("Define the project pitch and tempo", style = MaterialTheme.typography.bodyLarge)
+    val uiState by viewModel.uiState.collectAsState()
+    val context = NepTuneApplication.appContext
 
-              OutlinedTextField(
-                  value = if (uiState.inputTempo == 0) "" else uiState.inputTempo.toString(),
-                  onValueChange = { newValue ->
-                    newValue.toIntOrNull()?.let { parsed -> viewModel.updateInputTempo(parsed) }
-                  },
-                  label = { Text("Tempo (BPM)") },
-                  keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                  modifier =
-                      Modifier.fillMaxWidth()
-                          .testTag(SamplerTestTags.INIT_TEMPO_SELECTOR)
-                          .onFocusChanged { focusState ->
-                            if (focusState.isFocused) {
-                              viewModel.updateInputTempo(0)
-                            }
-                          })
+    AlertDialog(
+        onDismissRequest = {},
+        title = { Text("Setup required") },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth().testTag(SamplerTestTags.INIT_SETUP_CONTAINER),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
 
-              PitchSelectorField(
-                  pitchNote = uiState.inputPitchNote,
-                  pitchOctave = uiState.inputPitchOctave,
-                  onPitchUp = { viewModel.increaseInputPitch() },
-                  onPitchDown = { viewModel.decreaseInputPitch() },
-                  modifier = Modifier.testTag(SamplerTestTags.INIT_PITCH_SELECTOR))
+                Text(
+                    "Define pitch & tempo for this sample",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+
+                PreviewAudioRow(
+                    isPlaying = uiState.previewPlaying,
+                    onPlay = { viewModel.playPreview(context) },
+                    onStop = { viewModel.stopPreview() },
+                )
+
+                TempoRow(
+                    tempo = uiState.inputTempo,
+                    onTempoChange = viewModel::updateInputTempo,
+                    onTapTempo = viewModel::tapTempo
+                )
+
+
+                PitchSelectorField(
+                    pitchNote = uiState.inputPitchNote,
+                    pitchOctave = uiState.inputPitchOctave,
+                    onPitchUp = viewModel::increaseInputPitch,
+                    onPitchDown = viewModel::decreaseInputPitch,
+                    modifier = Modifier.testTag(SamplerTestTags.INIT_PITCH_SELECTOR)
+                )
             }
-      },
-      confirmButton = {
-        Button(
-            onClick = viewModel::confirmInitialSetup,
-            modifier = Modifier.testTag(SamplerTestTags.INIT_CONFIRM_BUTTON)) {
-              Text("Confirm")
+        },
+        confirmButton = {
+            Button(
+                onClick = viewModel::confirmInitialSetup,
+                modifier = Modifier.testTag(SamplerTestTags.INIT_CONFIRM_BUTTON)
+            ) {
+                Text("Confirm")
             }
-      })
+        }
+    )
 }
+
+@Composable
+fun PreviewAudioRow(
+    isPlaying: Boolean,
+    onPlay: () -> Unit,
+    onStop: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Button(
+            onClick = { if (isPlaying) onStop() else onPlay() },
+            modifier = Modifier.testTag("PREVIEW_PLAY_BUTTON")
+        ) {
+            Text(if (isPlaying) "Stop" else "Play")
+        }
+
+        Text(
+            "Preview audio",
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
+@Composable
+fun TempoRow(
+    tempo: Int,
+    onTempoChange: (Int) -> Unit,
+    onTapTempo: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+
+        OutlinedTextField(
+            value = if (tempo == 0) "" else tempo.toString(),
+            onValueChange = { newValue ->
+                newValue.toIntOrNull()?.let(onTempoChange)
+            },
+            label = { Text("Tempo BPM") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.weight(1f)
+                .testTag("TEMPO_FIELD")
+        )
+
+        Button(
+            onClick = onTapTempo,
+            modifier = Modifier.testTag("TAP_TEMPO_BUTTON")
+        ) {
+            Text("Tap")
+        }
+    }
+}
+
 
 @Composable
 fun PitchSelectorField(
