@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.navigation
 
+import android.os.Bundle
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
@@ -73,6 +74,7 @@ fun getTabForRoute(route: String?): Tab? {
 fun BottomNavigationMenu(
     screen: Screen = Screen.Main,
     navigationActions: NavigationActions? = null,
+    currentScreenArguments: Bundle? = null
 ) {
   if (!screen.showBottomBar) {
     return
@@ -86,6 +88,17 @@ fun BottomNavigationMenu(
         modifier = Modifier.testTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU),
         containerColor = NepTuneTheme.colors.background) {
           tabs.forEach { tab ->
+            val isSelected: Boolean =
+                when (tab.destination) {
+                  Screen.ProjectList -> {
+                    val onProjectListScreen = (screen == Screen.ProjectList)
+                    val purposeIsEdit = (currentScreenArguments?.getString("purpose") == "edit")
+                    onProjectListScreen && purposeIsEdit
+                  }
+                  else -> {
+                    tab.destination.route == screen.route
+                  }
+                }
             NavigationBarItem(
                 icon = {
                   Icon(
@@ -96,8 +109,14 @@ fun BottomNavigationMenu(
                 },
                 alwaysShowLabel = false,
                 label = { Text(tab.name) },
-                selected = tab == getTabForRoute(screen.route),
-                onClick = { navigationActions?.navigateTo(tab.destination) },
+                selected = isSelected,
+                onClick = {
+                  if (tab.destination == Screen.ProjectList) {
+                    navigationActions?.navigateTo(Screen.ProjectList.createRoute("edit"))
+                  } else {
+                    navigationActions?.navigateTo(tab.destination)
+                  }
+                },
                 enabled = navigationActions != null,
                 modifier = Modifier.testTag(tab.testTag),
                 colors =

@@ -61,51 +61,72 @@ class PostScreenTest {
     mediaPlayer = NeptuneMediaPlayer()
   }
 
-  private fun setContent(
-      goBack: () -> Unit = {},
-      navigateToProjectList: () -> Unit = {},
-      navigateToMainScreen: () -> Unit = {}
-  ) {
+  private fun setContent(goBack: () -> Unit = {}, navigateToMainScreen: () -> Unit = {}) {
     composeTestRule.setContent {
       CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
         PostScreen(
-            goBack = goBack,
-            navigateToProjectList = navigateToProjectList,
-            navigateToMainScreen = navigateToMainScreen,
-            postViewModel = viewModel)
+            goBack = goBack, navigateToMainScreen = navigateToMainScreen, postViewModel = viewModel)
       }
     }
   }
 
   @Test
   fun testTagsAreCorrect() {
-    setContent()
+    val mockMediaPlayer = mockk<NeptuneMediaPlayer>(relaxed = true)
+    composeTestRule.setContent {
+      CompositionLocalProvider(LocalMediaPlayer provides mockMediaPlayer) { PostScreen() }
+    }
     composeTestRule.onNodeWithTag(PostScreenTestTags.POST_SCREEN).assertIsDisplayed()
     composeTestRule
         .onNodeWithTag(PostScreenTestTags.POST_BUTTON)
         .performScrollTo()
         .assertIsDisplayed()
-    composeTestRule.onNodeWithTag(PostScreenTestTags.TAGS_FIELD).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(PostScreenTestTags.AUDIENCE_ROW).assertIsDisplayed()
+
+    composeTestRule
+        .onNodeWithTag(PostScreenTestTags.TAGS_FIELD)
+        .performScrollTo()
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(PostScreenTestTags.AUDIENCE_ROW)
+        .performScrollTo()
+        .assertIsDisplayed()
+
     composeTestRule
         .onNodeWithTag(PostScreenTestTags.DURATION_TEXT, useUnmergedTree = true)
+        .performScrollTo()
         .assertIsDisplayed()
-    composeTestRule.onNodeWithTag(PostScreenTestTags.DESCRIPTION_FIELD).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(PostScreenTestTags.TITLE_FIELD).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(PostScreenTestTags.CHANGE_IMAGE_BUTTON).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(PostScreenTestTags.AUDIO_PREVIEW).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(PostScreenTestTags.SELECT_PROJECT_BUTTON).assertIsDisplayed()
+
+    composeTestRule
+        .onNodeWithTag(PostScreenTestTags.DESCRIPTION_FIELD)
+        .performScrollTo()
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(PostScreenTestTags.TITLE_FIELD)
+        .performScrollTo()
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(PostScreenTestTags.CHANGE_IMAGE_BUTTON)
+        .performScrollTo()
+        .assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(PostScreenTestTags.AUDIO_PREVIEW)
+        .performScrollTo()
+        .assertIsDisplayed()
     composeTestRule.onNodeWithTag(PostScreenTestTags.BACK_BUTTON).assertIsDisplayed()
   }
 
   @Test
-  fun selectProjectButtonTriggersNavigation() {
-    val navigateToProjectListMock = mockk<() -> Unit>(relaxed = true)
-    setContent(navigateToProjectList = navigateToProjectListMock)
+  fun backButtonTriggersNavigation() {
+    val goBackMock = mockk<() -> Unit>(relaxed = true)
+    val mockMediaPlayer = mockk<NeptuneMediaPlayer>(relaxed = true)
 
-    composeTestRule.onNodeWithTag(PostScreenTestTags.SELECT_PROJECT_BUTTON).performClick()
-
-    verify(exactly = 1) { navigateToProjectListMock() }
+    composeTestRule.setContent {
+      CompositionLocalProvider(LocalMediaPlayer provides mockMediaPlayer) {
+        PostScreen(goBack = goBackMock)
+      }
+    }
+    composeTestRule.onNodeWithTag(PostScreenTestTags.BACK_BUTTON).performClick()
+    verify(exactly = 1) { goBackMock() }
   }
 
   @Test
