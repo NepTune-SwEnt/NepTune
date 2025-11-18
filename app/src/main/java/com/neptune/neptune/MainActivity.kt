@@ -31,11 +31,11 @@ import com.neptune.neptune.resources.C
 import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInViewModel
 import com.neptune.neptune.ui.main.MainScreen
-import com.neptune.neptune.ui.mock.MockImportScreen
 import com.neptune.neptune.ui.mock.MockProfileScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
 import com.neptune.neptune.ui.navigation.Screen
+import com.neptune.neptune.ui.picker.ImportScreen
 import com.neptune.neptune.ui.picker.ImportViewModel
 import com.neptune.neptune.ui.picker.importAppRoot
 import com.neptune.neptune.ui.post.PostScreen
@@ -158,7 +158,7 @@ fun NeptuneApp(
                           navigateToMainScreen = { navigationActions.navigateTo(Screen.Main) },
                           projectId = projectId)
                     }
-                composable(Screen.ImportFile.route) { MockImportScreen(importViewModel) }
+                composable(Screen.ImportFile.route) {  ImportScreen(vm = importViewModel, goBack = { navigationActions.goBack() }) }
                 composable(Screen.SignIn.route) {
                   SignInScreen(
                       signInViewModel = signInViewModel,

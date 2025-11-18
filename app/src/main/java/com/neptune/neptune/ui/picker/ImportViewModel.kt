@@ -2,23 +2,32 @@ package com.neptune.neptune.ui.picker
 
 import android.content.Context
 import androidx.annotation.VisibleForTesting
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.DividerDefaults
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.room.Room
+import com.neptune.neptune.R
 import com.neptune.neptune.data.FileImporterImpl
 import com.neptune.neptune.data.MediaRepositoryImpl
 import com.neptune.neptune.data.NeptunePackager
@@ -27,6 +36,7 @@ import com.neptune.neptune.data.local.MediaDb
 import com.neptune.neptune.domain.model.MediaItem
 import com.neptune.neptune.domain.usecase.GetLibraryUseCase
 import com.neptune.neptune.domain.usecase.ImportMediaUseCase
+import com.neptune.neptune.ui.theme.NepTuneTheme
 import java.io.File
 import java.net.URI
 import kotlinx.coroutines.flow.SharingStarted
@@ -36,6 +46,11 @@ import kotlinx.coroutines.launch
 
 private const val MEDIA_DB = "media.db"
 
+/**
+ * ViewModel for the ImportScreen. This has been written with the help of LLMs.
+ *
+ * @author Angéline Bignens
+ */
 class ImportViewModel(private val importMedia: ImportMediaUseCase, getLibrary: GetLibraryUseCase) :
     ViewModel() {
   val library: StateFlow<List<MediaItem>> =
@@ -106,14 +121,42 @@ fun importAppRoot(): ImportVMFactory {
 @Composable
 fun ProjectList(items: List<MediaItem>, modifier: Modifier = Modifier) {
   LazyColumn(modifier = modifier.fillMaxSize().testTag("project_list")) {
-    items(items) { item ->
+    itemsIndexed(items) { index, item ->
       val fileName = item.projectUri.substringAfterLast('/')
-      ListItem(
-          headlineContent = { Text(fileName, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-          supportingContent = {
-            Text(item.projectUri, maxLines = 1, overflow = TextOverflow.Ellipsis)
-          })
-      HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
+
+      // Alternate background 1/2
+      val rowColor =
+          if (index % 2 == 0) NepTuneTheme.colors.shadow.copy(alpha = 0.1f)
+          else NepTuneTheme.colors.indicatorColor.copy(alpha = 0.1f)
+      Column(
+          modifier =
+              Modifier.fillMaxWidth()
+                  .background(rowColor)
+                  .padding(vertical = 12.dp, horizontal = 16.dp)) {
+            Text(
+                text = fileName,
+                style =
+                    TextStyle(
+                        fontSize = 28.sp,
+                        fontFamily = FontFamily(Font(R.font.markazi_text)),
+                        fontWeight = FontWeight(500),
+                        color = NepTuneTheme.colors.onBackground),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis)
+
+            Text(
+                text = item.projectUri,
+                style =
+                    TextStyle(
+                        fontSize = 18.sp,
+                        fontFamily = FontFamily(Font(R.font.markazi_text)),
+                        fontWeight = FontWeight(300),
+                        color = NepTuneTheme.colors.onBackground.copy(alpha = 0.7f)),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis)
+          }
+      HorizontalDivider(
+          Modifier, thickness = 1.dp, color = NepTuneTheme.colors.onBackground.copy(alpha = 0.3f))
     }
   }
 }
