@@ -1,6 +1,7 @@
 package com.neptune.neptune.screen
 
 import android.net.Uri
+import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.firebase.Firebase
@@ -41,15 +42,21 @@ class PostViewModelTest {
   private lateinit var viewModel: PostViewModel
   private lateinit var mockProjectRepo: TotalProjectItemsRepository
   private val context = InstrumentationRegistry.getInstrumentation().targetContext
+  private val host = "10.0.2.2"
+  private val storagePort = 9199
+  private val authPort = 9099
+  private val firestorePort = 8080
 
   @Before
   fun setUp() = runBlocking {
     // 1. Connect to Emulators
     try {
-      Firebase.storage.useEmulator("10.0.2.2", 9199)
-      Firebase.auth.useEmulator("10.0.2.2", 9099)
-      Firebase.firestore.useEmulator("10.0.2.2", 8080)
-    } catch (_: IllegalStateException) {}
+      Firebase.storage.useEmulator(host, storagePort)
+      Firebase.auth.useEmulator(host, authPort)
+      Firebase.firestore.useEmulator(host, firestorePort)
+    } catch (e: IllegalStateException) {
+      Log.e("setUp", "Error in firebase initialization: ${e.message}")
+    }
 
     // 2. Auth
     Firebase.auth.signOut()
