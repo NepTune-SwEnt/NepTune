@@ -127,6 +127,7 @@ fun ProfileScreen(
 ) {
   Column(modifier = Modifier.padding(16.dp).testTag(ProfileScreenTestTags.ROOT)) {
     when (uiState.mode) {
+      // Create profile screen view content
       ProfileMode.VIEW -> {
         ProfileViewContent(
             state = uiState,
@@ -135,6 +136,7 @@ fun ProfileScreen(
             settings = callbacks.onSettingsClick,
             goBack = callbacks.goBackClick)
       }
+      // Create profile screen edit content
       ProfileMode.EDIT -> {
         ProfileEditContent(
             uiState = uiState,
@@ -149,6 +151,35 @@ fun ProfileScreen(
             onAvatarEditClick = onAvatarEditClick)
       }
     }
+  }
+}
+
+@Composable
+private fun TopBar(goBack: () -> Unit, settings: () -> Unit) {
+  Column {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically) {
+          // Go Back Button
+          IconButton(
+              onClick = goBack, modifier = Modifier.testTag(ProfileScreenTestTags.GOBACK_BUTTON)) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBackIosNew,
+                    contentDescription = "Go Back",
+                    tint = NepTuneTheme.colors.onBackground)
+              }
+          // Settings Button
+          IconButton(
+              modifier = Modifier.size(30.dp).testTag(ProfileScreenTestTags.SETTINGS_BUTTON),
+              onClick = settings) {
+                Icon(
+                    modifier = Modifier.size(30.dp),
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Logout",
+                    tint = NepTuneTheme.colors.onBackground)
+              }
+        }
   }
 }
 
@@ -174,34 +205,8 @@ private fun ProfileViewContent(
 ) {
   Scaffold(
       modifier = Modifier.testTag(ProfileScreenTestTags.ROOT),
-      topBar = {
-        Column {
-          Row(
-              modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = goBack,
-                    modifier = Modifier.testTag(ProfileScreenTestTags.GOBACK_BUTTON)) {
-                      Icon(
-                          imageVector = Icons.Default.ArrowBackIosNew,
-                          contentDescription = "Go Back",
-                          tint = NepTuneTheme.colors.onBackground)
-                    }
-                IconButton(
-                    modifier = Modifier.size(30.dp).testTag(ProfileScreenTestTags.SETTINGS_BUTTON),
-                    onClick = settings) {
-                      Icon(
-                          modifier = Modifier.size(30.dp),
-                          imageVector = Icons.Default.Settings,
-                          contentDescription = "Logout",
-                          tint = NepTuneTheme.colors.onBackground)
-                    }
-              }
-        }
-      },
+      topBar = { TopBar(goBack, settings) },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
-        // This box was made using AI assistance
         Box(Modifier.fillMaxSize().padding(innerPadding)) {
           Column(
               modifier =
@@ -213,54 +218,33 @@ private fun ProfileViewContent(
           ) {
             Spacer(Modifier.height(15.dp))
 
+            // Avatar image
             val avatarModel = localAvatarUri ?: state.avatarUrl ?: R.drawable.ic_avatar_placeholder
             Avatar(
                 avatarModel,
                 modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
                 showEditPencil = false)
-
             Spacer(Modifier.height(15.dp))
 
+            // Name and username
             Text(
                 text = state.name,
                 color = NepTuneTheme.colors.onBackground,
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
-
             Text(
                 text = "@${state.username}",
                 color = NepTuneTheme.colors.onBackground,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
-
             Spacer(Modifier.height(40.dp))
 
-            Row(Modifier.fillMaxWidth()) {
-              StatBlock(
-                  label = "Posts",
-                  value = state.posts,
-                  modifier = Modifier.weight(1f),
-                  testTag = ProfileScreenTestTags.POSTS_BLOCK)
-              StatBlock(
-                  label = "Likes",
-                  value = state.likes,
-                  modifier = Modifier.weight(1f),
-                  testTag = ProfileScreenTestTags.LIKES_BLOCK)
-              StatBlock(
-                  label = "Followers",
-                  value = state.followers,
-                  modifier = Modifier.weight(1f),
-                  testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
-              StatBlock(
-                  label = "Following",
-                  value = state.following,
-                  modifier = Modifier.weight(1f),
-                  testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
-            }
-
+            // Stats row
+            StatRow(state)
             Spacer(Modifier.height(100.dp))
 
+            // Bio
             Text(
                 text = if (state.bio != "") "“${state.bio}”" else "",
                 color = NepTuneTheme.colors.onBackground,
@@ -269,6 +253,7 @@ private fun ProfileViewContent(
                 modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
             Spacer(Modifier.height(100.dp))
 
+            // Tags
             if (state.tags.isNotEmpty()) {
               Spacer(Modifier.height(16.dp))
               FlowRow(
@@ -295,6 +280,7 @@ private fun ProfileViewContent(
             Spacer(Modifier.height(50.dp))
           }
 
+            // Edit button
           Button(
               onClick = onEdit,
               enabled = true,
@@ -361,8 +347,8 @@ private fun ProfileEditContent(
       verticalArrangement = Arrangement.Center) {
         Spacer(modifier = Modifier.height(40.dp))
 
+      // Avatar image
         val avatarModel = localAvatarUri ?: uiState.avatarUrl ?: R.drawable.ic_avatar_placeholder
-
         Avatar(
             model = avatarModel,
             modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
@@ -370,6 +356,7 @@ private fun ProfileEditContent(
             onEditClick = onAvatarEditClick)
         Spacer(modifier = Modifier.height(40.dp))
 
+      // Field for name input
         OutlinedTextField(
             value = uiState.name,
             onValueChange = onNameChange,
@@ -391,9 +378,9 @@ private fun ProfileEditContent(
                     style = MaterialTheme.typography.bodySmall)
               }
             })
-
         Spacer(modifier = Modifier.height(40.dp))
 
+        // Field for username input
         OutlinedTextField(
             value = uiState.username,
             onValueChange = onUsernameChange,
@@ -415,8 +402,9 @@ private fun ProfileEditContent(
                     style = MaterialTheme.typography.bodySmall)
               }
             })
-
         Spacer(modifier = Modifier.height(40.dp))
+
+        // Field for bio input
         OutlinedTextField(
             value = uiState.bio,
             onValueChange = onBioChange,
@@ -439,9 +427,9 @@ private fun ProfileEditContent(
                     style = MaterialTheme.typography.bodySmall)
               }
             })
-
         Spacer(modifier = Modifier.height(40.dp))
 
+        // Tag input and addition
         Row(
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -471,9 +459,9 @@ private fun ProfileEditContent(
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Add")
               }
         }
-
         Spacer(Modifier.height(12.dp))
 
+        // Tags display
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -487,9 +475,9 @@ private fun ProfileEditContent(
                 }
               }
             }
-
         Spacer(modifier = Modifier.height(40.dp))
 
+        // Save button
         Button(
             onClick = onSave,
             enabled = !uiState.isSaving && uiState.isValid,
@@ -524,6 +512,32 @@ fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, testTag:
         textAlign = TextAlign.Center,
         modifier = Modifier.testTag(testTag))
   }
+}
+
+@Composable
+private fun StatRow(state: ProfileUiState) {
+    Row(Modifier.fillMaxWidth()) {
+        StatBlock(
+            label = "Posts",
+            value = state.posts,
+            modifier = Modifier.weight(1f),
+            testTag = ProfileScreenTestTags.POSTS_BLOCK)
+        StatBlock(
+            label = "Likes",
+            value = state.likes,
+            modifier = Modifier.weight(1f),
+            testTag = ProfileScreenTestTags.LIKES_BLOCK)
+        StatBlock(
+            label = "Followers",
+            value = state.followers,
+            modifier = Modifier.weight(1f),
+            testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
+        StatBlock(
+            label = "Following",
+            value = state.following,
+            modifier = Modifier.weight(1f),
+            testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
+    }
 }
 
 /**
