@@ -1,4 +1,4 @@
-package com.neptune.neptune.ui.post
+package com.neptune.neptune.screen
 
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -9,6 +9,8 @@ import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.storage
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.TotalProjectItemsRepository
+import com.neptune.neptune.ui.post.PostUiState
+import com.neptune.neptune.ui.post.PostViewModel
 import java.io.File
 import java.util.concurrent.TimeoutException
 import kotlinx.coroutines.delay
@@ -24,7 +26,15 @@ import org.junit.runner.RunWith
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
 
-// This class was made using AI assistance.
+/**
+ * REQUIREMENTS:
+ * - Firestore emulator on port 8080
+ * - Auth emulator on port 9099
+ * - Storage emulator on port 9199
+ * - Start them: firebase emulators:start --only firestore,auth,storage
+ *
+ * On Android emulator, host is 10.0.2.2 This class was made using AI assistance.
+ */
 @RunWith(AndroidJUnit4::class)
 class PostViewModelTest {
 
