@@ -1,6 +1,7 @@
 package com.neptune.neptune.ui.sampler
 
 import android.graphics.Paint
+import android.net.Uri
 import android.util.Log
 import androidx.compose.animation.core.*
 import androidx.compose.animation.expandVertically
@@ -141,6 +142,9 @@ fun SamplerScreen(
         }
       }
 
+  // Local state to control visibility of the floating settings dialog
+  var showSettingsDialog by remember { mutableStateOf(false) }
+
   LaunchedEffect(Unit) {
     if (decodedZipPath != null) {
       viewModel.loadProjectData(decodedZipPath)
@@ -154,7 +158,17 @@ fun SamplerScreen(
   Scaffold(
       containerColor = NepTuneTheme.colors.background,
       modifier = Modifier.testTag(SamplerTestTags.SCREEN_CONTAINER),
-  ) { paddingValues ->
+      floatingActionButton = {
+        FloatingActionButton(
+            onClick = { showSettingsDialog = true },
+            containerColor = NepTuneTheme.colors.accentPrimary,
+            modifier = Modifier.testTag("floatingSettingsButton")) {
+          Icon(
+              imageVector = Icons.Default.Settings,
+              contentDescription = "Settings",
+              tint = Color.White)
+        }
+      }) { paddingValues ->
     Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp)) {
       PlaybackAndWaveformControls(
           isPlaying = uiState.isPlaying,
@@ -184,6 +198,11 @@ fun SamplerScreen(
 
       TabContent(currentTab = uiState.currentTab, uiState = uiState, viewModel = viewModel)
     }
+  }
+
+  // Show a simple settings dialog when FAB is pressed
+  if (showSettingsDialog) {
+    SettingsDialog(currentAudioUri = uiState.currentAudioUri, onClose = { showSettingsDialog = false })
   }
 }
 
@@ -1571,6 +1590,52 @@ fun RatioInputField(
     Spacer(modifier = Modifier.height(8.dp))
     Text(text = label, color = lightText, fontSize = 16.sp)
   }
+}
+
+@Composable
+fun SettingsDialog(currentAudioUri: Uri?, onClose: () -> Unit) {
+  var bpmText by remember { mutableStateOf("") }
+  val mediaPlayer = LocalMediaPlayer.current
+
+  AlertDialog(
+      onDismissRequest = onClose,
+      title = { Text("Settings") },
+      text = {
+        Column(modifier = Modifier.fillMaxWidth()) {
+          Text("Settings placeholder — add your settings here.")
+          Spacer(modifier = Modifier.height(8.dp))
+
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = bpmText,
+                onValueChange = { newValue -> bpmText = newValue.filter { it.isDigit() } },
+                label = { Text("Initial BPM (visual only)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                modifier = Modifier.weight(1f))
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Play / Pause button for the original sample audio
+            IconButton(
+                onClick = {
+                  if (currentAudioUri != null) {
+                    mediaPlayer.togglePlay(currentAudioUri)
+                  }
+                },
+                enabled = currentAudioUri != null) {
+              val icon = if (mediaPlayer.isPlaying() && mediaPlayer.getCurrentUri() == currentAudioUri) Icons.Default.Pause else Icons.Default.PlayArrow
+              Icon(imageVector = icon, contentDescription = "Play original sample")
+            }
+          }
+        }
+      },
+      confirmButton = {
+        Button(onClick = onClose) { Text("Save & Close") }
+      },
+      dismissButton = {
+        TextButton(onClick = onClose) { Text("Cancel") }
+      })
 }
 
 /*
