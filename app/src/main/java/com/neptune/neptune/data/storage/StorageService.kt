@@ -34,7 +34,7 @@ class StorageService(val storage: FirebaseStorage) {
   }
   // correct -> obtain path from Firestore and not Storage
   @Throws(IOException::class)
-  suspend fun downloadZippedSample(sample: Sample, context: Context): File =
+  suspend fun downloadZippedSample(sample: Sample, context: Context, onProgress: (Int) -> Unit = {}): File =
       withContext(Dispatchers.IO) {
         val sampleRef = storageRef.child(sample.storageZipPath)
         if (!exists(sampleRef))

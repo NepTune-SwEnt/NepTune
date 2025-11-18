@@ -33,6 +33,7 @@ class SampleUiActions(
 ) {
   val downloadBusy = MutableStateFlow(false)
   val downloadError = MutableStateFlow<String?>(null)
+  val downloadProgress = MutableStateFlow<Int?>(null)
 
   @Throws(IOException::class)
   suspend fun onDownloadClicked(sample: Sample) {
