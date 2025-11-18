@@ -2,9 +2,23 @@ package com.neptune.neptune.ui.main
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ProgressIndicatorDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
+import com.neptune.neptune.ui.search.SearchScreenTestTags
+import com.neptune.neptune.ui.theme.NepTuneTheme
 import java.io.File
 import java.io.IOException
 import kotlin.jvm.Throws
@@ -40,8 +54,13 @@ class SampleUiActions(
     if (downloadBusy.value) return
     downloadBusy.value = true
     downloadError.value = null
+    downloadProgress.value = 0
     try {
-      val zip = withContext(ioDispatcher) { storageService.downloadZippedSample(sample, context) }
+      val zip = withContext(ioDispatcher) {
+        storageService.downloadZippedSample(sample, context) {
+          percent -> downloadProgress.value = percent
+        }
+      }
       withContext(ioDispatcher) { storageService.persistZipToDownloads(zip, downloadsFolder) }
       repo.increaseDownloadCount(sample.id)
     } catch (e: SecurityException) {
@@ -53,6 +72,30 @@ class SampleUiActions(
       Log.e("SampleActions", "Download failed", e)
     } finally {
       downloadBusy.value = false
+      downloadProgress.value = null
+    }
+  }
+
+  @Composable
+  fun DownloadProgressBar(downloadProgress: Int) {
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .background(
+          NepTuneTheme.colors.background.copy(alpha = 0.6f)
+        ),
+      contentAlignment = Alignment.Center
+    ) {
+      LinearProgressIndicator(
+        progress = { downloadProgress / 100f },
+        modifier = Modifier
+          .padding(16.dp)
+          .fillMaxWidth(0.5f)
+          .testTag(SearchScreenTestTags.DOWNLOAD_BAR),
+        color = NepTuneTheme.colors.onBackground,
+        trackColor = NepTuneTheme.colors.onBackground,
+        strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
+      )
     }
   }
 }

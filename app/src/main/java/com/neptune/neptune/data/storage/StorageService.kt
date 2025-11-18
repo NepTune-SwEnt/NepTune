@@ -43,7 +43,19 @@ class StorageService(val storage: FirebaseStorage) {
 
         val tmp = File(context.cacheDir, "${sample.name}.zip")
 
-        sampleRef.getFile(tmp).await()
+        sampleRef.getFile(tmp)
+          .addOnProgressListener {snapshot ->
+            // size in bytes of the file being transferred
+            val total = snapshot.totalByteCount
+            if (total > 0) {
+              //progress percentage
+              val progress = (100.0 * snapshot.bytesTransferred / total).toInt().coerceIn(0, 100)
+              onProgress(progress)
+            }
+          }
+          .await()
+        // ensure progress is marked as complete
+        onProgress(100)
         tmp
       }
 

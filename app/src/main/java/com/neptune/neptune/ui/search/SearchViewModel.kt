@@ -68,7 +68,7 @@ open class SearchViewModel(
   private var query = ""
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
-
+  private val allSamples = MutableStateFlow<List<Sample>>(emptyList())
   private val _activeCommentSampleId = MutableStateFlow<String?>(null)
   val activeCommentSampleId: StateFlow<String?> = _activeCommentSampleId.asStateFlow()
 
@@ -101,11 +101,18 @@ open class SearchViewModel(
 
         SampleUiActions(repo, storageService, downloadsFolder, context)
       }
+    val downloadProgress = actions?.downloadProgress ?: MutableStateFlow<Int?>(null)
 
   init {
     if (firebaseAuth != null && authListener != null) {
       firebaseAuth.addAuthStateListener(authListener)
+
     }
+      if (useMockData) {
+          loadMockData()
+      } else {
+          loadSamplesFromFirebase()
+      }
   }
 
   override fun onCleared() {
@@ -163,12 +170,15 @@ open class SearchViewModel(
                 usersLike = emptyList(),
                 210,
                 210))
+      applyFilter(query)
   }
 
   fun loadSamplesFromFirebase() {
     viewModelScope.launch {
-      _samples.value = repo.getSamples()
+      val loaded = repo.getSamples()
+      allSamples.value = loaded
       refreshLikeStates()
+      applyFilter(query)
     }
   }
 
@@ -225,27 +235,25 @@ open class SearchViewModel(
 
   open fun search(query: String) {
     this.query = query
-    if (useMockData) {
-      loadMockData()
-    } else {
-      loadSamplesFromFirebase()
-    }
-
     val normalizedQuery = normalize(query)
-    if (normalizedQuery.isEmpty()) {
-      return
-    }
-
-    _samples.value =
-        _samples.value.filter {
-          normalize(it.name).contains(normalizedQuery, ignoreCase = true) ||
-              normalize(it.description).contains(normalizedQuery, ignoreCase = true) ||
-              it.tags.any { tag -> normalize(tag).contains(normalizedQuery, ignoreCase = true) }
-        }
+    applyFilter(normalizedQuery)
   }
 
   // Normalizes text by converting it to lowercase and removing non-alphanumeric characters.
   fun normalize(text: String): String {
     return text.lowercase().replace("\\p{M}".toRegex(), "").replace(Regex("[^a-z0-9]"), "").trim()
   }
+    private fun applyFilter(query: String) {
+        val normalizedQuery = normalize(query)
+        val base = allSamples.value
+        _samples.value =
+            if (normalizedQuery.isEmpty()) {
+                base
+            } else
+                base.filter {
+                    normalize(it.name).contains(normalizedQuery, ignoreCase = true) ||
+                            normalize(it.description).contains(normalizedQuery, ignoreCase = true) ||
+                            it.tags.any { tag -> normalize(tag).contains(normalizedQuery, ignoreCase = true) }
+                }
+    }
 }

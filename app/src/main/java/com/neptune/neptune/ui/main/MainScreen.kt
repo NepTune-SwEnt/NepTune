@@ -408,7 +408,8 @@ fun SampleCard(
     isLiked: Boolean,
     testTags: BaseSampleTestTags = MainScreenTestTags,
     clickHandlers: ClickHandlers,
-    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
+    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
+    downloadProgress: Int ?= null
 ) {
   val likeDescription = if (isLiked) "liked" else "not liked"
   val heartColor = if (isLiked) Color.Red else NepTuneTheme.colors.background
