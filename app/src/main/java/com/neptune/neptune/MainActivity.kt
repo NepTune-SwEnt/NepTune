@@ -158,7 +158,9 @@ fun NeptuneApp(
                           navigateToMainScreen = { navigationActions.navigateTo(Screen.Main) },
                           projectId = projectId)
                     }
-                composable(Screen.ImportFile.route) {  ImportScreen(vm = importViewModel, goBack = { navigationActions.goBack() }) }
+                composable(Screen.ImportFile.route) {
+                  ImportScreen(vm = importViewModel, goBack = { navigationActions.goBack() })
+                }
                 composable(Screen.SignIn.route) {
                   SignInScreen(
                       signInViewModel = signInViewModel,

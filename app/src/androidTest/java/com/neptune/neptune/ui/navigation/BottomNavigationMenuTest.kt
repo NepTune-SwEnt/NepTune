@@ -113,11 +113,15 @@ class BottomNavigationMenuTest {
 
   @Test
   fun bottomNavigationMenuProjectTabIsSelectedWhenScreenIsProjectList() {
+    val projectListEditArgs = Bundle().apply { putString("purpose", "edit") }
     composeTestRule.setContent {
       val navController = rememberNavController()
       val navigationActions = NavigationActions(navController)
       // Set the current screen to ProjectList
-      BottomNavigationMenu(screen = Screen.ProjectList, navigationActions = navigationActions)
+      BottomNavigationMenu(
+          screen = Screen.ProjectList,
+          navigationActions = navigationActions,
+          currentScreenArguments = projectListEditArgs)
     }
 
     // Assert that the Project tab is marked as selected

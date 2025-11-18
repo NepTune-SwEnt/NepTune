@@ -21,15 +21,12 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.neptune.neptune.NeptuneApp
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
-import com.neptune.neptune.model.FakeProfileRepository
-import com.neptune.neptune.model.profile.ProfileRepository
-import com.neptune.neptune.model.profile.ProfileRepositoryProvider
-import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.model.profile.ProfileRepositoryFirebase
+import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
-import com.neptune.neptune.ui.post.PostScreen
 import com.neptune.neptune.ui.picker.ImportScreenTestTags
+import com.neptune.neptune.ui.post.PostScreen
 import com.neptune.neptune.ui.post.PostScreenTestTags
 import com.neptune.neptune.ui.post.PostUiState
 import com.neptune.neptune.ui.post.PostViewModel
