@@ -123,7 +123,7 @@ fun NeptuneApp(
                   MainScreen(
                       navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
                       navigateToProjectList = {
-                        navigationActions.navigateTo(Screen.ProjectList.route + "?purpose=post")
+                        navigationActions.navigateTo(Screen.ProjectList.createRoute("post"))
                       })
                 }
                 composable(Screen.Profile.route) {
