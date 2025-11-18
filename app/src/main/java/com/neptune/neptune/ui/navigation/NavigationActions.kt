@@ -36,7 +36,7 @@ sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
 
   object SettingsAccount : Screen(route = "settings_account", showBottomBar = false)
 
-  object ImportFile : Screen(route = "import_file", showBottomBar = false)
+  object ImportFile : Screen(route = "import_file")
 }
 
 /**
