@@ -65,8 +65,7 @@ class SamplerViewModelLoadProjectTest {
       val f = SamplerViewModel::class.java.getDeclaredField("extractor")
       f.isAccessible = true
       f.set(vm, extractor)
-    } catch (_: Exception) {
-    }
+    } catch (_: Exception) {}
 
     val temp = File.createTempFile("test", ".zip")
     vm.loadProjectData(temp.absolutePath)
