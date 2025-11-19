@@ -559,7 +559,7 @@ open class SamplerViewModel() : ViewModel() {
               }
             }
 
-            val loadedPitchNote = NOTE_ORDER[pitchValue!!.roundToInt() % NOTE_ORDER.size]
+            val loadedPitchNote = NOTE_ORDER[pitchValue.roundToInt() % NOTE_ORDER.size]
             val loadedPitchOctave = 4
 
             current.copy(
@@ -579,7 +579,7 @@ open class SamplerViewModel() : ViewModel() {
                     paramMap["compThreshold"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)
                         ?: current.compThreshold,
                 compRatio =
-                    paramMap["compRatio"]?.let { it.roundToInt().coerceIn(1, 20) }
+                    paramMap["compRatio"]?.roundToInt()?.coerceIn(1, 20)
                         ?: current.compRatio,
                 compKnee = paramMap["compKnee"]?.coerceIn(0f, COMP_KNEE_MAX) ?: current.compKnee,
                 compGain =
@@ -613,13 +613,13 @@ open class SamplerViewModel() : ViewModel() {
       val audioUri = state.currentAudioUri
 
       if (audioUri == null) {
-        Log.e("SamplerViewModel", "Aucun audio à sauvegarder, opération annulée.")
+        Log.e("SamplerViewModel", "No audio to save, saveProjectDataSync cancelled")
         return
       }
 
       val audioFile = File(audioUri.path ?: "")
       if (!audioFile.exists()) {
-        Log.e("SamplerViewModel", "Le fichier audio n'existe pas : ${audioFile.path}")
+        Log.e("SamplerViewModel", "Missing audio file: ${audioFile.path}")
         return
       }
 
@@ -655,9 +655,17 @@ open class SamplerViewModel() : ViewModel() {
       ProjectWriter()
           .writeProject(zipFile = zipFile, metadata = metadata, audioFiles = listOf(audioFile))
 
-      Log.i("SamplerViewModel", "Projet sauvegardé avec succès : ${zipFile.absolutePath}")
+      Log.i("SamplerViewModel", "Project successfully saved: ${zipFile.absolutePath}")
     } catch (e: Exception) {
-      Log.e("SamplerViewModel", "Échec de la sauvegarde du projet ZIP : ${e.message}", e)
+      Log.e("SamplerViewModel", "Failed to save project zip file: ${e.message}", e)
     }
+  }
+
+  fun audioBuilding() {
+    Log.d("SamplerViewModel", "Audio building")
+  }
+
+  fun equalizeAudio() {
+    Log.d("SamplerViewModel", "Equalize audio")
   }
 }
