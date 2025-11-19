@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Settings
@@ -187,24 +188,27 @@ sealed interface ProfileViewConfig {
   }
 
   data class OtherProfileConfig(
+      val isFollowing: Boolean,
       private val onFollow: () -> Unit,
-      private val buttonModifier: Modifier = Modifier,
   ) : ProfileViewConfig {
     override val topBarContent = null
     override val belowStatsButton =
         @Composable {
-          Button(
+            val label = if (isFollowing) "Unfollow" else "Follow"
+            val icon = if (isFollowing) Icons.Default.Clear else Icons.Default.Add
+
+            Button(
               onClick = onFollow,
               enabled = true,
               modifier =
                   Modifier.padding(bottom = 24.dp).testTag(ProfileScreenTestTags.FOLLOW_BUTTON)) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = "Follow")
+                Icon(imageVector = icon, contentDescription = "Follow")
                 Spacer(Modifier.width(8.dp))
-                Text("Follow")
+                Text(label)
               }
         }
     override val bottomScreenButton = null
-    override val samplesSection = @Composable { SamplesSection() }
+    override val samplesSection = null // FIXME: implement samples section
   }
 }
 
@@ -652,7 +656,6 @@ fun EditableTagChip(tagText: String, onRemove: (String) -> Unit, modifier: Modif
           ))
 }
 
-// FIXME: USE THIS FOR SELF PROFILE
 /**
  * Composable route for the Profile feature.
  *
@@ -716,3 +719,37 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
               onRemoveTag = viewModel::onTagDeletion,
               goBackClick = goBack))
 }
+
+@Composable
+fun OtherUserProfileRoute(
+    userId: String,
+    goBack: () -> Unit = {},
+) {
+    val factory =
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                if (modelClass.isAssignableFrom(OtherProfileViewModel::class.java)) {
+                    @Suppress("UNCHECKED_CAST")
+                    return OtherProfileViewModel(userId) as T
+                }
+                throw IllegalArgumentException("Unknown ViewModel class")
+            }
+        }
+
+    val viewModel: OtherProfileViewModel = viewModel(factory = factory)
+    val state by viewModel.uiState.collectAsState()
+
+    val viewConfig =
+        ProfileViewConfig.OtherProfileConfig(
+            isFollowing = state.isFollowing,
+            onFollow = viewModel::onFollow)
+
+    ProfileScreen(
+        uiState = state.profile,
+        localAvatarUri = null, // No local avatar for others (only remote URL)
+        viewConfig = viewConfig,
+        callbacks = profileScreenCallbacks(goBackClick = goBack),
+    )
+}
+
+
