@@ -55,8 +55,7 @@ class PostScreenTest {
                   likes = 10,
                   usersLike = emptyList(),
                   comments = 5,
-                  downloads = 3,
-                  uriString = "mock_uri"))
+                  downloads = 3))
         }
     mediaPlayer = NeptuneMediaPlayer()
   }

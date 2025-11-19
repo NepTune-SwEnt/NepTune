@@ -434,8 +434,7 @@ fun ProjectListScreenPreview() {
                 likes = 123,
                 usersLike = emptyList(),
                 comments = 45,
-                downloads = 67,
-                uriString = "mock_uri"))
+                downloads = 67))
       }
 
   val fakeMediaPlayer = NeptuneMediaPlayer()

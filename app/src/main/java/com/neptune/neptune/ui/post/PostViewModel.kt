@@ -66,7 +66,6 @@ class PostViewModel(
                 description = project.description,
                 tags = project.tags,
                 durationSeconds = durationSeconds,
-                uriString = "",
                 likes = 0,
                 usersLike = emptyList(),
                 comments = 0,
@@ -194,8 +193,7 @@ data class PostUiState(
             likes = 0,
             usersLike = emptyList(),
             comments = 0,
-            downloads = 0,
-            uriString = ""),
+            downloads = 0),
     val isUploading: Boolean = false,
     val postComplete: Boolean = false
 )

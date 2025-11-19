@@ -11,7 +11,6 @@ data class Sample(
     val comments: Int,
     val downloads: Int,
     val isPublic: Boolean = false,
-    val uriString: String = "",
     val ownerId: String = "",
     val storageZipPath: String = "",
     val storageImagePath: String = "",
