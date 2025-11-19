@@ -258,48 +258,49 @@ open class SamplerViewModel() : ViewModel() {
     _uiState.update { current -> current.copy(inputTempo = value ?: 0) }
   }
 
-    private var previewPlayer: MediaPlayer? = null
+  private var previewPlayer: MediaPlayer? = null
 
-    private val tapTimes = mutableListOf<Long>()
+  private val tapTimes = mutableListOf<Long>()
 
-    fun playPreview(context: Context) {
-        stopPreview()
+  fun playPreview(context: Context) {
+    stopPreview()
 
-        val uri = uiState.value.currentAudioUri ?: return
+    val uri = uiState.value.currentAudioUri ?: return
 
-        previewPlayer = MediaPlayer().apply {
-            setDataSource(context, uri)
-            prepare()
-            start()
-            setOnCompletionListener { stopPreview() }
+    previewPlayer =
+        MediaPlayer().apply {
+          setDataSource(context, uri)
+          prepare()
+          start()
+          setOnCompletionListener { stopPreview() }
         }
 
-        _uiState.update { it.copy(previewPlaying = true) }
+    _uiState.update { it.copy(previewPlaying = true) }
+  }
+
+  fun stopPreview() {
+    previewPlayer?.stop()
+    previewPlayer?.release()
+    previewPlayer = null
+
+    _uiState.update { it.copy(previewPlaying = false) }
+  }
+
+  fun tapTempo() {
+    val now = System.currentTimeMillis()
+
+    tapTimes.add(now)
+    if (tapTimes.size > 6) tapTimes.removeFirst()
+
+    if (tapTimes.size >= 2) {
+      val diffs = tapTimes.zipWithNext { a, b -> b - a }
+
+      val avg = diffs.average()
+      val bpm = (60000.0 / avg).roundToInt()
+
+      _uiState.update { it.copy(inputTempo = bpm) }
     }
-
-    fun stopPreview() {
-        previewPlayer?.stop()
-        previewPlayer?.release()
-        previewPlayer = null
-
-        _uiState.update { it.copy(previewPlaying = false) }
-    }
-
-    fun tapTempo() {
-        val now = System.currentTimeMillis()
-
-        tapTimes.add(now)
-        if (tapTimes.size > 6) tapTimes.removeFirst()
-
-        if (tapTimes.size >= 2) {
-            val diffs = tapTimes.zipWithNext { a, b -> b - a }
-
-            val avg = diffs.average()
-            val bpm = (60000.0 / avg).roundToInt()
-
-            _uiState.update { it.copy(inputTempo = bpm) }
-        }
-    }
+  }
 
   fun confirmInitialSetup() {
     val currentState = _uiState.value
@@ -530,59 +531,56 @@ open class SamplerViewModel() : ViewModel() {
   open fun loadProjectData(zipFilePath: String) {
     viewModelScope.launch {
       try {
-          val cleanPath =
-              zipFilePath.removePrefix("file:").removePrefix("file://")
-          val zipFile = File(cleanPath)
-          if (!zipFile.exists()) {
-              Log.e("SamplerViewModel", "ZIP not found: $cleanPath")
-              _uiState.update {
-                  it.copy(
-                      showInitialSetupDialog = false,
-                      currentAudioUri = null,
-                      projectLoadError = "ZIP not found"
-                  )
-              }
-              return@launch
+        val cleanPath = zipFilePath.removePrefix("file:").removePrefix("file://")
+        val zipFile = File(cleanPath)
+        if (!zipFile.exists()) {
+          Log.e("SamplerViewModel", "ZIP not found: $cleanPath")
+          _uiState.update {
+            it.copy(
+                showInitialSetupDialog = false,
+                currentAudioUri = null,
+                projectLoadError = "ZIP not found")
           }
+          return@launch
+        }
 
-          val metadata: SamplerProjectMetadata = try {
+        val metadata: SamplerProjectMetadata =
+            try {
               extractor.extractMetadata(zipFile)
-          } catch (e: Exception) {
+            } catch (e: Exception) {
               Log.e("SamplerViewModel", "Metadata read error: ${e.message}", e)
               _uiState.update {
-                  it.copy(
-                      showInitialSetupDialog = false,
-                      currentAudioUri = null,
-                      projectLoadError = "Can't read config.json"
-                  )
+                it.copy(
+                    showInitialSetupDialog = false,
+                    currentAudioUri = null,
+                    projectLoadError = "Can't read config.json")
               }
               return@launch
+            }
+        val audioFileName = metadata.audioFiles.firstOrNull()?.name
+        if (audioFileName == null) {
+          _uiState.update {
+            it.copy(
+                currentAudioUri = null,
+                showInitialSetupDialog = false,
+                projectLoadError = "No audio file in project")
           }
-          val audioFileName = metadata.audioFiles.firstOrNull()?.name
-          if (audioFileName == null) {
-              _uiState.update {
-                  it.copy(
-                      currentAudioUri = null,
-                      showInitialSetupDialog = false,
-                      projectLoadError = "No audio file in project"
-                  )
-              }
-              return@launch
-          }
+          return@launch
+        }
 
-          val audioUri = try {
+        val audioUri =
+            try {
               extractor.extractAudioFile(zipFile, context, audioFileName)
-          } catch (e: Exception) {
+            } catch (e: Exception) {
               Log.e("SamplerViewModel", "Audio extraction error: ${e.message}", e)
               _uiState.update {
-                  it.copy(
-                      currentAudioUri = null,
-                      showInitialSetupDialog = false,
-                      projectLoadError = "Audio file extraction impossible"
-                  )
+                it.copy(
+                    currentAudioUri = null,
+                    showInitialSetupDialog = false,
+                    projectLoadError = "Audio file extraction impossible")
               }
               return@launch
-          }
+            }
 
         val sampleDuration = mediaPlayer.getDuration()
         Log.d("SamplerViewModel", "URI audio loaded: $audioUri")
@@ -595,7 +593,6 @@ open class SamplerViewModel() : ViewModel() {
         val tempoFound = tempoValue != null
         val pitchFound = pitchValue != null
         val needsSetup = !tempoFound || !pitchFound
-
 
         if (needsSetup) {
           _uiState.update { current ->
@@ -690,14 +687,9 @@ open class SamplerViewModel() : ViewModel() {
           }
         }
       } catch (e: Exception) {
-          Log.e("SamplerViewModel", "ZIP project loading has failed: ${e.message}", e)
+        Log.e("SamplerViewModel", "ZIP project loading has failed: ${e.message}", e)
 
-          _uiState.update {
-              it.copy(
-                  showInitialSetupDialog = false,
-                  currentAudioUri = null
-              )
-          }
+        _uiState.update { it.copy(showInitialSetupDialog = false, currentAudioUri = null) }
       }
     }
   }

@@ -35,8 +35,8 @@ class NeptunePackager(
         val zipFile = paths.projectFile(base)
         val durationSec = durationMs?.div(secondsDivisor) ?: nullTime
         val durationRounded = round(durationSec * roundingFactor) / roundingFactor
-          val configJson =
-              """
+        val configJson =
+            """
     {
       "audioFiles": [
         {
@@ -48,7 +48,8 @@ class NeptunePackager(
       ],
       "parameters": []
     }
-    """.trimIndent()
+    """
+                .trimIndent()
         ZipOutputStream(BufferedOutputStream(FileOutputStream(zipFile))).use { zipOut ->
           // Add audio file entry
           zipOut.putNextEntry(java.util.zip.ZipEntry(audioFile.name))
