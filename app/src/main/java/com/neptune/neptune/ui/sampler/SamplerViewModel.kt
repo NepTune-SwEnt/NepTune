@@ -17,7 +17,10 @@ import com.neptune.neptune.model.project.ProjectWriter
 import com.neptune.neptune.model.project.SamplerProjectMetadata
 import java.io.File
 import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.pow
 import kotlin.math.roundToInt
+import kotlin.math.sin
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -611,15 +614,42 @@ open class SamplerViewModel() : ViewModel() {
       val audioUri = state.currentAudioUri
 
       if (audioUri == null) {
-        Log.e("SamplerViewModel", "No audio to save, saveProjectDataSync cancelled")
+        Log.e("SamplerViewModel", "Aucun audio à sauvegarder, opération annulée.")
         return
       }
 
       val audioFile = File(audioUri.path ?: "")
       if (!audioFile.exists()) {
-        Log.e("SamplerViewModel", "Missing audio file: ${audioFile.path}")
+        Log.e("SamplerViewModel", "Le fichier audio n'existe pas : ${audioFile.path}")
         return
       }
+
+      val eqParameters =
+          state.eqBands.mapIndexed { index, gain ->
+            ParameterMetadata(type = "eq_band_$index", value = gain, targetAudioFile = "global")
+          }
+
+      val parametersList =
+          mutableListOf<ParameterMetadata>(
+              ParameterMetadata("attack", state.attack, audioFile.name),
+              ParameterMetadata("decay", state.decay, audioFile.name),
+              ParameterMetadata("sustain", state.sustain, audioFile.name),
+              ParameterMetadata("release", state.release, audioFile.name),
+              ParameterMetadata("compRatio", state.compRatio.toFloat(), audioFile.name),
+              ParameterMetadata("reverbWet", state.reverbWet, audioFile.name),
+              ParameterMetadata("reverbSize", state.reverbSize, audioFile.name),
+              ParameterMetadata("reverbDepth", state.reverbDepth, audioFile.name),
+              ParameterMetadata("reverbWidth", state.reverbWidth, audioFile.name),
+              ParameterMetadata("compGain", state.compGain, audioFile.name),
+              ParameterMetadata("compThreshold", state.compThreshold, audioFile.name),
+              ParameterMetadata("tempo", state.tempo.toFloat(), "global"),
+              ParameterMetadata(
+                  "pitch",
+                  NOTE_ORDER.indexOf(state.pitchNote).toFloat() +
+                      (state.pitchOctave * NOTE_ORDER.size),
+                  "global"),
+          )
+      parametersList.addAll(eqParameters)
 
       val metadata =
           SamplerProjectMetadata(
@@ -629,41 +659,307 @@ open class SamplerViewModel() : ViewModel() {
                           name = audioFile.name,
                           volume = 1.0f,
                           durationSeconds = state.audioDurationMillis / 1000f)),
-              parameters =
-                  listOf(
-                      ParameterMetadata("attack", state.attack, audioFile.name),
-                      ParameterMetadata("decay", state.decay, audioFile.name),
-                      ParameterMetadata("sustain", state.sustain, audioFile.name),
-                      ParameterMetadata("release", state.release, audioFile.name),
-                      ParameterMetadata("compRatio", state.compRatio.toFloat(), audioFile.name),
-                      ParameterMetadata("reverbWet", state.reverbWet, audioFile.name),
-                      ParameterMetadata("reverbSize", state.reverbSize, audioFile.name),
-                      ParameterMetadata("reverbDepth", state.reverbDepth, audioFile.name),
-                      ParameterMetadata("reverbWidth", state.reverbWidth, audioFile.name),
-                      ParameterMetadata("compGain", state.compGain, audioFile.name),
-                      ParameterMetadata("compThreshold", state.compThreshold, audioFile.name),
-                      ParameterMetadata("tempo", state.tempo.toFloat(), "global"),
-                      ParameterMetadata(
-                          "pitch",
-                          NOTE_ORDER.indexOf(state.pitchNote).toFloat() +
-                              (state.pitchOctave * NOTE_ORDER.size),
-                          "global")))
+              parameters = parametersList)
 
       val zipFile = File(zipFilePath)
       ProjectWriter()
           .writeProject(zipFile = zipFile, metadata = metadata, audioFiles = listOf(audioFile))
 
-      Log.i("SamplerViewModel", "Project successfully saved: ${zipFile.absolutePath}")
+      Log.i("SamplerViewModel", "Projet sauvegardé avec succès : ${zipFile.absolutePath}")
     } catch (e: Exception) {
-      Log.e("SamplerViewModel", "Failed to save project zip file: ${e.message}", e)
+      Log.e("SamplerViewModel", "Échec de la sauvegarde du projet ZIP : ${e.message}", e)
     }
   }
 
   fun audioBuilding() {
     Log.d("SamplerViewModel", "Audio building")
+    val currentUri = _uiState.value.currentAudioUri
+    val eqBands = _uiState.value.eqBands
+
+    viewModelScope.launch {
+      try {
+        equalizeAudio(currentUri, eqBands)
+      } catch (e: Exception) {
+        Log.e("SamplerViewModel", "audioBuilding failed: ${e.message}", e)
+      }
+    }
   }
 
-  fun equalizeAudio() {
-    Log.d("SamplerViewModel", "Equalize audio")
+  fun equalizeAudio(audioUri: Uri?, eqBands: List<Float>) {
+    Log.d("SamplerViewModel", "Equalize audio called, eqBands=$eqBands")
+
+    if (audioUri == null) {
+      Log.e("SamplerViewModel", "No audio to equalize")
+      return
+    }
+
+    try {
+      // Decode audio to PCM samples
+      val audioData = decodeAudioToPCM(audioUri)
+      if (audioData == null) {
+        Log.e("SamplerViewModel", "Failed to decode audio to PCM")
+        return
+      }
+
+      val (samples, sampleRate, channelCount) = audioData
+      Log.d(
+          "SamplerViewModel",
+          "Decoded ${samples.size} samples at $sampleRate Hz, $channelCount channel(s)")
+
+      // Apply EQ filters to the samples
+      val equalizedSamples = applyEQFilters(samples, sampleRate, eqBands)
+
+      // Determine output file name and path in app cache directory
+      val originalName = audioUri.lastPathSegment ?: "sample_audio"
+      val dotIndex = originalName.lastIndexOf('.')
+      val baseName = if (dotIndex > 0) originalName.substring(0, dotIndex) else originalName
+      val outFile = File(context.cacheDir, "${baseName}_equalized.wav")
+
+      // Encode equalized samples back to WAV file
+      encodePCMToWAV(equalizedSamples, sampleRate, channelCount, outFile)
+
+      // Update UI state with the new audio Uri
+      val newUri = Uri.fromFile(outFile)
+      _uiState.update { current -> current.copy(currentAudioUri = newUri) }
+
+      Log.i("SamplerViewModel", "Equalized audio written to ${outFile.absolutePath}")
+    } catch (e: Exception) {
+      Log.e("SamplerViewModel", "Failed to equalize audio: ${e.message}", e)
+    }
+  }
+
+  private fun decodeAudioToPCM(uri: Uri): Triple<FloatArray, Int, Int>? {
+    val extractor = MediaExtractor()
+    try {
+      extractor.setDataSource(context, uri, null)
+
+      var trackIndex = -1
+      var audioTrackFound = false
+      var i = 0
+      while (i < extractor.trackCount && !audioTrackFound) {
+        val format = extractor.getTrackFormat(i)
+        val mime = format.getString(MediaFormat.KEY_MIME)
+
+        if (mime?.startsWith("audio/") == true) {
+          trackIndex = i
+          extractor.selectTrack(i)
+          audioTrackFound = true
+        }
+        i++
+      }
+
+      if (trackIndex == -1) {
+        Log.e("SamplerViewModel", "No audio track found")
+        return null
+      }
+
+      val format = extractor.getTrackFormat(trackIndex)
+      val sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE)
+      val channelCount = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+      val mime = format.getString(MediaFormat.KEY_MIME)!!
+
+      val codec = MediaCodec.createDecoderByType(mime)
+      codec.configure(format, null, null, 0)
+      codec.start()
+
+      val allSamples = mutableListOf<Float>()
+      val bufferInfo = MediaCodec.BufferInfo()
+      var isEOS = false
+
+      while (!isEOS) {
+        val inputIndex = codec.dequeueInputBuffer(10000)
+        if (inputIndex >= 0) {
+          val inputBuffer = codec.getInputBuffer(inputIndex)!!
+          val sampleSize = extractor.readSampleData(inputBuffer, 0)
+          if (sampleSize < 0) {
+            codec.queueInputBuffer(inputIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+            isEOS = true
+          } else {
+            codec.queueInputBuffer(inputIndex, 0, sampleSize, extractor.sampleTime, 0)
+            extractor.advance()
+          }
+        }
+
+        var outputIndex = codec.dequeueOutputBuffer(bufferInfo, 10000)
+        while (outputIndex >= 0) {
+          val outputBuffer = codec.getOutputBuffer(outputIndex)!!
+          val shortBuffer = outputBuffer.asShortBuffer()
+          val chunk = ShortArray(shortBuffer.remaining())
+          shortBuffer.get(chunk)
+
+          // Convert PCM16 to float (-1.0 to 1.0)
+          for (sample in chunk) {
+            allSamples.add(sample.toFloat() / Short.MAX_VALUE)
+          }
+
+          codec.releaseOutputBuffer(outputIndex, false)
+          outputIndex = codec.dequeueOutputBuffer(bufferInfo, 0)
+        }
+      }
+
+      codec.stop()
+      codec.release()
+      extractor.release()
+
+      return Triple(allSamples.toFloatArray(), sampleRate, channelCount)
+    } catch (e: Exception) {
+      Log.e("SamplerViewModel", "Error decoding audio: ${e.message}", e)
+      extractor.release()
+      return null
+    }
+  }
+
+  private fun applyEQFilters(
+      samples: FloatArray,
+      sampleRate: Int,
+      eqBands: List<Float>
+  ): FloatArray {
+    var processedSamples = samples.copyOf()
+
+    // Apply a parametric EQ filter for each band
+    EQ_FREQUENCIES.forEachIndexed { index, frequency ->
+      val gainDB = eqBands.getOrElse(index) { EQ_GAIN_DEFAULT }
+
+      // Skip if gain is near zero (no effect)
+      if (abs(gainDB) < 0.1f) {
+        return@forEachIndexed
+      }
+
+      // Create a parametric EQ filter using biquad peak filter
+      val filter =
+          BiquadPeakFilter(
+              frequency.toDouble(),
+              sampleRate.toDouble(),
+              gainDB.toDouble(),
+              1.0 // Q factor (bandwidth)
+              )
+
+      // Apply filter to all samples
+      processedSamples = filter.process(processedSamples)
+
+      Log.d("SamplerViewModel", "Applied EQ at ${frequency}Hz with gain ${gainDB}dB")
+    }
+
+    return processedSamples
+  }
+
+  // Biquad peak filter for parametric EQ
+  private class BiquadPeakFilter(
+      centerFreq: Double,
+      sampleRate: Double,
+      gainDB: Double,
+      q: Double
+  ) {
+    private val b0: Double
+    private val b1: Double
+    private val b2: Double
+    private val a0: Double
+    private val a1: Double
+    private val a2: Double
+
+    init {
+      val A = 10.0.pow(gainDB / 40.0)
+      val omega = 2.0 * Math.PI * centerFreq / sampleRate
+      val sinOmega = sin(omega)
+      val cosOmega = cos(omega)
+      val alpha = sinOmega / (2.0 * q)
+
+      b0 = 1.0 + alpha * A
+      b1 = -2.0 * cosOmega
+      b2 = 1.0 - alpha * A
+      a0 = 1.0 + alpha / A
+      a1 = -2.0 * cosOmega
+      a2 = 1.0 - alpha / A
+    }
+
+    fun process(input: FloatArray): FloatArray {
+      val output = FloatArray(input.size)
+      var x1 = 0.0
+      var x2 = 0.0
+      var y1 = 0.0
+      var y2 = 0.0
+
+      for (i in input.indices) {
+        val x0 = input[i].toDouble()
+        val y0 = (b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0
+
+        output[i] = y0.toFloat()
+
+        x2 = x1
+        x1 = x0
+        y2 = y1
+        y1 = y0
+      }
+
+      return output
+    }
+  }
+
+  private fun encodePCMToWAV(
+      samples: FloatArray,
+      sampleRate: Int,
+      channelCount: Int,
+      outputFile: File
+  ) {
+    try {
+      // Convert float samples back to PCM16
+      val pcmData = ByteArray(samples.size * 2) // 16-bit = 2 bytes per sample
+
+      for (i in samples.indices) {
+        val sample =
+            (samples[i] * Short.MAX_VALUE)
+                .coerceIn(Short.MIN_VALUE.toFloat(), Short.MAX_VALUE.toFloat())
+                .toInt()
+                .toShort()
+        pcmData[i * 2] = (sample.toInt() and 0xFF).toByte()
+        pcmData[i * 2 + 1] = ((sample.toInt() shr 8) and 0xFF).toByte()
+      }
+
+      // Write WAV file with header
+      outputFile.outputStream().use { out ->
+        // WAV header
+        val bitsPerSample = 16
+        val byteRate = sampleRate * channelCount * bitsPerSample / 8
+        val blockAlign = channelCount * bitsPerSample / 8
+        val dataSize = pcmData.size
+
+        // RIFF chunk
+        out.write("RIFF".toByteArray())
+        out.write(intToBytes(36 + dataSize)) // ChunkSize
+        out.write("WAVE".toByteArray())
+
+        // fmt chunk
+        out.write("fmt ".toByteArray())
+        out.write(intToBytes(16)) // Subchunk1Size (16 for PCM)
+        out.write(shortToBytes(1)) // AudioFormat (1 = PCM)
+        out.write(shortToBytes(channelCount.toShort()))
+        out.write(intToBytes(sampleRate))
+        out.write(intToBytes(byteRate))
+        out.write(shortToBytes(blockAlign.toShort()))
+        out.write(shortToBytes(bitsPerSample.toShort()))
+
+        // data chunk
+        out.write("data".toByteArray())
+        out.write(intToBytes(dataSize))
+        out.write(pcmData)
+      }
+
+      Log.d("SamplerViewModel", "WAV file written: ${outputFile.absolutePath}")
+    } catch (e: Exception) {
+      Log.e("SamplerViewModel", "Error encoding WAV: ${e.message}", e)
+      throw e
+    }
+  }
+
+  private fun intToBytes(value: Int): ByteArray {
+    return byteArrayOf(
+        (value and 0xFF).toByte(),
+        ((value shr 8) and 0xFF).toByte(),
+        ((value shr 16) and 0xFF).toByte(),
+        ((value shr 24) and 0xFF).toByte())
+  }
+
+  private fun shortToBytes(value: Short): ByteArray {
+    return byteArrayOf((value.toInt() and 0xFF).toByte(), ((value.toInt() shr 8) and 0xFF).toByte())
   }
 }
