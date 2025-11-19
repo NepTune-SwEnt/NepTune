@@ -103,13 +103,13 @@ object ProfileScreenTestTags {
 /**
  * Displays the main Profile screen, switching between view (self or other user) and edit modes.
  *
- * @param uiState The current [ProfileUiState] containing user data and screen mode.
+ * @param uiState The current [SelfProfileUiState] containing user data and screen mode.
  * @param callbacks The [ProfileScreenCallbacks] for handling user interactions.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    uiState: ProfileUiState,
+    uiState: SelfProfileUiState,
     localAvatarUri: Uri? = null,
     callbacks: ProfileScreenCallbacks = ProfileScreenCallbacks.Empty,
     onAvatarEditClick: () -> Unit = {},
@@ -214,7 +214,7 @@ sealed interface ProfileViewConfig {
  * Shows the user's avatar, name, username, bio, and stats (followers/following), along with an Edit
  * button to enter edit mode.
  *
- * @param state The [ProfileUiState] containing the displayed user information.
+ * @param state The [SelfProfileUiState] containing the displayed user information.
  * @param localAvatarUri Optional local URI for the avatar image (overrides remote URL if present).
  * @param goBack Callback triggered when the Go Back button is clicked.
  * @param viewConfig Configuration for view-specific UI elements.
@@ -222,7 +222,7 @@ sealed interface ProfileViewConfig {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ProfileViewContent(
-    state: ProfileUiState,
+    state: SelfProfileUiState,
     localAvatarUri: Uri?,
     goBack: () -> Unit,
     viewConfig: ProfileViewConfig
@@ -353,7 +353,7 @@ val TextFieldColors: @Composable () -> TextFieldColors = {
  * Provides text fields for editing the user's name, username, and bio. Includes validation messages
  * and a Save button.
  *
- * @param uiState The current [ProfileUiState].
+ * @param uiState The current [SelfProfileUiState].
  * @param onSave Called when the user presses the Save button.
  * @param onNameChange Called on text change in the name field.
  * @param onUsernameChange Called on text change in the username field.
@@ -362,7 +362,7 @@ val TextFieldColors: @Composable () -> TextFieldColors = {
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun ProfileEditContent(
-    uiState: ProfileUiState,
+    uiState: SelfProfileUiState,
     localAvatarUri: Uri?,
     onSave: () -> Unit,
     onNameChange: (String) -> Unit,
@@ -550,7 +550,7 @@ fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, testTag:
 }
 
 @Composable
-private fun StatRow(state: ProfileUiState) {
+private fun StatRow(state: SelfProfileUiState) {
   Row(Modifier.fillMaxWidth()) {
     StatBlock(
         label = "Posts",

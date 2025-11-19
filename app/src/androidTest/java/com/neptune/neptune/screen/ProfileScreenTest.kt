@@ -25,7 +25,7 @@ import androidx.compose.ui.test.performTextInput
 import com.neptune.neptune.ui.profile.ProfileMode
 import com.neptune.neptune.ui.profile.ProfileScreen
 import com.neptune.neptune.ui.profile.ProfileScreenTestTags
-import com.neptune.neptune.ui.profile.ProfileUiState
+import com.neptune.neptune.ui.profile.SelfProfileUiState
 import com.neptune.neptune.ui.profile.profileScreenCallbacks
 import com.neptune.neptune.ui.theme.SampleAppTheme
 import org.junit.Rule
@@ -77,8 +77,8 @@ class ProfileScreenTest {
   }
 
   private fun setContentViewMode(
-      state: ProfileUiState =
-          ProfileUiState(
+      state: SelfProfileUiState =
+          SelfProfileUiState(
               name = "John Doe",
               username = "johndoe",
               bio = "I make sounds and share samples on NepTune.",
@@ -99,8 +99,8 @@ class ProfileScreenTest {
   }
 
   private fun setContentEditMode(
-      state: ProfileUiState =
-          ProfileUiState(
+      state: SelfProfileUiState =
+          SelfProfileUiState(
               name = "John Doe",
               username = "johndoe",
               bio = "I make sounds and share samples on NepTune.",
@@ -163,7 +163,7 @@ class ProfileScreenTest {
   @Test
   fun viewModeDisplaysNameUsernameBioAndStats() {
     val state =
-        ProfileUiState(
+        SelfProfileUiState(
             name = "Jane Roe",
             username = "janeroe",
             bio = "Hello world",
@@ -263,7 +263,7 @@ class ProfileScreenTest {
 
     setContentEditMode(
         state =
-            ProfileUiState(
+            SelfProfileUiState(
                 name = nameState.value,
                 username = usernameState.value,
                 bio = bioState.value,
@@ -286,7 +286,7 @@ class ProfileScreenTest {
   fun usernameValidationErrorDisablesSave() {
     val state =
         mutableStateOf(
-            ProfileUiState(
+            SelfProfileUiState(
                 name = "Ok Name",
                 username = "aa",
                 bio = "Ok bio",
@@ -305,7 +305,7 @@ class ProfileScreenTest {
   @Test
   fun bioCharacterCounterIsShownWhenNoError() {
     val state =
-        ProfileUiState(
+        SelfProfileUiState(
             name = "Ok Name",
             username = "ok_user",
             bio = "Hello",
@@ -324,7 +324,7 @@ class ProfileScreenTest {
   @Test
   fun bioCounterShowsLengthWhenNoError() {
     val state =
-        ProfileUiState(
+        SelfProfileUiState(
             name = "Ok",
             username = "ok_user",
             bio = "Hello", // length = 5
@@ -341,7 +341,7 @@ class ProfileScreenTest {
   fun bioErrorShowsErrorSupportingText() {
     val errorMsg = "Bio is too long"
     val state =
-        ProfileUiState(
+        SelfProfileUiState(
             name = "Ok",
             username = "ok_user",
             bio = "X".repeat(200),
@@ -357,7 +357,7 @@ class ProfileScreenTest {
   fun nameErrorShowsErrorSupportingText() {
     val err = "Name is invalid"
     val state =
-        ProfileUiState(
+        SelfProfileUiState(
             name = "X",
             username = "ok_user",
             bio = "Hello",
@@ -373,7 +373,7 @@ class ProfileScreenTest {
   fun nameCounterShowsLengthWhenNoError() {
     val name = "John"
     val state =
-        ProfileUiState(
+        SelfProfileUiState(
             name = name,
             username = "ok_user",
             bio = "Hello",
@@ -389,7 +389,7 @@ class ProfileScreenTest {
   fun editModeAddsTagAndDisplaysIt() {
     val state =
         mutableStateOf(
-            ProfileUiState(name = "John", username = "john", bio = "", mode = ProfileMode.EDIT))
+            SelfProfileUiState(name = "John", username = "john", bio = "", mode = ProfileMode.EDIT))
 
     composeTestRule.setContent {
       SampleAppTheme {
@@ -430,7 +430,7 @@ class ProfileScreenTest {
   fun editModeRemoveTagHidesIt() {
     val state =
         mutableStateOf(
-            ProfileUiState(
+            SelfProfileUiState(
                 name = "John",
                 username = "john",
                 bio = "",
@@ -473,7 +473,7 @@ class ProfileScreenTest {
   @Test
   fun viewModeDisplaysTagsReadOnly() {
     val state =
-        ProfileUiState(
+        SelfProfileUiState(
             name = "Arianna",
             username = "itsmeeeari",
             bio = "“Look at my awesome profile”",
@@ -495,7 +495,7 @@ class ProfileScreenTest {
   fun viewModeTagsAreViewOnly() {
     setContentViewMode(
         state =
-            ProfileUiState(
+            SelfProfileUiState(
                 name = "A",
                 username = "a",
                 bio = "",
