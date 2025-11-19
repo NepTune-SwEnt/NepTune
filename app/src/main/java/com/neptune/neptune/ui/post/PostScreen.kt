@@ -78,6 +78,7 @@ import com.neptune.neptune.ui.theme.NepTuneTheme
 object PostScreenTestTags {
   // General
   const val POST_SCREEN = "postScreen"
+  const val LOADING_OVERLAY = "loadingOverlay"
 
   const val DURATION_TEXT = "durationText"
   const val AUDIENCE_ROW = "audienceRow"
@@ -88,7 +89,6 @@ object PostScreenTestTags {
   const val TAGS_FIELD = "tagsField"
   // Button
   const val BACK_BUTTON = "backButton"
-  const val SELECT_PROJECT_BUTTON = "selectProjectButton"
   const val CHANGE_IMAGE_BUTTON = "changeImageButton"
   const val POST_BUTTON = "postButton"
 }
@@ -458,8 +458,10 @@ fun PostScreen(
       modifier = Modifier.fillMaxSize().zIndex(2f)) {
         Box(
             modifier =
-                Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.6f)).clickable(
-                    enabled = false) {},
+                Modifier.fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .clickable(enabled = false) {}
+                    .testTag(PostScreenTestTags.LOADING_OVERLAY),
             contentAlignment = Alignment.Center) {
               LottieAnimation(
                   composition = composition,
