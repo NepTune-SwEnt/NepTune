@@ -36,6 +36,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -1522,35 +1523,42 @@ fun PreviewAudioRow(isPlaying: Boolean, onPlay: () -> Unit, onStop: () -> Unit) 
 
 @Composable
 fun TempoRow(tempo: Int, onTempoChange: (Int) -> Unit, onTapTempo: () -> Unit) {
-  var textState by remember { mutableStateOf(TextFieldValue(tempo.toString())) }
-  var hasEdited by remember { mutableStateOf(false) }
+    var textState by remember(tempo) {
+        mutableStateOf(TextFieldValue(tempo.toString()))
+    }
 
-  Row(
-      modifier = Modifier.fillMaxWidth(),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    var userIsEditing by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         OutlinedTextField(
             value = textState,
             onValueChange = { newValue ->
-              textState = newValue
-              newValue.text.toIntOrNull()?.let(onTempoChange)
-              hasEdited = true
+                textState = newValue
+                newValue.text.toIntOrNull()?.let(onTempoChange)
+                userIsEditing = true
             },
             label = { Text("Tempo BPM") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier =
-                Modifier.weight(1f).testTag(SamplerTestTags.INIT_TEMPO_SELECTOR).onFocusChanged {
-                    focusState ->
-                  if (focusState.isFocused && !hasEdited) {
-                    textState = TextFieldValue("")
-                  }
-                })
+                Modifier.weight(1f).testTag(SamplerTestTags.INIT_TEMPO_SELECTOR)
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused && textState.text == tempo.toString()) {
+                            if (!userIsEditing) {
+                                textState = TextFieldValue("", TextRange(0))
+                            }
+                        }
+                    }
+        )
 
         Button(
-            onClick = onTapTempo, modifier = Modifier.testTag(SamplerTestTags.TAP_TEMPO_BUTTON)) {
-              Text("Tap")
-            }
-      }
+            onClick = onTapTempo,
+            modifier = Modifier.testTag(SamplerTestTags.TAP_TEMPO_BUTTON)) {
+            Text("Tap")
+        }
+    }
 }
 
 @Composable
