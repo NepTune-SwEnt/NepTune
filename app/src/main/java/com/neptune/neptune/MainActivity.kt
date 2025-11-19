@@ -122,31 +122,32 @@ fun NeptuneApp(
               modifier = Modifier.padding(innerPadding)) {
                 // TODO: Replace mock screens with actual app screens
                 composable(Screen.Main.route) {
-                  MainScreen(
-                      navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
-                      navigateToProjectList = {
-                          navigationActions.navigateTo(Screen.ProjectList.createRoute("post"))
-                      })
-                      navigateToOtherUserProfile = { userId ->
-                          navigationActions.navigateTo(Screen.OtherUserProfile.createRoute(userId))
-                      
+                    MainScreen(
+                        navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
+                        navigateToProjectList = {
+                            navigationActions.navigateTo(Screen.ProjectList.createRoute("post"))
+                        },
+                        navigateToOtherUserProfile = { userId ->
+                            navigationActions.navigateTo(Screen.OtherUserProfile.createRoute(userId))
+                        })
                 }
                 composable(Screen.Profile.route) {
-                  SelfProfileRoute(
-                      settings = { navigationActions.navigateTo(Screen.Settings) },
-                      goBack = { navigationActions.goBack() })
+                    SelfProfileRoute(
+                        settings = { navigationActions.navigateTo(Screen.Settings) },
+                        goBack = { navigationActions.goBack() })
                 }
                 composable(
                     route = Screen.Edit.route + "/{zipFilePath}",
                     arguments =
                         listOf(
                             navArgument("zipFilePath") {
-                              type = NavType.StringType
-                              nullable = true
+                                type = NavType.StringType
+                                nullable = true
                             })) { backStackEntry ->
-                      val zipFilePath = backStackEntry.arguments?.getString("zipFilePath")
-                      SamplerScreen(zipFilePath = zipFilePath)
-                    }
+                    val zipFilePath = backStackEntry.arguments?.getString("zipFilePath")
+                    SamplerScreen(zipFilePath = zipFilePath)
+                }
+
                 composable(Screen.Search.route) { SearchScreen(
                     navigateToOtherUserProfile = { userId ->
                         navigationActions.navigateTo(Screen.OtherUserProfile.createRoute(userId))
