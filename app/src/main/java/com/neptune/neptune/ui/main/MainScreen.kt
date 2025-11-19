@@ -96,6 +96,8 @@ object MainScreenTestTags : BaseSampleTestTags {
   // General
   const val MAIN_SCREEN = "mainScreen"
   const val POST_BUTTON = "postButton"
+  const val DOWNlOAD_PROGRESS = "downloadProgressBar"
+
 
   // Top Bar
   const val TOP_BAR = "topBar"
@@ -176,7 +178,7 @@ fun MainScreen(
   // Depends on the size of the screen
   val maxColumns = if (screenWidth < 360.dp) 1 else 2
   val cardWidth = (screenWidth - horizontalPadding * 2 - spacing) / 2
-
+  val downloadProgress by mainViewModel.downloadProgress.collectAsState()
   val lifecycleOwner = LocalLifecycleOwner.current
   // This effect was created using AI assistance
   DisposableEffect(lifecycleOwner) {
@@ -198,129 +200,134 @@ fun MainScreen(
     mainViewModel.addComment(sampleId, text)
     mainViewModel.observeCommentsForSample(sampleId)
   }
-
-  Scaffold(
-      topBar = {
-        Column {
-          CenterAlignedTopAppBar(
-              modifier = Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
-              title = {
-                Text(
-                    text = "NepTune",
-                    style =
-                        TextStyle(
-                            fontSize = 45.sp,
-                            fontFamily = FontFamily(Font(R.font.lily_script_one)),
-                            fontWeight = FontWeight(149),
-                            color = NepTuneTheme.colors.onBackground,
-                        ),
-                    modifier = Modifier.padding(25.dp).testTag(MainScreenTestTags.TOP_BAR_TITLE),
-                    textAlign = TextAlign.Center)
-              },
-              actions = {
-                IconButton(
-                    onClick = navigateToProfile,
-                    modifier =
-                        Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
-                            .size(57.dp)
-                            .testTag(NavigationTestTags.PROFILE_BUTTON)) {
-                      AsyncImage(
-                          model = userAvatar ?: R.drawable.profile,
-                          contentDescription = "Profile",
-                          modifier = Modifier.fillMaxSize().clip(CircleShape),
-                          contentScale = ContentScale.Crop,
-                          placeholder = painterResource(id = R.drawable.profile),
-                          error = painterResource(id = R.drawable.profile))
-                    }
-              },
-              colors =
-                  TopAppBarDefaults.centerAlignedTopAppBarColors(
-                      containerColor = NepTuneTheme.colors.background))
-          HorizontalDivider(
-              modifier = Modifier.fillMaxWidth(),
-              thickness = 0.75.dp,
-              color = NepTuneTheme.colors.onBackground)
-        }
-      },
-      floatingActionButton = {
-        FloatingActionButton(
-            onClick = navigateToProjectList,
-            containerColor = NepTuneTheme.colors.postButton,
-            contentColor = NepTuneTheme.colors.onBackground,
-            shape = CircleShape,
-            modifier =
-                Modifier.shadow(
-                        elevation = 4.dp,
-                        spotColor = NepTuneTheme.colors.shadow,
-                        ambientColor = NepTuneTheme.colors.shadow,
-                        shape = CircleShape)
-                    .size(52.dp)
-                    .testTag(MainScreenTestTags.POST_BUTTON)) {
-              Icon(
-                  imageVector = Icons.Default.Add,
-                  contentDescription = "Create a Post",
-                  modifier = Modifier.size(70.dp))
+  Box(modifier = Modifier.fillMaxSize()) {
+      Scaffold(
+          topBar = {
+            Column {
+              CenterAlignedTopAppBar(
+                  modifier = Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
+                  title = {
+                    Text(
+                        text = "NepTune",
+                        style =
+                            TextStyle(
+                                fontSize = 45.sp,
+                                fontFamily = FontFamily(Font(R.font.lily_script_one)),
+                                fontWeight = FontWeight(149),
+                                color = NepTuneTheme.colors.onBackground,
+                            ),
+                        modifier = Modifier.padding(25.dp).testTag(MainScreenTestTags.TOP_BAR_TITLE),
+                        textAlign = TextAlign.Center)
+                  },
+                  actions = {
+                    IconButton(
+                        onClick = navigateToProfile,
+                        modifier =
+                            Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
+                                .size(57.dp)
+                                .testTag(NavigationTestTags.PROFILE_BUTTON)) {
+                          AsyncImage(
+                              model = userAvatar ?: R.drawable.profile,
+                              contentDescription = "Profile",
+                              modifier = Modifier.fillMaxSize().clip(CircleShape),
+                              contentScale = ContentScale.Crop,
+                              placeholder = painterResource(id = R.drawable.profile),
+                              error = painterResource(id = R.drawable.profile))
+                        }
+                  },
+                  colors =
+                      TopAppBarDefaults.centerAlignedTopAppBarColors(
+                          containerColor = NepTuneTheme.colors.background))
+              HorizontalDivider(
+                  modifier = Modifier.fillMaxWidth(),
+                  thickness = 0.75.dp,
+                  color = NepTuneTheme.colors.onBackground)
             }
-      },
-      modifier = Modifier.testTag(MainScreenTestTags.MAIN_SCREEN),
-      containerColor = NepTuneTheme.colors.background) { innerPadding ->
-        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-          LazyColumn(
-              modifier =
-                  Modifier.fillMaxSize()
-                      .padding(horizontal = 30.dp)
-                      .testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
-                // ----------------Discover Section-----------------
-                item { SectionHeader(title = "Discover") }
-                item {
-                  LazyRow(
-                      horizontalArrangement = Arrangement.spacedBy(spacing),
-                      modifier = Modifier.fillMaxWidth()) {
-                        // As this element is horizontally scrollable,we can let 2
-                        val columns = discoverSamples.chunked(2)
+          },
+          floatingActionButton = {
+            FloatingActionButton(
+                onClick = navigateToProjectList,
+                containerColor = NepTuneTheme.colors.postButton,
+                contentColor = NepTuneTheme.colors.onBackground,
+                shape = CircleShape,
+                modifier =
+                    Modifier.shadow(
+                            elevation = 4.dp,
+                            spotColor = NepTuneTheme.colors.shadow,
+                            ambientColor = NepTuneTheme.colors.shadow,
+                            shape = CircleShape)
+                        .size(52.dp)
+                        .testTag(MainScreenTestTags.POST_BUTTON)) {
+                  Icon(
+                      imageVector = Icons.Default.Add,
+                      contentDescription = "Create a Post",
+                      modifier = Modifier.size(70.dp))
+                }
+          },
+          modifier = Modifier.testTag(MainScreenTestTags.MAIN_SCREEN),
+          containerColor = NepTuneTheme.colors.background) { innerPadding ->
+            Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+              LazyColumn(
+                  modifier =
+                      Modifier.fillMaxSize()
+                          .padding(horizontal = 30.dp)
+                          .testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
+                    // ----------------Discover Section-----------------
+                    item { SectionHeader(title = "Discover") }
+                    item {
+                      LazyRow(
+                          horizontalArrangement = Arrangement.spacedBy(spacing),
+                          modifier = Modifier.fillMaxWidth()) {
+                            // As this element is horizontally scrollable,we can let 2
+                            val columns = discoverSamples.chunked(2)
 
-                        items(columns) { samplesColumn ->
-                          Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
-                            samplesColumn.forEach { sample ->
-                              val clickHandlers =
-                                  onClickFunctions(
-                                      onDownloadClick = { mainViewModel.onDownloadSample(sample) },
-                                      onLikeClick = { isLiked ->
-                                        mainViewModel.onLikeClicked(sample, isLiked)
-                                      },
-                                      onCommentClick = { onCommentClicked(sample) })
-                              SampleCard(
-                                  sample = sample,
-                                  width = cardWidth,
-                                  isLiked = likedSamples[sample.id] == true,
-                                  clickHandlers = clickHandlers)
+                            items(columns) { samplesColumn ->
+                              Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
+                                samplesColumn.forEach { sample ->
+                                  val clickHandlers =
+                                      onClickFunctions(
+                                          onDownloadClick = { mainViewModel.onDownloadSample(sample) },
+                                          onLikeClick = { isLiked ->
+                                            mainViewModel.onLikeClicked(sample, isLiked)
+                                          },
+                                          onCommentClick = { onCommentClicked(sample) })
+                                  SampleCard(
+                                      sample = sample,
+                                      width = cardWidth,
+                                      isLiked = likedSamples[sample.id] == true,
+                                      clickHandlers = clickHandlers)
+                                }
+                              }
                             }
                           }
-                        }
-                      }
-                }
-                // ----------------Followed Section-----------------
-                item { SectionHeader(title = "Followed") }
-                // If the screen is too small, it will display 1 Card instead of 2
-                items(followedSamples.chunked(maxColumns)) { samples ->
-                  SampleCardRow(
-                      samples = samples,
-                      cardWidth = cardWidth,
-                      likedSamples = likedSamples,
-                      onLikeClick = { sample, isLiked ->
-                        mainViewModel.onLikeClicked(sample, isLiked)
-                      },
-                      onCommentClick = { sample -> onCommentClicked(sample) },
-                      onDownloadClick = { sample -> mainViewModel.onDownloadSample(sample) })
-                }
+                    }
+                    // ----------------Followed Section-----------------
+                    item { SectionHeader(title = "Followed") }
+                    // If the screen is too small, it will display 1 Card instead of 2
+                    items(followedSamples.chunked(maxColumns)) { samples ->
+                      SampleCardRow(
+                          samples = samples,
+                          cardWidth = cardWidth,
+                          likedSamples = likedSamples,
+                          onLikeClick = { sample, isLiked ->
+                            mainViewModel.onLikeClicked(sample, isLiked)
+                          },
+                          onCommentClick = { sample -> onCommentClicked(sample) },
+                          onDownloadClick = { sample -> mainViewModel.onDownloadSample(sample) })
+                    }
+                  }
+              // Comment Overlay
+              if (activeCommentSampleId != null) {
+                  CommentDialog(
+                      sampleId = activeCommentSampleId!!,
+                      comments = comments,
+                      onDismiss = { activeCommentSampleId = null },
+                      onAddComment = { id, text -> onAddComment(id, text) })
               }
-          // Comment Overlay
-          if (activeCommentSampleId != null) {
-            CommentDialog(
-                sampleId = activeCommentSampleId!!,
-                comments = comments,
-                onDismiss = { activeCommentSampleId = null },
-                onAddComment = { id, text -> onAddComment(id, text) })
+              if (downloadProgress != null && downloadProgress != 0) {
+                  mainViewModel.actions?.DownloadProgressBar(downloadProgress = downloadProgress!!,
+                      MainScreenTestTags.DOWNlOAD_PROGRESS)
+              }
           }
         }
       }

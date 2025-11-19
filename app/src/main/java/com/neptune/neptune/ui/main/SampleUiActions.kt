@@ -77,7 +77,7 @@ class SampleUiActions(
   }
 
   @Composable
-  fun DownloadProgressBar(downloadProgress: Int) {
+  fun DownloadProgressBar(downloadProgress: Int, testTag: String) {
     Box(
       modifier = Modifier
         .fillMaxSize()
@@ -91,9 +91,9 @@ class SampleUiActions(
         modifier = Modifier
           .padding(16.dp)
           .fillMaxWidth(0.5f)
-          .testTag(SearchScreenTestTags.DOWNLOAD_BAR),
+          .testTag(testTag),
         color = NepTuneTheme.colors.onBackground,
-        trackColor = NepTuneTheme.colors.onBackground,
+        trackColor = NepTuneTheme.colors.background,
         strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
       )
     }

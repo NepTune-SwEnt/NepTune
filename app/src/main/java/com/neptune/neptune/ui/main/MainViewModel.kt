@@ -76,6 +76,7 @@ class MainViewModel(
 
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
+  val downloadProgress = actions?.downloadProgress ?: MutableStateFlow<Int?>(null)
 
   init {
     if (useMockData) {

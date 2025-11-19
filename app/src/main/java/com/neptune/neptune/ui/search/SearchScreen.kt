@@ -144,7 +144,8 @@ fun SearchScreen(
               )
           })
       if (downloadProgress != null && downloadProgress != 0) {
-          searchViewModel.actions?.DownloadProgressBar(downloadProgress = downloadProgress!!)
+          searchViewModel.actions?.DownloadProgressBar(downloadProgress = downloadProgress!!,
+              SearchScreenTestTags.DOWNLOAD_BAR)
       }
   }
 }

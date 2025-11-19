@@ -108,11 +108,7 @@ open class SearchViewModel(
       firebaseAuth.addAuthStateListener(authListener)
 
     }
-      if (useMockData) {
-          loadMockData()
-      } else {
-          loadSamplesFromFirebase()
-      }
+      load(useMockData)
   }
 
   override fun onCleared() {
@@ -126,7 +122,7 @@ open class SearchViewModel(
 
   // Mock data for tests (your original loadData)
   private fun loadMockData() {
-    _samples.value =
+        _samples.value =
         listOf(
             Sample(
                 "1",
@@ -170,13 +166,14 @@ open class SearchViewModel(
                 usersLike = emptyList(),
                 210,
                 210))
-      applyFilter(query)
+        applyFilter(query)
   }
 
   fun loadSamplesFromFirebase() {
     viewModelScope.launch {
       val loaded = repo.getSamples()
       allSamples.value = loaded
+      _samples.value = loaded
       refreshLikeStates()
       applyFilter(query)
     }
@@ -189,7 +186,7 @@ open class SearchViewModel(
     viewModelScope.launch {
       try {
         safeActions.onDownloadClicked(sample)
-        search(query)
+        load(useMockData)
       } catch (e: Exception) {
         Log.e("SearchViewModel", "Error downloading sample: ${e.message}")
         // optional: log or expose error
@@ -201,6 +198,17 @@ open class SearchViewModel(
     val sampleId = sample.id
     viewModelScope.launch {
       repo.toggleLike(sample.id, isLikedNow)
+      val delta = if (isLikedNow) 1 else -1
+      val updatedSamples =
+          allSamples.value.map { current ->
+            if (current.id == sampleId) {
+              current.copy(likes = current.likes + delta)
+            } else {
+              current
+            }
+          }
+      allSamples.value = updatedSamples
+      applyFilter(query)
       _likedSamples.value = _likedSamples.value + (sampleId to isLikedNow)
     }
   }
@@ -230,6 +238,7 @@ open class SearchViewModel(
       val profile = profileRepo.getProfile()
       val username = profile?.username ?: "Anonymous"
       repo.addComment(sampleId, username, text.trim())
+      load(useMockData)
     }
   }
 
@@ -255,5 +264,12 @@ open class SearchViewModel(
                             normalize(it.description).contains(normalizedQuery, ignoreCase = true) ||
                             it.tags.any { tag -> normalize(tag).contains(normalizedQuery, ignoreCase = true) }
                 }
+    }
+    private fun load(useMock: Boolean) {
+        if (useMock) {
+            loadMockData()
+        } else {
+            loadSamplesFromFirebase()
+        }
     }
 }
