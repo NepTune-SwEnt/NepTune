@@ -72,39 +72,28 @@ import com.neptune.neptune.ui.theme.NepTuneTheme
  *
  * Naming follows the pattern: `"profile/<element>"`, ensuring uniqueness and consistency.
  *
- * Example usage in tests:
- * ```
- * composeTestRule.onNodeWithTag(ProfileScreenTestTags.EDIT_BUTTON).assertIsDisplayed()
- * ```
- *
  * @see testTag
- * @see ProfileScreenTest
  */
 object ProfileScreenTestTags {
   const val ROOT = "profile/root"
-
   const val VIEW_CONTENT = "profile/view"
   const val EDIT_CONTENT = "profile/edit"
-
   const val AVATAR = "profile/avatar"
   const val NAME = "profile/name"
   const val USERNAME = "profile/username"
   const val BIO = "profile/bio"
-
   const val FOLLOWERS_BLOCK = "profile/stat/followers"
   const val FOLLOWING_BLOCK = "profile/stat/following"
   const val POSTS_BLOCK = "profile/stat/posts"
   const val LIKES_BLOCK = "profile/stat/likes"
-
   const val TAGS_VIEW_SECTION = "profile/view/tags"
   const val TAGS_EDIT_SECTION = "profile/edit/tags"
-
   const val EDIT_BUTTON = "profile/btn/edit"
   const val SAVE_BUTTON = "profile/btn/save"
   const val ADD_TAG_BUTTON = "profile/btn/add_tag"
   const val SETTINGS_BUTTON = "profile/btn/settings"
   const val GOBACK_BUTTON = "profile/btn/goback"
-
+  const val FOLLOW_BUTTON = "profile/btn/follow"
   const val FIELD_NAME = "profile/field/name"
   const val FIELD_USERNAME = "profile/field/username"
   const val FIELD_BIO = "profile/field/bio"
@@ -112,7 +101,7 @@ object ProfileScreenTestTags {
 }
 
 /**
- * Displays the main Profile screen, switching between view and edit modes.
+ * Displays the main Profile screen, switching between view (self or other user) and edit modes.
  *
  * @param uiState The current [ProfileUiState] containing user data and screen mode.
  * @param callbacks The [ProfileScreenCallbacks] for handling user interactions.
@@ -123,7 +112,8 @@ fun ProfileScreen(
     uiState: ProfileUiState,
     localAvatarUri: Uri? = null,
     callbacks: ProfileScreenCallbacks = ProfileScreenCallbacks.Empty,
-    onAvatarEditClick: () -> Unit = {}
+    onAvatarEditClick: () -> Unit = {},
+    viewConfig: ProfileViewConfig
 ) {
   Column(modifier = Modifier.padding(16.dp).testTag(ProfileScreenTestTags.ROOT)) {
     when (uiState.mode) {
@@ -131,9 +121,8 @@ fun ProfileScreen(
       ProfileMode.VIEW -> {
         ProfileViewContent(
             state = uiState,
-            onEdit = callbacks.onEditClick,
             localAvatarUri = localAvatarUri,
-            settings = callbacks.onSettingsClick,
+            viewConfig = viewConfig,
             goBack = callbacks.goBackClick)
       }
       // Create profile screen edit content
@@ -155,31 +144,67 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun TopBar(goBack: () -> Unit, settings: () -> Unit) {
-  Column {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically) {
-          // Go Back Button
-          IconButton(
-              onClick = goBack, modifier = Modifier.testTag(ProfileScreenTestTags.GOBACK_BUTTON)) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBackIosNew,
-                    contentDescription = "Go Back",
-                    tint = NepTuneTheme.colors.onBackground)
-              }
-          // Settings Button
-          IconButton(
-              modifier = Modifier.size(30.dp).testTag(ProfileScreenTestTags.SETTINGS_BUTTON),
-              onClick = settings) {
-                Icon(
-                    modifier = Modifier.size(30.dp),
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Logout",
-                    tint = NepTuneTheme.colors.onBackground)
+private fun SettingsButton(settings: () -> Unit) {
+  IconButton(
+      modifier = Modifier.size(30.dp).testTag(ProfileScreenTestTags.SETTINGS_BUTTON),
+      onClick = settings) {
+        Icon(
+            modifier = Modifier.size(30.dp),
+            imageVector = Icons.Default.Settings,
+            contentDescription = "Logout",
+            tint = NepTuneTheme.colors.onBackground)
+      }
+}
+
+@Composable
+private fun SamplesSection() {
+  TODO()
+}
+
+sealed interface ProfileViewConfig {
+  val topBarContent: (@Composable () -> Unit)?
+  val belowStatsButton: (@Composable () -> Unit)?
+  val bottomScreenButton: (@Composable (modifier: Modifier) -> Unit)?
+  val samplesSection: (@Composable () -> Unit)?
+
+  data class SelfProfileConfig(private val onEdit: () -> Unit, private val settings: () -> Unit) :
+      ProfileViewConfig {
+    override val topBarContent = @Composable { SettingsButton(settings) }
+    override val belowStatsButton = null
+    override val bottomScreenButton =
+        @Composable { modifier: Modifier ->
+          Button(
+              onClick = onEdit,
+              enabled = true,
+              modifier =
+                  modifier.padding(bottom = 24.dp).testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
+                Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
+                Spacer(Modifier.width(8.dp))
+                Text("Edit")
               }
         }
+    override val samplesSection = null
+  }
+
+  data class OtherProfileConfig(
+      private val onFollow: () -> Unit,
+      private val buttonModifier: Modifier = Modifier,
+  ) : ProfileViewConfig {
+    override val topBarContent = null
+    override val belowStatsButton =
+        @Composable {
+          Button(
+              onClick = onFollow,
+              enabled = true,
+              modifier =
+                  Modifier.padding(bottom = 24.dp).testTag(ProfileScreenTestTags.FOLLOW_BUTTON)) {
+                Icon(imageVector = Icons.Default.Add, contentDescription = "Follow")
+                Spacer(Modifier.width(8.dp))
+                Text("Follow")
+              }
+        }
+    override val bottomScreenButton = null
+    override val samplesSection = @Composable { SamplesSection() }
   }
 }
 
@@ -190,22 +215,39 @@ private fun TopBar(goBack: () -> Unit, settings: () -> Unit) {
  * button to enter edit mode.
  *
  * @param state The [ProfileUiState] containing the displayed user information.
- * @param onEdit Callback triggered when the Edit button is clicked.
+ * @param localAvatarUri Optional local URI for the avatar image (overrides remote URL if present).
  * @param goBack Callback triggered when the Go Back button is clicked.
- * @param settings Callback triggered when the Settings button is clicked.
+ * @param viewConfig Configuration for view-specific UI elements.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ProfileViewContent(
     state: ProfileUiState,
     localAvatarUri: Uri?,
-    onEdit: () -> Unit,
     goBack: () -> Unit,
-    settings: () -> Unit,
+    viewConfig: ProfileViewConfig
 ) {
   Scaffold(
       modifier = Modifier.testTag(ProfileScreenTestTags.ROOT),
-      topBar = { TopBar(goBack, settings) },
+      topBar = {
+        Column {
+          Row(
+              modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically) {
+                // Go Back Button
+                IconButton(
+                    onClick = goBack,
+                    modifier = Modifier.testTag(ProfileScreenTestTags.GOBACK_BUTTON)) {
+                      Icon(
+                          imageVector = Icons.Default.ArrowBackIosNew,
+                          contentDescription = "Go Back",
+                          tint = NepTuneTheme.colors.onBackground)
+                    }
+                viewConfig.topBarContent?.invoke()
+              }
+        }
+      },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
         Box(Modifier.fillMaxSize().padding(innerPadding)) {
           Column(
@@ -244,6 +286,9 @@ private fun ProfileViewContent(
             StatRow(state)
             Spacer(Modifier.height(100.dp))
 
+            // if view mode is for other users profile, show follow button
+            viewConfig.belowStatsButton?.invoke()
+
             // Bio
             Text(
                 text = if (state.bio != "") "“${state.bio}”" else "",
@@ -280,18 +325,8 @@ private fun ProfileViewContent(
             Spacer(Modifier.height(50.dp))
           }
 
-            // Edit button
-          Button(
-              onClick = onEdit,
-              enabled = true,
-              modifier =
-                  Modifier.align(Alignment.BottomCenter)
-                      .padding(bottom = 24.dp)
-                      .testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
-                Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
-                Spacer(Modifier.width(8.dp))
-                Text("Edit")
-              }
+          // if mode is self profile, show edit button
+          viewConfig.bottomScreenButton?.invoke(Modifier.align(Alignment.BottomCenter))
         }
       }
 }
@@ -347,7 +382,7 @@ private fun ProfileEditContent(
       verticalArrangement = Arrangement.Center) {
         Spacer(modifier = Modifier.height(40.dp))
 
-      // Avatar image
+        // Avatar image
         val avatarModel = localAvatarUri ?: uiState.avatarUrl ?: R.drawable.ic_avatar_placeholder
         Avatar(
             model = avatarModel,
@@ -356,7 +391,7 @@ private fun ProfileEditContent(
             onEditClick = onAvatarEditClick)
         Spacer(modifier = Modifier.height(40.dp))
 
-      // Field for name input
+        // Field for name input
         OutlinedTextField(
             value = uiState.name,
             onValueChange = onNameChange,
@@ -516,28 +551,28 @@ fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, testTag:
 
 @Composable
 private fun StatRow(state: ProfileUiState) {
-    Row(Modifier.fillMaxWidth()) {
-        StatBlock(
-            label = "Posts",
-            value = state.posts,
-            modifier = Modifier.weight(1f),
-            testTag = ProfileScreenTestTags.POSTS_BLOCK)
-        StatBlock(
-            label = "Likes",
-            value = state.likes,
-            modifier = Modifier.weight(1f),
-            testTag = ProfileScreenTestTags.LIKES_BLOCK)
-        StatBlock(
-            label = "Followers",
-            value = state.followers,
-            modifier = Modifier.weight(1f),
-            testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
-        StatBlock(
-            label = "Following",
-            value = state.following,
-            modifier = Modifier.weight(1f),
-            testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
-    }
+  Row(Modifier.fillMaxWidth()) {
+    StatBlock(
+        label = "Posts",
+        value = state.posts,
+        modifier = Modifier.weight(1f),
+        testTag = ProfileScreenTestTags.POSTS_BLOCK)
+    StatBlock(
+        label = "Likes",
+        value = state.likes,
+        modifier = Modifier.weight(1f),
+        testTag = ProfileScreenTestTags.LIKES_BLOCK)
+    StatBlock(
+        label = "Followers",
+        value = state.followers,
+        modifier = Modifier.weight(1f),
+        testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
+    StatBlock(
+        label = "Following",
+        value = state.following,
+        modifier = Modifier.weight(1f),
+        testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
+  }
 }
 
 /**
@@ -617,6 +652,7 @@ fun EditableTagChip(tagText: String, onRemove: (String) -> Unit, modifier: Modif
           ))
 }
 
+// FIXME: USE THIS FOR SELF PROFILE
 /**
  * Composable route for the Profile feature.
  *
@@ -655,6 +691,9 @@ fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
             }
           })
 
+  val viewConfig =
+      ProfileViewConfig.SelfProfileConfig(onEdit = viewModel::onEditClick, settings = settings)
+
   ProfileScreen(
       uiState = state,
       localAvatarUri =
@@ -664,6 +703,7 @@ fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
             localAvatarUri
           },
       onAvatarEditClick = { imagePickerLauncher.launch("image/*") }, // Launch the picker
+      viewConfig = viewConfig,
       callbacks =
           profileScreenCallbacks(
               onEditClick = viewModel::onEditClick,
@@ -674,6 +714,5 @@ fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
               onTagInputFieldChange = viewModel::onTagInputFieldChange,
               onTagSubmit = viewModel::onTagAddition,
               onRemoveTag = viewModel::onTagDeletion,
-              onSettingsClick = settings,
               goBackClick = goBack))
 }
