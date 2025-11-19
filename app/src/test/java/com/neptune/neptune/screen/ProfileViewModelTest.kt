@@ -7,7 +7,7 @@ import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.fakes.FakeProfileRepository
 import com.neptune.neptune.ui.profile.ProfileMode
-import com.neptune.neptune.ui.profile.ProfileViewModel
+import com.neptune.neptune.ui.profile.SelfProfileViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestDispatcher
@@ -41,7 +41,7 @@ class ProfileViewModelTest {
 
   @get:Rule val mainRule = MainDispatcherRule()
 
-  private lateinit var viewModel: ProfileViewModel
+  private lateinit var viewModel: SelfProfileViewModel
   private lateinit var fakeRepo: FakeProfileRepository
   private lateinit var mockAuth: FirebaseAuth
   private lateinit var mockFirebaseUser: FirebaseUser
@@ -60,7 +60,7 @@ class ProfileViewModelTest {
     whenever(mockAuth.currentUser).thenReturn(mockFirebaseUser)
     whenever(mockFirebaseUser.uid).thenReturn("fake_user_id_for_test")
 
-    viewModel = ProfileViewModel(fakeRepo, mockAuth, mockImageRepo, mockStorageService)
+    viewModel = SelfProfileViewModel(fakeRepo, mockAuth, mockImageRepo, mockStorageService)
   }
 
   @Test

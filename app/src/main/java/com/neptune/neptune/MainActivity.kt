@@ -39,7 +39,7 @@ import com.neptune.neptune.ui.navigation.Screen
 import com.neptune.neptune.ui.picker.ImportViewModel
 import com.neptune.neptune.ui.picker.importAppRoot
 import com.neptune.neptune.ui.post.PostScreen
-import com.neptune.neptune.ui.profile.ProfileRoute
+import com.neptune.neptune.ui.profile.SelfProfileRoute
 import com.neptune.neptune.ui.projectlist.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.search.SearchScreen
@@ -122,7 +122,7 @@ fun NeptuneApp(
                       navigateToProjectList = { navigationActions.navigateTo(Screen.Post) })
                 }
                 composable(Screen.Profile.route) {
-                  ProfileRoute(
+                  SelfProfileRoute(
                       settings = { navigationActions.navigateTo(Screen.Settings) },
                       goBack = { navigationActions.goBack() })
                 }

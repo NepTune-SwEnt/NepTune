@@ -656,26 +656,26 @@ fun EditableTagChip(tagText: String, onRemove: (String) -> Unit, modifier: Modif
 /**
  * Composable route for the Profile feature.
  *
- * Connects the [ProfileViewModel] to the [ProfileScreen] and handles state collection. This
+ * Connects the [SelfProfileViewModel] to the [ProfileScreen] and handles state collection. This
  * function is typically used as the entry point for navigation to the profile screen.
  *
  * This method was made using AI assistance
  */
 @Composable
-fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
+fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
 
   val factory =
       object : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-          if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
+          if (modelClass.isAssignableFrom(SelfProfileViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ProfileViewModel(repo = ProfileRepositoryProvider.repository) as T
+            return SelfProfileViewModel(repo = ProfileRepositoryProvider.repository) as T
           }
           throw IllegalArgumentException("Unknown ViewModel class")
         }
       }
 
-  val viewModel: ProfileViewModel = viewModel(factory = factory)
+  val viewModel: SelfProfileViewModel = viewModel(factory = factory)
   val state = viewModel.uiState.collectAsState().value
   val localAvatarUri by viewModel.localAvatarUri.collectAsState()
   val tempAvatarUri by viewModel.tempAvatarUri.collectAsState()
@@ -691,8 +691,8 @@ fun ProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
             }
           })
 
-  val viewConfig =
-      ProfileViewConfig.SelfProfileConfig(onEdit = viewModel::onEditClick, settings = settings)
+    val viewConfig =
+        ProfileViewConfig.SelfProfileConfig(onEdit = viewModel::onEditClick, settings = settings)
 
   ProfileScreen(
       uiState = state,

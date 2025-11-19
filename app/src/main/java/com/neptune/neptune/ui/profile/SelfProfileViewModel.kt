@@ -34,7 +34,7 @@ private fun normalizeTag(s: String) = s.trim().lowercase().replace(Regex("\\s+")
  *
  * This class was created using AI assistance.
  */
-class ProfileViewModel(
+class SelfProfileViewModel(
     private val repo: ProfileRepository = ProfileRepositoryProvider.repository,
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val imageRepo: ImageStorageRepository = ImageStorageRepository(),
