@@ -46,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
@@ -60,10 +61,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.airbnb.lottie.LottieProperty
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
+import com.airbnb.lottie.compose.rememberLottieDynamicProperties
+import com.airbnb.lottie.compose.rememberLottieDynamicProperty
 import com.neptune.neptune.R
 import com.neptune.neptune.data.rememberImagePickerLauncher
 import com.neptune.neptune.media.LocalMediaPlayer
@@ -106,6 +110,17 @@ fun PostScreen(
   val localImageUri by postViewModel.localImageUri.collectAsState()
 
   val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.loading))
+
+  val dynamicProperties =
+      rememberLottieDynamicProperties(
+          rememberLottieDynamicProperty(
+              property = LottieProperty.COLOR,
+              value = NepTuneTheme.colors.animation.toArgb(),
+              keyPath = arrayOf("**")),
+          rememberLottieDynamicProperty(
+              property = LottieProperty.STROKE_COLOR,
+              value = NepTuneTheme.colors.animation.toArgb(),
+              keyPath = arrayOf("**")))
 
   val imagePickerLauncher =
       rememberImagePickerLauncher(
@@ -449,6 +464,7 @@ fun PostScreen(
               LottieAnimation(
                   composition = composition,
                   iterations = LottieConstants.IterateForever,
+                  dynamicProperties = dynamicProperties,
                   modifier = Modifier.size(200.dp))
             }
       }
