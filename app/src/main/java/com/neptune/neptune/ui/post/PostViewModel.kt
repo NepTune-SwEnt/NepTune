@@ -51,7 +51,7 @@ class PostViewModel(
     viewModelScope.launch {
       try {
         val project = projectRepository.getProject(projectId)
-        val rawPath = project.projectFilePath
+        val rawPath = project.projectFileLocalPath
         if (rawPath.isNullOrEmpty()) {
           Log.e("PostViewModel", "The project don't have a file")
           return@launch

@@ -533,8 +533,7 @@ open class SamplerViewModel() : ViewModel() {
                     paramMap["compThreshold"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)
                         ?: current.compThreshold,
                 compRatio =
-                    paramMap["compRatio"]?.let { it.roundToInt().coerceIn(1, 20) }
-                        ?: current.compRatio,
+                    paramMap["compRatio"]?.roundToInt()?.coerceIn(1, 20) ?: current.compRatio,
                 compKnee = paramMap["compKnee"]?.coerceIn(0f, COMP_KNEE_MAX) ?: current.compKnee,
                 compGain =
                     paramMap["compGain"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)
@@ -579,8 +578,7 @@ open class SamplerViewModel() : ViewModel() {
                     paramMap["compThreshold"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)
                         ?: current.compThreshold,
                 compRatio =
-                    paramMap["compRatio"]?.roundToInt()?.coerceIn(1, 20)
-                        ?: current.compRatio,
+                    paramMap["compRatio"]?.roundToInt()?.coerceIn(1, 20) ?: current.compRatio,
                 compKnee = paramMap["compKnee"]?.coerceIn(0f, COMP_KNEE_MAX) ?: current.compKnee,
                 compGain =
                     paramMap["compGain"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)
@@ -589,7 +587,7 @@ open class SamplerViewModel() : ViewModel() {
                     paramMap["compAttack"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compAttack,
                 compDecay = paramMap["compDecay"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compDecay,
                 eqBands = newEqBands.toList(),
-                tempo = tempoValue!!.roundToInt().coerceIn(50, 200),
+                tempo = tempoValue.roundToInt().coerceIn(50, 200),
                 pitchNote = loadedPitchNote,
                 pitchOctave = loadedPitchOctave,
                 currentAudioUri = audioUri,

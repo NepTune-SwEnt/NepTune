@@ -60,7 +60,7 @@ class EpicProjectE2ETest {
           ProjectItem(
               uid = TARGET_PROJECT_ID,
               name = "Test Project ZIP",
-              projectFilePath = assetZipFile.absolutePath,
+              projectFileLocalPath = assetZipFile.absolutePath,
               lastUpdated = Timestamp(100, 0)))
       TotalProjectItemsRepositoryProvider.repository = fakeRepository
     }
