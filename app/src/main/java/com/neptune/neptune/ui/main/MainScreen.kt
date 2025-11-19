@@ -160,6 +160,7 @@ private fun factory(application: Application) =
 fun MainScreen(
     navigateToProfile: () -> Unit = {},
     navigateToProjectList: () -> Unit = {},
+    navigateToOtherUserProfile: (String) -> Unit = {},
     mainViewModel: MainViewModel =
         viewModel(factory = factory(LocalContext.current.applicationContext as Application))
 ) {
@@ -288,7 +289,11 @@ fun MainScreen(
                                       onLikeClick = { isLiked ->
                                         mainViewModel.onLikeClicked(sample, isLiked)
                                       },
-                                      onCommentClick = { onCommentClicked(sample) })
+                                      onCommentClick = { onCommentClicked(sample) },
+                                      onProfileClick = {
+                                          navigateToOtherUserProfile(sample.ownerId)
+                                      },
+                                  )
                               SampleCard(
                                   sample = sample,
                                   width = cardWidth,
