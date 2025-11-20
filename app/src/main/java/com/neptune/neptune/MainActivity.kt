@@ -31,7 +31,6 @@ import com.neptune.neptune.resources.C
 import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInViewModel
 import com.neptune.neptune.ui.main.MainScreen
-import com.neptune.neptune.ui.mock.MockProfileScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
 import com.neptune.neptune.ui.navigation.Screen
@@ -39,7 +38,8 @@ import com.neptune.neptune.ui.picker.ImportScreen
 import com.neptune.neptune.ui.picker.ImportViewModel
 import com.neptune.neptune.ui.picker.importAppRoot
 import com.neptune.neptune.ui.post.PostScreen
-import com.neptune.neptune.ui.profile.ProfileRoute
+import com.neptune.neptune.ui.profile.OtherUserProfileRoute
+import com.neptune.neptune.ui.profile.SelfProfileRoute
 import com.neptune.neptune.ui.projectlist.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.search.SearchScreen
@@ -124,10 +124,13 @@ fun NeptuneApp(
                       navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
                       navigateToProjectList = {
                         navigationActions.navigateTo(Screen.ProjectList.createRoute("post"))
+                      },
+                      navigateToOtherUserProfile = { userId ->
+                        navigationActions.navigateTo(Screen.OtherUserProfile.createRoute(userId))
                       })
                 }
                 composable(Screen.Profile.route) {
-                  ProfileRoute(
+                  SelfProfileRoute(
                       settings = { navigationActions.navigateTo(Screen.Settings) },
                       goBack = { navigationActions.goBack() })
                 }
@@ -142,7 +145,13 @@ fun NeptuneApp(
                       val zipFilePath = backStackEntry.arguments?.getString("zipFilePath")
                       SamplerScreen(zipFilePath = zipFilePath)
                     }
-                composable(Screen.Search.route) { SearchScreen() }
+
+                composable(Screen.Search.route) {
+                  SearchScreen(
+                      navigateToOtherUserProfile = { userId ->
+                        navigationActions.navigateTo(Screen.OtherUserProfile.createRoute(userId))
+                      })
+                }
                 composable(
                     route = Screen.Post.route,
                     arguments =
@@ -211,7 +220,18 @@ fun NeptuneApp(
                         navigationActions.navigateTo(Screen.SignIn)
                       })
                 }
-                composable(Screen.OtherUserProfile.route) { MockProfileScreen() }
+                composable(
+                    route = Screen.OtherUserProfile.route,
+                    arguments = listOf(navArgument("userId") { type = NavType.StringType })) {
+                        backStackEntry ->
+                      val userId =
+                          backStackEntry.arguments?.getString("userId") ?: return@composable
+
+                      OtherUserProfileRoute(
+                          userId = userId,
+                          goBack = { navigationActions.goBack() },
+                      )
+                    }
               }
         })
   }
