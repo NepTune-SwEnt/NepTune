@@ -12,6 +12,7 @@ val LightPurpleBlue = Color(0xFF7A84E1)
 val LightTurquoise = Color(0xFFC9F7F4)
 val LightLavender = Color(0xFFE8E7FF)
 val LightSkyBlue = Color(0xFFC7C5FF)
+val DarkPurple = Color(0xFF6f5ae8)
 
 // white mode
 val GhostWhite = Color(0xFFF1F3FF)

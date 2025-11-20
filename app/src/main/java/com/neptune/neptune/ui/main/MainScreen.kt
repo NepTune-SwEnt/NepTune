@@ -160,6 +160,7 @@ private fun factory(application: Application) =
 fun MainScreen(
     navigateToProfile: () -> Unit = {},
     navigateToProjectList: () -> Unit = {},
+    navigateToOtherUserProfile: (String) -> Unit = {},
     mainViewModel: MainViewModel =
         viewModel(factory = factory(LocalContext.current.applicationContext as Application))
 ) {
@@ -276,7 +277,11 @@ fun MainScreen(
                                       onLikeClick = { isLiked ->
                                         mainViewModel.onLikeClicked(sample, isLiked)
                                       },
-                                      onCommentClick = { onCommentClicked(sample) })
+                                      onCommentClick = { onCommentClicked(sample) },
+                                      onProfileClick = {
+                                        navigateToOtherUserProfile(sample.ownerId)
+                                      },
+                                  )
                               SampleCard(
                                   sample = sample,
                                   width = cardWidth,
@@ -295,6 +300,9 @@ fun MainScreen(
                       samples = samples,
                       cardWidth = cardWidth,
                       likedSamples = likedSamples,
+                      onProfileClick = { sample ->
+                        if (sample.ownerId.isNotBlank()) navigateToOtherUserProfile(sample.ownerId)
+                      },
                       onLikeClick = { sample, isLiked ->
                         mainViewModel.onLikeClicked(sample, isLiked)
                       },
@@ -345,6 +353,7 @@ fun SampleCardRow(
     samples: List<Sample>,
     cardWidth: Dp,
     likedSamples: Map<String, Boolean> = emptyMap(),
+    onProfileClick: (Sample) -> Unit = {},
     onLikeClick: (Sample, Boolean) -> Unit = { _, _ -> },
     onCommentClick: (Sample) -> Unit = {},
     onDownloadClick: (Sample) -> Unit = {}
@@ -356,6 +365,7 @@ fun SampleCardRow(
           val isLiked = likedSamples[sample.id] == true
           val clickHandlers =
               onClickFunctions(
+                  onProfileClick = { onProfileClick(sample) },
                   onLikeClick = { isLiked -> onLikeClick(sample, isLiked) },
                   onCommentClick = { onCommentClick(sample) },
                   onDownloadClick = { onDownloadClick(sample) })

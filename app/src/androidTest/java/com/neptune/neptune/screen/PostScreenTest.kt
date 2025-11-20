@@ -17,10 +17,13 @@ import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.post.PostScreen
 import com.neptune.neptune.ui.post.PostScreenTestTags
+import com.neptune.neptune.ui.post.PostUiState
 import com.neptune.neptune.ui.post.PostViewModel
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import java.io.File
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -223,5 +226,25 @@ class PostScreenTest {
     viewModel.onImageChanged(null)
     Thread.sleep(500)
     assertNull(viewModel.localImageUri.value)
+  }
+
+  /**
+   * Test to verify that the loading animation (overlay) is displayed when the state 'isUploading'
+   * is true.
+   */
+  @Test
+  fun loadingOverlayIsDisplayedWhenUploading() {
+    val mockViewModel = mockk<PostViewModel>(relaxed = true)
+    val uiStateFlow = MutableStateFlow(PostUiState(isUploading = true))
+    every { mockViewModel.uiState } returns uiStateFlow
+    every { mockViewModel.localImageUri } returns MutableStateFlow(null)
+
+    composeTestRule.setContent {
+      CompositionLocalProvider(LocalMediaPlayer provides mockk(relaxed = true)) {
+        PostScreen(postViewModel = mockViewModel)
+      }
+    }
+
+    composeTestRule.onNodeWithTag(PostScreenTestTags.LOADING_OVERLAY).assertIsDisplayed()
   }
 }

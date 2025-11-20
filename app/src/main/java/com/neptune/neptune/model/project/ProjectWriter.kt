@@ -20,7 +20,7 @@ class ProjectWriter {
     val cleanZipPath = zipFile.path.removePrefix("file:").removePrefix("file://")
     val targetZipFile = File(cleanZipPath)
     val tempZip = File(targetZipFile.parentFile, "tmp_${targetZipFile.name}")
-    val jsonContent = json.encodeToString(SamplerProjectMetadata.serializer(), metadata)
+    val jsonContent = json.encodeToString(SamplerProjectData.serializer(), metadata)
 
     ZipOutputStream(FileOutputStream(tempZip)).use { out ->
       audioFiles.forEach { file ->
@@ -48,8 +48,10 @@ class ProjectWriter {
       }
     }
     if (targetZipFile.exists()) {
-      val targetZipDeleted = targetZipFile.delete()
-      if (targetZipDeleted) Log.d("ProjectWriter", "targetZip was deleted")
+      val deleted = targetZipFile.delete()
+      if (!deleted) {
+        Log.e("SamplerFileWriter", "Failed to delete existing ZIP: ${targetZipFile.path}")
+      }
     }
     val success = tempZip.renameTo(targetZipFile)
     if (!success) {

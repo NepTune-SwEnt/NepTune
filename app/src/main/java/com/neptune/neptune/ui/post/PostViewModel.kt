@@ -44,7 +44,6 @@ class PostViewModel(
   val localImageUri: StateFlow<Uri?> = _localImageUri.asStateFlow()
 
   private val _localZipUri = MutableStateFlow<Uri?>(null)
-  val localZipUri: StateFlow<Uri?> = _localZipUri.asStateFlow()
 
   /** Loads a project by its ID and converts it into a Sample. */
   fun loadProject(projectId: String) {
@@ -142,6 +141,11 @@ class PostViewModel(
                   )
               ?.build()
     }
+  }
+
+  fun audioExist(): Boolean {
+    val currentZipUri = _localZipUri.value
+    return currentZipUri != null
   }
 
   /** Submits the post */
