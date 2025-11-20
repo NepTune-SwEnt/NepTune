@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -101,7 +102,7 @@ object SamplerTestTags {
   const val INIT_TEMPO_SELECTOR = "initTempoSelector"
   const val INIT_PITCH_SELECTOR = "initPitchSelector"
   const val INIT_CONFIRM_BUTTON = "initConfirmButton"
-  
+
   const val TAP_TEMPO_BUTTON = "tapTempoButton"
   const val PREVIEW_PLAY_BUTTON = "previewPlayButton"
 
