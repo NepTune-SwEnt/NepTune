@@ -294,7 +294,7 @@ open class SamplerViewModel() : ViewModel() {
     val now = System.currentTimeMillis()
 
     tapTimes.add(now)
-    if (tapTimes.size > 6) tapTimes.removeFirst()
+    if (tapTimes.size > 6) tapTimes.removeAt(0)
 
     if (tapTimes.size >= 2) {
       val diffs = tapTimes.zipWithNext { a, b -> b - a }
@@ -747,7 +747,7 @@ open class SamplerViewModel() : ViewModel() {
       parametersList.addAll(eqParameters)
 
       val projectData =
-        SamplerProjectData(
+          SamplerProjectData(
               audioFiles =
                   listOf(
                       AudioFileMetadata(
