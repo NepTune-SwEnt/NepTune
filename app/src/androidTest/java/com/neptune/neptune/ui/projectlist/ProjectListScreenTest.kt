@@ -69,7 +69,7 @@ class ProjectListScreenTest {
 
     // Single setContent call per test lifecycle — inject navCalls collector here
     composeTestRule.setContent {
-      ProjectListScreen(projectListViewModel = viewModel, navigateToSampler = { navCalls.add("2") })
+      ProjectListScreen(projectListViewModel = viewModel, onProjectClick = { navCalls.add("2") })
     }
   }
 

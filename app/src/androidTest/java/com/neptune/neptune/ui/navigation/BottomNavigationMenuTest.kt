@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.navigation
 
+import android.os.Bundle
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
@@ -112,11 +113,15 @@ class BottomNavigationMenuTest {
 
   @Test
   fun bottomNavigationMenuProjectTabIsSelectedWhenScreenIsProjectList() {
+    val projectListEditArgs = Bundle().apply { putString("purpose", "edit") }
     composeTestRule.setContent {
       val navController = rememberNavController()
       val navigationActions = NavigationActions(navController)
       // Set the current screen to ProjectList
-      BottomNavigationMenu(screen = Screen.ProjectList, navigationActions = navigationActions)
+      BottomNavigationMenu(
+          screen = Screen.ProjectList,
+          navigationActions = navigationActions,
+          currentScreenArguments = projectListEditArgs)
     }
 
     // Assert that the Project tab is marked as selected
@@ -141,20 +146,26 @@ class BottomNavigationMenuTest {
 
   @Test
   fun bottomNavigationMenuClickOnTabNavigatesToCorrectScreen() {
-    var navigatedTo: Screen? = null
+    var capturedRoute: String? = null
     var fakeNavigationActions: NavigationActions
+
     composeTestRule.setContent {
       val navController = rememberNavController()
       fakeNavigationActions =
           object : NavigationActions(navController) {
             override fun navigateTo(screen: Screen) {
-              navigatedTo = screen
+              capturedRoute = screen.route
+            }
+
+            override fun navigateTo(route: String) {
+              capturedRoute = route
             }
           }
       BottomNavigationMenu(screen = Screen.Main, navigationActions = fakeNavigationActions)
     }
+
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
-    assert(navigatedTo == Screen.ProjectList)
+    assert(capturedRoute == "project_list/edit")
   }
 
   @Test

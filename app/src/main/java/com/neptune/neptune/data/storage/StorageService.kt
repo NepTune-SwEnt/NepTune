@@ -92,7 +92,7 @@ class StorageService(val storage: FirebaseStorage) {
    * @param localZipUri The local Uri for the .zip file.
    * @param localImageUri The local Uri for the cover image.
    */
-  suspend fun uploadSampleFiles(sample: Sample, localZipUri: Uri, localImageUri: Uri) {
+  suspend fun uploadSampleFiles(sample: Sample, localZipUri: Uri, localImageUri: Uri?) {
     val sampleId = sample.id
 
     val oldSample: Sample? =
@@ -109,15 +109,20 @@ class StorageService(val storage: FirebaseStorage) {
     }
 
     val newStorageZipPath = "samples/${sampleId}.zip"
-    val newStorageImagePath = "samples/${sampleId}/${getFileNameFromUri(localImageUri)}"
+    val newStorageImagePath =
+        if (localImageUri != null) "sample_image/${sampleId}/${getFileNameFromUri(localImageUri)}"
+        else null
 
     coroutineScope {
       val deferredZipUrl = async { uploadFileAndGetUrl(localZipUri, newStorageZipPath) }
 
-      val deferredImageUrl = async { uploadFileAndGetUrl(localImageUri, newStorageImagePath) }
+      val deferredImageUrl =
+          if (newStorageImagePath != null)
+              async { uploadFileAndGetUrl(localImageUri!!, newStorageImagePath) }
+          else null
 
       val newZipUrl = deferredZipUrl.await()
-      val newImageUrl = deferredImageUrl.await()
+      val newImageUrl = deferredImageUrl?.await() ?: ""
 
       val finalSample =
           sample.copy(
