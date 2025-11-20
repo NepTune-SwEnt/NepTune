@@ -300,6 +300,9 @@ fun MainScreen(
                       samples = samples,
                       cardWidth = cardWidth,
                       likedSamples = likedSamples,
+                      onProfileClick = { sample ->
+                        if (sample.ownerId.isNotBlank()) navigateToOtherUserProfile(sample.ownerId)
+                      },
                       onLikeClick = { sample, isLiked ->
                         mainViewModel.onLikeClicked(sample, isLiked)
                       },
@@ -350,6 +353,7 @@ fun SampleCardRow(
     samples: List<Sample>,
     cardWidth: Dp,
     likedSamples: Map<String, Boolean> = emptyMap(),
+    onProfileClick: (Sample) -> Unit = {},
     onLikeClick: (Sample, Boolean) -> Unit = { _, _ -> },
     onCommentClick: (Sample) -> Unit = {},
     onDownloadClick: (Sample) -> Unit = {}
@@ -361,6 +365,7 @@ fun SampleCardRow(
           val isLiked = likedSamples[sample.id] == true
           val clickHandlers =
               onClickFunctions(
+                  onProfileClick = { onProfileClick(sample) },
                   onLikeClick = { isLiked -> onLikeClick(sample, isLiked) },
                   onCommentClick = { onCommentClick(sample) },
                   onDownloadClick = { onDownloadClick(sample) })
