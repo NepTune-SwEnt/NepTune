@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -56,7 +57,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -432,11 +435,13 @@ fun SampleCard(
   val heartColor = if (isLiked) Color.Red else NepTuneTheme.colors.background
   val heartIcon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder
   var avatarUrl by remember { mutableStateOf<String?>(null) }
-  var userName by remember { mutableStateOf<String>("") }
+  var userName by remember { mutableStateOf("") }
+
   LaunchedEffect(sample.ownerId) {
     avatarUrl = getOwnerAvatar(sample.ownerId)
     userName = getUserName(sample.ownerId)
   }
+
   Card(
       modifier =
           Modifier.width(width)
@@ -447,82 +452,113 @@ fun SampleCard(
       colors = CardDefaults.cardColors(containerColor = NepTuneTheme.colors.cardBackground),
       shape = RoundedCornerShape(12.dp),
       border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground)) {
-        Column(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
-          // Profile and Name
-          Row(
-              verticalAlignment = Alignment.CenterVertically,
-              modifier = Modifier.padding(start = 4.dp, top = 2.dp)) {
-                AsyncImage(
-                    model =
-                        ImageRequest.Builder(LocalContext.current)
-                            .data(avatarUrl ?: R.drawable.profile)
-                            .crossfade(true)
-                            .build(),
-                    contentDescription = "Profile",
-                    modifier =
-                        Modifier.clickable(onClick = clickHandlers.onProfileClick)
-                            .size(22.dp)
-                            .clip(CircleShape)
-                            .testTag(testTags.SAMPLE_PROFILE_ICON),
-                    contentScale = ContentScale.Crop,
-                    placeholder = painterResource(R.drawable.profile),
-                    error = painterResource(R.drawable.profile))
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    text = userName,
-                    color = NepTuneTheme.colors.onBackground,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.testTag(testTags.SAMPLE_USERNAME),
-                    style =
-                        TextStyle(
-                            fontSize = 19.sp,
-                            fontFamily = FontFamily(Font(R.font.markazi_text)),
-                            fontWeight = FontWeight(400)))
-              }
+        Column(modifier = Modifier.fillMaxSize()) {
+          Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            if (sample.storageImagePath.isNotBlank()) {
+              AsyncImage(
+                  model =
+                      ImageRequest.Builder(LocalContext.current)
+                          .data(sample.storageImagePath)
+                          .crossfade(true)
+                          .build(),
+                  contentDescription = "Sample Cover",
+                  contentScale = ContentScale.Crop,
+                  modifier = Modifier.fillMaxSize())
+              Box(
+                  modifier =
+                      Modifier.fillMaxSize()
+                          .background(
+                              Brush.verticalGradient(
+                                  colors =
+                                      listOf(
+                                          Color.Black.copy(alpha = 0.3f),
+                                          Color.Transparent,
+                                          Color.Black.copy(alpha = 0.8f)))))
+            }
 
-          Spacer(Modifier.height(8.dp))
+            Column(
+                modifier = Modifier.fillMaxSize().padding(8.dp),
+                verticalArrangement = Arrangement.SpaceBetween) {
+                  // Profile
+                  Row(verticalAlignment = Alignment.CenterVertically) {
+                    AsyncImage(
+                        model =
+                            ImageRequest.Builder(LocalContext.current)
+                                .data(avatarUrl ?: R.drawable.profile)
+                                .crossfade(true)
+                                .build(),
+                        contentDescription = "Profile",
+                        modifier =
+                            Modifier.clickable(onClick = clickHandlers.onProfileClick)
+                                .size(22.dp)
+                                .clip(CircleShape)
+                                .border(1.dp, Color.White, CircleShape)
+                                .testTag(testTags.SAMPLE_PROFILE_ICON),
+                        contentScale = ContentScale.Crop,
+                        placeholder = painterResource(R.drawable.profile),
+                        error = painterResource(R.drawable.profile))
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = userName,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style =
+                            TextStyle(
+                                fontSize = 19.sp,
+                                fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                fontWeight = FontWeight(400),
+                                shadow = Shadow(color = Color.Black, blurRadius = 4f)))
+                  }
 
-          // Waveform Image
-          Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            Image(
-                painter = painterResource(R.drawable.waveform),
-                contentDescription = "Waveform",
-                modifier = Modifier.fillMaxWidth(0.8f).height(60.dp),
-                alignment = Alignment.Center)
+                  // Waveform
+                  Box(
+                      modifier = Modifier.weight(1f).fillMaxWidth(),
+                      contentAlignment = Alignment.Center) {
+                        Image(
+                            painter = painterResource(R.drawable.waveform),
+                            contentDescription = "Waveform",
+                            modifier = Modifier.fillMaxWidth(0.8f).height(40.dp),
+                            colorFilter =
+                                androidx.compose.ui.graphics.ColorFilter.tint(
+                                    Color.White)
+                            )
+                      }
+
+                  // Sample name and duration
+                  Row(
+                      modifier = Modifier.fillMaxWidth(),
+                      horizontalArrangement = Arrangement.SpaceBetween,
+                      verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            sample.name,
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                            style =
+                                TextStyle(
+                                    fontSize = 12.sp,
+                                    fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                    fontWeight = FontWeight(400),
+                                    shadow = Shadow(color = Color.Black, blurRadius = 4f)))
+
+                        val minutes = sample.durationSeconds / 60
+                        val seconds = sample.durationSeconds % 60
+                        Text(
+                            "%02d:%02d".format(minutes, seconds),
+                            color = Color.White,
+                            modifier = Modifier.padding(start = 8.dp),
+                            style =
+                                TextStyle(
+                                    fontSize = 12.sp,
+                                    fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                    fontWeight = FontWeight(400),
+                                    shadow = Shadow(color = Color.Black, blurRadius = 4f)))
+                      }
+                }
           }
 
-          Spacer(Modifier.height(4.dp))
-
-          // Sample name and duration
-          Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(
-                    sample.name,
-                    color = NepTuneTheme.colors.onBackground,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier =
-                        Modifier.padding(start = 6.dp).weight(1f).testTag(testTags.SAMPLE_NAME),
-                    style =
-                        TextStyle(
-                            fontSize = 10.sp,
-                            fontFamily = FontFamily(Font(R.font.markazi_text)),
-                            fontWeight = FontWeight(400)))
-                val minutes = sample.durationSeconds / 60
-                val seconds = sample.durationSeconds % 60
-                val durationText = "%02d:%02d".format(minutes, seconds)
-                Text(
-                    durationText,
-                    color = NepTuneTheme.colors.onBackground,
-                    modifier = Modifier.padding(end = 8.dp).testTag(testTags.SAMPLE_DURATION),
-                    style =
-                        TextStyle(
-                            fontSize = 10.sp,
-                            fontFamily = FontFamily(Font(R.font.markazi_text)),
-                            fontWeight = FontWeight(400)))
-              }
           // Bottom Turquoise bar
           Column(
               modifier =
@@ -552,7 +588,7 @@ fun SampleCard(
                     }
                 Spacer(Modifier.height(4.dp))
                 Row(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween) {
                       IconWithText(
                           icon = heartIcon,
@@ -563,7 +599,6 @@ fun SampleCard(
                                   .semantics { stateDescription = likeDescription }
                                   .clickable { clickHandlers.onLikeClick(!isLiked) },
                           tint = heartColor)
-
                       IconWithTextPainter(
                           icon = painterResource(R.drawable.comments),
                           iconDescription = "Comments",
