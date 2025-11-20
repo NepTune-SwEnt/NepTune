@@ -108,6 +108,7 @@ fun PostScreen(
   val uiState by postViewModel.uiState.collectAsState()
   val localImageUri by postViewModel.localImageUri.collectAsState()
 
+  // This animation was taken from https://lottiefiles.com/free-animation/loading-qjrg8ygl9S
   val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.loading))
 
   val dynamicProperties =
