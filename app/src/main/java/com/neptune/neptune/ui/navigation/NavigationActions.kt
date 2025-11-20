@@ -82,15 +82,25 @@ open class NavigationActions(
    * @param screen The screen to navigate to
    */
   open fun navigateTo(screen: Screen) {
-    // If the user is already on the destination, do nothing
-    if (currentRoute() != screen.route) {
-      navController.navigate(screen.route) {
-        if (screen.route == Screen.Main.route || screen.route == Screen.SignIn.route) {
-          popUpTo(navController.graph.id) { inclusive = true }
-        }
-        launchSingleTop = true
-        restoreState = screen.route != Screen.SignIn.route
+    val current = currentRoute()
+    if (current == screen.route) {
+      return
+    }
+    if (screen.route == Screen.SignIn.route ||
+        (current == Screen.SignIn.route && screen.route == Screen.Main.route)) {
+      navController.navigate(screen.route) { popUpTo(navController.graph.id) { inclusive = true } }
+      return
+    }
+    if (screen.route == Screen.Main.route) {
+      val success = navController.popBackStack(Screen.Main.route, inclusive = false)
+      if (!success) {
+        navController.navigate(screen.route) { launchSingleTop = true }
       }
+      return
+    }
+    navController.navigate(screen.route) {
+      launchSingleTop = true
+      restoreState = true
     }
   }
 
