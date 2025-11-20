@@ -65,6 +65,17 @@ import com.neptune.neptune.data.rememberImagePickerLauncher
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
+private val ScreenPadding = 16.dp
+private val SettingsButtonSize = 30.dp
+private val AvatarVerticalSpacing = 15.dp
+private val SectionVerticalSpacing = 40.dp
+private val LargeSectionSpacing = 100.dp
+private val BottomButtonBottomPadding = 24.dp
+private val ButtonIconSpacing = 8.dp
+private val TopBarHorizontalPadding = 8.dp
+private val TagsSpacing = 8.dp
+private val StatBlockLabelSpacing = 8.dp
+
 /**
  * Centralized constants defining all `testTag` identifiers used in [ProfileScreen] UI tests.
  *
@@ -116,7 +127,7 @@ fun ProfileScreen(
     onAvatarEditClick: () -> Unit = {},
     viewConfig: ProfileViewConfig
 ) {
-  Column(modifier = Modifier.padding(16.dp).testTag(ProfileScreenTestTags.ROOT)) {
+  Column(modifier = Modifier.padding(ScreenPadding).testTag(ProfileScreenTestTags.ROOT)) {
     when (uiState.mode) {
       // Create profile screen view content
       ProfileMode.VIEW -> {
@@ -147,10 +158,10 @@ fun ProfileScreen(
 @Composable
 private fun SettingsButton(settings: () -> Unit) {
   IconButton(
-      modifier = Modifier.size(30.dp).testTag(ProfileScreenTestTags.SETTINGS_BUTTON),
+      modifier = Modifier.size(SettingsButtonSize).testTag(ProfileScreenTestTags.SETTINGS_BUTTON),
       onClick = settings) {
         Icon(
-            modifier = Modifier.size(30.dp),
+            modifier = Modifier.size(SettingsButtonSize),
             imageVector = Icons.Default.Settings,
             contentDescription = "Logout",
             tint = NepTuneTheme.colors.onBackground)
@@ -173,9 +184,11 @@ sealed interface ProfileViewConfig {
               onClick = onEdit,
               enabled = true,
               modifier =
-                  modifier.padding(bottom = 24.dp).testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
+                  modifier
+                      .padding(bottom = BottomButtonBottomPadding)
+                      .testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
                 Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(ButtonIconSpacing))
                 Text("Edit")
               }
         }
@@ -196,9 +209,10 @@ sealed interface ProfileViewConfig {
               onClick = onFollow,
               enabled = true,
               modifier =
-                  Modifier.padding(bottom = 24.dp).testTag(ProfileScreenTestTags.FOLLOW_BUTTON)) {
+                  Modifier.padding(bottom = BottomButtonBottomPadding)
+                      .testTag(ProfileScreenTestTags.FOLLOW_BUTTON)) {
                 Icon(imageVector = icon, contentDescription = "Follow")
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(ButtonIconSpacing))
                 Text(label)
               }
         }
@@ -231,7 +245,7 @@ private fun ProfileViewContent(
       topBar = {
         Column {
           Row(
-              modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+              modifier = Modifier.fillMaxWidth().padding(horizontal = TopBarHorizontalPadding),
               horizontalArrangement = Arrangement.SpaceBetween,
               verticalAlignment = Alignment.CenterVertically) {
                 // Go Back Button
@@ -257,7 +271,7 @@ private fun ProfileViewContent(
                       .testTag(ProfileScreenTestTags.VIEW_CONTENT),
               horizontalAlignment = Alignment.CenterHorizontally,
           ) {
-            Spacer(Modifier.height(15.dp))
+            Spacer(Modifier.height(AvatarVerticalSpacing))
 
             // Avatar image
             val avatarModel = localAvatarUri ?: state.avatarUrl ?: R.drawable.ic_avatar_placeholder
@@ -265,7 +279,7 @@ private fun ProfileViewContent(
                 avatarModel,
                 modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
                 showEditPencil = false)
-            Spacer(Modifier.height(15.dp))
+            Spacer(Modifier.height(AvatarVerticalSpacing))
 
             // Name and username
             Text(
@@ -279,11 +293,11 @@ private fun ProfileViewContent(
                 color = NepTuneTheme.colors.onBackground,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(SectionVerticalSpacing))
 
             // Stats row
             StatRow(state)
-            Spacer(Modifier.height(100.dp))
+            Spacer(Modifier.height(LargeSectionSpacing))
 
             // if view mode is for other users profile, show follow button
             viewConfig.belowStatsButton?.invoke()
@@ -295,14 +309,14 @@ private fun ProfileViewContent(
                 style = MaterialTheme.typography.titleLarge,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
-            Spacer(Modifier.height(100.dp))
+            Spacer(Modifier.height(LargeSectionSpacing))
 
             // Tags
             if (state.tags.isNotEmpty()) {
               Spacer(Modifier.height(16.dp))
               FlowRow(
-                  horizontalArrangement = Arrangement.spacedBy(8.dp),
-                  verticalArrangement = Arrangement.spacedBy(8.dp),
+                  horizontalArrangement = Arrangement.spacedBy(TagsSpacing),
+                  verticalArrangement = Arrangement.spacedBy(TagsSpacing),
                   modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_VIEW_SECTION)) {
                     state.tags.forEach { tag ->
                       InputChip(
@@ -379,7 +393,7 @@ private fun ProfileEditContent(
               .testTag(ProfileScreenTestTags.EDIT_CONTENT),
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.Center) {
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(SectionVerticalSpacing))
 
         // Avatar image
         val avatarModel = localAvatarUri ?: uiState.avatarUrl ?: R.drawable.ic_avatar_placeholder
@@ -388,7 +402,7 @@ private fun ProfileEditContent(
             modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
             showEditPencil = true,
             onEditClick = onAvatarEditClick)
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(SectionVerticalSpacing))
 
         // Field for name input
         OutlinedTextField(
@@ -412,7 +426,7 @@ private fun ProfileEditContent(
                     style = MaterialTheme.typography.bodySmall)
               }
             })
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(SectionVerticalSpacing))
 
         // Field for username input
         OutlinedTextField(
@@ -436,7 +450,7 @@ private fun ProfileEditContent(
                     style = MaterialTheme.typography.bodySmall)
               }
             })
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(SectionVerticalSpacing))
 
         // Field for bio input
         OutlinedTextField(
@@ -461,7 +475,7 @@ private fun ProfileEditContent(
                     style = MaterialTheme.typography.bodySmall)
               }
             })
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(SectionVerticalSpacing))
 
         // Tag input and addition
         Row(
@@ -497,8 +511,8 @@ private fun ProfileEditContent(
 
         // Tags display
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(TagsSpacing),
+            verticalArrangement = Arrangement.spacedBy(TagsSpacing),
             modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_EDIT_SECTION)) {
               uiState.tags.forEach { tag ->
                 key(tag) { // <— ensures slot stability and proper disposal on removal
@@ -509,7 +523,7 @@ private fun ProfileEditContent(
                 }
               }
             }
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(SectionVerticalSpacing))
 
         // Save button
         Button(
@@ -517,7 +531,7 @@ private fun ProfileEditContent(
             enabled = !uiState.isSaving && uiState.isValid,
             modifier = Modifier.testTag(ProfileScreenTestTags.SAVE_BUTTON)) {
               Icon(imageVector = Icons.Default.Check, contentDescription = "Save")
-              Spacer(Modifier.width(8.dp))
+              Spacer(Modifier.width(ButtonIconSpacing))
               Text("Save")
             }
       }
@@ -538,7 +552,7 @@ fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, testTag:
         color = NepTuneTheme.colors.onBackground,
         style = MaterialTheme.typography.bodySmall,
         textAlign = TextAlign.Center)
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(StatBlockLabelSpacing))
     Text(
         text = "$value",
         color = NepTuneTheme.colors.onBackground,
