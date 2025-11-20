@@ -1,5 +1,6 @@
 package com.neptune.neptune.model.project
 
+import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
@@ -13,11 +14,13 @@ class ProjectWriter {
 
   fun writeProject(
       zipFile: File,
-      metadata: SamplerProjectMetadata,
+      metadata: SamplerProjectData,
       audioFiles: List<File> = emptyList()
   ) {
-    val tempZip = File(zipFile.parentFile, "tmp_${zipFile.name}")
-    val jsonContent = json.encodeToString(SamplerProjectMetadata.serializer(), metadata)
+    val cleanZipPath = zipFile.path.removePrefix("file:").removePrefix("file://")
+    val targetZipFile = File(cleanZipPath)
+    val tempZip = File(targetZipFile.parentFile, "tmp_${targetZipFile.name}")
+    val jsonContent = json.encodeToString(SamplerProjectData.serializer(), metadata)
 
     ZipOutputStream(FileOutputStream(tempZip)).use { out ->
       audioFiles.forEach { file ->
@@ -44,10 +47,13 @@ class ProjectWriter {
         }
       }
     }
-    if (zipFile.exists()) {
-      zipFile.delete()
+    if (targetZipFile.exists()) {
+      val deleted = targetZipFile.delete()
+      if (!deleted) {
+        Log.e("SamplerFileWriter", "Failed to delete existing ZIP: ${targetZipFile.path}")
+      }
     }
-    val success = tempZip.renameTo(zipFile)
+    val success = tempZip.renameTo(targetZipFile)
     if (!success) {
       tempZip.copyTo(zipFile, overwrite = true)
       tempZip.delete()

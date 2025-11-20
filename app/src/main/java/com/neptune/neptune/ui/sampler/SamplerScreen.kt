@@ -35,9 +35,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -47,6 +49,7 @@ import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.ui.sampler.SamplerTestTags.CURVE_EDITOR_SCROLL_CONTAINER
 import com.neptune.neptune.ui.sampler.SamplerTestTags.FADER_60HZ_TAG
+import com.neptune.neptune.ui.sampler.SamplerTestTags.PREVIEW_PLAY_BUTTON
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -98,6 +101,9 @@ object SamplerTestTags {
   const val INIT_TEMPO_SELECTOR = "initTempoSelector"
   const val INIT_PITCH_SELECTOR = "initPitchSelector"
   const val INIT_CONFIRM_BUTTON = "initConfirmButton"
+  
+  const val TAP_TEMPO_BUTTON = "tapTempoButton"
+  const val PREVIEW_PLAY_BUTTON = "previewPlayButton"
 
   // Settings-related test tags
   const val SETTINGS_BUTTON = "settingsButton"
@@ -491,7 +497,6 @@ fun WaveformDisplay(
         0
       }
 
-  // Expose beat count as an invisible text node for tests
   Box(
       modifier =
           modifier.background(spectrogramBackground).padding(8.dp).pointerInput(Unit) {
@@ -1535,7 +1540,7 @@ fun PreviewAudioRow(isPlaying: Boolean, onPlay: () -> Unit, onStop: () -> Unit) 
       horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Button(
             onClick = { if (isPlaying) onStop() else onPlay() },
-            modifier = Modifier.testTag("PREVIEW_PLAY_BUTTON")) {
+            modifier = Modifier.testTag(PREVIEW_PLAY_BUTTON)) {
               Text(if (isPlaying) "Stop" else "Play")
             }
 
@@ -1545,20 +1550,37 @@ fun PreviewAudioRow(isPlaying: Boolean, onPlay: () -> Unit, onStop: () -> Unit) 
 
 @Composable
 fun TempoRow(tempo: Int, onTempoChange: (Int) -> Unit, onTapTempo: () -> Unit) {
+  var textState by remember(tempo) { mutableStateOf(TextFieldValue(tempo.toString())) }
+
+  var userIsEditing by remember { mutableStateOf(false) }
+
   Row(
       modifier = Modifier.fillMaxWidth(),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         OutlinedTextField(
-            value = if (tempo == 0) "" else tempo.toString(),
-            onValueChange = { newValue -> newValue.toIntOrNull()?.let(onTempoChange) },
+            value = textState,
+            onValueChange = { newValue ->
+              textState = newValue
+              newValue.text.toIntOrNull()?.let(onTempoChange)
+              userIsEditing = true
+            },
             label = { Text("Tempo BPM") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.weight(1f).testTag("TEMPO_FIELD"))
+            modifier =
+                Modifier.weight(1f).testTag(SamplerTestTags.INIT_TEMPO_SELECTOR).onFocusChanged {
+                    focusState ->
+                  if (focusState.isFocused &&
+                      textState.text == tempo.toString() &&
+                      !userIsEditing) {
+                    textState = TextFieldValue("", TextRange(0))
+                  }
+                })
 
-        Button(onClick = onTapTempo, modifier = Modifier.testTag("TAP_TEMPO_BUTTON")) {
-          Text("Tap")
-        }
+        Button(
+            onClick = onTapTempo, modifier = Modifier.testTag(SamplerTestTags.TAP_TEMPO_BUTTON)) {
+              Text("Tap")
+            }
       }
 }
 

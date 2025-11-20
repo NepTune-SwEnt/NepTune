@@ -20,9 +20,9 @@ class ProjectExtractor {
    * Extracts the metadata JSON content from the project ZIP file.
    * * @param zipFile The project ZIP file (assumed to be found locally).
    *
-   * @return The deserialized SamplerProjectMetadata.
+   * @return The deserialized SamplerProjectData.
    */
-  fun extractMetadata(zipFile: File): SamplerProjectMetadata {
+  fun extractMetadata(zipFile: File): SamplerProjectData {
     require(zipFile.exists()) { "Project ZIP file not found: ${zipFile.path}" }
 
     ZipFile(zipFile).use { zip ->
