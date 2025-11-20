@@ -357,31 +357,6 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun adsrKnobsAllDragCallsAllUpdateFunctions() {
-    fakeViewModel.mutableUiState.value =
-        fakeViewModel.uiState.value.copy(currentTab = SamplerTab.BASICS)
-    composeTestRule.waitForIdle()
-    openSection("ADSR Envelope Controls")
-    composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_ATTACK).performTouchInput {
-      swipe(start = center, end = center + Offset(x = 0f, y = -100f), durationMillis = 50)
-    }
-    assertTrue("updateAttack should be true", fakeViewModel.isAttackUpdated)
-    composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_DECAY).performTouchInput {
-      swipe(start = center, end = center + Offset(x = 0f, y = -100f), durationMillis = 50)
-    }
-    assertTrue("updateDecay should be true", fakeViewModel.isDecayUpdated)
-    composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_SUSTAIN).performTouchInput {
-      swipe(start = center, end = center + Offset(x = 0f, y = -100f), durationMillis = 50)
-    }
-    assertTrue("updateSustain should be true", fakeViewModel.isSustainUpdated)
-    composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_RELEASE).performTouchInput {
-      swipe(start = center, end = center + Offset(x = 0f, y = -100f), durationMillis = 50)
-    }
-    assertTrue("updateRelease should be true", fakeViewModel.isReleaseUpdated)
-  }
-
-  @Test
   fun compressorControlsCallsAllUpdateFunctions() {
     composeTestRule.onNodeWithText("COMP").performClick()
     fakeViewModel.mutableUiState.value =

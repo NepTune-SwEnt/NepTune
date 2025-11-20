@@ -1686,7 +1686,7 @@ fun SettingsDialog(viewModel: SamplerViewModel, onClose: () -> Unit) {
             OutlinedTextField(
                 value = bpmText,
                 onValueChange = { newValue -> bpmText = newValue.filter { it.isDigit() } },
-                label = { Text("Initial BPM (visual only)") },
+                label = { Text("Initial BPM") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 modifier = Modifier.weight(1f))
