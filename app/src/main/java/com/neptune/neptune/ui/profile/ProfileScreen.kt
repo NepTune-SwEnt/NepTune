@@ -36,11 +36,11 @@ import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldColors
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -313,16 +313,16 @@ private fun ProfileViewContent(
 /** Colors for all OutlinedTextField components. */
 @OptIn(ExperimentalMaterial3Api::class)
 val TextFieldColors: @Composable () -> TextFieldColors = {
-  TextFieldDefaults.outlinedTextFieldColors(
-      unfocusedBorderColor = NepTuneTheme.colors.onBackground,
-      focusedBorderColor = NepTuneTheme.colors.onBackground,
-      disabledBorderColor = NepTuneTheme.colors.onBackground,
-      cursorColor = NepTuneTheme.colors.onBackground,
-      focusedLabelColor = NepTuneTheme.colors.onBackground,
-      unfocusedLabelColor = NepTuneTheme.colors.onBackground,
+  OutlinedTextFieldDefaults.colors(
       focusedTextColor = NepTuneTheme.colors.onBackground,
       unfocusedTextColor = NepTuneTheme.colors.onBackground,
       disabledTextColor = NepTuneTheme.colors.onBackground,
+      cursorColor = NepTuneTheme.colors.onBackground,
+      focusedBorderColor = NepTuneTheme.colors.onBackground,
+      unfocusedBorderColor = NepTuneTheme.colors.onBackground,
+      disabledBorderColor = NepTuneTheme.colors.onBackground,
+      focusedLabelColor = NepTuneTheme.colors.onBackground,
+      unfocusedLabelColor = NepTuneTheme.colors.onBackground,
   )
 }
 
