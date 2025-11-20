@@ -90,8 +90,8 @@ object PostScreenTestTags {
 @Composable
 fun PostScreen(
     goBack: () -> Unit = {},
-    navigateToProjectList: () -> Unit = {},
     navigateToMainScreen: () -> Unit = {},
+    projectId: String? = null,
     postViewModel: PostViewModel = viewModel()
 ) {
   val uiState by postViewModel.uiState.collectAsState()
@@ -112,6 +112,17 @@ fun PostScreen(
     tagText = text
     selectionTagText = TextRange(text.length)
   }
+  LaunchedEffect(projectId) {
+    if (projectId != null) {
+      postViewModel.loadProject(projectId)
+    }
+  }
+  LaunchedEffect(uiState.postComplete) {
+    if (uiState.postComplete) {
+      navigateToMainScreen()
+    }
+  }
+
   val mediaPlayer = LocalMediaPlayer.current
 
   Scaffold(
@@ -134,35 +145,6 @@ fun PostScreen(
                     contentDescription = "Back",
                     tint = NepTuneTheme.colors.onBackground)
               }
-            },
-            // Select Project Box
-            actions = {
-              Button(
-                  onClick = navigateToProjectList,
-                  colors =
-                      ButtonDefaults.buttonColors(
-                          containerColor = NepTuneTheme.colors.listBackground,
-                          contentColor = NepTuneTheme.colors.searchBar),
-                  shape = RoundedCornerShape(8.dp),
-                  contentPadding = PaddingValues(start = 10.dp),
-                  modifier =
-                      Modifier.height(40.dp)
-                          .width(320.dp)
-                          .padding(end = 20.dp)
-                          .testTag(PostScreenTestTags.SELECT_PROJECT_BUTTON)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Start,
-                        modifier = Modifier.fillMaxWidth()) {
-                          Text(
-                              "Select another Project",
-                              style =
-                                  TextStyle(
-                                      fontSize = 25.sp,
-                                      fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                      fontWeight = FontWeight(200)))
-                        }
-                  }
             },
             colors =
                 TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -375,7 +357,11 @@ fun PostScreen(
 
               // Audience
               Row(
-                  modifier = Modifier.fillMaxWidth().testTag(PostScreenTestTags.AUDIENCE_ROW),
+                  modifier =
+                      Modifier.fillMaxWidth()
+                          .testTag(PostScreenTestTags.AUDIENCE_ROW)
+                          .clickable { postViewModel.toggleAudience() }
+                          .padding(8.dp),
                   horizontalArrangement = Arrangement.SpaceBetween,
                   verticalAlignment = Alignment.CenterVertically) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -395,7 +381,7 @@ fun PostScreen(
                                   fontSize = 28.sp))
                     }
                     Text(
-                        text = uiState.audience,
+                        text = if (uiState.sample.isPublic) "Public" else "My followers",
                         style =
                             TextStyle(
                                 color = NepTuneTheme.colors.onBackground,
@@ -408,11 +394,8 @@ fun PostScreen(
 
               // Post Button
               Button(
-                  onClick = {
-                    postViewModel.submitPost()
-                    navigateToMainScreen()
-                  },
-                  enabled = uiState.sample.name.isNotBlank(),
+                  onClick = { postViewModel.submitPost() },
+                  enabled = uiState.sample.name.isNotBlank() && !uiState.isUploading,
                   modifier =
                       Modifier.fillMaxWidth().height(55.dp).testTag(PostScreenTestTags.POST_BUTTON),
                   shape = RoundedCornerShape(8.dp),
@@ -458,10 +441,6 @@ fun ProjectListScreenPreview() {
   val fakeMediaPlayer = NeptuneMediaPlayer()
 
   CompositionLocalProvider(LocalMediaPlayer provides fakeMediaPlayer) {
-    PostScreen(
-        goBack = {},
-        navigateToProjectList = {},
-        navigateToMainScreen = {},
-        postViewModel = previewViewModel)
+    PostScreen(goBack = {}, navigateToMainScreen = {}, postViewModel = previewViewModel)
   }
 }

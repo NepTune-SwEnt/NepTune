@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -45,7 +46,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,7 +62,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
@@ -71,12 +71,11 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -89,6 +88,7 @@ import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.theme.NepTuneTheme
+import com.neptune.neptune.util.formatTime
 
 object MainScreenTestTags : BaseSampleTestTags {
   override val prefix = "MainScreen"
@@ -176,18 +176,6 @@ fun MainScreen(
   // Depends on the size of the screen
   val maxColumns = if (screenWidth < 360.dp) 1 else 2
   val cardWidth = (screenWidth - horizontalPadding * 2 - spacing) / 2
-
-  val lifecycleOwner = LocalLifecycleOwner.current
-  // This effect was created using AI assistance
-  DisposableEffect(lifecycleOwner) {
-    val observer = LifecycleEventObserver { _, event ->
-      if (event == Lifecycle.Event.ON_RESUME) {
-        mainViewModel.onResume()
-      }
-    }
-    lifecycleOwner.lifecycle.addObserver(observer)
-    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-  }
 
   fun onCommentClicked(sample: Sample) {
     mainViewModel.observeCommentsForSample(sample.id)
@@ -440,6 +428,8 @@ fun SampleCard(
                 Text(
                     text = sample.name,
                     color = NepTuneTheme.colors.onBackground,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.testTag(testTags.SAMPLE_USERNAME),
                     style =
                         TextStyle(
@@ -468,7 +458,10 @@ fun SampleCard(
                 Text(
                     sample.name,
                     color = NepTuneTheme.colors.onBackground,
-                    modifier = Modifier.padding(start = 6.dp).testTag(testTags.SAMPLE_NAME),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier =
+                        Modifier.padding(start = 6.dp).weight(1f).testTag(testTags.SAMPLE_NAME),
                     style =
                         TextStyle(
                             fontSize = 10.sp,
@@ -558,6 +551,13 @@ fun CommentDialog(
     onAddComment: (sampleId: String, commentText: String) -> Unit
 ) {
   var commentText by remember { mutableStateOf("") }
+  val listScrollingState = rememberLazyListState()
+
+  LaunchedEffect(comments.size) {
+    if (comments.isNotEmpty()) {
+      listScrollingState.animateScrollToItem(comments.lastIndex)
+    }
+  }
 
   Dialog(onDismissRequest = onDismiss) {
     Card(
@@ -584,6 +584,7 @@ fun CommentDialog(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp))
 
                 LazyColumn(
+                    state = listScrollingState,
                     modifier =
                         Modifier.weight(1f)
                             .fillMaxWidth()
@@ -593,14 +594,28 @@ fun CommentDialog(
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                       items(comments) { comment ->
                         Column {
-                          Text(
-                              text = "${comment.author}:",
-                              style =
-                                  TextStyle(
-                                      fontSize = 18.sp,
-                                      fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                      fontWeight = FontWeight(300),
-                                      color = NepTuneTheme.colors.onBackground))
+                          Row(
+                              verticalAlignment = Alignment.CenterVertically,
+                              horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    text = "${comment.author}:",
+                                    style =
+                                        TextStyle(
+                                            fontSize = 18.sp,
+                                            fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                            fontWeight = FontWeight(300),
+                                            color = NepTuneTheme.colors.onBackground))
+                                Text(
+                                    text = "• " + formatTime(comment.timestamp),
+                                    style =
+                                        TextStyle(
+                                            fontSize = 14.sp,
+                                            fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                            fontWeight = FontWeight(300),
+                                            color =
+                                                NepTuneTheme.colors.onBackground.copy(
+                                                    alpha = 0.9f)))
+                              }
                           Text(
                               text = comment.text,
                               style =

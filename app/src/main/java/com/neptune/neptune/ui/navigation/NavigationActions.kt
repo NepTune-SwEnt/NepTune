@@ -20,9 +20,13 @@ sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
 
   object Search : Screen(route = "search")
 
-  object Post : Screen(route = "post")
+  object Post : Screen(route = "post/{projectId}") {
+    fun createRoute(projectId: String): String = "post/$projectId"
+  }
 
-  object ProjectList : Screen(route = "project_list")
+  object ProjectList : Screen(route = "project_list/{purpose}") {
+    fun createRoute(purpose: String): String = "project_list/$purpose"
+  }
 
   object Profile : Screen(route = "profile", showBottomBar = false)
 
@@ -36,7 +40,7 @@ sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
 
   object SettingsAccount : Screen(route = "settings_account", showBottomBar = false)
 
-  object ImportFile : Screen(route = "import_file", showBottomBar = false)
+  object ImportFile : Screen(route = "import_file")
 }
 
 /**
@@ -55,19 +59,20 @@ open class NavigationActions(
    * @return The current screen
    */
   fun currentScreen(route: String?): Screen {
-    return when (route) {
-      Screen.Main.route -> Screen.Main
-      Screen.Edit.route -> Screen.Edit
-      Screen.Profile.route -> Screen.Profile
-      Screen.Search.route -> Screen.Search
-      Screen.Post.route -> Screen.Post
-      Screen.SignIn.route -> Screen.SignIn
-      Screen.ProjectList.route -> Screen.ProjectList
-      Screen.Settings.route -> Screen.Settings
-      Screen.SettingsTheme.route -> Screen.SettingsTheme
-      Screen.SettingsAccount.route -> Screen.SettingsAccount
-      Screen.ImportFile.route -> Screen.ImportFile
-      Screen.OtherUserProfile.route -> Screen.OtherUserProfile
+    return when {
+      route == null -> Screen.SignIn
+      route.startsWith("edit_screen/") -> Screen.Edit
+      route.startsWith("post/") -> Screen.Post
+      route.startsWith("project_list/") -> Screen.ProjectList
+      route == Screen.Main.route -> Screen.Main
+      route == Screen.Profile.route -> Screen.Profile
+      route == Screen.Search.route -> Screen.Search
+      route == Screen.SignIn.route -> Screen.SignIn
+      route == Screen.Settings.route -> Screen.Settings
+      route == Screen.SettingsTheme.route -> Screen.SettingsTheme
+      route == Screen.SettingsAccount.route -> Screen.SettingsAccount
+      route == Screen.ImportFile.route -> Screen.ImportFile
+      route == Screen.OtherUserProfile.route -> Screen.OtherUserProfile
       else -> Screen.SignIn
     }
   }
@@ -77,15 +82,25 @@ open class NavigationActions(
    * @param screen The screen to navigate to
    */
   open fun navigateTo(screen: Screen) {
-    // If the user is already on the destination, do nothing
-    if (currentRoute() != screen.route) {
-      navController.navigate(screen.route) {
-        if (screen.route == Screen.Main.route || screen.route == Screen.SignIn.route) {
-          popUpTo(navController.graph.id) { inclusive = true }
-        }
-        launchSingleTop = true
-        restoreState = screen.route != Screen.SignIn.route
+    val current = currentRoute()
+    if (current == screen.route) {
+      return
+    }
+    if (screen.route == Screen.SignIn.route ||
+        (current == Screen.SignIn.route && screen.route == Screen.Main.route)) {
+      navController.navigate(screen.route) { popUpTo(navController.graph.id) { inclusive = true } }
+      return
+    }
+    if (screen.route == Screen.Main.route) {
+      val success = navController.popBackStack(Screen.Main.route, inclusive = false)
+      if (!success) {
+        navController.navigate(screen.route) { launchSingleTop = true }
       }
+      return
+    }
+    navController.navigate(screen.route) {
+      launchSingleTop = true
+      restoreState = true
     }
   }
 

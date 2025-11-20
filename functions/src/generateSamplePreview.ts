@@ -21,7 +21,7 @@ if (typeof ffmpegStatic === "string") {
 
 
 export const generateSamplePreview = onObjectFinalized(
-  {timeoutSeconds: 540, memory: "1GiB"},
+  {timeoutSeconds: 540, memory: "1GiB", region: "us-east1"},
   async (event) => {
     const objectPath = event.data?.name ?? "";
     const match = objectPath.match(/^samples\/([^/]+)\.zip$/);
@@ -79,16 +79,13 @@ export const generateSamplePreview = onObjectFinalized(
         {storagePreviewSamplePath: previewPath},
         {merge: true}
       );
-
       logger.info("Preview generated", {sampleId, previewPath});
-
     } catch (error) {
       logger.error("Failed to generate preview", {sampleId, error});
       throw error;
     } finally {
       await rm(tmpRoot, {recursive: true, force: true});
     }
-
   }
 
 );
