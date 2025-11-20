@@ -728,7 +728,7 @@ open class SamplerViewModel() : ViewModel() {
     }
   }
 
-  private fun decodeAudioToPCM(uri: Uri): Triple<FloatArray, Int, Int>? {
+  internal fun decodeAudioToPCM(uri: Uri): Triple<FloatArray, Int, Int>? {
     val extractor = MediaExtractor()
     try {
       extractor.setDataSource(context, uri, null)
@@ -809,7 +809,7 @@ open class SamplerViewModel() : ViewModel() {
     }
   }
 
-  private fun applyEQFilters(
+  internal fun applyEQFilters(
       samples: FloatArray,
       sampleRate: Int,
       eqBands: List<Float>
@@ -844,7 +844,7 @@ open class SamplerViewModel() : ViewModel() {
   }
 
   // Biquad peak filter for parametric EQ
-  private class BiquadPeakFilter(
+  internal class BiquadPeakFilter(
       centerFreq: Double,
       sampleRate: Double,
       gainDB: Double,
@@ -895,7 +895,7 @@ open class SamplerViewModel() : ViewModel() {
     }
   }
 
-  private fun encodePCMToWAV(
+  internal fun encodePCMToWAV(
       samples: FloatArray,
       sampleRate: Int,
       channelCount: Int,
@@ -951,7 +951,7 @@ open class SamplerViewModel() : ViewModel() {
     }
   }
 
-  private fun intToBytes(value: Int): ByteArray {
+  internal fun intToBytes(value: Int): ByteArray {
     return byteArrayOf(
         (value and 0xFF).toByte(),
         ((value shr 8) and 0xFF).toByte(),
@@ -959,7 +959,7 @@ open class SamplerViewModel() : ViewModel() {
         ((value shr 24) and 0xFF).toByte())
   }
 
-  private fun shortToBytes(value: Short): ByteArray {
+  internal fun shortToBytes(value: Short): ByteArray {
     return byteArrayOf((value.toInt() and 0xFF).toByte(), ((value.toInt() shr 8) and 0xFF).toByte())
   }
 }
