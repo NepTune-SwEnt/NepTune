@@ -23,7 +23,7 @@ enum class ProfileMode {
  * @property bioError Validation error message for the bio field.
  * @property isValid True if all field validations pass (no errors).
  */
-data class ProfileUiState(
+data class SelfProfileUiState(
     val name: String = "",
     val username: String = "",
     val bio: String = "",

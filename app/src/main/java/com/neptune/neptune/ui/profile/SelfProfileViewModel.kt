@@ -27,22 +27,22 @@ private fun normalizeTag(s: String) = s.trim().lowercase().replace(Regex("\\s+")
 /**
  * ViewModel responsible for managing and validating profile data.
  *
- * Holds the current [ProfileUiState] and exposes update functions for UI-driven changes (name,
+ * Holds the current [SelfProfileUiState] and exposes update functions for UI-driven changes (name,
  * username, bio). Simulates save operations (to be replaced with repository calls).
  *
  * @param repo The profile repository for data operations.
  *
  * This class was created using AI assistance.
  */
-class ProfileViewModel(
+class SelfProfileViewModel(
     private val repo: ProfileRepository = ProfileRepositoryProvider.repository,
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val imageRepo: ImageStorageRepository = ImageStorageRepository(),
     private val storageService: StorageService = StorageService(FirebaseStorage.getInstance())
 ) : ViewModel() {
 
-  private val _uiState = MutableStateFlow(ProfileUiState())
-  val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
+  private val _uiState = MutableStateFlow(SelfProfileUiState())
+  val uiState: StateFlow<SelfProfileUiState> = _uiState.asStateFlow()
 
   private val _localAvatarUri = MutableStateFlow<Uri?>(null)
   val localAvatarUri: StateFlow<Uri?> = _localAvatarUri.asStateFlow()
@@ -365,11 +365,11 @@ class ProfileViewModel(
   }
 
   /**
-   * Validates all editable fields in the current [ProfileUiState].
+   * Validates all editable fields in the current [SelfProfileUiState].
    *
    * @return A copy of the state with error fields populated if validation fails.
    */
-  private fun ProfileUiState.validated(): ProfileUiState {
+  private fun SelfProfileUiState.validated(): SelfProfileUiState {
     val nameErr = validateName(name)
     val userErr = validateUsername(username)
     val bioErr = validateBio(bio)

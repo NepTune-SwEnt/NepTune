@@ -2,13 +2,17 @@
 
 package com.neptune.neptune.screen
 
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
@@ -25,7 +29,8 @@ import androidx.compose.ui.test.performTextInput
 import com.neptune.neptune.ui.profile.ProfileMode
 import com.neptune.neptune.ui.profile.ProfileScreen
 import com.neptune.neptune.ui.profile.ProfileScreenTestTags
-import com.neptune.neptune.ui.profile.ProfileUiState
+import com.neptune.neptune.ui.profile.ProfileViewConfig
+import com.neptune.neptune.ui.profile.SelfProfileUiState
 import com.neptune.neptune.ui.profile.profileScreenCallbacks
 import com.neptune.neptune.ui.theme.SampleAppTheme
 import org.junit.Rule
@@ -77,8 +82,8 @@ class ProfileScreenTest {
   }
 
   private fun setContentViewMode(
-      state: ProfileUiState =
-          ProfileUiState(
+      state: SelfProfileUiState =
+          SelfProfileUiState(
               name = "John Doe",
               username = "johndoe",
               bio = "I make sounds and share samples on NepTune.",
@@ -88,19 +93,25 @@ class ProfileScreenTest {
               posts = 10,
               mode = ProfileMode.VIEW),
       onEditClick: () -> Unit = {},
+      goBack: () -> Unit = {},
+      viewConfig: ProfileViewConfig? = null,
   ) {
+    val config =
+        viewConfig ?: ProfileViewConfig.SelfProfileConfig(onEdit = onEditClick, settings = {})
     composeTestRule.setContent {
       SampleAppTheme {
         ProfileScreen(
-            uiState = state, callbacks = profileScreenCallbacks(onEditClick = onEditClick))
+            uiState = state,
+            callbacks = profileScreenCallbacks(onEditClick = onEditClick, goBackClick = goBack),
+            viewConfig = config)
       }
     }
     composeTestRule.waitForIdle()
   }
 
   private fun setContentEditMode(
-      state: ProfileUiState =
-          ProfileUiState(
+      state: SelfProfileUiState =
+          SelfProfileUiState(
               name = "John Doe",
               username = "johndoe",
               bio = "I make sounds and share samples on NepTune.",
@@ -123,7 +134,8 @@ class ProfileScreenTest {
                     onSaveClick = onSaveClick,
                     onNameChange = onNameChange,
                     onUsernameChange = onUsernameChange,
-                    onBioChange = onBioChange))
+                    onBioChange = onBioChange),
+            viewConfig = ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = {}))
       }
     }
     composeTestRule.waitForIdle()
@@ -163,7 +175,7 @@ class ProfileScreenTest {
   @Test
   fun viewModeDisplaysNameUsernameBioAndStats() {
     val state =
-        ProfileUiState(
+        SelfProfileUiState(
             name = "Jane Roe",
             username = "janeroe",
             bio = "Hello world",
@@ -263,7 +275,7 @@ class ProfileScreenTest {
 
     setContentEditMode(
         state =
-            ProfileUiState(
+            SelfProfileUiState(
                 name = nameState.value,
                 username = usernameState.value,
                 bio = bioState.value,
@@ -286,7 +298,7 @@ class ProfileScreenTest {
   fun usernameValidationErrorDisablesSave() {
     val state =
         mutableStateOf(
-            ProfileUiState(
+            SelfProfileUiState(
                 name = "Ok Name",
                 username = "aa",
                 bio = "Ok bio",
@@ -305,7 +317,7 @@ class ProfileScreenTest {
   @Test
   fun bioCharacterCounterIsShownWhenNoError() {
     val state =
-        ProfileUiState(
+        SelfProfileUiState(
             name = "Ok Name",
             username = "ok_user",
             bio = "Hello",
@@ -324,7 +336,7 @@ class ProfileScreenTest {
   @Test
   fun bioCounterShowsLengthWhenNoError() {
     val state =
-        ProfileUiState(
+        SelfProfileUiState(
             name = "Ok",
             username = "ok_user",
             bio = "Hello", // length = 5
@@ -341,7 +353,7 @@ class ProfileScreenTest {
   fun bioErrorShowsErrorSupportingText() {
     val errorMsg = "Bio is too long"
     val state =
-        ProfileUiState(
+        SelfProfileUiState(
             name = "Ok",
             username = "ok_user",
             bio = "X".repeat(200),
@@ -357,7 +369,7 @@ class ProfileScreenTest {
   fun nameErrorShowsErrorSupportingText() {
     val err = "Name is invalid"
     val state =
-        ProfileUiState(
+        SelfProfileUiState(
             name = "X",
             username = "ok_user",
             bio = "Hello",
@@ -373,7 +385,7 @@ class ProfileScreenTest {
   fun nameCounterShowsLengthWhenNoError() {
     val name = "John"
     val state =
-        ProfileUiState(
+        SelfProfileUiState(
             name = name,
             username = "ok_user",
             bio = "Hello",
@@ -389,7 +401,7 @@ class ProfileScreenTest {
   fun editModeAddsTagAndDisplaysIt() {
     val state =
         mutableStateOf(
-            ProfileUiState(name = "John", username = "john", bio = "", mode = ProfileMode.EDIT))
+            SelfProfileUiState(name = "John", username = "john", bio = "", mode = ProfileMode.EDIT))
 
     composeTestRule.setContent {
       SampleAppTheme {
@@ -410,7 +422,8 @@ class ProfileScreenTest {
                     },
                     onRemoveTag = { t ->
                       state.value = state.value.copy(tags = state.value.tags.filterNot { it == t })
-                    }))
+                    }),
+            viewConfig = ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = {}))
       }
     }
 
@@ -430,7 +443,7 @@ class ProfileScreenTest {
   fun editModeRemoveTagHidesIt() {
     val state =
         mutableStateOf(
-            ProfileUiState(
+            SelfProfileUiState(
                 name = "John",
                 username = "john",
                 bio = "",
@@ -451,7 +464,8 @@ class ProfileScreenTest {
                     },
                     onRemoveTag = { t ->
                       state.value = state.value.copy(tags = state.value.tags.filterNot { it == t })
-                    }))
+                    }),
+            viewConfig = ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = {}))
       }
     }
 
@@ -473,7 +487,7 @@ class ProfileScreenTest {
   @Test
   fun viewModeDisplaysTagsReadOnly() {
     val state =
-        ProfileUiState(
+        SelfProfileUiState(
             name = "Arianna",
             username = "itsmeeeari",
             bio = "“Look at my awesome profile”",
@@ -495,7 +509,7 @@ class ProfileScreenTest {
   fun viewModeTagsAreViewOnly() {
     setContentViewMode(
         state =
-            ProfileUiState(
+            SelfProfileUiState(
                 name = "A",
                 username = "a",
                 bio = "",
@@ -509,5 +523,145 @@ class ProfileScreenTest {
     composeTestRule
         .onNode(hasText("rock"), useUnmergedTree = true)
         .assert(SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick).not())
+  }
+
+  @Test
+  fun viewingOtherProfileHidesSelfOnlyControls() {
+    setContentViewMode(
+        viewConfig = ProfileViewConfig.OtherProfileConfig(isFollowing = false, onFollow = {}))
+
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.FOLLOW_BUTTON, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onAllNodes(hasTestTag(ProfileScreenTestTags.EDIT_BUTTON), useUnmergedTree = true)
+        .assertCountEquals(0)
+    composeTestRule
+        .onAllNodes(hasTestTag(ProfileScreenTestTags.SETTINGS_BUTTON), useUnmergedTree = true)
+        .assertCountEquals(0)
+  }
+
+  @Test
+  fun unfollowingOtherProfileInvokesCallback() {
+    var unfollowCalled = false
+    setContentViewMode(
+        viewConfig =
+            ProfileViewConfig.OtherProfileConfig(
+                isFollowing = true, onFollow = { unfollowCalled = true }))
+
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.FOLLOW_BUTTON, useUnmergedTree = true)
+        .assertExists()
+        .performClick()
+
+    composeTestRule.onNode(hasText("Unfollow"), useUnmergedTree = true).assertExists()
+    composeTestRule.waitUntil(3_000) { unfollowCalled }
+    assert(unfollowCalled)
+  }
+
+  @Test
+  fun settingsButtonTriggersCallback() {
+    var settingsClicked = false
+    setContentViewMode(
+        viewConfig =
+            ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = { settingsClicked = true }))
+
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.SETTINGS_BUTTON, useUnmergedTree = true)
+        .assertExists()
+        .performClick()
+
+    composeTestRule.waitUntil(3_000) { settingsClicked }
+    assert(settingsClicked)
+  }
+
+  @Test
+  fun followButtonShowsFollowLabelAndCallsCallback() {
+    var followClicked = false
+    setContentViewMode(
+        viewConfig =
+            ProfileViewConfig.OtherProfileConfig(
+                isFollowing = false, onFollow = { followClicked = true }))
+
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.FOLLOW_BUTTON, useUnmergedTree = true)
+        .assertExists()
+        .performClick()
+
+    composeTestRule.onNode(hasText("Follow"), useUnmergedTree = true).assertExists()
+    composeTestRule.waitUntil(3_000) { followClicked }
+    assert(followClicked)
+  }
+
+  @Test
+  fun followButtonShowsUnfollowLabelWhenAlreadyFollowing() {
+    setContentViewMode(
+        viewConfig = ProfileViewConfig.OtherProfileConfig(isFollowing = true, onFollow = {}))
+
+    composeTestRule.onNode(hasText("Unfollow"), useUnmergedTree = true).assertExists()
+  }
+
+  @Test
+  fun followButtonUpdatesFollowersCount() {
+    val initialFollowers = 12
+    composeTestRule.setContent {
+      var state by remember {
+        mutableStateOf(
+            SelfProfileUiState(
+                name = "Demo User",
+                username = "demo",
+                followers = initialFollowers,
+                following = 5,
+                likes = 9,
+                posts = 1,
+                mode = ProfileMode.VIEW))
+      }
+      var isFollowing by remember { mutableStateOf(false) }
+
+      SampleAppTheme {
+        ProfileScreen(
+            uiState = state,
+            viewConfig =
+                ProfileViewConfig.OtherProfileConfig(
+                    isFollowing = isFollowing,
+                    onFollow = {
+                      isFollowing = !isFollowing
+                      val delta = if (isFollowing) 1 else -1
+                      state = state.copy(followers = state.followers + delta)
+                    }),
+            callbacks = profileScreenCallbacks(goBackClick = {}))
+      }
+    }
+
+    val followButton =
+        composeTestRule
+            .onNodeWithTag(ProfileScreenTestTags.FOLLOW_BUTTON, useUnmergedTree = true)
+            .assertExists()
+
+    followButton.performClick()
+
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.FOLLOWERS_BLOCK, useUnmergedTree = true)
+        .assertTextEquals("${initialFollowers + 1}")
+
+    followButton.performClick()
+
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.FOLLOWERS_BLOCK, useUnmergedTree = true)
+        .assertTextEquals("$initialFollowers")
+  }
+
+  @Test
+  fun goBackButtonTriggersCallback() {
+    var goBackCalled = false
+    setContentViewMode(goBack = { goBackCalled = true })
+
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.GOBACK_BUTTON, useUnmergedTree = true)
+        .assertExists()
+        .performClick()
+
+    composeTestRule.waitUntil(3_000) { goBackCalled }
+    assert(goBackCalled)
   }
 }
