@@ -25,7 +25,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -201,10 +200,13 @@ fun SamplerScreen(
     }
   }
 
-  // Show a simple settings dialog when FAB is pressed
-  if (showSettingsDialog) {
-    SettingsDialog(currentAudioUri = uiState.currentAudioUri, onClose = { showSettingsDialog = false })
-  }
+  // Show a simple settings dialog when settings button is pressed
+    if (showSettingsDialog) {
+        SettingsDialog(
+            currentAudioUri = uiState.currentAudioUri,
+            viewModel = viewModel,
+            onClose = { showSettingsDialog = false })
+    }
 }
 
 @Composable
@@ -1659,49 +1661,69 @@ fun RatioInputField(
 }
 
 @Composable
-fun SettingsDialog(currentAudioUri: Uri?, onClose: () -> Unit) {
-  var bpmText by remember { mutableStateOf("") }
-  val mediaPlayer = LocalMediaPlayer.current
+fun SettingsDialog(currentAudioUri: Uri?, viewModel: SamplerViewModel, onClose: () -> Unit) {
+    var bpmText by remember { mutableStateOf("") }
+    val uiState by viewModel.uiState.collectAsState()
+    val context = NepTuneApplication.appContext
 
-  AlertDialog(
-      onDismissRequest = onClose,
-      title = { Text("Settings") },
-      text = {
-        Column(modifier = Modifier.fillMaxWidth()) {
-          Text("Settings placeholder — add your settings here.")
-          Spacer(modifier = Modifier.height(8.dp))
+    // Keep bpmText in sync with the viewModel's inputTempo when dialog opens or state changes
+    LaunchedEffect(uiState.inputTempo) {
+        bpmText = if (uiState.inputTempo == 0) "" else uiState.inputTempo.toString()
+    }
 
-          Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = bpmText,
-                onValueChange = { newValue -> bpmText = newValue.filter { it.isDigit() } },
-                label = { Text("Initial BPM (visual only)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.weight(1f))
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text("Settings") },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text("Settings placeholder — add your settings here.")
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Spacer(modifier = Modifier.width(8.dp))
+                // Réutilise le même composable de lecture utilisé dans InitialSetupDialog
+                PreviewAudioRow(
+                    isPlaying = uiState.previewPlaying,
+                    onPlay = { viewModel.playPreview(context) },
+                    onStop = { viewModel.stopPreview() }
+                )
 
-            // Play / Pause button for the original sample audio
-            IconButton(
-                onClick = {
-                  if (currentAudioUri != null) {
-                    mediaPlayer.togglePlay(currentAudioUri)
-                  }
-                },
-                enabled = currentAudioUri != null) {
-              val icon = if (mediaPlayer.isPlaying() && mediaPlayer.getCurrentUri() == currentAudioUri) Icons.Default.Pause else Icons.Default.PlayArrow
-              Icon(imageVector = icon, contentDescription = "Play original sample")
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = bpmText,
+                        onValueChange = { newValue -> bpmText = newValue.filter { it.isDigit() } },
+                        label = { Text("Initial BPM (visual only)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Allow changing the initial note (note + octave)
+                PitchSelectorField(
+                    pitchNote = uiState.inputPitchNote,
+                    pitchOctave = uiState.inputPitchOctave,
+                    onPitchUp = viewModel::increaseInputPitch,
+                    onPitchDown = viewModel::decreaseInputPitch,
+                    modifier = Modifier.testTag("SETTINGS_PITCH_SELECTOR")
+                )
             }
-          }
-        }
-      },
-      confirmButton = {
-        Button(onClick = onClose) { Text("Save & Close") }
-      },
-      dismissButton = {
-        TextButton(onClick = onClose) { Text("Cancel") }
-      })
+        },
+        confirmButton = {
+            Button(onClick = {
+                // parse and save into viewModel.inputTempo, input pitch, then close
+                val newBpm = bpmText.toIntOrNull() ?: uiState.inputTempo
+                viewModel.updateInputTempo(newBpm)
+                // ensure input pitch state is persisted (updates already occur when user taps up/down)
+                viewModel.updateInputPitch(uiState.inputPitchNote, uiState.inputPitchOctave)
+                onClose()
+            }) { Text("Save & Close") }
+        },
+        dismissButton = {
+            TextButton(onClick = onClose) { Text("Cancel") }
+        })
 }
 
 /*
