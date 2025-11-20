@@ -66,7 +66,7 @@ class InitialSetupDialogTest {
   }
 
   @Test
-  fun initialSetupDialog_confirmButtonAppliesChanges() {
+  fun initialSetupDialogConfirmButtonAppliesChanges() {
     composeRule.onNodeWithTag("PITCH_UP_BUTTON").performClick()
     composeRule.onNodeWithTag(SamplerTestTags.INIT_TEMPO_SELECTOR).performTextInput("140")
     composeRule.waitForIdle()
@@ -139,7 +139,7 @@ class InitialSetupDialogTest {
   }
 
   @Test
-  fun tapTempoButton_updatesTempo() {
+  fun tapTempoButtonUpdatesTempo() {
     val initialTempo = viewModel.uiState.value.inputTempo
 
     repeat(3) { composeRule.onNodeWithTag(SamplerTestTags.TAP_TEMPO_BUTTON).performClick() }

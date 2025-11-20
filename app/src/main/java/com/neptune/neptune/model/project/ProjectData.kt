@@ -11,7 +11,7 @@ data class AudioFileMetadata(val name: String, val volume: Float, val durationSe
 data class ParameterMetadata(val type: String, val value: Float, val targetAudioFile: String)
 
 @Serializable
-data class SamplerProjectMetadata(
+data class SamplerProjectData(
     val audioFiles: List<AudioFileMetadata>,
     val parameters: List<ParameterMetadata>,
 )

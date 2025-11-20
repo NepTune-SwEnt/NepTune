@@ -50,6 +50,7 @@ import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.ui.sampler.SamplerTestTags.CURVE_EDITOR_SCROLL_CONTAINER
 import com.neptune.neptune.ui.sampler.SamplerTestTags.FADER_60HZ_TAG
+import com.neptune.neptune.ui.sampler.SamplerTestTags.PREVIEW_PLAY_BUTTON
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -102,6 +103,8 @@ object SamplerTestTags {
   const val INIT_CONFIRM_BUTTON = "initConfirmButton"
 
   const val TAP_TEMPO_BUTTON = "tapTempoButton"
+
+  const val PREVIEW_PLAY_BUTTON = "previewPlayButton"
 }
 
 val KnobBackground = Color.Black
@@ -1513,7 +1516,7 @@ fun PreviewAudioRow(isPlaying: Boolean, onPlay: () -> Unit, onStop: () -> Unit) 
       horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Button(
             onClick = { if (isPlaying) onStop() else onPlay() },
-            modifier = Modifier.testTag("PREVIEW_PLAY_BUTTON")) {
+            modifier = Modifier.testTag(PREVIEW_PLAY_BUTTON)) {
               Text(if (isPlaying) "Stop" else "Play")
             }
 

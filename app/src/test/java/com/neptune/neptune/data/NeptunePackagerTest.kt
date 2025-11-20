@@ -25,7 +25,7 @@ class NeptunePackagerTest {
 
   @Test
   fun createProjectZipCreatesUniqueZipInsideWorkspace() =
-      runTest(testDispatcher) { // La coroutine est déjà lancée ici
+      runTest(testDispatcher) {
         val ctx: Context = ApplicationProvider.getApplicationContext()
         val paths = StoragePaths(ctx)
         val packager = NeptunePackager(paths, testDispatcher)

@@ -7,7 +7,7 @@ import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.model.project.AudioFileMetadata
 import com.neptune.neptune.model.project.ParameterMetadata
 import com.neptune.neptune.model.project.ProjectExtractor
-import com.neptune.neptune.model.project.SamplerProjectMetadata
+import com.neptune.neptune.model.project.SamplerProjectData
 import io.mockk.*
 import java.io.File
 import java.io.IOException
@@ -78,7 +78,7 @@ class SamplerViewModelLoadProjectTest {
   fun loadProject_noAudioFile_setsProjectLoadError() = runBlocking {
     val vm = SamplerViewModel()
     val extractor = mockk<ProjectExtractor>()
-    val metadata = SamplerProjectMetadata(audioFiles = emptyList(), parameters = emptyList())
+    val metadata = SamplerProjectData(audioFiles = emptyList(), parameters = emptyList())
     every { extractor.extractMetadata(any()) } returns metadata
     try {
       val f = SamplerViewModel::class.java.getDeclaredField("extractor")
@@ -98,7 +98,7 @@ class SamplerViewModelLoadProjectTest {
     val vm = SamplerViewModel()
     val extractor = mockk<ProjectExtractor>()
     val audioMeta = AudioFileMetadata(name = "sound.wav", volume = 1.0f, durationSeconds = 1.0f)
-    val metadata = SamplerProjectMetadata(audioFiles = listOf(audioMeta), parameters = emptyList())
+    val metadata = SamplerProjectData(audioFiles = listOf(audioMeta), parameters = emptyList())
     every { extractor.extractMetadata(any()) } returns metadata
     every { extractor.extractAudioFile(any(), any(), any()) } throws IOException("extract fail")
     try {
@@ -119,7 +119,7 @@ class SamplerViewModelLoadProjectTest {
     val vm = SamplerViewModel()
     val extractor = mockk<ProjectExtractor>()
     val audioMeta = AudioFileMetadata(name = "sound.wav", volume = 1.0f, durationSeconds = 1.0f)
-    val metadata = SamplerProjectMetadata(audioFiles = listOf(audioMeta), parameters = emptyList())
+    val metadata = SamplerProjectData(audioFiles = listOf(audioMeta), parameters = emptyList())
     every { extractor.extractMetadata(any()) } returns metadata
     val tmpAudio = File.createTempFile("sound", ".wav")
     tmpAudio.writeBytes(ByteArray(1024))
@@ -154,7 +154,7 @@ class SamplerViewModelLoadProjectTest {
     val audioMeta = AudioFileMetadata(name = "sound.wav", volume = 1.0f, durationSeconds = 1.0f)
     val params =
         listOf(ParameterMetadata("tempo", 138f, "global"), ParameterMetadata("pitch", 3f, "global"))
-    val metadata = SamplerProjectMetadata(audioFiles = listOf(audioMeta), parameters = params)
+    val metadata = SamplerProjectData(audioFiles = listOf(audioMeta), parameters = params)
     every { extractor.extractMetadata(any()) } returns metadata
     val tmpAudio = File.createTempFile("sound", ".wav")
     tmpAudio.writeBytes(ByteArray(1024))

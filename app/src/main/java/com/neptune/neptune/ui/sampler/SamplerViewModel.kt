@@ -15,7 +15,7 @@ import com.neptune.neptune.model.project.AudioFileMetadata
 import com.neptune.neptune.model.project.ParameterMetadata
 import com.neptune.neptune.model.project.ProjectExtractor
 import com.neptune.neptune.model.project.ProjectWriter
-import com.neptune.neptune.model.project.SamplerProjectMetadata
+import com.neptune.neptune.model.project.SamplerProjectData
 import java.io.File
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -265,11 +265,11 @@ open class SamplerViewModel() : ViewModel() {
   fun playPreview(context: Context) {
     stopPreview()
 
-    val uri = uiState.value.currentAudioUri ?: return
+    val previewUri = uiState.value.currentAudioUri ?: return
 
     previewPlayer =
         MediaPlayer().apply {
-          setDataSource(context, uri)
+          setDataSource(context, previewUri)
           prepare()
           start()
           setOnCompletionListener { stopPreview() }
@@ -544,7 +544,7 @@ open class SamplerViewModel() : ViewModel() {
           return@launch
         }
 
-        val metadata: SamplerProjectMetadata =
+        val projectData: SamplerProjectData =
             try {
               extractor.extractMetadata(zipFile)
             } catch (e: Exception) {
@@ -557,7 +557,7 @@ open class SamplerViewModel() : ViewModel() {
               }
               return@launch
             }
-        val audioFileName = metadata.audioFiles.firstOrNull()?.name
+        val audioFileName = projectData.audioFiles.firstOrNull()?.name
         if (audioFileName == null) {
           _uiState.update {
             it.copy(
@@ -585,7 +585,7 @@ open class SamplerViewModel() : ViewModel() {
         val sampleDuration = mediaPlayer.getDuration()
         Log.d("SamplerViewModel", "URI audio loaded: $audioUri")
 
-        val paramMap = metadata.parameters.associate { it.type to it.value }
+        val paramMap = projectData.parameters.associate { it.type to it.value }
 
         val tempoValue = paramMap["tempo"]
         val pitchValue = paramMap["pitch"]
@@ -714,8 +714,8 @@ open class SamplerViewModel() : ViewModel() {
         return
       }
 
-      val metadata =
-          SamplerProjectMetadata(
+      val projectData =
+          SamplerProjectData(
               audioFiles =
                   listOf(
                       AudioFileMetadata(
@@ -744,7 +744,7 @@ open class SamplerViewModel() : ViewModel() {
 
       val zipFile = File(zipFilePath)
       ProjectWriter()
-          .writeProject(zipFile = zipFile, metadata = metadata, audioFiles = listOf(audioFile))
+          .writeProject(zipFile = zipFile, metadata = projectData, audioFiles = listOf(audioFile))
 
       Log.i("SamplerViewModel", "Projet sauvegardé avec succès : ${zipFile.absolutePath}")
     } catch (e: Exception) {
