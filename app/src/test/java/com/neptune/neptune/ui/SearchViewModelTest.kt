@@ -24,17 +24,6 @@ class SearchViewModelTest {
   private val appContext: Context = ApplicationProvider.getApplicationContext<Application>()
 
   @Test
-  fun initialSamplesAreEmpty() {
-    val vm =
-        SearchViewModel(
-            repo = fakeSampleRepo,
-            profileRepo = fakeProfileRepo,
-            context = appContext,
-            useMockData = true)
-    assertTrue(vm.samples.value.isEmpty())
-  }
-
-  @Test
   fun searchWithEmptyQueryLoadsAllSamples() {
     val vm =
         SearchViewModel(

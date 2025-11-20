@@ -200,7 +200,6 @@ class MainScreenTest {
   fun downloadProgressBarIsVisibleWhenProgressNonZeroOnMainScreenUseMockDataTrue() {
     // Simulate 40% progress directly on the MainViewModel
     composeTestRule.runOnIdle { viewModel.downloadProgress.value = 40 }
-    println(viewModel.downloadProgress.value)
     composeTestRule.waitForIdle()
 
     // Check that the bar is displayed
@@ -225,46 +224,47 @@ class MainScreenTest {
     composeTestRule.waitForIdle()
     composeTestRule.onAllNodesWithTag(MainScreenTestTags.DOWNlOAD_PROGRESS).assertCountEquals(0)
     /** Test that different timestamps on different comments display correctly */
-    @Test
-    fun commentsDisplayCorrectTimestampFormats() {
-      val sampleId = viewModel.discoverSamples.value.first().id
+  }
 
-      // Open first comment
-      composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_COMMENTS).onFirst().performClick()
+  @Test
+  fun commentsDisplayCorrectTimestampFormats() {
+    val sampleId = viewModel.discoverSamples.value.first().id
 
-      composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_SECTION).assertIsDisplayed()
+    // Open first comment
+    composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_COMMENTS).onFirst().performClick()
 
-      // Fake comments with different TimeStamp
-      val now = Timestamp.now()
-      val oneMinuteAgo = Timestamp(now.seconds - 60, 0)
-      val oneHourAgo = Timestamp(now.seconds - 3600, 0)
-      val oneDayAgo = Timestamp(now.seconds - 86400, 0)
-      val oneMonthAgo = Timestamp(now.seconds - 30L * 86400, 0)
-      val oneYearAgo = Timestamp(now.seconds - 365L * 86400, 0)
+    composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_SECTION).assertIsDisplayed()
 
-      val testComments =
-          listOf(
-              Comment("A", "a1", oneMinuteAgo),
-              Comment("B", "a2", oneHourAgo),
-              Comment("C", "a3", oneDayAgo),
-              Comment("D", "a4", oneMonthAgo),
-              Comment("E", "a5", oneYearAgo),
-              Comment("F", "a6", now))
+    // Fake comments with different TimeStamp
+    val now = Timestamp.now()
+    val oneMinuteAgo = Timestamp(now.seconds - 60, 0)
+    val oneHourAgo = Timestamp(now.seconds - 3600, 0)
+    val oneDayAgo = Timestamp(now.seconds - 86400, 0)
+    val oneMonthAgo = Timestamp(now.seconds - 30L * 86400, 0)
+    val oneYearAgo = Timestamp(now.seconds - 365L * 86400, 0)
 
-      composeTestRule.runOnUiThread {
-        testComments.forEach { comment ->
-          fakeSampleRepo.addComment(sampleId, comment.author, comment.text, comment.timestamp!!)
-        }
-        viewModel.observeCommentsForSample(sampleId)
+    val testComments =
+        listOf(
+            Comment("A", "a1", oneMinuteAgo),
+            Comment("B", "a2", oneHourAgo),
+            Comment("C", "a3", oneDayAgo),
+            Comment("D", "a4", oneMonthAgo),
+            Comment("E", "a5", oneYearAgo),
+            Comment("F", "a6", now))
+
+    composeTestRule.runOnUiThread {
+      testComments.forEach { comment ->
+        fakeSampleRepo.addComment(sampleId, comment.author, comment.text, comment.timestamp!!)
       }
-
-      // Check that the string is well formated in each case.
-      composeTestRule.onNodeWithText("• 1min ago").assertIsDisplayed()
-      composeTestRule.onNodeWithText("• 1h ago").assertIsDisplayed()
-      composeTestRule.onNodeWithText("• 1d ago").assertIsDisplayed()
-      composeTestRule.onNodeWithText("• 1mo ago").assertIsDisplayed()
-      composeTestRule.onNodeWithText("• 1y ago").assertIsDisplayed()
-      composeTestRule.onNodeWithText("• just now").assertIsDisplayed()
+      viewModel.observeCommentsForSample(sampleId)
     }
+
+    // Check that the string is well formated in each case.
+    composeTestRule.onNodeWithText("• 1min ago").assertIsDisplayed()
+    composeTestRule.onNodeWithText("• 1h ago").assertIsDisplayed()
+    composeTestRule.onNodeWithText("• 1d ago").assertIsDisplayed()
+    composeTestRule.onNodeWithText("• 1mo ago").assertIsDisplayed()
+    composeTestRule.onNodeWithText("• 1y ago").assertIsDisplayed()
+    composeTestRule.onNodeWithText("• just now").assertIsDisplayed()
   }
 }

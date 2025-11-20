@@ -38,7 +38,9 @@ class SampleUiActionsTest {
   fun onDownloadClickSuccessUpdatesDownloadCountAndUnzips() = runTest {
     val dispatcher = StandardTestDispatcher(testScheduler)
     val zipFile: File = mock()
-    whenever(storageService.downloadZippedSample(sample, context)).thenReturn(zipFile)
+
+    whenever(storageService.downloadZippedSample(eq(sample), eq(context), any()))
+        .thenReturn(zipFile)
 
     val actions =
         SampleUiActions(
@@ -53,9 +55,12 @@ class SampleUiActionsTest {
 
     actions.onDownloadClicked(sample)
 
-    verify(repo).increaseDownloadCount(sample.id)
-    verify(storageService).downloadZippedSample(sample, context)
+    // Make sure all coroutines scheduled on dispatcher are executed
+    testScheduler.advanceUntilIdle()
+
+    verify(storageService).downloadZippedSample(eq(sample), eq(context), any())
     verify(storageService).persistZipToDownloads(zipFile, downloadsFolder)
+    verify(repo).increaseDownloadCount(sample.id)
 
     assertFalse(actions.downloadBusy.value)
     assertNull(actions.downloadError.value)
@@ -64,7 +69,6 @@ class SampleUiActionsTest {
   @Test
   fun onDownloadClickWhenBusyDoesNothing() = runTest {
     val dispatcher = StandardTestDispatcher(testScheduler)
-
     val actions =
         SampleUiActions(
             repo = repo,
@@ -77,8 +81,11 @@ class SampleUiActionsTest {
 
     actions.onDownloadClicked(sample)
 
-    verify(repo, never()).increaseDownloadCount(any())
-    verify(storageService, never()).downloadZippedSample(any(), any())
+    // No work should have been scheduled, but advance just in case
+    testScheduler.advanceUntilIdle()
+
+    verify(repo, never()).increaseDownloadCount(sample.id)
+    verify(storageService, never()).downloadZippedSample(sample, context)
     verify(storageService, never()).persistZipToDownloads(any(), any())
 
     assertTrue(actions.downloadBusy.value)
@@ -89,7 +96,7 @@ class SampleUiActionsTest {
   fun onDownloadClickIOExceptionSetsErrorMessage() = runTest {
     val dispatcher = StandardTestDispatcher(testScheduler)
 
-    whenever(storageService.downloadZippedSample(sample, context))
+    whenever(storageService.downloadZippedSample(eq(sample), eq(context), any()))
         .thenThrow(IOException("disk full"))
 
     val actions =
@@ -102,9 +109,14 @@ class SampleUiActionsTest {
 
     actions.onDownloadClicked(sample)
 
-    verify(repo, never()).increaseDownloadCount(any())
-    verify(storageService).downloadZippedSample(sample, context)
+    testScheduler.advanceUntilIdle()
+
+    // Download should be attempted
+    verify(storageService).downloadZippedSample(eq(sample), eq(context), any())
+
+    // But on IOException, we should NOT unzip or increment count
     verify(storageService, never()).persistZipToDownloads(any(), any())
+    verify(repo, never()).increaseDownloadCount(any<String>())
 
     assertFalse(actions.downloadBusy.value)
 

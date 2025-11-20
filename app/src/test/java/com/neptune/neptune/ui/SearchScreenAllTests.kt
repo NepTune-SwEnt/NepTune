@@ -1,6 +1,5 @@
 package com.neptune.neptune.ui.search
 
-import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
@@ -247,7 +246,6 @@ class SearchScreenAllTests {
     // 3) 40 -> visible and progress ~0.4
     composeRule.runOnIdle { vm.downloadProgress.value = 40 }
     composeRule.waitForIdle()
-    println(vm.downloadProgress.value)
     composeRule.onNodeWithTag(SearchScreenTestTags.DOWNLOAD_BAR).assertIsDisplayed()
 
     val progress40 = fetchProgressForTag(SearchScreenTestTags.DOWNLOAD_BAR)

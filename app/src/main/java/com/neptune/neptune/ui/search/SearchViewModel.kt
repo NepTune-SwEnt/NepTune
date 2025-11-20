@@ -245,8 +245,7 @@ open class SearchViewModel(
 
   open fun search(query: String) {
     this.query = query
-    val normalizedQuery = normalize(query)
-    applyFilter(normalizedQuery)
+    applyFilter(query)
   }
 
   // Normalizes text by converting it to lowercase and removing non-alphanumeric characters.
