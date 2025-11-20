@@ -87,7 +87,7 @@ data class SamplerUiState(
 
 open class SamplerViewModel() : ViewModel() {
 
-  private val context: Context = NepTuneApplication.appContext
+  val context: Context = NepTuneApplication.appContext
 
   open val mediaPlayer = NeptuneMediaPlayer()
 
@@ -103,7 +103,7 @@ open class SamplerViewModel() : ViewModel() {
 
   private var playbackTickerJob: Job? = null
 
-  val _uiState = MutableStateFlow(SamplerUiState())
+  private val _uiState = MutableStateFlow(SamplerUiState())
   val uiState: StateFlow<SamplerUiState> = _uiState
 
   val maxOctave = 7
@@ -290,7 +290,7 @@ open class SamplerViewModel() : ViewModel() {
     val now = System.currentTimeMillis()
 
     tapTimes.add(now)
-    if (tapTimes.size > 6) tapTimes.removeFirst()
+    if (tapTimes.size > 6) tapTimes.removeAt(0)
 
     if (tapTimes.size >= 2) {
       val diffs = tapTimes.zipWithNext { a, b -> b - a }
@@ -620,8 +620,7 @@ open class SamplerViewModel() : ViewModel() {
                     paramMap["compThreshold"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)
                         ?: current.compThreshold,
                 compRatio =
-                    paramMap["compRatio"]?.let { it.roundToInt().coerceIn(1, 20) }
-                        ?: current.compRatio,
+                    paramMap["compRatio"]?.roundToInt()?.coerceIn(1, 20) ?: current.compRatio,
                 compKnee = paramMap["compKnee"]?.coerceIn(0f, COMP_KNEE_MAX) ?: current.compKnee,
                 compGain =
                     paramMap["compGain"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)
@@ -647,7 +646,7 @@ open class SamplerViewModel() : ViewModel() {
               }
             }
 
-            val loadedPitchNote = NOTE_ORDER[pitchValue!!.roundToInt() % NOTE_ORDER.size]
+            val loadedPitchNote = NOTE_ORDER[pitchValue.roundToInt() % NOTE_ORDER.size]
             val loadedPitchOctave = 4
 
             current.copy(
@@ -667,8 +666,7 @@ open class SamplerViewModel() : ViewModel() {
                     paramMap["compThreshold"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)
                         ?: current.compThreshold,
                 compRatio =
-                    paramMap["compRatio"]?.let { it.roundToInt().coerceIn(1, 20) }
-                        ?: current.compRatio,
+                    paramMap["compRatio"]?.roundToInt()?.coerceIn(1, 20) ?: current.compRatio,
                 compKnee = paramMap["compKnee"]?.coerceIn(0f, COMP_KNEE_MAX) ?: current.compKnee,
                 compGain =
                     paramMap["compGain"]?.coerceIn(COMP_GAIN_MIN, COMP_GAIN_MAX)
@@ -677,7 +675,7 @@ open class SamplerViewModel() : ViewModel() {
                     paramMap["compAttack"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compAttack,
                 compDecay = paramMap["compDecay"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compDecay,
                 eqBands = newEqBands.toList(),
-                tempo = tempoValue!!.roundToInt().coerceIn(50, 200),
+                tempo = tempoValue.roundToInt().coerceIn(50, 200),
                 pitchNote = loadedPitchNote,
                 pitchOctave = loadedPitchOctave,
                 currentAudioUri = audioUri,
@@ -704,13 +702,13 @@ open class SamplerViewModel() : ViewModel() {
       val audioUri = state.currentAudioUri
 
       if (audioUri == null) {
-        Log.e("SamplerViewModel", "Aucun audio à sauvegarder, opération annulée.")
+        Log.e("SamplerViewModel", "No audio saved, action canceled.")
         return
       }
 
       val audioFile = File(audioUri.path ?: "")
       if (!audioFile.exists()) {
-        Log.e("SamplerViewModel", "Le fichier audio n'existe pas : ${audioFile.path}")
+        Log.e("SamplerViewModel", "The audio file doesn't exists: ${audioFile.path}")
         return
       }
 
@@ -746,9 +744,9 @@ open class SamplerViewModel() : ViewModel() {
       ProjectWriter()
           .writeProject(zipFile = zipFile, metadata = metadata, audioFiles = listOf(audioFile))
 
-      Log.i("SamplerViewModel", "Projet sauvegardé avec succès : ${zipFile.absolutePath}")
+      Log.i("SamplerViewModel", "Project saved: ${zipFile.absolutePath}")
     } catch (e: Exception) {
-      Log.e("SamplerViewModel", "Échec de la sauvegarde du projet ZIP : ${e.message}", e)
+      Log.e("SamplerViewModel", "Failed to save ZIP file: ${e.message}", e)
     }
   }
 }
