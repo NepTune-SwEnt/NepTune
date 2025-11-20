@@ -56,26 +56,22 @@ class MainViewModel(
   private val _followedSamples = MutableStateFlow<List<Sample>>(emptyList())
   val followedSamples: StateFlow<List<Sample>> = _followedSamples
 
-  private val _userAvatar = MutableStateFlow<Any?>(null)
-  val userAvatar: StateFlow<Any?> = _userAvatar.asStateFlow()
+  private val _userAvatar = MutableStateFlow<String?>(null)
+  val userAvatar: StateFlow<String?> = _userAvatar.asStateFlow()
 
   private val _currentUserFlow = MutableStateFlow(auth.currentUser)
   private val authListener =
       FirebaseAuth.AuthStateListener { firebaseAuth ->
         _currentUserFlow.value = firebaseAuth.currentUser
+        loadAvatar()
       }
-
-  private val avatarFileName: String?
-    get() = auth.currentUser?.uid?.let { "avatar_$it.jpg" }
-
-  private val avatarStoragePath: String?
-    get() = auth.currentUser?.uid?.let { "profile_pictures/$it.jpg" }
 
   private val _comments = MutableStateFlow<List<Comment>>(emptyList())
   val comments: StateFlow<List<Comment>> = _comments
 
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
+  private val avatarCache = mutableMapOf<String, String?>()
 
   init {
     if (useMockData) {
@@ -109,30 +105,9 @@ class MainViewModel(
 
   private fun loadAvatar() {
     viewModelScope.launch {
-      val storagePath = avatarStoragePath
-      val fileName = avatarFileName
-
-      val cachedUri = if (fileName != null) imageRepo.getImageUri(fileName) else null
-      if (cachedUri != null) {
-        _userAvatar.value = cachedUri
-      }
-      if (storagePath != null && fileName != null) {
-        try {
-          val downloadUrl = storageService.getDownloadUrl(storagePath)
-          if (downloadUrl != null) {
-            imageRepo.saveImageFromUrl(downloadUrl, fileName)
-            val freshUri = imageRepo.getImageUri(fileName)
-            if (freshUri != null) {
-              _userAvatar.value =
-                  freshUri
-                      .buildUpon()
-                      .appendQueryParameter("t", System.currentTimeMillis().toString())
-                      .build()
-            }
-          }
-        } catch (_: Exception) {
-          // In case of an error we keep the cached avatar.
-        }
+      val currentUser = auth.currentUser
+      if (currentUser != null) {
+        _userAvatar.value = getSampleOwnerAvatar(currentUser.uid)
       } else {
         _userAvatar.value = null
       }
@@ -190,6 +165,16 @@ class MainViewModel(
       repo.addComment(sampleId, username, text.trim())
     }
   }
+
+  suspend fun getSampleOwnerAvatar(userId: String): String? {
+    if (avatarCache.containsKey(userId)) {
+      return avatarCache[userId]
+    }
+    val url = profileRepo.getAvatarUrlByUserId(userId)
+    avatarCache[userId] = url
+    return url
+  }
+
   // Mock Data
   private fun loadData() {
     _discoverSamples.value =

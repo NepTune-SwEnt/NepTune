@@ -80,6 +80,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.neptune.neptune.R
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
@@ -213,12 +214,16 @@ fun MainScreen(
                             .size(57.dp)
                             .testTag(NavigationTestTags.PROFILE_BUTTON)) {
                       AsyncImage(
-                          model = userAvatar ?: R.drawable.profile,
+                          model =
+                              ImageRequest.Builder(LocalContext.current)
+                                  .data(userAvatar ?: R.drawable.profile)
+                                  .crossfade(true)
+                                  .build(),
                           contentDescription = "Profile",
                           modifier = Modifier.fillMaxSize().clip(CircleShape),
                           contentScale = ContentScale.Crop,
-                          placeholder = painterResource(id = R.drawable.profile),
-                          error = painterResource(id = R.drawable.profile))
+                          placeholder = painterResource(R.drawable.profile),
+                          error = painterResource(R.drawable.profile))
                     }
               },
               colors =
@@ -281,7 +286,10 @@ fun MainScreen(
                                   sample = sample,
                                   width = cardWidth,
                                   isLiked = likedSamples[sample.id] == true,
-                                  clickHandlers = clickHandlers)
+                                  clickHandlers = clickHandlers,
+                                  getOwnerAvatar = { userId ->
+                                    mainViewModel.getSampleOwnerAvatar(userId)
+                                  })
                             }
                           }
                         }
@@ -299,7 +307,8 @@ fun MainScreen(
                         mainViewModel.onLikeClicked(sample, isLiked)
                       },
                       onCommentClick = { sample -> onCommentClicked(sample) },
-                      onDownloadClick = { sample -> mainViewModel.onDownloadSample(sample) })
+                      onDownloadClick = { sample -> mainViewModel.onDownloadSample(sample) },
+                      getOwnerAvatar = { userId -> mainViewModel.getSampleOwnerAvatar(userId) })
                 }
               }
           // Comment Overlay
@@ -347,7 +356,8 @@ fun SampleCardRow(
     likedSamples: Map<String, Boolean> = emptyMap(),
     onLikeClick: (Sample, Boolean) -> Unit = { _, _ -> },
     onCommentClick: (Sample) -> Unit = {},
-    onDownloadClick: (Sample) -> Unit = {}
+    onDownloadClick: (Sample) -> Unit = {},
+    getOwnerAvatar: suspend (String) -> String? = { null }
 ) {
   Row(
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -360,7 +370,11 @@ fun SampleCardRow(
                   onCommentClick = { onCommentClick(sample) },
                   onDownloadClick = { onDownloadClick(sample) })
           SampleCard(
-              sample = sample, width = cardWidth, isLiked = isLiked, clickHandlers = clickHandlers)
+              sample = sample,
+              width = cardWidth,
+              isLiked = isLiked,
+              clickHandlers = clickHandlers,
+              getOwnerAvatar = getOwnerAvatar)
         }
       }
 }
@@ -396,11 +410,14 @@ fun SampleCard(
     isLiked: Boolean,
     testTags: BaseSampleTestTags = MainScreenTestTags,
     clickHandlers: ClickHandlers,
-    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
+    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
+    getOwnerAvatar: suspend (String) -> String? = { null }
 ) {
   val likeDescription = if (isLiked) "liked" else "not liked"
   val heartColor = if (isLiked) Color.Red else NepTuneTheme.colors.background
   val heartIcon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder
+  var avatarUrl by remember { mutableStateOf<String?>(null) }
+  LaunchedEffect(sample.ownerId) { avatarUrl = getOwnerAvatar(sample.ownerId) }
   Card(
       modifier =
           Modifier.width(width)
@@ -416,14 +433,21 @@ fun SampleCard(
           Row(
               verticalAlignment = Alignment.CenterVertically,
               modifier = Modifier.padding(start = 4.dp, top = 2.dp)) {
-                Icon(
-                    painter = painterResource(R.drawable.profile),
+                AsyncImage(
+                    model =
+                        ImageRequest.Builder(LocalContext.current)
+                            .data(avatarUrl ?: R.drawable.profile)
+                            .crossfade(true)
+                            .build(),
                     contentDescription = "Profile",
-                    tint = Color.Unspecified,
                     modifier =
                         Modifier.clickable(onClick = clickHandlers.onProfileClick)
                             .size(22.dp)
-                            .testTag(testTags.SAMPLE_PROFILE_ICON))
+                            .clip(CircleShape)
+                            .testTag(testTags.SAMPLE_PROFILE_ICON),
+                    contentScale = ContentScale.Crop,
+                    placeholder = painterResource(R.drawable.profile),
+                    error = painterResource(R.drawable.profile))
                 Spacer(Modifier.width(6.dp))
                 Text(
                     text = sample.name,
