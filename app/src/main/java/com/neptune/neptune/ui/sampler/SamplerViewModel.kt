@@ -103,7 +103,7 @@ open class SamplerViewModel() : ViewModel() {
 
   private var playbackTickerJob: Job? = null
 
-  private val _uiState = MutableStateFlow(SamplerUiState())
+  val _uiState = MutableStateFlow(SamplerUiState())
   val uiState: StateFlow<SamplerUiState> = _uiState
 
   val maxOctave = 7
