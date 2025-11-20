@@ -246,6 +246,7 @@ class NavigationTest {
           val newTitle = firstArg<String>()
           uiStateFlow.update { it.copy(sample = it.sample.copy(name = newTitle)) }
         }
+    every { mockViewModel.audioExist() } returns true
 
     every { mockViewModel.submitPost() } answers
         {
@@ -307,6 +308,7 @@ class NavigationTest {
         .onNodeWithTag(NavigationTestTags.IMPORT_FILE_TAB)
         .assertHasClickAction()
         .performClick()
+    composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(ImportScreenTestTags.IMPORT_SCREEN).assertIsDisplayed()
   }
 }
