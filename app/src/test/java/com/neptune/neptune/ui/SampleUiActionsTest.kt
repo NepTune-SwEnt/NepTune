@@ -14,6 +14,7 @@ import org.junit.Assert.*
 import org.junit.Test
 import org.mockito.kotlin.*
 
+/** Tests for SampleUiActions. This has been written with the help of LLMs. */
 @OptIn(ExperimentalCoroutinesApi::class)
 class SampleUiActionsTest {
 
@@ -111,5 +112,56 @@ class SampleUiActionsTest {
     val error = actions.downloadError.value
     assertNotNull(error)
     assertTrue(error!!.startsWith("File error:"))
+  }
+
+  @Test
+  fun onLikeClickedLikesUnlikedSample() = runTest {
+    whenever(repo.hasUserLiked(sample.id)).thenReturn(false)
+
+    val actions =
+        SampleUiActions(
+            repo = repo,
+            storageService = storageService,
+            downloadsFolder = downloadsFolder,
+            context = context)
+
+    val result = actions.onLikeClicked(sample.id, isLiked = true)
+
+    assertTrue(result)
+    verify(repo).toggleLike(sample.id, true)
+  }
+
+  @Test
+  fun onLikeClickedUnlikesLikedSample() = runTest {
+    whenever(repo.hasUserLiked(sample.id)).thenReturn(true)
+
+    val actions =
+        SampleUiActions(
+            repo = repo,
+            storageService = storageService,
+            downloadsFolder = downloadsFolder,
+            context = context)
+
+    val result = actions.onLikeClicked(sample.id, isLiked = false)
+
+    assertFalse(result)
+    verify(repo).toggleLike(sample.id, false)
+  }
+
+  @Test
+  fun onLikeClickedNoChanges() = runTest {
+    whenever(repo.hasUserLiked(sample.id)).thenReturn(true)
+
+    val actions =
+        SampleUiActions(
+            repo = repo,
+            storageService = storageService,
+            downloadsFolder = downloadsFolder,
+            context = context)
+
+    val result = actions.onLikeClicked(sample.id, isLiked = true)
+
+    assertTrue(result)
+    verify(repo, never()).toggleLike(any(), any())
   }
 }
