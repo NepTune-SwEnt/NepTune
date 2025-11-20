@@ -111,4 +111,7 @@ interface ProfileRepository {
    * of sample creators.
    */
   suspend fun getAvatarUrlByUserId(userId: String): String?
+
+  /** Retrieves the username of a specific user via their ID. */
+  suspend fun getUserNameByUserId(userId: String): String?
 }

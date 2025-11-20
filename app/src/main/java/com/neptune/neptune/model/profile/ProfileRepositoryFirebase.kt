@@ -299,6 +299,16 @@ class ProfileRepositoryFirebase(
     }
   }
 
+  override suspend fun getUserNameByUserId(userId: String): String? {
+    return try {
+      val snapshot = profiles.document(userId).get().await()
+      snapshot.getString("username")
+    } catch (_: Exception) {
+      // In case of a network error, do nothing.
+      null
+    }
+  }
+
   /** Converts an input string to a valid username base (lowercase, alphanumeric + underscores). */
   private fun toUsernameBase(s: String) = s.lowercase().replace("[^a-z0-9_]".toRegex(), "")
 }
