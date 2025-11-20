@@ -56,11 +56,10 @@ class SearchScreenAllTests {
     val fakeSampleRepo = FakeSampleRepository()
     val fakeProfileRepo = FakeProfileRepository()
     return SearchViewModel(
-      repo = fakeSampleRepo,
-      context = appContext,
-      useMockData = true,
-      profileRepo = fakeProfileRepo
-    )
+        repo = fakeSampleRepo,
+        context = appContext,
+        useMockData = true,
+        profileRepo = fakeProfileRepo)
   }
 
   /** Advance past the 300ms debounce in SearchScreen */
@@ -235,26 +234,25 @@ class SearchScreenAllTests {
   fun profileIconPropagatesOwnerIdToNavigationCallback() {
     val vm = createTestSearchViewModel()
     val sample =
-      Sample(
-        id = "sample-x",
-        name = "Rain Textures",
-        description = "Wet foley",
-        durationSeconds = 15,
-        tags = listOf("#rain"),
-        likes = 12,
-        usersLike = emptyList(),
-        comments = 0,
-        downloads = 1,
-        ownerId = "artist-123"
-      )
+        Sample(
+            id = "sample-x",
+            name = "Rain Textures",
+            description = "Wet foley",
+            durationSeconds = 15,
+            tags = listOf("#rain"),
+            likes = 12,
+            usersLike = emptyList(),
+            comments = 0,
+            downloads = 1,
+            ownerId = "artist-123")
 
     var navigatedTo: String? = null
     composeRule.setContent {
       ScrollableColumnOfSamples(
-        samples = listOf(sample),
-        searchViewModel = vm,
-        mediaPlayer = fakeMediaPlayer,
-        navigateToOtherUserProfile = { navigatedTo = it })
+          samples = listOf(sample),
+          searchViewModel = vm,
+          mediaPlayer = fakeMediaPlayer,
+          navigateToOtherUserProfile = { navigatedTo = it })
     }
 
     val profileIconTag = SearchScreenTestTagsPerSampleCard("sample-x").SAMPLE_PROFILE_ICON

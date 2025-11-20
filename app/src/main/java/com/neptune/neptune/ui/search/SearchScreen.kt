@@ -130,7 +130,8 @@ fun SearchScreen(
             likedSamples = likedSamples,
             activeCommentSampleId = activeCommentSampleId,
             comments = comments,
-            navigateToOtherUserProfile = navigateToOtherUserProfile,)
+            navigateToOtherUserProfile = navigateToOtherUserProfile,
+        )
       })
 }
 
@@ -168,9 +169,8 @@ fun ScrollableColumnOfSamples(
                     searchViewModel.onLikeClick(sample, newIsLiked)
                   },
                   onCommentClick = { searchViewModel.onCommentClicked(sample) },
-                  onProfileClick = {
-                      navigateToOtherUserProfile(sample.ownerId)
-                  },)
+                  onProfileClick = { navigateToOtherUserProfile(sample.ownerId) },
+              )
           SampleCard(
               sample = sample,
               width = width,

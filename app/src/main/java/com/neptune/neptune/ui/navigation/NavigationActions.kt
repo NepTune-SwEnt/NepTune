@@ -34,7 +34,6 @@ sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
     fun createRoute(userId: String) = "other_user_profile/$userId"
   }
 
-
   object SignIn : Screen(route = "signIn", showBottomBar = false)
 
   object Settings : Screen(route = "setting", showBottomBar = false)

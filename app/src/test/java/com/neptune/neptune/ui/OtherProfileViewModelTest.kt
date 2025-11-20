@@ -1,10 +1,10 @@
 package com.neptune.neptune.ui
 
 import com.neptune.neptune.ui.profile.OtherProfileViewModel
-import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import org.junit.Test
 
 class OtherProfileViewModelTest {
 
@@ -15,12 +15,12 @@ class OtherProfileViewModelTest {
 
     viewModel.onFollow()
     val followingState = viewModel.uiState.value
-      assertTrue(followingState.isFollowing)
-      assertEquals(initialFollowers + 1, followingState.profile.followers)
+    assertTrue(followingState.isFollowing)
+    assertEquals(initialFollowers + 1, followingState.profile.followers)
 
     viewModel.onFollow()
     val unfollowingState = viewModel.uiState.value
-      assertFalse(unfollowingState.isFollowing)
-      assertEquals(initialFollowers, unfollowingState.profile.followers)
+    assertFalse(unfollowingState.isFollowing)
+    assertEquals(initialFollowers, unfollowingState.profile.followers)
   }
 }

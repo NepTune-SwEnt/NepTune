@@ -194,10 +194,10 @@ sealed interface ProfileViewConfig {
     override val topBarContent = null
     override val belowStatsButton =
         @Composable {
-            val label = if (isFollowing) "Unfollow" else "Follow"
-            val icon = if (isFollowing) Icons.Default.Clear else Icons.Default.Add
+          val label = if (isFollowing) "Unfollow" else "Follow"
+          val icon = if (isFollowing) Icons.Default.Clear else Icons.Default.Add
 
-            Button(
+          Button(
               onClick = onFollow,
               enabled = true,
               modifier =
@@ -694,8 +694,8 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
             }
           })
 
-    val viewConfig =
-        ProfileViewConfig.SelfProfileConfig(onEdit = viewModel::onEditClick, settings = settings)
+  val viewConfig =
+      ProfileViewConfig.SelfProfileConfig(onEdit = viewModel::onEditClick, settings = settings)
 
   ProfileScreen(
       uiState = state,
@@ -725,31 +725,27 @@ fun OtherUserProfileRoute(
     userId: String,
     goBack: () -> Unit = {},
 ) {
-    val factory =
-        object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                if (modelClass.isAssignableFrom(OtherProfileViewModel::class.java)) {
-                    @Suppress("UNCHECKED_CAST")
-                    return OtherProfileViewModel(userId) as T
-                }
-                throw IllegalArgumentException("Unknown ViewModel class")
-            }
+  val factory =
+      object : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+          if (modelClass.isAssignableFrom(OtherProfileViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST") return OtherProfileViewModel(userId) as T
+          }
+          throw IllegalArgumentException("Unknown ViewModel class")
         }
+      }
 
-    val viewModel: OtherProfileViewModel = viewModel(factory = factory)
-    val state by viewModel.uiState.collectAsState()
+  val viewModel: OtherProfileViewModel = viewModel(factory = factory)
+  val state by viewModel.uiState.collectAsState()
 
-    val viewConfig =
-        ProfileViewConfig.OtherProfileConfig(
-            isFollowing = state.isFollowing,
-            onFollow = viewModel::onFollow)
+  val viewConfig =
+      ProfileViewConfig.OtherProfileConfig(
+          isFollowing = state.isFollowing, onFollow = viewModel::onFollow)
 
-    ProfileScreen(
-        uiState = state.profile,
-        localAvatarUri = null, // No local avatar for others (only remote URL)
-        viewConfig = viewConfig,
-        callbacks = profileScreenCallbacks(goBackClick = goBack),
-    )
+  ProfileScreen(
+      uiState = state.profile,
+      localAvatarUri = null, // No local avatar for others (only remote URL)
+      viewConfig = viewConfig,
+      callbacks = profileScreenCallbacks(goBackClick = goBack),
+  )
 }
-
-

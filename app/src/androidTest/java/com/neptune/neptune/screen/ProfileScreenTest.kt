@@ -102,8 +102,7 @@ class ProfileScreenTest {
       SampleAppTheme {
         ProfileScreen(
             uiState = state,
-            callbacks =
-                profileScreenCallbacks(onEditClick = onEditClick, goBackClick = goBack),
+            callbacks = profileScreenCallbacks(onEditClick = onEditClick, goBackClick = goBack),
             viewConfig = config)
       }
     }
@@ -526,149 +525,143 @@ class ProfileScreenTest {
         .assert(SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick).not())
   }
 
-    @Test
-    fun viewingOtherProfileHidesSelfOnlyControls() {
-        setContentViewMode(
-            viewConfig =
-                ProfileViewConfig.OtherProfileConfig(isFollowing = false, onFollow = {}))
+  @Test
+  fun viewingOtherProfileHidesSelfOnlyControls() {
+    setContentViewMode(
+        viewConfig = ProfileViewConfig.OtherProfileConfig(isFollowing = false, onFollow = {}))
 
-        composeTestRule
-            .onNodeWithTag(ProfileScreenTestTags.FOLLOW_BUTTON, useUnmergedTree = true)
-            .assertIsDisplayed()
-        composeTestRule
-            .onAllNodes(hasTestTag(ProfileScreenTestTags.EDIT_BUTTON), useUnmergedTree = true)
-            .assertCountEquals(0)
-        composeTestRule
-            .onAllNodes(hasTestTag(ProfileScreenTestTags.SETTINGS_BUTTON), useUnmergedTree = true)
-            .assertCountEquals(0)
-    }
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.FOLLOW_BUTTON, useUnmergedTree = true)
+        .assertIsDisplayed()
+    composeTestRule
+        .onAllNodes(hasTestTag(ProfileScreenTestTags.EDIT_BUTTON), useUnmergedTree = true)
+        .assertCountEquals(0)
+    composeTestRule
+        .onAllNodes(hasTestTag(ProfileScreenTestTags.SETTINGS_BUTTON), useUnmergedTree = true)
+        .assertCountEquals(0)
+  }
 
-    @Test
-    fun unfollowingOtherProfileInvokesCallback() {
-        var unfollowCalled = false
-        setContentViewMode(
+  @Test
+  fun unfollowingOtherProfileInvokesCallback() {
+    var unfollowCalled = false
+    setContentViewMode(
+        viewConfig =
+            ProfileViewConfig.OtherProfileConfig(
+                isFollowing = true, onFollow = { unfollowCalled = true }))
+
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.FOLLOW_BUTTON, useUnmergedTree = true)
+        .assertExists()
+        .performClick()
+
+    composeTestRule.onNode(hasText("Unfollow"), useUnmergedTree = true).assertExists()
+    composeTestRule.waitUntil(3_000) { unfollowCalled }
+    assert(unfollowCalled)
+  }
+
+  @Test
+  fun settingsButtonTriggersCallback() {
+    var settingsClicked = false
+    setContentViewMode(
+        viewConfig =
+            ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = { settingsClicked = true }))
+
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.SETTINGS_BUTTON, useUnmergedTree = true)
+        .assertExists()
+        .performClick()
+
+    composeTestRule.waitUntil(3_000) { settingsClicked }
+    assert(settingsClicked)
+  }
+
+  @Test
+  fun followButtonShowsFollowLabelAndCallsCallback() {
+    var followClicked = false
+    setContentViewMode(
+        viewConfig =
+            ProfileViewConfig.OtherProfileConfig(
+                isFollowing = false, onFollow = { followClicked = true }))
+
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.FOLLOW_BUTTON, useUnmergedTree = true)
+        .assertExists()
+        .performClick()
+
+    composeTestRule.onNode(hasText("Follow"), useUnmergedTree = true).assertExists()
+    composeTestRule.waitUntil(3_000) { followClicked }
+    assert(followClicked)
+  }
+
+  @Test
+  fun followButtonShowsUnfollowLabelWhenAlreadyFollowing() {
+    setContentViewMode(
+        viewConfig = ProfileViewConfig.OtherProfileConfig(isFollowing = true, onFollow = {}))
+
+    composeTestRule.onNode(hasText("Unfollow"), useUnmergedTree = true).assertExists()
+  }
+
+  @Test
+  fun followButtonUpdatesFollowersCount() {
+    val initialFollowers = 12
+    composeTestRule.setContent {
+      var state by remember {
+        mutableStateOf(
+            SelfProfileUiState(
+                name = "Demo User",
+                username = "demo",
+                followers = initialFollowers,
+                following = 5,
+                likes = 9,
+                posts = 1,
+                mode = ProfileMode.VIEW))
+      }
+      var isFollowing by remember { mutableStateOf(false) }
+
+      SampleAppTheme {
+        ProfileScreen(
+            uiState = state,
             viewConfig =
                 ProfileViewConfig.OtherProfileConfig(
-                    isFollowing = true, onFollow = { unfollowCalled = true }))
+                    isFollowing = isFollowing,
+                    onFollow = {
+                      isFollowing = !isFollowing
+                      val delta = if (isFollowing) 1 else -1
+                      state = state.copy(followers = state.followers + delta)
+                    }),
+            callbacks = profileScreenCallbacks(goBackClick = {}))
+      }
+    }
 
+    val followButton =
         composeTestRule
             .onNodeWithTag(ProfileScreenTestTags.FOLLOW_BUTTON, useUnmergedTree = true)
             .assertExists()
-            .performClick()
 
-        composeTestRule.onNode(hasText("Unfollow"), useUnmergedTree = true).assertExists()
-        composeTestRule.waitUntil(3_000) { unfollowCalled }
-        assert(unfollowCalled)
-    }
+    followButton.performClick()
 
-    @Test
-    fun settingsButtonTriggersCallback() {
-        var settingsClicked = false
-        setContentViewMode(
-            viewConfig =
-                ProfileViewConfig.SelfProfileConfig(
-                    onEdit = {}, settings = { settingsClicked = true }))
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.FOLLOWERS_BLOCK, useUnmergedTree = true)
+        .assertTextEquals("${initialFollowers + 1}")
 
-        composeTestRule
-            .onNodeWithTag(ProfileScreenTestTags.SETTINGS_BUTTON, useUnmergedTree = true)
-            .assertExists()
-            .performClick()
+    followButton.performClick()
 
-        composeTestRule.waitUntil(3_000) { settingsClicked }
-        assert(settingsClicked)
-    }
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.FOLLOWERS_BLOCK, useUnmergedTree = true)
+        .assertTextEquals("$initialFollowers")
+  }
 
-    @Test
-    fun followButtonShowsFollowLabelAndCallsCallback() {
-        var followClicked = false
-        setContentViewMode(
-            viewConfig =
-                ProfileViewConfig.OtherProfileConfig(
-                    isFollowing = false, onFollow = { followClicked = true }))
+  @Test
+  fun goBackButtonTriggersCallback() {
+    var goBackCalled = false
+    setContentViewMode(goBack = { goBackCalled = true })
 
-        composeTestRule
-            .onNodeWithTag(ProfileScreenTestTags.FOLLOW_BUTTON, useUnmergedTree = true)
-            .assertExists()
-            .performClick()
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.GOBACK_BUTTON, useUnmergedTree = true)
+        .assertExists()
+        .performClick()
 
-        composeTestRule.onNode(hasText("Follow"), useUnmergedTree = true).assertExists()
-        composeTestRule.waitUntil(3_000) { followClicked }
-        assert(followClicked)
-    }
-
-    @Test
-    fun followButtonShowsUnfollowLabelWhenAlreadyFollowing() {
-        setContentViewMode(
-            viewConfig =
-                ProfileViewConfig.OtherProfileConfig(
-                    isFollowing = true, onFollow = { }))
-
-        composeTestRule.onNode(hasText("Unfollow"), useUnmergedTree = true).assertExists()
-    }
-
-    @Test
-    fun followButtonUpdatesFollowersCount() {
-        val initialFollowers = 12
-        composeTestRule.setContent {
-            var state by remember {
-                mutableStateOf(
-                    SelfProfileUiState(
-                        name = "Demo User",
-                        username = "demo",
-                        followers = initialFollowers,
-                        following = 5,
-                        likes = 9,
-                        posts = 1,
-                        mode = ProfileMode.VIEW))
-            }
-            var isFollowing by remember { mutableStateOf(false) }
-
-            SampleAppTheme {
-                ProfileScreen(
-                    uiState = state,
-                    viewConfig =
-                        ProfileViewConfig.OtherProfileConfig(
-                            isFollowing = isFollowing,
-                            onFollow = {
-                                isFollowing = !isFollowing
-                                val delta = if (isFollowing) 1 else -1
-                                state = state.copy(followers = state.followers + delta)
-                            }),
-                    callbacks = profileScreenCallbacks(goBackClick = {}))
-            }
-        }
-
-        val followButton =
-            composeTestRule
-                .onNodeWithTag(ProfileScreenTestTags.FOLLOW_BUTTON, useUnmergedTree = true)
-                .assertExists()
-
-        followButton.performClick()
-
-        composeTestRule
-            .onNodeWithTag(ProfileScreenTestTags.FOLLOWERS_BLOCK, useUnmergedTree = true)
-            .assertTextEquals("${initialFollowers + 1}")
-
-        followButton.performClick()
-
-        composeTestRule
-            .onNodeWithTag(ProfileScreenTestTags.FOLLOWERS_BLOCK, useUnmergedTree = true)
-            .assertTextEquals("$initialFollowers")
-    }
-
-    @Test
-    fun goBackButtonTriggersCallback() {
-        var goBackCalled = false
-        setContentViewMode(goBack = { goBackCalled = true })
-
-        composeTestRule
-            .onNodeWithTag(ProfileScreenTestTags.GOBACK_BUTTON, useUnmergedTree = true)
-            .assertExists()
-            .performClick()
-
-        composeTestRule.waitUntil(3_000) { goBackCalled }
-        assert(goBackCalled)
-    }
-
-
+    composeTestRule.waitUntil(3_000) { goBackCalled }
+    assert(goBackCalled)
+  }
 }

@@ -279,7 +279,7 @@ fun MainScreen(
                                       },
                                       onCommentClick = { onCommentClicked(sample) },
                                       onProfileClick = {
-                                          navigateToOtherUserProfile(sample.ownerId)
+                                        navigateToOtherUserProfile(sample.ownerId)
                                       },
                                   )
                               SampleCard(
