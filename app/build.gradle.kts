@@ -220,7 +220,7 @@ dependencies {
 
     androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
 
-
+    implementation("com.airbnb.android:lottie-compose:6.7.1")
 }
 
 tasks.withType<Test> {
