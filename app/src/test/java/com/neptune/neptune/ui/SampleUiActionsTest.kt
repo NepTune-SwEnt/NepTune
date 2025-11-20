@@ -17,99 +17,116 @@ import org.mockito.kotlin.*
 @OptIn(ExperimentalCoroutinesApi::class)
 class SampleUiActionsTest {
 
-  private val repo: SampleRepository = mock()
-  private val storageService: StorageService = mock()
-  private val downloadsFolder: File = mock()
-  private val context: Context = mock()
+    private val repo: SampleRepository = mock()
+    private val storageService: StorageService = mock()
+    private val downloadsFolder: File = mock()
+    private val context: Context = mock()
 
-  private val sample =
-      Sample(
-          id = 1.toString(),
-          name = "Test Sample",
-          description = "desc",
-          durationSeconds = 10,
-          tags = emptyList(),
-          likes = 0,
-          comments = 0,
-          usersLike = emptyList(),
-          downloads = 0)
+    private val sample =
+        Sample(
+            id = 1.toString(),
+            name = "Test Sample",
+            description = "desc",
+            durationSeconds = 10,
+            tags = emptyList(),
+            likes = 0,
+            comments = 0,
+            usersLike = emptyList(),
+            downloads = 0
+        )
 
-  @Test
-  fun onDownloadClickSuccessUpdatesDownloadCountAndUnzips() = runTest {
-    val dispatcher = StandardTestDispatcher(testScheduler)
-    val zipFile: File = mock()
-    whenever(storageService.downloadZippedSample(sample, context)).thenReturn(zipFile)
+    @Test
+    fun onDownloadClickSuccessUpdatesDownloadCountAndUnzips() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val zipFile: File = mock()
 
-    val actions =
-        SampleUiActions(
-            repo = repo,
-            storageService = storageService,
-            downloadsFolder = downloadsFolder,
-            context = context,
-            ioDispatcher = dispatcher)
+        whenever(storageService.downloadZippedSample(eq(sample), same(context)))
+            .thenReturn(zipFile)
 
-    assertFalse(actions.downloadBusy.value)
-    assertNull(actions.downloadError.value)
+        val actions =
+            SampleUiActions(
+                repo = repo,
+                storageService = storageService,
+                downloadsFolder = downloadsFolder,
+                context = context,
+                ioDispatcher = dispatcher
+            )
 
-    actions.onDownloadClicked(sample)
+        assertFalse(actions.downloadBusy.value)
+        assertNull(actions.downloadError.value)
 
-    verify(repo).increaseDownloadCount(sample.id)
-    verify(storageService).downloadZippedSample(sample, context)
-    verify(storageService).persistZipToDownloads(zipFile, downloadsFolder)
+        actions.onDownloadClicked(sample)
 
-    assertFalse(actions.downloadBusy.value)
-    assertNull(actions.downloadError.value)
-  }
+        // Make sure all coroutines scheduled on dispatcher are executed
+        testScheduler.advanceUntilIdle()
 
-  @Test
-  fun onDownloadClickWhenBusyDoesNothing() = runTest {
-    val dispatcher = StandardTestDispatcher(testScheduler)
+        verify(storageService).downloadZippedSample(eq(sample), same(context))
+        verify(storageService).persistZipToDownloads(same(zipFile), same(downloadsFolder))
+        verify(repo).increaseDownloadCount(eq(sample.id))
 
-    val actions =
-        SampleUiActions(
-            repo = repo,
-            storageService = storageService,
-            downloadsFolder = downloadsFolder,
-            context = context,
-            ioDispatcher = dispatcher)
+        assertFalse(actions.downloadBusy.value)
+        assertNull(actions.downloadError.value)
+    }
 
-    actions.downloadBusy.value = true
+    @Test
+    fun onDownloadClickWhenBusyDoesNothing() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
 
-    actions.onDownloadClicked(sample)
+        val actions =
+            SampleUiActions(
+                repo = repo,
+                storageService = storageService,
+                downloadsFolder = downloadsFolder,
+                context = context,
+                ioDispatcher = dispatcher
+            )
 
-    verify(repo, never()).increaseDownloadCount(any())
-    verify(storageService, never()).downloadZippedSample(any(), any())
-    verify(storageService, never()).persistZipToDownloads(any(), any())
+        actions.downloadBusy.value = true
 
-    assertTrue(actions.downloadBusy.value)
-    assertNull(actions.downloadError.value)
-  }
+        actions.onDownloadClicked(sample)
 
-  @Test
-  fun onDownloadClickIOExceptionSetsErrorMessage() = runTest {
-    val dispatcher = StandardTestDispatcher(testScheduler)
+        // No work should have been scheduled, but advance just in case
+        testScheduler.advanceUntilIdle()
 
-    whenever(storageService.downloadZippedSample(sample, context))
-        .thenThrow(IOException("disk full"))
+        verify(repo, never()).increaseDownloadCount(any<String>())
+        verify(storageService, never()).downloadZippedSample(any(), any())
+        verify(storageService, never()).persistZipToDownloads(any(), any())
 
-    val actions =
-        SampleUiActions(
-            repo = repo,
-            storageService = storageService,
-            downloadsFolder = downloadsFolder,
-            context = context,
-            ioDispatcher = dispatcher)
+        assertTrue(actions.downloadBusy.value)
+        assertNull(actions.downloadError.value)
+    }
 
-    actions.onDownloadClicked(sample)
+    @Test
+    fun onDownloadClickIOExceptionSetsErrorMessage() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
 
-    verify(repo, never()).increaseDownloadCount(any())
-    verify(storageService).downloadZippedSample(sample, context)
-    verify(storageService, never()).persistZipToDownloads(any(), any())
+        whenever(storageService.downloadZippedSample(eq(sample), same(context)))
+            .thenThrow(IOException("disk full"))
 
-    assertFalse(actions.downloadBusy.value)
+        val actions =
+            SampleUiActions(
+                repo = repo,
+                storageService = storageService,
+                downloadsFolder = downloadsFolder,
+                context = context,
+                ioDispatcher = dispatcher
+            )
 
-    val error = actions.downloadError.value
-    assertNotNull(error)
-    assertTrue(error!!.startsWith("File error:"))
-  }
+        actions.onDownloadClicked(sample)
+
+        testScheduler.advanceUntilIdle()
+
+        // Download should be attempted
+        verify(storageService).downloadZippedSample(eq(sample), same(context))
+
+        // But on IOException, we should NOT unzip or increment count
+        verify(storageService, never()).persistZipToDownloads(any(), any())
+        verify(repo, never()).increaseDownloadCount(any<String>())
+
+        assertFalse(actions.downloadBusy.value)
+
+        val error = actions.downloadError.value
+        assertNotNull(error)
+        assertTrue(error!!.startsWith("File error:"))
+    }
 }
