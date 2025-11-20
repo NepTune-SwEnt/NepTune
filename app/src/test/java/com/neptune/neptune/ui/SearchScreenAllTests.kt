@@ -1,4 +1,4 @@
-package com.neptune.neptune.ui.search
+package com.neptune.neptune.ui
 
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -19,9 +19,15 @@ import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.fakes.FakeProfileRepository
 import com.neptune.neptune.model.fakes.FakeSampleRepository
 import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.ui.projectlist.ProjectListScreenTestTags
+import com.neptune.neptune.ui.search.ScrollableColumnOfSamples
+import com.neptune.neptune.ui.search.SearchScreen
+import com.neptune.neptune.ui.search.SearchScreenTestTags
 import com.neptune.neptune.ui.search.SearchScreenTestTags.SAMPLE_LIST
+import com.neptune.neptune.ui.search.SearchScreenTestTagsPerSampleCard
+import com.neptune.neptune.ui.search.SearchViewModel
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -50,10 +56,11 @@ class SearchScreenAllTests {
     val fakeSampleRepo = FakeSampleRepository()
     val fakeProfileRepo = FakeProfileRepository()
     return SearchViewModel(
-        repo = fakeSampleRepo,
-        context = appContext,
-        useMockData = true,
-        profileRepo = fakeProfileRepo)
+      repo = fakeSampleRepo,
+      context = appContext,
+      useMockData = true,
+      profileRepo = fakeProfileRepo
+    )
   }
 
   /** Advance past the 300ms debounce in SearchScreen */
@@ -222,5 +229,37 @@ class SearchScreenAllTests {
     composeRule.onNodeWithTag(likeTag).performClick()
     advanceDebounce()
     likeNode.assert(hasStateDesc("not liked"))
+  }
+
+  @Test
+  fun profileIconPropagatesOwnerIdToNavigationCallback() {
+    val vm = createTestSearchViewModel()
+    val sample =
+      Sample(
+        id = "sample-x",
+        name = "Rain Textures",
+        description = "Wet foley",
+        durationSeconds = 15,
+        tags = listOf("#rain"),
+        likes = 12,
+        usersLike = emptyList(),
+        comments = 0,
+        downloads = 1,
+        ownerId = "artist-123"
+      )
+
+    var navigatedTo: String? = null
+    composeRule.setContent {
+      ScrollableColumnOfSamples(
+        samples = listOf(sample),
+        searchViewModel = vm,
+        mediaPlayer = fakeMediaPlayer,
+        navigateToOtherUserProfile = { navigatedTo = it })
+    }
+
+    val profileIconTag = SearchScreenTestTagsPerSampleCard("sample-x").SAMPLE_PROFILE_ICON
+    composeRule.onNodeWithTag(profileIconTag).assertIsDisplayed().performClick()
+
+    composeRule.runOnIdle { assert(navigatedTo == "artist-123") }
   }
 }
