@@ -98,6 +98,13 @@ object SamplerTestTags {
   const val INIT_TEMPO_SELECTOR = "initTempoSelector"
   const val INIT_PITCH_SELECTOR = "initPitchSelector"
   const val INIT_CONFIRM_BUTTON = "initConfirmButton"
+
+  // Settings-related test tags
+  const val SETTINGS_BUTTON = "settingsButton"
+  const val SETTINGS_DIALOG = "settingsDialog"
+  const val SETTINGS_CONFIRM_BUTTON = "settingsConfirmButton"
+  const val SETTINGS_CANCEL_BUTTON = "settingsCancelButton"
+  const val SETTINGS_PITCH_SELECTOR = "settingsPitchSelector"
 }
 
 val KnobBackground = Color.Black
@@ -162,7 +169,7 @@ fun SamplerScreen(
         FloatingActionButton(
             onClick = { showSettingsDialog = true },
             containerColor = NepTuneTheme.colors.accentPrimary,
-            modifier = Modifier.testTag("floatingSettingsButton")) {
+            modifier = Modifier.testTag(SamplerTestTags.SETTINGS_BUTTON)) {
               Icon(
                   imageVector = Icons.Default.Settings,
                   contentDescription = "Settings",
@@ -1641,7 +1648,7 @@ fun SettingsDialog(viewModel: SamplerViewModel, onClose: () -> Unit) {
       onDismissRequest = onClose,
       title = { Text("Settings") },
       text = {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth().testTag(SamplerTestTags.SETTINGS_DIALOG)) {
           Text("Settings placeholder — add your settings here.")
           Spacer(modifier = Modifier.height(8.dp))
 
@@ -1670,7 +1677,7 @@ fun SettingsDialog(viewModel: SamplerViewModel, onClose: () -> Unit) {
               pitchOctave = uiState.inputPitchOctave,
               onPitchUp = viewModel::increaseInputPitch,
               onPitchDown = viewModel::decreaseInputPitch,
-              modifier = Modifier.testTag("SETTINGS_PITCH_SELECTOR"))
+              modifier = Modifier.testTag(SamplerTestTags.SETTINGS_PITCH_SELECTOR))
         }
       },
       confirmButton = {
@@ -1683,9 +1690,10 @@ fun SettingsDialog(viewModel: SamplerViewModel, onClose: () -> Unit) {
               // up/down)
               viewModel.updateInputPitch(uiState.inputPitchNote, uiState.inputPitchOctave)
               onClose()
-            }) {
+            },
+            modifier = Modifier.testTag(SamplerTestTags.SETTINGS_CONFIRM_BUTTON)) {
               Text("Save & Close")
             }
       },
-      dismissButton = { TextButton(onClick = onClose) { Text("Cancel") } })
+      dismissButton = { TextButton(onClick = onClose, modifier = Modifier.testTag(SamplerTestTags.SETTINGS_CANCEL_BUTTON)) { Text("Cancel") } })
 }
