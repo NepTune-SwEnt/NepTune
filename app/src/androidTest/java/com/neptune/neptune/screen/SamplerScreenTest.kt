@@ -555,4 +555,61 @@ class SamplerScreenTest {
     // the waveform display container exists and beat info is non-empty
     composeTestRule.onNodeWithTag(SamplerTestTags.WAVEFORM_DISPLAY).assertIsDisplayed()
   }
+
+  @Test
+  fun settingsDialogOpensAndCancelClosesDialog() {
+    // Open the dialog via the Settings FAB
+    composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // The dialog should be visible
+    composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_DIALOG).assertIsDisplayed()
+
+    // Clicking Cancel should close the dialog
+    composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_CANCEL_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // The dialog should no longer exist
+    composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_DIALOG).assertDoesNotExist()
+  }
+
+  @Test
+  fun settingsDialogSaveUpdatesInputTempoAndPitch() {
+    // Prepare a known state
+    fakeViewModel.mutableUiState.value =
+        fakeViewModel.uiState.value.copy(inputTempo = 100, inputPitchNote = "C", inputPitchOctave = 4)
+    composeTestRule.waitForIdle()
+
+    // Open the dialog
+    composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // Find the BPM field inside the dialog and enter a new value
+    val bpmField =
+        composeTestRule.onNode(hasSetTextAction() and hasParent(hasTestTag(SamplerTestTags.SETTINGS_DIALOG)))
+    bpmField.performTextClearance()
+    bpmField.performTextInput("130")
+
+    // Click the pitch selector's up arrow inside the dialog
+    val beforePitch = fakeViewModel.uiState.value.inputPitchNote + fakeViewModel.uiState.value.inputPitchOctave
+    composeTestRule
+        .onNodeWithTag(SamplerTestTags.SETTINGS_PITCH_SELECTOR)
+        .onChildren()
+        .filter(hasTestTag("PITCH_UP_BUTTON"))
+        .onFirst()
+        .performClick()
+
+    composeTestRule.waitForIdle()
+
+    val afterPitch = fakeViewModel.uiState.value.inputPitchNote + fakeViewModel.uiState.value.inputPitchOctave
+    // Verify that the pitch in the viewModel changed locally
+    assertTrue("Pitch inside dialog should have changed", beforePitch != afterPitch)
+
+    // Confirm (Save & Close)
+    composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_CONFIRM_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // Verify that inputTempo has been updated in the viewModel
+    assertEquals(130, fakeViewModel.uiState.value.inputTempo)
+  }
 }
