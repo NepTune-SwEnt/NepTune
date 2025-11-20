@@ -115,21 +115,27 @@ class MainViewModel(
       val storagePath = avatarStoragePath
       val fileName = avatarFileName
 
-      if (storagePath != null && fileName != null) {
-        val downloadUrl = storageService.getDownloadUrl(storagePath)
-
-        if (downloadUrl != null) {
-          imageRepo.saveImageFromUrl(downloadUrl, fileName)
-        }
+      val cachedUri = if (fileName != null) imageRepo.getImageUri(fileName) else null
+      if (cachedUri != null) {
+        _userAvatar.value = cachedUri
       }
-
-      val localUri = if (fileName != null) imageRepo.getImageUri(fileName) else null
-      if (localUri != null) {
-        _userAvatar.value =
-            localUri
-                .buildUpon()
-                .appendQueryParameter("t", System.currentTimeMillis().toString())
-                .build()
+      if (storagePath != null && fileName != null) {
+        try {
+          val downloadUrl = storageService.getDownloadUrl(storagePath)
+          if (downloadUrl != null) {
+            imageRepo.saveImageFromUrl(downloadUrl, fileName)
+            val freshUri = imageRepo.getImageUri(fileName)
+            if (freshUri != null) {
+              _userAvatar.value =
+                  freshUri
+                      .buildUpon()
+                      .appendQueryParameter("t", System.currentTimeMillis().toString())
+                      .build()
+            }
+          }
+        } catch (_: Exception) {
+          // In case of an error we keep the cached avatar.
+        }
       } else {
         _userAvatar.value = null
       }
@@ -149,16 +155,9 @@ class MainViewModel(
 
   fun onLikeClicked(sample: Sample, isLiked: Boolean) {
     viewModelScope.launch {
-
-      // Check if already Liked
-      val alreadyLiked = repo.hasUserLiked(sample.id)
-
-      if (!alreadyLiked && isLiked) {
-        repo.toggleLike(sample.id, true)
-        _likedSamples.value = _likedSamples.value + (sample.id to true)
-      } else if (alreadyLiked && !isLiked) {
-        repo.toggleLike(sample.id, false)
-        _likedSamples.value = _likedSamples.value + (sample.id to false)
+      val newState = actions?.onLikeClicked(sample.id, isLiked)
+      if (newState != null) {
+        _likedSamples.value = _likedSamples.value + (sample.id to newState)
       }
     }
   }

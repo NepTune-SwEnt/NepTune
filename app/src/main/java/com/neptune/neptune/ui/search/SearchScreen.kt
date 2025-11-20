@@ -104,7 +104,8 @@ private fun factory(application: Application) =
 fun SearchScreen(
     searchViewModel: SearchViewModel =
         viewModel(factory = factory(LocalContext.current.applicationContext as Application)),
-    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current
+    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
+    navigateToOtherUserProfile: (String) -> Unit = {},
 ) {
   val samples by searchViewModel.samples.collectAsState()
   var searchText by remember { mutableStateOf("") }
@@ -133,7 +134,9 @@ fun SearchScreen(
               searchText = searchText,
               likedSamples = likedSamples,
               activeCommentSampleId = activeCommentSampleId,
-              comments = comments)
+              comments = comments,
+              navigateToOtherUserProfile = navigateToOtherUserProfile,
+          )
         })
     if (downloadProgress != null && downloadProgress != 0) {
       DownloadProgressBar(downloadProgress = downloadProgress!!, SearchScreenTestTags.DOWNLOAD_BAR)
@@ -151,6 +154,7 @@ fun ScrollableColumnOfSamples(
     likedSamples: Map<String, Boolean> = emptyMap(),
     activeCommentSampleId: String? = null,
     comments: List<Comment> = emptyList(),
+    navigateToOtherUserProfile: (String) -> Unit = {},
 ) {
   // Ensure the possibility to like in local
   LazyColumn(
@@ -173,7 +177,9 @@ fun ScrollableColumnOfSamples(
                     val newIsLiked = !isLiked
                     searchViewModel.onLikeClick(sample, newIsLiked)
                   },
-                  onCommentClick = { searchViewModel.onCommentClicked(sample) })
+                  onCommentClick = { searchViewModel.onCommentClicked(sample) },
+                  onProfileClick = { navigateToOtherUserProfile(sample.ownerId) },
+              )
           SampleCard(
               sample = sample,
               width = width,

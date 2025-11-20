@@ -29,49 +29,36 @@ class NeptunePackagerRobolectricTest {
       runTest(testDispatcher) {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val paths = StoragePaths(context)
-        val packager = NeptunePackager(paths)
 
-        // Create a tiny "audio" file in your imports/audio (or whatever your method is)
-        val audioDir: File = paths.audioWorkspace() // if your API is importsAudioDir(), use that
+        val packager = NeptunePackager(paths, testDispatcher)
+
+        val audioDir: File = paths.audioWorkspace()
         audioDir.mkdirs()
-        val audio =
-            File(audioDir, "clip.wav").apply {
-              // simpler write
-              writeBytes(ByteArray(256) { 0x23 })
-            }
+        val audio = File(audioDir, "clip.wav").apply { writeBytes(ByteArray(256) { 0x23 }) }
 
         val zip =
             packager.createProjectZip(
-                audioFile = audio,
-                durationMs = 3456L, // 3.456s -> rounded to 3.5
-                volume = 80,
-                startSeconds = 0.5)
+                audioFile = audio, durationMs = 3456L, volume = 80, startSeconds = 0.5)
 
         assertTrue(zip.exists())
         assertEquals("zip", zip.extension)
 
         ZipFile(zip).use { zf ->
-          // Collect entry names (Enumeration -> set)
-          val names = mutableSetOf<String>()
-          val en = zf.entries()
-          while (en.hasMoreElements()) {
-            names += en.nextElement().name
-          }
-
-          assertTrue("config.json missing", "config.json" in names)
-          assertTrue("clip.wav missing", "clip.wav" in names)
-
-          // Read and parse JSON (ignore whitespace & formatting)
           val cfg = zf.getInputStream(zf.getEntry("config.json")).bufferedReader().readText()
-
           val root = JSONObject(cfg)
-          val files = root.getJSONArray("files")
-          val first = files.getJSONObject(0)
 
-          assertEquals("clip.wav", first.getString("filename"))
-          assertEquals(80, first.getInt("volume"))
-          assertEquals(0.5, first.getDouble("start"), 1e-9)
-          assertEquals(3.5, first.getDouble("duration"), 1e-9)
+          val filesArray = root.getJSONArray("audioFiles")
+          val firstFile = filesArray.getJSONObject(0)
+
+          assertEquals("clip.wav", firstFile.getString("name"))
+
+          assertEquals(80, firstFile.getInt("volume"))
+          assertEquals(0.5, firstFile.getDouble("start"), 1e-9)
+
+          assertEquals(3.5, firstFile.getDouble("duration"), 1e-9)
+
+          val paramsArray = root.getJSONArray("parameters")
+          assertTrue("Parameters array should be empty", paramsArray.length() == 0)
         }
       }
 }

@@ -26,11 +26,13 @@ import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.FakeProfileRepository
 import com.neptune.neptune.model.FakeSampleRepository
 import com.neptune.neptune.model.sample.Comment
+import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.navigation.NavigationTestTags
 import org.junit.Assert
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -50,6 +52,7 @@ class MainScreenTest {
   private lateinit var mediaPlayer: NeptuneMediaPlayer
 
   private lateinit var fakeSampleRepo: FakeSampleRepository
+  private var navigateToOtherUserProfileCallback: ((String) -> Unit)? = null
 
   @Before
   fun setup() {
@@ -67,7 +70,9 @@ class MainScreenTest {
             useMockData = true)
     composeTestRule.setContent {
       CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
-        MainScreen(mainViewModel = viewModel)
+        MainScreen(
+            mainViewModel = viewModel,
+            navigateToOtherUserProfile = { id -> navigateToOtherUserProfileCallback?.invoke(id) })
       }
     }
   }
@@ -266,5 +271,56 @@ class MainScreenTest {
     composeTestRule.onNodeWithText("• 1mo ago").assertIsDisplayed()
     composeTestRule.onNodeWithText("• 1y ago").assertIsDisplayed()
     composeTestRule.onNodeWithText("• just now").assertIsDisplayed()
+  }
+
+  @Test
+  fun discoverCardProfileIconNavigatesWithOwnerId() {
+    var navigatedTo: String? = null
+    navigateToOtherUserProfileCallback = { id -> navigatedTo = id }
+
+    val discoverSample = viewModel.discoverSamples.value.first().copy(ownerId = "artist-discover")
+    composeTestRule.runOnIdle { viewModel.discoverSamples.value = listOf(discoverSample) }
+
+    composeTestRule
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_PROFILE_ICON, true)
+        .onFirst()
+        .assertHasClickAction()
+        .performClick()
+
+    composeTestRule.runOnIdle { assert(navigatedTo == "artist-discover") }
+  }
+
+  @Test
+  fun followedCardProfileIconNavigatesWithOwnerId() {
+    var navigatedTo: String? = null
+    navigateToOtherUserProfileCallback = { id -> navigatedTo = id }
+
+    val followedSample =
+        Sample(
+            id = "followed-id",
+            name = "Followed Pad",
+            description = "Pad loop",
+            durationSeconds = 32,
+            tags = listOf("#pads"),
+            likes = 4,
+            usersLike = emptyList(),
+            comments = 1,
+            downloads = 7,
+            ownerId = "artist-followed")
+    composeTestRule.runOnIdle {
+      viewModel.discoverSamples.value = emptyList()
+      (viewModel.followedSamples as MutableStateFlow<List<Sample>>).value = listOf(followedSample)
+    }
+
+    composeTestRule
+        .onNodeWithTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)
+        .performScrollToNode(hasText("Followed"))
+    composeTestRule
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_PROFILE_ICON, true)
+        .onFirst()
+        .assertHasClickAction()
+        .performClick()
+
+    composeTestRule.runOnIdle { assert(navigatedTo == "artist-followed") }
   }
 }

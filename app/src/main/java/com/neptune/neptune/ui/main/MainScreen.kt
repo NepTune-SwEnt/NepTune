@@ -162,6 +162,7 @@ private fun factory(application: Application) =
 fun MainScreen(
     navigateToProfile: () -> Unit = {},
     navigateToProjectList: () -> Unit = {},
+    navigateToOtherUserProfile: (String) -> Unit = {},
     mainViewModel: MainViewModel =
         viewModel(factory = factory(LocalContext.current.applicationContext as Application))
 ) {
@@ -241,72 +242,58 @@ fun MainScreen(
               contentColor = NepTuneTheme.colors.onBackground,
               shape = CircleShape,
               modifier =
-                  Modifier.shadow(
-                          elevation = 4.dp,
-                          spotColor = NepTuneTheme.colors.shadow,
-                          ambientColor = NepTuneTheme.colors.shadow,
-                          shape = CircleShape)
-                      .size(52.dp)
-                      .testTag(MainScreenTestTags.POST_BUTTON)) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Create a Post",
-                    modifier = Modifier.size(70.dp))
-              }
-        },
-        modifier = Modifier.testTag(MainScreenTestTags.MAIN_SCREEN),
-        containerColor = NepTuneTheme.colors.background) { innerPadding ->
-          Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            LazyColumn(
-                modifier =
-                    Modifier.fillMaxSize()
-                        .padding(horizontal = 30.dp)
-                        .testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
-                  // ----------------Discover Section-----------------
-                  item { SectionHeader(title = "Discover") }
-                  item {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(spacing),
-                        modifier = Modifier.fillMaxWidth()) {
-                          // As this element is horizontally scrollable,we can let 2
-                          val columns = discoverSamples.chunked(2)
+                  Modifier.fillMaxSize()
+                      .padding(horizontal = 30.dp)
+                      .testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
+                // ----------------Discover Section-----------------
+                item { SectionHeader(title = "Discover") }
+                item {
+                  LazyRow(
+                      horizontalArrangement = Arrangement.spacedBy(spacing),
+                      modifier = Modifier.fillMaxWidth()) {
+                        // As this element is horizontally scrollable,we can let 2
+                        val columns = discoverSamples.chunked(2)
 
-                          items(columns) { samplesColumn ->
-                            Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
-                              samplesColumn.forEach { sample ->
-                                val clickHandlers =
-                                    onClickFunctions(
-                                        onDownloadClick = {
-                                          mainViewModel.onDownloadSample(sample)
-                                        },
-                                        onLikeClick = { isLiked ->
-                                          mainViewModel.onLikeClicked(sample, isLiked)
-                                        },
-                                        onCommentClick = { onCommentClicked(sample) })
-                                SampleCard(
-                                    sample = sample,
-                                    width = cardWidth,
-                                    isLiked = likedSamples[sample.id] == true,
-                                    clickHandlers = clickHandlers)
-                              }
+                        items(columns) { samplesColumn ->
+                          Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
+                            samplesColumn.forEach { sample ->
+                              val clickHandlers =
+                                  onClickFunctions(
+                                      onDownloadClick = { mainViewModel.onDownloadSample(sample) },
+                                      onLikeClick = { isLiked ->
+                                        mainViewModel.onLikeClicked(sample, isLiked)
+                                      },
+                                      onCommentClick = { onCommentClicked(sample) },
+                                      onProfileClick = {
+                                        navigateToOtherUserProfile(sample.ownerId)
+                                      },
+                                  )
+                              SampleCard(
+                                  sample = sample,
+                                  width = cardWidth,
+                                  isLiked = likedSamples[sample.id] == true,
+                                  clickHandlers = clickHandlers)
                             }
                           }
                         }
-                  }
-                  // ----------------Followed Section-----------------
-                  item { SectionHeader(title = "Followed") }
-                  // If the screen is too small, it will display 1 Card instead of 2
-                  items(followedSamples.chunked(maxColumns)) { samples ->
-                    SampleCardRow(
-                        samples = samples,
-                        cardWidth = cardWidth,
-                        likedSamples = likedSamples,
-                        onLikeClick = { sample, isLiked ->
-                          mainViewModel.onLikeClicked(sample, isLiked)
-                        },
-                        onCommentClick = { sample -> onCommentClicked(sample) },
-                        onDownloadClick = { sample -> mainViewModel.onDownloadSample(sample) })
-                  }
+                      }
+                }
+                // ----------------Followed Section-----------------
+                item { SectionHeader(title = "Followed") }
+                // If the screen is too small, it will display 1 Card instead of 2
+                items(followedSamples.chunked(maxColumns)) { samples ->
+                  SampleCardRow(
+                      samples = samples,
+                      cardWidth = cardWidth,
+                      likedSamples = likedSamples,
+                      onProfileClick = { sample ->
+                        if (sample.ownerId.isNotBlank()) navigateToOtherUserProfile(sample.ownerId)
+                      },
+                      onLikeClick = { sample, isLiked ->
+                        mainViewModel.onLikeClicked(sample, isLiked)
+                      },
+                      onCommentClick = { sample -> onCommentClicked(sample) },
+                      onDownloadClick = { sample -> mainViewModel.onDownloadSample(sample) })
                 }
             // Comment Overlay
             if (activeCommentSampleId != null) {
@@ -356,6 +343,7 @@ fun SampleCardRow(
     samples: List<Sample>,
     cardWidth: Dp,
     likedSamples: Map<String, Boolean> = emptyMap(),
+    onProfileClick: (Sample) -> Unit = {},
     onLikeClick: (Sample, Boolean) -> Unit = { _, _ -> },
     onCommentClick: (Sample) -> Unit = {},
     onDownloadClick: (Sample) -> Unit = {}
@@ -367,6 +355,7 @@ fun SampleCardRow(
           val isLiked = likedSamples[sample.id] == true
           val clickHandlers =
               onClickFunctions(
+                  onProfileClick = { onProfileClick(sample) },
                   onLikeClick = { isLiked -> onLikeClick(sample, isLiked) },
                   onCommentClick = { onCommentClick(sample) },
                   onDownloadClick = { onDownloadClick(sample) })

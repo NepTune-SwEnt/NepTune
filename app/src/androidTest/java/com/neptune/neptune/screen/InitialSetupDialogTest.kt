@@ -9,6 +9,8 @@ import com.neptune.neptune.screen.FakeMediaPlayer
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -64,7 +66,7 @@ class InitialSetupDialogTest {
   }
 
   @Test
-  fun initialSetupDialog_confirmButtonAppliesChanges() {
+  fun initialSetupDialogConfirmButtonAppliesChanges() {
     composeRule.onNodeWithTag("PITCH_UP_BUTTON").performClick()
     composeRule.onNodeWithTag(SamplerTestTags.INIT_TEMPO_SELECTOR).performTextInput("140")
     composeRule.waitForIdle()
@@ -134,5 +136,16 @@ class InitialSetupDialogTest {
       assertEquals(5, state.pitchOctave)
       assertEquals(false, state.showInitialSetupDialog)
     }
+  }
+
+  @Test
+  fun tapTempoButtonUpdatesTempo() {
+    val initialTempo = viewModel.uiState.value.inputTempo
+
+    repeat(3) { composeRule.onNodeWithTag(SamplerTestTags.TAP_TEMPO_BUTTON).performClick() }
+
+    val newTempo = viewModel.uiState.value.inputTempo
+    assertNotEquals(initialTempo, newTempo)
+    assertTrue(newTempo > 0)
   }
 }

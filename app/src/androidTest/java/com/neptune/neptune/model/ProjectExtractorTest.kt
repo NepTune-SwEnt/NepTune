@@ -4,7 +4,7 @@ import android.content.res.AssetManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.neptune.neptune.model.project.ProjectExtractor
-import com.neptune.neptune.model.project.SamplerProjectMetadata
+import com.neptune.neptune.model.project.SamplerProjectData
 import java.io.File
 import java.io.FileOutputStream
 import org.junit.Assert.assertEquals
@@ -73,7 +73,7 @@ class ProjectExtractorTest {
 
   @Test
   fun deserialization_withValidJson_returnsCorrectMetadata() {
-    val metadata = extractor.json.decodeFromString<SamplerProjectMetadata>(validJson)
+    val metadata = extractor.json.decodeFromString<SamplerProjectData>(validJson)
     assertEquals(2, metadata.audioFiles.size)
     assertEquals("kick.wav", metadata.audioFiles.first().name)
     assertEquals(2, metadata.parameters.size)
@@ -83,13 +83,13 @@ class ProjectExtractorTest {
   @Test
   fun deserialization_withInvalidJson_throwsException() {
     assertThrows(Exception::class.java) {
-      extractor.json.decodeFromString<SamplerProjectMetadata>(invalidJson)
+      extractor.json.decodeFromString<SamplerProjectData>(invalidJson)
     }
   }
 
   @Test
   fun extractMetadata_fromRealAssetZip_returnsCorrectMetadata() {
-    val metadata: SamplerProjectMetadata = extractor.extractMetadata(zipFile)
+    val metadata: SamplerProjectData = extractor.extractMetadata(zipFile)
 
     assertNotNull("Metadata should not be null", metadata)
     assertEquals(1, metadata.audioFiles.size)

@@ -75,6 +75,21 @@ class SampleUiActions(
       downloadProgress.value = null
     }
   }
+
+  suspend fun onLikeClicked(sampleId: String, isLiked: Boolean): Boolean {
+    val alreadyLiked = repo.hasUserLiked(sampleId)
+
+    return if (!alreadyLiked && isLiked) {
+      repo.toggleLike(sampleId, true)
+      true
+    } else if (alreadyLiked && !isLiked) {
+      repo.toggleLike(sampleId, false)
+      false
+    } else {
+      // Doesn't change
+      alreadyLiked
+    }
+  }
 }
 
 @Composable
