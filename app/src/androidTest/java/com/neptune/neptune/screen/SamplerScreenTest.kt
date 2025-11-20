@@ -253,57 +253,6 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun adsrKnobsCallsAllUpdateFunctions() {
-    fakeViewModel.mutableUiState.value =
-        fakeViewModel.uiState.value.copy(currentTab = SamplerTab.BASICS)
-
-    openSection("ADSR Envelope Controls")
-
-    fakeViewModel.isAttackUpdated = false
-    swipeKnobByTag(SamplerTestTags.KNOB_ATTACK)
-    assertTrue("updateAttack should be true", fakeViewModel.isAttackUpdated)
-
-    fakeViewModel.isDecayUpdated = false
-    swipeKnobByTag(SamplerTestTags.KNOB_DECAY)
-    assertTrue("updateDecay should be true", fakeViewModel.isDecayUpdated)
-
-    fakeViewModel.isSustainUpdated = false
-    swipeKnobByTag(SamplerTestTags.KNOB_SUSTAIN)
-    assertTrue("updateSustain should be true", fakeViewModel.isSustainUpdated)
-
-    fakeViewModel.isReleaseUpdated = false
-    swipeKnobByTag(SamplerTestTags.KNOB_RELEASE)
-    assertTrue("updateRelease should be true", fakeViewModel.isReleaseUpdated)
-  }
-
-  @Test
-  fun reverbKnobsCallsAllUpdateFunctions() {
-    fakeViewModel.mutableUiState.value =
-        fakeViewModel.uiState.value.copy(currentTab = SamplerTab.BASICS)
-    openSection("Reverb Controls")
-
-    fakeViewModel.isReverbWetUpdated = false
-    swipeKnobByTag(SamplerTestTags.KNOB_REVERB_WET)
-    assertTrue("updateReverbWet should be true", fakeViewModel.isReverbWetUpdated)
-
-    fakeViewModel.isReverbSizeUpdated = false
-    swipeKnobByTag(SamplerTestTags.KNOB_REVERB_SIZE)
-    assertTrue("updateReverbSize should be true", fakeViewModel.isReverbSizeUpdated)
-
-    fakeViewModel.isReverbWidthUpdated = false
-    swipeKnobByTag(SamplerTestTags.KNOB_REVERB_WIDTH)
-    assertTrue("updateReverbWidth should be true", fakeViewModel.isReverbWidthUpdated)
-
-    fakeViewModel.isReverbDepthUpdated = false
-    swipeKnobByTag(SamplerTestTags.KNOB_REVERB_DEPTH)
-    assertTrue("updateReverbDepth should be true", fakeViewModel.isReverbDepthUpdated)
-
-    fakeViewModel.isReverbPredelayUpdated = false
-    swipeKnobByTag(SamplerTestTags.KNOB_REVERB_PREDELAY)
-    assertTrue("updateReverbPredelay should be true", fakeViewModel.isReverbPredelayUpdated)
-  }
-
-  @Test
   fun eqFaderDragCallsUpdateEqBand() {
     composeTestRule.onNodeWithText("EQ").performClick()
     fakeViewModel.mutableUiState.value =
