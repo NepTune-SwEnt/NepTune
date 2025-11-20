@@ -1695,5 +1695,11 @@ fun SettingsDialog(viewModel: SamplerViewModel, onClose: () -> Unit) {
               Text("Save & Close")
             }
       },
-      dismissButton = { TextButton(onClick = onClose, modifier = Modifier.testTag(SamplerTestTags.SETTINGS_CANCEL_BUTTON)) { Text("Cancel") } })
+      dismissButton = {
+        TextButton(
+            onClick = onClose,
+            modifier = Modifier.testTag(SamplerTestTags.SETTINGS_CANCEL_BUTTON)) {
+              Text("Cancel")
+            }
+      })
 }
