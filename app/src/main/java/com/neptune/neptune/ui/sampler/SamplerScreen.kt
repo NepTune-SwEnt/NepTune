@@ -1546,10 +1546,10 @@ fun TempoRow(tempo: Int, onTempoChange: (Int) -> Unit, onTapTempo: () -> Unit) {
             modifier =
                 Modifier.weight(1f).testTag(SamplerTestTags.INIT_TEMPO_SELECTOR).onFocusChanged {
                     focusState ->
-                  if (focusState.isFocused && textState.text == tempo.toString()) {
-                    if (!userIsEditing) {
-                      textState = TextFieldValue("", TextRange(0))
-                    }
+                  if (focusState.isFocused &&
+                      textState.text == tempo.toString() &&
+                      !userIsEditing) {
+                    textState = TextFieldValue("", TextRange(0))
                   }
                 })
 
