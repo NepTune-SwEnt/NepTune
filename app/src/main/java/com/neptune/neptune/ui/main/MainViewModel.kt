@@ -45,6 +45,7 @@ class MainViewModel(
     private val imageRepo: ImageStorageRepository = ImageStorageRepository(),
 ) : ViewModel() {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
+  private val defaultName = "anonymous"
   val actions: SampleUiActions? =
       if (useMockData) {
         null
@@ -72,6 +73,7 @@ class MainViewModel(
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
   private val avatarCache = mutableMapOf<String, String?>()
+  private val userNameCache = mutableMapOf<String, String>()
 
   init {
     if (useMockData) {
@@ -161,7 +163,7 @@ class MainViewModel(
   fun addComment(sampleId: String, text: String) {
     viewModelScope.launch {
       val profile = profileRepo.getProfile()
-      val username = profile?.username ?: "Anonymous"
+      val username = profile?.username ?: defaultName
       repo.addComment(sampleId, username, text.trim())
     }
   }
@@ -173,6 +175,16 @@ class MainViewModel(
     val url = profileRepo.getAvatarUrlByUserId(userId)
     avatarCache[userId] = url
     return url
+  }
+
+  suspend fun getUserName(userId: String): String {
+    if (userNameCache.containsKey(userId)) {
+      return userNameCache[userId] ?: defaultName
+    }
+    var userName = profileRepo.getUserNameByUserId(userId)
+    userName = userName ?: defaultName
+    userNameCache[userId] = userName
+    return userName
   }
 
   // Mock Data

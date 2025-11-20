@@ -289,7 +289,8 @@ fun MainScreen(
                                   clickHandlers = clickHandlers,
                                   getOwnerAvatar = { userId ->
                                     mainViewModel.getSampleOwnerAvatar(userId)
-                                  })
+                                  },
+                                  getUserName = { userId -> mainViewModel.getUserName(userId) })
                             }
                           }
                         }
@@ -308,7 +309,8 @@ fun MainScreen(
                       },
                       onCommentClick = { sample -> onCommentClicked(sample) },
                       onDownloadClick = { sample -> mainViewModel.onDownloadSample(sample) },
-                      getOwnerAvatar = { userId -> mainViewModel.getSampleOwnerAvatar(userId) })
+                      getOwnerAvatar = { userId -> mainViewModel.getSampleOwnerAvatar(userId) },
+                      getUserName = { userId -> mainViewModel.getUserName(userId) })
                 }
               }
           // Comment Overlay
@@ -357,7 +359,8 @@ fun SampleCardRow(
     onLikeClick: (Sample, Boolean) -> Unit = { _, _ -> },
     onCommentClick: (Sample) -> Unit = {},
     onDownloadClick: (Sample) -> Unit = {},
-    getOwnerAvatar: suspend (String) -> String? = { null }
+    getOwnerAvatar: suspend (String) -> String? = { null },
+    getUserName: suspend (String) -> String = { "" }
 ) {
   Row(
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -374,7 +377,8 @@ fun SampleCardRow(
               width = cardWidth,
               isLiked = isLiked,
               clickHandlers = clickHandlers,
-              getOwnerAvatar = getOwnerAvatar)
+              getOwnerAvatar = getOwnerAvatar,
+              getUserName = getUserName)
         }
       }
 }
@@ -411,13 +415,18 @@ fun SampleCard(
     testTags: BaseSampleTestTags = MainScreenTestTags,
     clickHandlers: ClickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
-    getOwnerAvatar: suspend (String) -> String? = { null }
+    getOwnerAvatar: suspend (String) -> String? = { null },
+    getUserName: suspend (String) -> String = { "" }
 ) {
   val likeDescription = if (isLiked) "liked" else "not liked"
   val heartColor = if (isLiked) Color.Red else NepTuneTheme.colors.background
   val heartIcon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder
   var avatarUrl by remember { mutableStateOf<String?>(null) }
-  LaunchedEffect(sample.ownerId) { avatarUrl = getOwnerAvatar(sample.ownerId) }
+  var userName by remember { mutableStateOf<String>("") }
+  LaunchedEffect(sample.ownerId) {
+    avatarUrl = getOwnerAvatar(sample.ownerId)
+    userName = getUserName(sample.ownerId)
+  }
   Card(
       modifier =
           Modifier.width(width)
@@ -450,7 +459,7 @@ fun SampleCard(
                     error = painterResource(R.drawable.profile))
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    text = sample.name,
+                    text = userName,
                     color = NepTuneTheme.colors.onBackground,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
