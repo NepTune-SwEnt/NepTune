@@ -14,7 +14,7 @@ class ProjectWriter {
 
   fun writeProject(
       zipFile: File,
-      metadata: SamplerProjectMetadata,
+      metadata: SamplerProjectData,
       audioFiles: List<File> = emptyList()
   ) {
     val cleanZipPath = zipFile.path.removePrefix("file:").removePrefix("file://")
