@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.search
 
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
@@ -22,6 +23,7 @@ import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.ui.projectlist.ProjectListScreenTestTags
 import com.neptune.neptune.ui.search.SearchScreenTestTags.SAMPLE_LIST
+import org.junit.Assert
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -207,20 +209,66 @@ class SearchScreenAllTests {
     composeRule.setContent { SearchScreen(searchViewModel = vm, mediaPlayer = fakeMediaPlayer) }
     advanceDebounce()
 
-    val likeTag = SearchScreenTestTagsPerSampleCard("1").SAMPLE_LIKES
+    // Get the real first sample ID used by the screen
+    val firstId = vm.samples.value.first().id
+    val likeTag = SearchScreenTestTagsPerSampleCard(firstId).SAMPLE_LIKES
+
     val likeNode = composeRule.onNodeWithTag(likeTag)
 
     // Initially should be "not liked"
     likeNode.assert(hasStateDesc("not liked"))
 
     // Click → becomes "liked"
-    composeRule.onNodeWithTag(likeTag).performClick()
+    likeNode.performClick()
     advanceDebounce()
     likeNode.assert(hasStateDesc("liked"))
 
     // Click again → back to "not liked"
-    composeRule.onNodeWithTag(likeTag).performClick()
+    likeNode.performClick()
     advanceDebounce()
     likeNode.assert(hasStateDesc("not liked"))
+  }
+
+  @Test
+  fun searchDownloadBarVisibleOnlyWhenProgressPositive() {
+    val vm = createTestSearchViewModel()
+    composeRule.setContent { SearchScreen(searchViewModel = vm, mediaPlayer = fakeMediaPlayer) }
+    advanceDebounce()
+
+    // 1) Default (null) -> bar must NOT exist
+    composeRule.onNodeWithTag(SearchScreenTestTags.DOWNLOAD_BAR).assertDoesNotExist()
+
+    // 2) 0 -> still must NOT exist
+    // (requires downloadProgress to be a MutableStateFlow<Int?> or similar)
+    composeRule.runOnIdle { vm.downloadProgress.value = 0 }
+    composeRule.waitForIdle()
+    composeRule.onNodeWithTag(SearchScreenTestTags.DOWNLOAD_BAR).assertDoesNotExist()
+
+    // 3) 40 -> visible and progress ~0.4
+    composeRule.runOnIdle { vm.downloadProgress.value = 40 }
+    composeRule.waitForIdle()
+    println(vm.downloadProgress.value)
+    composeRule.onNodeWithTag(SearchScreenTestTags.DOWNLOAD_BAR).assertIsDisplayed()
+
+    val progress40 = fetchProgressForTag(SearchScreenTestTags.DOWNLOAD_BAR)
+    Assert.assertEquals(0.4f, progress40, 0.001f)
+
+    // 4) 100 -> still visible and progress ~1.0
+    composeRule.runOnIdle { vm.downloadProgress.value = 100 }
+    composeRule.waitForIdle()
+
+    val progress100 = fetchProgressForTag(SearchScreenTestTags.DOWNLOAD_BAR)
+    Assert.assertEquals(1.0f, progress100, 0.001f)
+
+    // 5) back to null → hidden again
+    composeRule.runOnIdle { vm.downloadProgress.value = null }
+    composeRule.waitForIdle()
+    composeRule.onNodeWithTag(SearchScreenTestTags.DOWNLOAD_BAR).assertDoesNotExist()
+  }
+
+  private fun fetchProgressForTag(tag: String): Float {
+    val node = composeRule.onNodeWithTag(tag).fetchSemanticsNode()
+    val info = node.config[SemanticsProperties.ProgressBarRangeInfo]
+    return info.current
   }
 }

@@ -5,13 +5,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,6 +32,7 @@ import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.main.CommentDialog
+import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.main.SampleCard
 import com.neptune.neptune.ui.main.onClickFunctions
 import com.neptune.neptune.ui.projectlist.SearchBar
@@ -120,33 +118,26 @@ fun SearchScreen(
   val activeCommentSampleId by searchViewModel.activeCommentSampleId.collectAsState()
   val comments by searchViewModel.comments.collectAsState()
   Box(modifier = Modifier.fillMaxSize()) {
-      Scaffold(
-          containerColor = NepTuneTheme.colors.background,
-          modifier = Modifier.testTag(SearchScreenTestTags.SEARCH_SCREEN),
-          topBar = {
-              SearchBar(
-                  searchText,
-                  { searchText = it },
-                  SearchScreenTestTags.SEARCH_BAR,
-                  samplesStr
-              )
-          },
-          content = { pd ->
-              ScrollableColumnOfSamples(
-                  samples = samples,
-                  searchViewModel = searchViewModel,
-                  modifier = Modifier.padding(pd),
-                  mediaPlayer = mediaPlayer,
-                  searchText = searchText,
-                  likedSamples = likedSamples,
-                  activeCommentSampleId = activeCommentSampleId,
-                  comments = comments
-              )
-          })
-      if (downloadProgress != null && downloadProgress != 0) {
-          searchViewModel.actions?.DownloadProgressBar(downloadProgress = downloadProgress!!,
-              SearchScreenTestTags.DOWNLOAD_BAR)
-      }
+    Scaffold(
+        containerColor = NepTuneTheme.colors.background,
+        modifier = Modifier.testTag(SearchScreenTestTags.SEARCH_SCREEN),
+        topBar = {
+          SearchBar(searchText, { searchText = it }, SearchScreenTestTags.SEARCH_BAR, samplesStr)
+        },
+        content = { pd ->
+          ScrollableColumnOfSamples(
+              samples = samples,
+              searchViewModel = searchViewModel,
+              modifier = Modifier.padding(pd),
+              mediaPlayer = mediaPlayer,
+              searchText = searchText,
+              likedSamples = likedSamples,
+              activeCommentSampleId = activeCommentSampleId,
+              comments = comments)
+        })
+    if (downloadProgress != null && downloadProgress != 0) {
+      DownloadProgressBar(downloadProgress = downloadProgress!!, SearchScreenTestTags.DOWNLOAD_BAR)
+    }
   }
 }
 

@@ -45,11 +45,14 @@ class MainViewModel(
     private val imageRepo: ImageStorageRepository = ImageStorageRepository(),
 ) : ViewModel() {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
+  val downloadProgress = MutableStateFlow<Int?>(null)
+
   val actions: SampleUiActions? =
       if (useMockData) {
         null
       } else {
-        SampleUiActions(repo, storageService, downloadsFolder, context)
+        SampleUiActions(
+            repo, storageService, downloadsFolder, context, downloadProgress = downloadProgress)
       }
 
   val discoverSamples: MutableStateFlow<List<Sample>> = _discoverSamples
@@ -76,7 +79,6 @@ class MainViewModel(
 
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
-  val downloadProgress = actions?.downloadProgress ?: MutableStateFlow<Int?>(null)
 
   init {
     if (useMockData) {

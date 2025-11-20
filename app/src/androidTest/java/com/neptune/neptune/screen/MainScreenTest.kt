@@ -3,6 +3,8 @@ package com.neptune.neptune.screen
 import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
@@ -26,6 +28,7 @@ import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.navigation.NavigationTestTags
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -66,7 +69,7 @@ class MainScreenTest {
   }
 
   @Test
-  fun mainScreen_topAppNavBar_canClickOnProfile() {
+  fun mainScreenTopAppNavBarCanClickOnProfile() {
     composeTestRule
         .onNodeWithTag(NavigationTestTags.PROFILE_BUTTON)
         .assertHasClickAction()
@@ -81,7 +84,7 @@ class MainScreenTest {
   }
 
   @Test
-  fun followedSection_isDisplayed() {
+  fun followedSectionIsDisplayed() {
     val lazyColumn = composeTestRule.onNodeWithTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)
 
     // Scroll to the Followed Section
@@ -96,7 +99,7 @@ class MainScreenTest {
   }
 
   @Test
-  fun sampleCard_displaysDetails() {
+  fun sampleCardDisplaysDetails() {
     composeTestRule
         .onAllNodesWithTag(MainScreenTestTags.SAMPLE_PROFILE_ICON, true)
         .onFirst()
@@ -187,5 +190,35 @@ class MainScreenTest {
       Espresso.closeSoftKeyboard()
     } catch (_: Exception) {}
     composeTestRule.onNodeWithText("Banana").assertIsDisplayed()
+  }
+
+  @Test
+  fun downloadProgressBarIsVisibleWhenProgressNonZeroOnMainScreenUseMockDataTrue() {
+    // Simulate 40% progress directly on the MainViewModel
+    composeTestRule.runOnIdle { viewModel.downloadProgress.value = 40 }
+    println(viewModel.downloadProgress.value)
+    composeTestRule.waitForIdle()
+
+    // Check that the bar is displayed
+    val barNode = composeTestRule.onNodeWithTag(MainScreenTestTags.DOWNlOAD_PROGRESS)
+    barNode.assertIsDisplayed()
+
+    // Optionally check the semantic progress value ≈ 0.4
+    val semantics = barNode.fetchSemanticsNode().config
+    val rangeInfo = semantics[SemanticsProperties.ProgressBarRangeInfo]
+    Assert.assertEquals(0.4f, rangeInfo.current, 0.01f)
+  }
+
+  @Test
+  fun downloadProgressBarIsHiddenWhenProgressNullOrZeroOnMainScreenUseMockDataTrue() {
+    // Case 1: null
+    viewModel.downloadProgress.value = null
+    composeTestRule.waitForIdle()
+    composeTestRule.onAllNodesWithTag(MainScreenTestTags.DOWNlOAD_PROGRESS).assertCountEquals(0)
+
+    // Case 2: zero
+    viewModel.downloadProgress.value = 0
+    composeTestRule.waitForIdle()
+    composeTestRule.onAllNodesWithTag(MainScreenTestTags.DOWNlOAD_PROGRESS).assertCountEquals(0)
   }
 }

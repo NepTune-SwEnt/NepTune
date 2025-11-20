@@ -34,7 +34,11 @@ class StorageService(val storage: FirebaseStorage) {
   }
   // correct -> obtain path from Firestore and not Storage
   @Throws(IOException::class)
-  suspend fun downloadZippedSample(sample: Sample, context: Context, onProgress: (Int) -> Unit = {}): File =
+  suspend fun downloadZippedSample(
+      sample: Sample,
+      context: Context,
+      onProgress: (Int) -> Unit = {}
+  ): File =
       withContext(Dispatchers.IO) {
         val sampleRef = storageRef.child(sample.storageZipPath)
         if (!exists(sampleRef))
@@ -43,17 +47,18 @@ class StorageService(val storage: FirebaseStorage) {
 
         val tmp = File(context.cacheDir, "${sample.name}.zip")
 
-        sampleRef.getFile(tmp)
-          .addOnProgressListener {snapshot ->
-            // size in bytes of the file being transferred
-            val total = snapshot.totalByteCount
-            if (total > 0) {
-              //progress percentage
-              val progress = (100.0 * snapshot.bytesTransferred / total).toInt().coerceIn(0, 100)
-              onProgress(progress)
+        sampleRef
+            .getFile(tmp)
+            .addOnProgressListener { snapshot ->
+              // size in bytes of the file being transferred
+              val total = snapshot.totalByteCount
+              if (total > 0) {
+                // progress percentage
+                val progress = (100.0 * snapshot.bytesTransferred / total).toInt().coerceIn(0, 100)
+                onProgress(progress)
+              }
             }
-          }
-          .await()
+            .await()
         // ensure progress is marked as complete
         onProgress(100)
         tmp
