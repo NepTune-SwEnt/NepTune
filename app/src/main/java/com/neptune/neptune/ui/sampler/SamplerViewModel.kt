@@ -605,7 +605,10 @@ open class SamplerViewModel() : ViewModel() {
   }
 
   open fun saveProjectData(zipFilePath: String): Job {
-    return viewModelScope.launch { saveProjectDataSync(zipFilePath) }
+    return viewModelScope.launch {
+      audioBuilding()
+      saveProjectDataSync(zipFilePath)
+    }
   }
 
   fun saveProjectDataSync(zipFilePath: String) {

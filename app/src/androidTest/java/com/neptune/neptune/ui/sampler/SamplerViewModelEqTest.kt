@@ -20,7 +20,7 @@ class SamplerViewModelEqTest {
   }
 
   @Test
-  fun applyEQFilters_withZeroGains_returnsUnchangedSamples() {
+  fun applyEQFiltersWithZeroGainsReturnsUnchangedSamples() {
     val sampleRate = 44100
     val original = FloatArray(2048) { i -> sin(2 * Math.PI * 440 * i / sampleRate).toFloat() }
     val eqBands = List(8) { 0.0f }
@@ -34,7 +34,7 @@ class SamplerViewModelEqTest {
   }
 
   @Test
-  fun applyEQFilters_withGain_modifiesSamples() {
+  fun applyEQFiltersWithGainModifiesSamples() {
     val sampleRate = 44100
     val original = FloatArray(4096) { i -> sin(2 * Math.PI * 1000 * i / sampleRate).toFloat() }
     val eqBands = listOf(0f, 0f, 0f, 0f, 5f, 0f, 0f, 0f) // Boost near 1kHz
@@ -47,7 +47,7 @@ class SamplerViewModelEqTest {
   }
 
   @Test
-  fun encodePCMToWAV_writesValidFileAndHeader() {
+  fun encodePCMToWAVWritesValidFileAndHeader() {
     val sampleRate = 22050
     val channelCount = 1
     val samples = FloatArray(1000) { i -> sin(2 * Math.PI * 440 * i / sampleRate).toFloat() }
@@ -70,14 +70,14 @@ class SamplerViewModelEqTest {
   }
 
   @Test
-  fun equalizeAudio_nullUri_keepsState() {
+  fun equalizeAudioNullUriKeepsState() {
     val before = viewModel.uiState.value.currentAudioUri
     viewModel.equalizeAudio(null, viewModel.uiState.value.eqBands)
     assertEquals(before, viewModel.uiState.value.currentAudioUri)
   }
 
   @Test
-  fun equalizeAudio_existingSource_createsEqualizedFile() {
+  fun equalizeAudioExistingSourceCreatesEqualizedFile() {
     val sampleRate = 8000
     val channelCount = 1
     val samples = FloatArray(2000) { i -> sin(2 * Math.PI * 440 * i / sampleRate).toFloat() }
