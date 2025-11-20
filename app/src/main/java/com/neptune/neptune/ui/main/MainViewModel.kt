@@ -129,16 +129,9 @@ class MainViewModel(
 
   fun onLikeClicked(sample: Sample, isLiked: Boolean) {
     viewModelScope.launch {
-
-      // Check if already Liked
-      val alreadyLiked = repo.hasUserLiked(sample.id)
-
-      if (!alreadyLiked && isLiked) {
-        repo.toggleLike(sample.id, true)
-        _likedSamples.value = _likedSamples.value + (sample.id to true)
-      } else if (alreadyLiked && !isLiked) {
-        repo.toggleLike(sample.id, false)
-        _likedSamples.value = _likedSamples.value + (sample.id to false)
+      val newState = actions?.onLikeClicked(sample.id, isLiked)
+      if (newState != null) {
+        _likedSamples.value = _likedSamples.value + (sample.id to newState)
       }
     }
   }
