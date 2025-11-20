@@ -577,7 +577,8 @@ class SamplerScreenTest {
   fun settingsDialogSaveUpdatesInputTempoAndPitch() {
     // Prepare a known state
     fakeViewModel.mutableUiState.value =
-        fakeViewModel.uiState.value.copy(inputTempo = 100, inputPitchNote = "C", inputPitchOctave = 4)
+        fakeViewModel.uiState.value.copy(
+            inputTempo = 100, inputPitchNote = "C", inputPitchOctave = 4)
     composeTestRule.waitForIdle()
 
     // Open the dialog
@@ -586,12 +587,14 @@ class SamplerScreenTest {
 
     // Find the BPM field inside the dialog and enter a new value
     val bpmField =
-        composeTestRule.onNode(hasSetTextAction() and hasParent(hasTestTag(SamplerTestTags.SETTINGS_DIALOG)))
+        composeTestRule.onNode(
+            hasSetTextAction() and hasParent(hasTestTag(SamplerTestTags.SETTINGS_DIALOG)))
     bpmField.performTextClearance()
     bpmField.performTextInput("130")
 
     // Click the pitch selector's up arrow inside the dialog
-    val beforePitch = fakeViewModel.uiState.value.inputPitchNote + fakeViewModel.uiState.value.inputPitchOctave
+    val beforePitch =
+        fakeViewModel.uiState.value.inputPitchNote + fakeViewModel.uiState.value.inputPitchOctave
     composeTestRule
         .onNodeWithTag(SamplerTestTags.SETTINGS_PITCH_SELECTOR)
         .onChildren()
@@ -601,7 +604,8 @@ class SamplerScreenTest {
 
     composeTestRule.waitForIdle()
 
-    val afterPitch = fakeViewModel.uiState.value.inputPitchNote + fakeViewModel.uiState.value.inputPitchOctave
+    val afterPitch =
+        fakeViewModel.uiState.value.inputPitchNote + fakeViewModel.uiState.value.inputPitchOctave
     // Verify that the pitch in the viewModel changed locally
     assertTrue("Pitch inside dialog should have changed", beforePitch != afterPitch)
 
