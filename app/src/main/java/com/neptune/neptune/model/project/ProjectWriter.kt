@@ -1,5 +1,6 @@
 package com.neptune.neptune.model.project
 
+import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
@@ -46,7 +47,10 @@ class ProjectWriter {
         }
       }
     }
-    targetZipFile.delete()
+    if (targetZipFile.exists()) {
+      val targetZipDeleted = targetZipFile.delete()
+      if (targetZipDeleted) Log.d("ProjectWriter", "targetZip was deleted")
+    }
     val success = tempZip.renameTo(targetZipFile)
     if (!success) {
       tempZip.copyTo(zipFile, overwrite = true)

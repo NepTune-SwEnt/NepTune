@@ -459,9 +459,7 @@ open class SamplerViewModel() : ViewModel() {
         val outputBuffer = codec.getOutputBuffer(outputIndex)!!
         val shortBuffer = outputBuffer.asShortBuffer()
         val chunk = ShortArray(shortBuffer.remaining())
-        for (i in chunk.indices) {
-          chunk[i] = shortBuffer.get(i)
-        }
+        shortBuffer.get(chunk)
 
         if (chunk.isNotEmpty()) {
           val avgAmplitude = chunk.map { abs(it.toFloat()) }.average().toFloat()
