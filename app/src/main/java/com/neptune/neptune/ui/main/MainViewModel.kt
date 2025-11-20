@@ -85,7 +85,7 @@ class MainViewModel(
       loadSamplesFromFirebase()
     }
     auth.addAuthStateListener(authListener)
-    forceRefreshAndLoadAvatar()
+    loadAvatar()
   }
 
   private fun loadSamplesFromFirebase() {
@@ -102,16 +102,12 @@ class MainViewModel(
     }
   }
 
-  fun onResume() {
-    forceRefreshAndLoadAvatar()
-  }
-
   override fun onCleared() {
     super.onCleared()
     auth.removeAuthStateListener(authListener)
   }
 
-  private fun forceRefreshAndLoadAvatar() {
+  private fun loadAvatar() {
     viewModelScope.launch {
       val storagePath = avatarStoragePath
       val fileName = avatarFileName

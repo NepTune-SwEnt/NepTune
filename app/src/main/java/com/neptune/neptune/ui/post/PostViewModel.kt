@@ -1,9 +1,18 @@
 package com.neptune.neptune.ui.post
 
 import android.net.Uri
+import android.util.Log
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.storage.FirebaseStorage
+import com.neptune.neptune.NepTuneApplication
+import com.neptune.neptune.R
 import com.neptune.neptune.data.ImageStorageRepository
+import com.neptune.neptune.data.storage.StorageService
+import com.neptune.neptune.model.project.TotalProjectItemsRepository
+import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.model.sample.Sample
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,14 +26,59 @@ import kotlinx.coroutines.launch
  *
  * @author Angéline Bignens
  */
-class PostViewModel() : ViewModel() {
+class PostViewModel(
+    private val projectRepository: TotalProjectItemsRepository =
+        TotalProjectItemsRepositoryProvider.repository,
+    private val storageService: StorageService? =
+        StorageService(
+            FirebaseStorage.getInstance(
+                NepTuneApplication.appContext.getString(
+                    R.string.storage_path))), // Make nullable or provide a default if needed, but
+    // injection is key
+    private val imageRepo: ImageStorageRepository = ImageStorageRepository()
+) : ViewModel() {
   private val _uiState = MutableStateFlow(PostUiState())
   val uiState: StateFlow<PostUiState> = _uiState.asStateFlow()
 
   private val _localImageUri = MutableStateFlow<Uri?>(null)
   val localImageUri: StateFlow<Uri?> = _localImageUri.asStateFlow()
 
-  private val imageRepo = ImageStorageRepository()
+  private val _localZipUri = MutableStateFlow<Uri?>(null)
+  val localZipUri: StateFlow<Uri?> = _localZipUri.asStateFlow()
+
+  /** Loads a project by its ID and converts it into a Sample. */
+  fun loadProject(projectId: String) {
+    viewModelScope.launch {
+      try {
+        val project = projectRepository.getProject(projectId)
+        val rawPath = project.projectFilePath
+        if (rawPath.isNullOrEmpty()) {
+          Log.e("PostViewModel", "The project don't have a file")
+          return@launch
+        }
+        _localZipUri.value = rawPath.toUri()
+        // TODO: change the durationSeconds to the actual duration of the project
+        val durationSeconds = 0
+        val sample =
+            Sample(
+                id = project.uid,
+                name = project.name,
+                description = project.description,
+                tags = project.tags,
+                durationSeconds = durationSeconds,
+                uriString = "",
+                likes = 0,
+                usersLike = emptyList(),
+                comments = 0,
+                downloads = 0,
+                ownerId = FirebaseAuth.getInstance().currentUser?.uid ?: "")
+
+        _uiState.update { it.copy(sample = sample) }
+      } catch (e: Exception) {
+        Log.e("PostViewModel", "Error when downloading the project", e)
+      }
+    }
+  }
 
   /**
    * Loads a sample
@@ -93,7 +147,32 @@ class PostViewModel() : ViewModel() {
 
   /** Submits the post */
   fun submitPost() {
-    // TODO: Post logic
+    if (_uiState.value.isUploading) {
+      return
+    }
+    val currentZipUri = _localZipUri.value
+    if (currentZipUri == null) {
+      Log.e("PostViewModel", "Cannot submit: No zip file loaded")
+      return
+    }
+    _uiState.update { it.copy(isUploading = true) }
+    viewModelScope.launch {
+      try {
+        storageService?.uploadSampleFiles(_uiState.value.sample, currentZipUri, localImageUri.value)
+        _uiState.update { it.copy(isUploading = false, postComplete = true) }
+      } catch (e: Exception) {
+        Log.e("PostViewModel", "error on upload", e)
+        _uiState.update { it.copy(isUploading = false) }
+      }
+    }
+  }
+
+  /** Switches the visibility of the post between Public (true) and My followers (false). */
+  fun toggleAudience() {
+    _uiState.update { currentState ->
+      val currentSample = currentState.sample
+      currentState.copy(sample = currentSample.copy(isPublic = !currentSample.isPublic))
+    }
   }
 }
 
@@ -101,7 +180,8 @@ class PostViewModel() : ViewModel() {
  * Represents the UI state of the Post screen
  *
  * @property sample The sample being posted
- * @property audience The selected audience for the post
+ * @property isUploading Indicates if the post is currently being uploaded
+ * @property postComplete Indicates if the post has been successfully completed
  */
 data class PostUiState(
     val sample: Sample =
@@ -116,5 +196,6 @@ data class PostUiState(
             comments = 0,
             downloads = 0,
             uriString = ""),
-    val audience: String = "Followers"
+    val isUploading: Boolean = false,
+    val postComplete: Boolean = false
 )

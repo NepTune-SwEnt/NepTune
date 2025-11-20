@@ -73,9 +73,14 @@ class FakeSampleRepository(initialSamples: List<Sample> = emptyList()) : SampleR
   }
 
   override suspend fun addComment(sampleId: String, author: String, text: String) {
+    addComment(sampleId, author, text, Timestamp.now())
+  }
+
+  // enable to give a custom Timestamp
+  fun addComment(sampleId: String, author: String, text: String, timestamp: Timestamp) {
     val flow = _commentsMap.getOrPut(sampleId) { MutableStateFlow(emptyList()) }
     val currentComments = flow.value.toMutableList()
-    val newComment = Comment(author = author, text = text, timestamp = Timestamp.now())
+    val newComment = Comment(author = author, text = text, timestamp = timestamp)
     currentComments.add(newComment)
     flow.value = currentComments.toList()
 

@@ -183,7 +183,7 @@ class StorageServiceTest {
         // Check that the encoded path (%2F instead of /) is in the final URL
         Assert.assertTrue(updatedSample.storageZipPath.contains("samples%2F${sampleId}.zip"))
         Assert.assertTrue(
-            updatedSample.storageImagePath.contains("samples%2F${sampleId}%2F$newImageName"))
+            updatedSample.storageImagePath.contains("sample_image%2F${sampleId}%2F$newImageName"))
       }
 
   @Test
