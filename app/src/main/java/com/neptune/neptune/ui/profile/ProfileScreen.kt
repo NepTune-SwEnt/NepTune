@@ -157,11 +157,6 @@ private fun SettingsButton(settings: () -> Unit) {
       }
 }
 
-@Composable
-private fun SamplesSection() {
-  TODO()
-}
-
 sealed interface ProfileViewConfig {
   val topBarContent: (@Composable () -> Unit)?
   val belowStatsButton: (@Composable () -> Unit)?
