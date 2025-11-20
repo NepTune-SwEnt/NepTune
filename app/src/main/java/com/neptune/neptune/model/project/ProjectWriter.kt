@@ -10,7 +10,7 @@ import kotlinx.serialization.json.Json
 
 class ProjectWriter {
 
-  private val json = Json {}
+  private val json = Json
 
   fun writeProject(
       zipFile: File,

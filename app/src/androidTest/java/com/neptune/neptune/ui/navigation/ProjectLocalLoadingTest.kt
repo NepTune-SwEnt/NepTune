@@ -8,7 +8,6 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Timestamp
 import com.neptune.neptune.MainActivity
 import com.neptune.neptune.NepTuneApplication
@@ -107,7 +106,7 @@ class LocalProjectLoadingTest {
           ProjectItem(
               uid = TARGET_PROJECT_ID,
               name = "Test Project ZIP",
-              projectFilePath = absoluteZipPath,
+              projectFileLocalPath = absoluteZipPath,
               lastUpdated = Timestamp(100, 0)))
       TotalProjectItemsRepositoryProvider.repository = fakeRepository
     }

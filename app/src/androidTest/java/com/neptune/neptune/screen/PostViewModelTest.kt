@@ -106,7 +106,7 @@ class PostViewModelTest {
             uid = projectId,
             name = "Integration Project",
             description = "Desc",
-            projectFilePath = "file:${zipUri.path}",
+            projectFileLocalPath = "file:${zipUri.path}",
             tags = listOf("test"),
             ownerId = userId)
     `when`(mockProjectRepo.getProject(projectId)).thenReturn(dummyProject)
