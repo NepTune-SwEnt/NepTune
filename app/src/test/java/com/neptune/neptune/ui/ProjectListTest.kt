@@ -55,7 +55,7 @@ class ProjectListTest {
     // Use the centralized extension constant for the check
     compose
         .onAllNodesWithText(ProjectListTestTexts.URI_EXTENSION, substring = true)
-        .assertCountEquals(2)
+        .assertCountEquals(4) // *2 because of the way they are composed
   }
 
   @Test
@@ -111,9 +111,13 @@ class ProjectListTest {
     compose.setContent { MaterialTheme { ProjectList(listOf(item)) } }
 
     // Headline shows the filename (the whole string in this case)
-    compose.onNodeWithText(bare).assertExists()
+    compose
+        .onAllNodes(hasText(bare))
+        .assertCountEquals(2) // *2 because of the way they are composed
     // Supporting content shows the full "URI" we passed (same string)
-    compose.onNodeWithText(bare).assertExists()
+    compose
+        .onAllNodes(hasText(bare))
+        .assertCountEquals(2) // *2 because of the way they are composed
   }
 
   @Test

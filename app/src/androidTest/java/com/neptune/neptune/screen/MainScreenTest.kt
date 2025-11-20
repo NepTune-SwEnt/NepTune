@@ -19,11 +19,13 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.test.espresso.Espresso
+import com.google.firebase.Timestamp
 import com.neptune.neptune.NepTuneApplication.Companion.appContext
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.FakeProfileRepository
 import com.neptune.neptune.model.FakeSampleRepository
+import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
@@ -47,13 +49,15 @@ class MainScreenTest {
 
   private lateinit var mediaPlayer: NeptuneMediaPlayer
 
+  private lateinit var fakeSampleRepo: FakeSampleRepository
+
   @Before
   fun setup() {
     context = composeTestRule.activity.applicationContext
     mediaPlayer = NeptuneMediaPlayer()
 
     // Use fake repo
-    val fakeSampleRepo = FakeSampleRepository()
+    fakeSampleRepo = FakeSampleRepository()
     val fakeProfileRepo = FakeProfileRepository()
     viewModel =
         MainViewModel(
@@ -220,5 +224,46 @@ class MainScreenTest {
     viewModel.downloadProgress.value = 0
     composeTestRule.waitForIdle()
     composeTestRule.onAllNodesWithTag(MainScreenTestTags.DOWNlOAD_PROGRESS).assertCountEquals(0)
+  /** Test that different timestamps on different comments display correctly */
+  @Test
+  fun commentsDisplayCorrectTimestampFormats() {
+    val sampleId = viewModel.discoverSamples.value.first().id
+
+    // Open first comment
+    composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_COMMENTS).onFirst().performClick()
+
+    composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_SECTION).assertIsDisplayed()
+
+    // Fake comments with different TimeStamp
+    val now = Timestamp.now()
+    val oneMinuteAgo = Timestamp(now.seconds - 60, 0)
+    val oneHourAgo = Timestamp(now.seconds - 3600, 0)
+    val oneDayAgo = Timestamp(now.seconds - 86400, 0)
+    val oneMonthAgo = Timestamp(now.seconds - 30L * 86400, 0)
+    val oneYearAgo = Timestamp(now.seconds - 365L * 86400, 0)
+
+    val testComments =
+        listOf(
+            Comment("A", "a1", oneMinuteAgo),
+            Comment("B", "a2", oneHourAgo),
+            Comment("C", "a3", oneDayAgo),
+            Comment("D", "a4", oneMonthAgo),
+            Comment("E", "a5", oneYearAgo),
+            Comment("F", "a6", now))
+
+    composeTestRule.runOnUiThread {
+      testComments.forEach { comment ->
+        fakeSampleRepo.addComment(sampleId, comment.author, comment.text, comment.timestamp!!)
+      }
+      viewModel.observeCommentsForSample(sampleId)
+    }
+
+    // Check that the string is well formated in each case.
+    composeTestRule.onNodeWithText("• 1min ago").assertIsDisplayed()
+    composeTestRule.onNodeWithText("• 1h ago").assertIsDisplayed()
+    composeTestRule.onNodeWithText("• 1d ago").assertIsDisplayed()
+    composeTestRule.onNodeWithText("• 1mo ago").assertIsDisplayed()
+    composeTestRule.onNodeWithText("• 1y ago").assertIsDisplayed()
+    composeTestRule.onNodeWithText("• just now").assertIsDisplayed()
   }
 }
