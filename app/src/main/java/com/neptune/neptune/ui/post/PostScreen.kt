@@ -58,7 +58,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.airbnb.lottie.LottieProperty
@@ -288,17 +287,7 @@ fun PostScreen(
                             fontWeight = FontWeight(200)),
                     modifier = Modifier.fillMaxWidth().testTag(PostScreenTestTags.TITLE_FIELD),
                     singleLine = true,
-                    colors =
-                        TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedIndicatorColor = NepTuneTheme.colors.onBackground,
-                            unfocusedIndicatorColor =
-                                NepTuneTheme.colors.onBackground.copy(alpha = 0.5f),
-                            cursorColor = NepTuneTheme.colors.onBackground,
-                            focusedLabelColor = NepTuneTheme.colors.onBackground,
-                            unfocusedLabelColor =
-                                NepTuneTheme.colors.onBackground.copy(alpha = 0.7f)))
+                    colors = postColors())
 
                 // Description
                 TextField(
@@ -323,17 +312,7 @@ fun PostScreen(
                     modifier =
                         Modifier.fillMaxWidth().testTag(PostScreenTestTags.DESCRIPTION_FIELD),
                     singleLine = false,
-                    colors =
-                        TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedIndicatorColor = NepTuneTheme.colors.onBackground,
-                            unfocusedIndicatorColor =
-                                NepTuneTheme.colors.onBackground.copy(alpha = 0.5f),
-                            cursorColor = NepTuneTheme.colors.onBackground,
-                            focusedLabelColor = NepTuneTheme.colors.onBackground,
-                            unfocusedLabelColor =
-                                NepTuneTheme.colors.onBackground.copy(alpha = 0.7f)))
+                    colors = postColors())
 
                 // Tags
                 TextField(
@@ -372,17 +351,7 @@ fun PostScreen(
                             fontWeight = FontWeight(200)),
                     modifier = Modifier.fillMaxWidth().testTag(PostScreenTestTags.TAGS_FIELD),
                     singleLine = true,
-                    colors =
-                        TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedIndicatorColor = NepTuneTheme.colors.onBackground,
-                            unfocusedIndicatorColor =
-                                NepTuneTheme.colors.onBackground.copy(alpha = 0.5f),
-                            cursorColor = NepTuneTheme.colors.onBackground,
-                            focusedLabelColor = NepTuneTheme.colors.onBackground,
-                            unfocusedLabelColor =
-                                NepTuneTheme.colors.onBackground.copy(alpha = 0.7f)))
+                    colors = postColors())
 
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -426,7 +395,10 @@ fun PostScreen(
                 // Post Button
                 Button(
                     onClick = { postViewModel.submitPost() },
-                    enabled = uiState.sample.name.isNotBlank() && !uiState.isUploading,
+                    enabled =
+                        uiState.sample.name.isNotBlank() &&
+                            !uiState.isUploading &&
+                            postViewModel.audioExist(),
                     modifier =
                         Modifier.fillMaxWidth()
                             .height(55.dp)
@@ -455,7 +427,7 @@ fun PostScreen(
       visible = uiState.isUploading,
       enter = fadeIn(),
       exit = fadeOut(),
-      modifier = Modifier.fillMaxSize().zIndex(2f)) {
+      modifier = Modifier.fillMaxSize()) {
         Box(
             modifier =
                 Modifier.fillMaxSize()
@@ -471,6 +443,17 @@ fun PostScreen(
             }
       }
 }
+
+@Composable
+fun postColors() =
+    TextFieldDefaults.colors(
+        focusedContainerColor = Color.Transparent,
+        unfocusedContainerColor = Color.Transparent,
+        focusedIndicatorColor = NepTuneTheme.colors.onBackground,
+        unfocusedIndicatorColor = NepTuneTheme.colors.onBackground.copy(alpha = 0.5f),
+        cursorColor = NepTuneTheme.colors.onBackground,
+        focusedLabelColor = NepTuneTheme.colors.onBackground,
+        unfocusedLabelColor = NepTuneTheme.colors.onBackground.copy(alpha = 0.7f))
 
 @Preview
 @Composable
