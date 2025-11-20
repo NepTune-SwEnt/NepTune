@@ -289,6 +289,16 @@ class ProfileRepositoryFirebase(
     profiles.document(uid).update("avatarUrl", "").await()
   }
 
+  override suspend fun getAvatarUrlByUserId(userId: String): String? {
+    return try {
+      val snapshot = profiles.document(userId).get().await()
+      snapshot.getString("avatarUrl")
+    } catch (_: Exception) {
+      // In case of a network error, do nothing.
+      null
+    }
+  }
+
   /** Converts an input string to a valid username base (lowercase, alphanumeric + underscores). */
   private fun toUsernameBase(s: String) = s.lowercase().replace("[^a-z0-9_]".toRegex(), "")
 }
