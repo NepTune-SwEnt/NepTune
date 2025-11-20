@@ -55,7 +55,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -235,15 +234,23 @@ fun MainScreen(
                 color = NepTuneTheme.colors.onBackground)
           }
         },
-        floatingActionButton = {
+        floatingActionButton = { // 1. FAB is now correctly defined here
           FloatingActionButton(
               onClick = navigateToProjectList,
               containerColor = NepTuneTheme.colors.postButton,
               contentColor = NepTuneTheme.colors.onBackground,
               shape = CircleShape,
+              modifier = Modifier.testTag(MainScreenTestTags.POST_BUTTON)) {
+                Icon(Icons.Default.Add, contentDescription = "Post New Sample")
+              }
+        },
+        // 2. Main content goes here, receiving the necessary padding
+        content = { paddingValues ->
+          LazyColumn(
+              contentPadding = paddingValues, // Apply Scaffold padding
               modifier =
                   Modifier.fillMaxSize()
-                      .padding(horizontal = 30.dp)
+                      .padding(horizontal = horizontalPadding) // Apply screen-specific padding
                       .testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
                 // ----------------Discover Section-----------------
                 item { SectionHeader(title = "Discover") }
@@ -251,7 +258,7 @@ fun MainScreen(
                   LazyRow(
                       horizontalArrangement = Arrangement.spacedBy(spacing),
                       modifier = Modifier.fillMaxWidth()) {
-                        // As this element is horizontally scrollable,we can let 2
+                        // As this element is horizontally scrollable, we can let 2
                         val columns = discoverSamples.chunked(2)
 
                         items(columns) { samplesColumn ->
@@ -295,16 +302,17 @@ fun MainScreen(
                       onCommentClick = { sample -> onCommentClicked(sample) },
                       onDownloadClick = { sample -> mainViewModel.onDownloadSample(sample) })
                 }
-            // Comment Overlay
-            if (activeCommentSampleId != null) {
-              CommentDialog(
-                  sampleId = activeCommentSampleId!!,
-                  comments = comments,
-                  onDismiss = { activeCommentSampleId = null },
-                  onAddComment = { id, text -> onAddComment(id, text) })
-            }
-          }
-        }
+              }
+        })
+    // Comment Overlay (Outside Scaffold content, but inside Box to float over everything)
+    if (activeCommentSampleId != null) {
+      CommentDialog(
+          sampleId = activeCommentSampleId!!,
+          comments = comments,
+          onDismiss = { activeCommentSampleId = null },
+          onAddComment = { id, text -> onAddComment(id, text) })
+    }
+
     if (downloadProgress != null && downloadProgress != 0) {
       DownloadProgressBar(
           downloadProgress = downloadProgress!!, MainScreenTestTags.DOWNlOAD_PROGRESS)

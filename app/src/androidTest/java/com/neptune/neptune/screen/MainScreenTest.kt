@@ -31,8 +31,8 @@ import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.navigation.NavigationTestTags
-import org.junit.Assert
 import kotlinx.coroutines.flow.MutableStateFlow
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test

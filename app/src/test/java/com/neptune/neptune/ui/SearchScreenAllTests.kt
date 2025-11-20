@@ -26,9 +26,9 @@ import com.neptune.neptune.ui.search.ScrollableColumnOfSamples
 import com.neptune.neptune.ui.search.SearchScreen
 import com.neptune.neptune.ui.search.SearchScreenTestTags
 import com.neptune.neptune.ui.search.SearchScreenTestTags.SAMPLE_LIST
-import org.junit.Assert
 import com.neptune.neptune.ui.search.SearchScreenTestTagsPerSampleCard
 import com.neptune.neptune.ui.search.SearchViewModel
+import org.junit.Assert
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -274,6 +274,8 @@ class SearchScreenAllTests {
     val node = composeRule.onNodeWithTag(tag).fetchSemanticsNode()
     val info = node.config[SemanticsProperties.ProgressBarRangeInfo]
     return info.current
+  }
+
   fun profileIconPropagatesOwnerIdToNavigationCallback() {
     val vm = createTestSearchViewModel()
     val sample =
