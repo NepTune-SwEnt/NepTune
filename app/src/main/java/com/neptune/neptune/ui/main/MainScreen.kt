@@ -59,7 +59,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -492,7 +491,7 @@ fun SampleCard(
                             Modifier.clickable(onClick = clickHandlers.onProfileClick)
                                 .size(22.dp)
                                 .clip(CircleShape)
-                                .border(1.dp, Color.White, CircleShape)
+                                .border(1.dp, NepTuneTheme.colors.inverse, CircleShape)
                                 .testTag(testTags.SAMPLE_PROFILE_ICON),
                         contentScale = ContentScale.Crop,
                         placeholder = painterResource(R.drawable.profile),
@@ -500,15 +499,14 @@ fun SampleCard(
                     Spacer(Modifier.width(6.dp))
                     Text(
                         text = userName,
-                        color = Color.White,
+                        color = NepTuneTheme.colors.inverse,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style =
                             TextStyle(
                                 fontSize = 19.sp,
                                 fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                fontWeight = FontWeight(400),
-                                shadow = Shadow(color = Color.Black, blurRadius = 4f)))
+                                fontWeight = FontWeight(400)))
                   }
 
                   // Waveform
@@ -521,8 +519,7 @@ fun SampleCard(
                             modifier = Modifier.fillMaxWidth(0.8f).height(40.dp),
                             colorFilter =
                                 androidx.compose.ui.graphics.ColorFilter.tint(
-                                    Color.White)
-                            )
+                                    NepTuneTheme.colors.inverse))
                       }
 
                   // Sample name and duration
@@ -532,7 +529,7 @@ fun SampleCard(
                       verticalAlignment = Alignment.Bottom) {
                         Text(
                             sample.name,
-                            color = Color.White,
+                            color = NepTuneTheme.colors.inverse,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f),
@@ -540,21 +537,20 @@ fun SampleCard(
                                 TextStyle(
                                     fontSize = 12.sp,
                                     fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                    fontWeight = FontWeight(400),
-                                    shadow = Shadow(color = Color.Black, blurRadius = 4f)))
+                                    fontWeight = FontWeight(400)))
 
                         val minutes = sample.durationSeconds / 60
                         val seconds = sample.durationSeconds % 60
                         Text(
                             "%02d:%02d".format(minutes, seconds),
-                            color = Color.White,
+                            color = NepTuneTheme.colors.inverse,
                             modifier = Modifier.padding(start = 8.dp),
                             style =
                                 TextStyle(
                                     fontSize = 12.sp,
                                     fontFamily = FontFamily(Font(R.font.markazi_text)),
                                     fontWeight = FontWeight(400),
-                                    shadow = Shadow(color = Color.Black, blurRadius = 4f)))
+                                ))
                       }
                 }
           }
