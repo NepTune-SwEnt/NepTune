@@ -21,6 +21,7 @@ import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -679,7 +680,7 @@ open class SamplerViewModel() : ViewModel() {
     val currentUri = _uiState.value.currentAudioUri
     val eqBands = _uiState.value.eqBands
 
-    viewModelScope.launch {
+    viewModelScope.launch(Dispatchers.Default) {
       try {
         equalizeAudio(currentUri, eqBands)
       } catch (e: Exception) {
