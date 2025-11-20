@@ -459,7 +459,9 @@ open class SamplerViewModel() : ViewModel() {
         val outputBuffer = codec.getOutputBuffer(outputIndex)!!
         val shortBuffer = outputBuffer.asShortBuffer()
         val chunk = ShortArray(shortBuffer.remaining())
-        shortBuffer.get(chunk)
+        for (i in chunk.indices) {
+          chunk[i] = shortBuffer.get(i)
+        }
 
         if (chunk.isNotEmpty()) {
           val avgAmplitude = chunk.map { abs(it.toFloat()) }.average().toFloat()
@@ -861,18 +863,18 @@ open class SamplerViewModel() : ViewModel() {
     private val a2: Double
 
     init {
-      val A = 10.0.pow(gainDB / 40.0)
+      val a = 10.0.pow(gainDB / 40.0)
       val omega = 2.0 * Math.PI * centerFreq / sampleRate
       val sinOmega = sin(omega)
       val cosOmega = cos(omega)
       val alpha = sinOmega / (2.0 * q)
 
-      b0 = 1.0 + alpha * A
+      b0 = 1.0 + alpha * a
       b1 = -2.0 * cosOmega
-      b2 = 1.0 - alpha * A
-      a0 = 1.0 + alpha / A
+      b2 = 1.0 - alpha * a
+      a0 = 1.0 + alpha / a
       a1 = -2.0 * cosOmega
-      a2 = 1.0 - alpha / A
+      a2 = 1.0 - alpha / a
     }
 
     fun process(input: FloatArray): FloatArray {

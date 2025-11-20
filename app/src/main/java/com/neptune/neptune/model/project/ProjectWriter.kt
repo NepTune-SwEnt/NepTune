@@ -9,7 +9,7 @@ import kotlinx.serialization.json.Json
 
 class ProjectWriter {
 
-  private val json = Json {}
+  private val json = Json
 
   fun writeProject(
       zipFile: File,
@@ -46,7 +46,7 @@ class ProjectWriter {
         }
       }
     }
-    if (targetZipFile.exists()) targetZipFile.delete()
+    targetZipFile.delete()
     val success = tempZip.renameTo(targetZipFile)
     if (!success) {
       tempZip.copyTo(zipFile, overwrite = true)
