@@ -28,7 +28,7 @@ class NeptunePackagerTest {
       runTest(testDispatcher) {
         val ctx: Context = ApplicationProvider.getApplicationContext()
         val paths = StoragePaths(ctx)
-        val packager = NeptunePackager(paths)
+        val packager = NeptunePackager(paths, testDispatcher)
 
         val input = File(ctx.cacheDir, "a.wav").apply { writeBytes(ByteArray(4)) }
 
@@ -39,7 +39,7 @@ class NeptunePackagerTest {
         assertThat(z2.exists()).isTrue()
         assertThat(z1.parentFile!!.canonicalPath).isEqualTo(paths.projectsWorkspace().canonicalPath)
         assertThat(z2.parentFile!!.canonicalPath).isEqualTo(paths.projectsWorkspace().canonicalPath)
-        assertThat(z1.name).isNotEqualTo(z2.name) // uniqueness branch
+        assertThat(z1.name).isNotEqualTo(z2.name)
       }
 
   @Test
@@ -75,9 +75,9 @@ class NeptunePackagerTest {
       runTest(testDispatcher) {
         val ctx: Context = ApplicationProvider.getApplicationContext()
         val paths = StoragePaths(ctx)
-        val packager = NeptunePackager(paths)
 
-        // create an input wav
+        val packager = NeptunePackager(paths, testDispatcher)
+
         val input =
             File(ctx.cacheDir, "in.wav").apply {
               outputStream().use { FileOutputStream(this).write(ByteArray(48) { 0x55 }) }
@@ -91,13 +91,14 @@ class NeptunePackagerTest {
         ZipFile(out).use { zip ->
           val names = zip.entries().toList().map { it.name }
           assertThat(names).containsAtLeast("config.json", "in.wav")
-
           val cfg = zip.getInputStream(zip.getEntry("config.json")).bufferedReader().readText()
-          // Basic shape checks
-          assertThat(cfg).contains("\"files\"")
-          assertThat(cfg).contains("\"filename\":\"in.wav\"")
-          assertThat(cfg).contains("\"duration\"")
-          assertThat(cfg).contains("\"filters\"")
+          val normalizedConfig = cfg.replace(Regex("\\s+"), "")
+          assertThat(normalizedConfig).contains("\"name\":\"in.wav\"")
+          assertThat(normalizedConfig).contains("\"volume\":100")
+          assertThat(normalizedConfig).contains("\"start\":0.0")
+          assertThat(normalizedConfig).contains("\"duration\":1.2")
+          assertThat(normalizedConfig).contains("\"audioFiles\":[")
+          assertThat(normalizedConfig).contains("\"parameters\":[]")
         }
       }
 }

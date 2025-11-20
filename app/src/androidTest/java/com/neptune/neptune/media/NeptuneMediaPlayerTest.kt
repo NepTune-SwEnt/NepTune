@@ -16,7 +16,6 @@ class NeptuneMediaPlayerTest {
   private lateinit var testURI2: Uri
   private lateinit var context: Context
 
-  // Helper functions
   fun isPlayingURI(uri: Uri): Boolean {
     return mediaPlayer.isPlaying() && mediaPlayer.getCurrentUri() == uri
   }
