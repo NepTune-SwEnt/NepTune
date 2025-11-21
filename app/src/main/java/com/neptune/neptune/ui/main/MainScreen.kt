@@ -67,6 +67,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
@@ -103,6 +104,7 @@ object MainScreenTestTags : BaseSampleTestTags {
   // General
   const val MAIN_SCREEN = "mainScreen"
   const val POST_BUTTON = "postButton"
+  const val DOWNlOAD_PROGRESS = "downloadProgressBar"
 
   // Top Bar
   const val TOP_BAR = "topBar"
@@ -184,7 +186,8 @@ fun MainScreen(
   // Depends on the size of the screen
   val maxColumns = if (screenWidth < 360.dp) 1 else 2
   val cardWidth = (screenWidth - horizontalPadding * 2 - spacing) / 2
-
+  val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
+  val lifecycleOwner = LocalLifecycleOwner.current
   fun onCommentClicked(sample: Sample) {
     mainViewModel.observeCommentsForSample(sample.id)
     activeCommentSampleId = sample.id
@@ -194,7 +197,7 @@ fun MainScreen(
     mainViewModel.addComment(sampleId, text)
     mainViewModel.observeCommentsForSample(sampleId)
   }
-
+    Box(modifier = Modifier.fillMaxSize().testTag(MainScreenTestTags.MAIN_SCREEN)) {
   Scaffold(
       topBar = {
         Column {
@@ -262,13 +265,12 @@ fun MainScreen(
                   modifier = Modifier.size(70.dp))
             }
       },
-      modifier = Modifier.testTag(MainScreenTestTags.MAIN_SCREEN),
-      containerColor = NepTuneTheme.colors.background) { innerPadding ->
-        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+      content = { paddingValues ->
           LazyColumn(
+              contentPadding = paddingValues, // Apply Scaffold padding
               modifier =
                   Modifier.fillMaxSize()
-                      .padding(horizontal = 30.dp)
+                      .padding(horizontal = horizontalPadding) // Apply screen-specific padding
                       .testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
                 // ----------------Discover Section-----------------
                 item { SectionHeader(title = "Discover") }
@@ -276,7 +278,7 @@ fun MainScreen(
                   LazyRow(
                       horizontalArrangement = Arrangement.spacedBy(spacing),
                       modifier = Modifier.fillMaxWidth()) {
-                        // As this element is horizontally scrollable,we can let 2
+                        // As this element is horizontally scrollable, we can let 2
                         val columns = discoverSamples.chunked(2)
 
                         items(columns) { samplesColumn ->
@@ -331,16 +333,22 @@ fun MainScreen(
                       getAudioUrl = { s -> mainViewModel.getSampleAudioUrl(s) })
                 }
               }
-          // Comment Overlay
-          if (activeCommentSampleId != null) {
-            CommentDialog(
-                sampleId = activeCommentSampleId!!,
-                comments = comments,
-                onDismiss = { activeCommentSampleId = null },
-                onAddComment = { id, text -> onAddComment(id, text) })
-          }
-        }
-      }
+        },
+      containerColor = NepTuneTheme.colors.background)
+    // Comment Overlay (Outside Scaffold content, but inside Box to float over everything)
+    if (activeCommentSampleId != null) {
+      CommentDialog(
+          sampleId = activeCommentSampleId!!,
+          comments = comments,
+          onDismiss = { activeCommentSampleId = null },
+          onAddComment = { id, text -> onAddComment(id, text) })
+    }
+
+    if (downloadProgress != null && downloadProgress != 0) {
+      DownloadProgressBar(
+          downloadProgress = downloadProgress!!, MainScreenTestTags.DOWNlOAD_PROGRESS)
+    }
+  }
 }
 
 // ----------------Section Header-----------------

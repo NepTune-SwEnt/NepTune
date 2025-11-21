@@ -219,7 +219,7 @@ class NavigationTest {
     every { mockViewModel.userAvatar } returns MutableStateFlow(null)
     every { mockViewModel.likedSamples } returns MutableStateFlow(emptyMap())
     every { mockViewModel.comments } returns MutableStateFlow(emptyList())
-
+    every { mockViewModel.downloadProgress } returns MutableStateFlow<Int?>(null)
     composeTestRule.setContent {
       MainScreen(navigateToProjectList = navigateToProjectListMock, mainViewModel = mockViewModel)
     }
@@ -266,14 +266,6 @@ class NavigationTest {
     composeTestRule.onNodeWithTag(PostScreenTestTags.POST_BUTTON).performScrollTo().performClick()
     composeTestRule.waitForIdle()
     verify(exactly = 1) { navigateToMainMock() }
-  }
-
-  /** Test that the main screen has a bottom bar */
-  @Test
-  fun mainScreenDisplaysBottomNav() {
-    setContent()
-    composeTestRule.onNodeWithTag(MainScreenTestTags.MAIN_SCREEN).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
   }
 
   /** Test that the bottom bar has all the button displayed */

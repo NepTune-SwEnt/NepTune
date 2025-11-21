@@ -3,6 +3,7 @@ package com.neptune.neptune.ui.search
 import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -31,6 +32,7 @@ import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.main.CommentDialog
+import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.main.SampleCard
 import com.neptune.neptune.ui.main.onClickFunctions
 import com.neptune.neptune.ui.projectlist.SearchBar
@@ -49,6 +51,7 @@ object SearchScreenTestTags {
   const val SEARCH_SCREEN = "searchScreen"
   const val SEARCH_BAR = "searchBar"
   const val SAMPLE_LIST = "sampleList"
+  const val DOWNLOAD_BAR = "downloadBar"
 }
 
 class SearchScreenTestTagsPerSampleCard(private val idInColumn: String = "0") : BaseSampleTestTags {
@@ -106,6 +109,7 @@ fun SearchScreen(
 ) {
   val samples by searchViewModel.samples.collectAsState()
   var searchText by remember { mutableStateOf("") }
+  val downloadProgress: Int? by searchViewModel.downloadProgress.collectAsState()
   LaunchedEffect(searchText) {
     delay(400L) // debounce time
     searchViewModel.search(searchText)
@@ -114,25 +118,30 @@ fun SearchScreen(
   val likedSamples by searchViewModel.likedSamples.collectAsState()
   val activeCommentSampleId by searchViewModel.activeCommentSampleId.collectAsState()
   val comments by searchViewModel.comments.collectAsState()
-  Scaffold(
-      containerColor = NepTuneTheme.colors.background,
-      modifier = Modifier.testTag(SearchScreenTestTags.SEARCH_SCREEN),
-      topBar = {
-        SearchBar(searchText, { searchText = it }, SearchScreenTestTags.SEARCH_BAR, samplesStr)
-      },
-      content = { pd ->
-        ScrollableColumnOfSamples(
-            samples = samples,
-            searchViewModel = searchViewModel,
-            modifier = Modifier.padding(pd),
-            mediaPlayer = mediaPlayer,
-            searchText = searchText,
-            likedSamples = likedSamples,
-            activeCommentSampleId = activeCommentSampleId,
-            comments = comments,
-            navigateToOtherUserProfile = navigateToOtherUserProfile,
-        )
-      })
+  Box(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+        containerColor = NepTuneTheme.colors.background,
+        modifier = Modifier.testTag(SearchScreenTestTags.SEARCH_SCREEN),
+        topBar = {
+          SearchBar(searchText, { searchText = it }, SearchScreenTestTags.SEARCH_BAR, samplesStr)
+        },
+        content = { pd ->
+          ScrollableColumnOfSamples(
+              samples = samples,
+              searchViewModel = searchViewModel,
+              modifier = Modifier.padding(pd),
+              mediaPlayer = mediaPlayer,
+              searchText = searchText,
+              likedSamples = likedSamples,
+              activeCommentSampleId = activeCommentSampleId,
+              comments = comments,
+              navigateToOtherUserProfile = navigateToOtherUserProfile,
+          )
+        })
+    if (downloadProgress != null && downloadProgress != 0) {
+      DownloadProgressBar(downloadProgress = downloadProgress!!, SearchScreenTestTags.DOWNLOAD_BAR)
+    }
+  }
 }
 
 @Composable

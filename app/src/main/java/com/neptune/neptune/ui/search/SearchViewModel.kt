@@ -68,7 +68,7 @@ open class SearchViewModel(
   private var query = ""
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
-
+  private val allSamples = MutableStateFlow<List<Sample>>(emptyList())
   private val _activeCommentSampleId = MutableStateFlow<String?>(null)
   val activeCommentSampleId: StateFlow<String?> = _activeCommentSampleId.asStateFlow()
 
@@ -82,6 +82,7 @@ open class SearchViewModel(
     observeCommentsForSample(sampleId)
   }
   // ---------- Actions (download, etc.) – disabled in tests ----------
+  val downloadProgress = MutableStateFlow<Int?>(null)
 
   val actions: SampleUiActions? =
       if (useMockData) {
@@ -99,13 +100,15 @@ open class SearchViewModel(
             explicitDownloadsFolder
                 ?: Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
 
-        SampleUiActions(repo, storageService, downloadsFolder, context)
+        SampleUiActions(
+            repo, storageService, downloadsFolder, context, downloadProgress = downloadProgress)
       }
 
   init {
     if (firebaseAuth != null && authListener != null) {
       firebaseAuth.addAuthStateListener(authListener)
     }
+    load(useMockData)
   }
 
   override fun onCleared() {
@@ -119,7 +122,7 @@ open class SearchViewModel(
 
   // Mock data for tests (your original loadData)
   private fun loadMockData() {
-    _samples.value =
+    val mocks =
         listOf(
             Sample(
                 "1",
@@ -163,12 +166,17 @@ open class SearchViewModel(
                 usersLike = emptyList(),
                 210,
                 210))
+    allSamples.value = mocks
+    applyFilter(query)
   }
 
   fun loadSamplesFromFirebase() {
     viewModelScope.launch {
-      _samples.value = repo.getSamples()
+      val loaded = repo.getSamples()
+      allSamples.value = loaded
+      _samples.value = loaded
       refreshLikeStates()
+      applyFilter(query)
     }
   }
 
@@ -179,7 +187,7 @@ open class SearchViewModel(
     viewModelScope.launch {
       try {
         safeActions.onDownloadClicked(sample)
-        search(query)
+        load(useMockData)
       } catch (e: Exception) {
         Log.e("SearchViewModel", "Error downloading sample: ${e.message}")
         // optional: log or expose error
@@ -191,6 +199,17 @@ open class SearchViewModel(
     val sampleId = sample.id
     viewModelScope.launch {
       repo.toggleLike(sample.id, isLikedNow)
+      val delta = if (isLikedNow) 1 else -1
+      val updatedSamples =
+          allSamples.value.map { current ->
+            if (current.id == sampleId) {
+              current.copy(likes = current.likes + delta)
+            } else {
+              current
+            }
+          }
+      allSamples.value = updatedSamples
+      applyFilter(query)
       _likedSamples.value = _likedSamples.value + (sampleId to isLikedNow)
     }
   }
@@ -220,32 +239,39 @@ open class SearchViewModel(
       val profile = profileRepo.getProfile()
       val username = profile?.username ?: "Anonymous"
       repo.addComment(sampleId, username, text.trim())
+      load(useMockData)
     }
   }
 
   open fun search(query: String) {
     this.query = query
-    if (useMockData) {
-      loadMockData()
-    } else {
-      loadSamplesFromFirebase()
-    }
-
-    val normalizedQuery = normalize(query)
-    if (normalizedQuery.isEmpty()) {
-      return
-    }
-
-    _samples.value =
-        _samples.value.filter {
-          normalize(it.name).contains(normalizedQuery, ignoreCase = true) ||
-              normalize(it.description).contains(normalizedQuery, ignoreCase = true) ||
-              it.tags.any { tag -> normalize(tag).contains(normalizedQuery, ignoreCase = true) }
-        }
+    applyFilter(query)
   }
 
   // Normalizes text by converting it to lowercase and removing non-alphanumeric characters.
   fun normalize(text: String): String {
     return text.lowercase().replace("\\p{M}".toRegex(), "").replace(Regex("[^a-z0-9]"), "").trim()
+  }
+
+  private fun applyFilter(query: String) {
+    val normalizedQuery = normalize(query)
+    val base = allSamples.value
+    _samples.value =
+        if (normalizedQuery.isEmpty()) {
+          base
+        } else
+            base.filter {
+              normalize(it.name).contains(normalizedQuery, ignoreCase = true) ||
+                  normalize(it.description).contains(normalizedQuery, ignoreCase = true) ||
+                  it.tags.any { tag -> normalize(tag).contains(normalizedQuery, ignoreCase = true) }
+            }
+  }
+
+  private fun load(useMock: Boolean) {
+    if (useMock) {
+      loadMockData()
+    } else {
+      loadSamplesFromFirebase()
+    }
   }
 }
