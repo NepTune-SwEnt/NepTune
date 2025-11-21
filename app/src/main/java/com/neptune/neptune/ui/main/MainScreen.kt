@@ -294,7 +294,7 @@ fun MainScreen(
                                         navigateToOtherUserProfile(sample.ownerId)
                                       },
                                   )
-                              SampleCard(
+                              SampleItem(
                                   sample = sample,
                                   width = cardWidth,
                                   isLiked = likedSamples[sample.id] == true,
@@ -350,6 +350,87 @@ fun MainScreen(
   }
 }
 
+@Composable
+fun SampleItem(
+    sample: Sample,
+    width: Dp,
+    isLiked: Boolean,
+    clickHandlers: ClickHandlers,
+    testTags: BaseSampleTestTags = MainScreenTestTags,
+    getOwnerAvatar: suspend (String) -> String? = { null },
+    getUserName: suspend (String) -> String = { "" },
+    getCoverUrl: suspend (String) -> String? = { null },
+    getAudioUrl: suspend (Sample) -> String? = { null }
+) {
+  var avatarUrl by remember { mutableStateOf<String?>(null) }
+  var userName by remember { mutableStateOf("") }
+
+  LaunchedEffect(sample.ownerId) {
+    avatarUrl = getOwnerAvatar(sample.ownerId)
+    userName = getUserName(sample.ownerId)
+  }
+
+  Column(modifier = Modifier.width(width)) {
+    // Header (Avatar + Name)
+    SampleCardHeader(
+        avatarUrl = avatarUrl,
+        userName = userName,
+        onProfileClick = clickHandlers.onProfileClick,
+        testTags = testTags)
+
+    // Card (Image + Waveform + Title)
+    SampleCard(
+        sample = sample,
+        width = width,
+        isLiked = isLiked,
+        clickHandlers = clickHandlers,
+        testTags = testTags,
+        getCoverUrl = getCoverUrl,
+        getAudioUrl = getAudioUrl)
+  }
+}
+
+@Composable
+fun SampleCardHeader(
+    avatarUrl: String?,
+    userName: String,
+    onProfileClick: () -> Unit,
+    testTags: BaseSampleTestTags
+) {
+  Row(
+      verticalAlignment = Alignment.CenterVertically,
+      modifier =
+          Modifier.fillMaxWidth().padding(bottom = 6.dp).clickable(onClick = onProfileClick)) {
+        AsyncImage(
+            model =
+                ImageRequest.Builder(LocalContext.current)
+                    .data(avatarUrl ?: R.drawable.profile)
+                    .crossfade(true)
+                    .build(),
+            contentDescription = "Profile",
+            modifier =
+                Modifier.size(28.dp)
+                    .clip(CircleShape)
+                    .border(1.dp, NepTuneTheme.colors.onBackground, CircleShape)
+                    .testTag(testTags.SAMPLE_PROFILE_ICON),
+            contentScale = ContentScale.Crop,
+            placeholder = painterResource(R.drawable.profile),
+            error = painterResource(R.drawable.profile))
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = userName,
+            color = NepTuneTheme.colors.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style =
+                TextStyle(
+                    fontSize = 19.sp,
+                    fontFamily = FontFamily(Font(R.font.markazi_text)),
+                    fontWeight = FontWeight(400)),
+            modifier = Modifier.testTag(testTags.SAMPLE_USERNAME))
+      }
+}
+
 // ----------------Section Header-----------------
 @Composable
 fun SectionHeader(title: String) {
@@ -401,7 +482,7 @@ fun SampleCardRow(
                   onLikeClick = { isLiked -> onLikeClick(sample, isLiked) },
                   onCommentClick = { onCommentClick(sample) },
                   onDownloadClick = { onDownloadClick(sample) })
-          SampleCard(
+          SampleItem(
               sample = sample,
               width = cardWidth,
               isLiked = isLiked,
@@ -446,23 +527,15 @@ fun SampleCard(
     testTags: BaseSampleTestTags = MainScreenTestTags,
     clickHandlers: ClickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
-    getOwnerAvatar: suspend (String) -> String? = { null },
-    getUserName: suspend (String) -> String = { "" },
     getCoverUrl: suspend (String) -> String? = { null },
     getAudioUrl: suspend (Sample) -> String? = { null }
 ) {
   val likeDescription = if (isLiked) "liked" else "not liked"
   val heartColor = if (isLiked) Color.Red else NepTuneTheme.colors.background
   val heartIcon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder
-  var avatarUrl by remember { mutableStateOf<String?>(null) }
-  var userName by remember { mutableStateOf("") }
   var coverImageUrl by remember { mutableStateOf<String?>(null) }
   var audioUrl by remember { mutableStateOf<String?>(null) }
 
-  LaunchedEffect(sample.ownerId) {
-    avatarUrl = getOwnerAvatar(sample.ownerId)
-    userName = getUserName(sample.ownerId)
-  }
   LaunchedEffect(sample.storageImagePath) {
     if (sample.storageImagePath.isNotBlank()) {
       coverImageUrl = getCoverUrl(sample.storageImagePath)
@@ -517,37 +590,6 @@ fun SampleCard(
             Column(
                 modifier = Modifier.fillMaxSize().padding(8.dp),
                 verticalArrangement = Arrangement.SpaceBetween) {
-                  // Profile
-                  Row(verticalAlignment = Alignment.CenterVertically) {
-                    AsyncImage(
-                        model =
-                            ImageRequest.Builder(LocalContext.current)
-                                .data(avatarUrl ?: R.drawable.profile)
-                                .crossfade(true)
-                                .build(),
-                        contentDescription = "Profile",
-                        modifier =
-                            Modifier.clickable(onClick = clickHandlers.onProfileClick)
-                                .size(22.dp)
-                                .clip(CircleShape)
-                                .border(1.dp, NepTuneTheme.colors.inverse, CircleShape)
-                                .testTag(testTags.SAMPLE_PROFILE_ICON),
-                        contentScale = ContentScale.Crop,
-                        placeholder = painterResource(R.drawable.profile),
-                        error = painterResource(R.drawable.profile))
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = userName,
-                        color = NepTuneTheme.colors.inverse,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style =
-                            TextStyle(
-                                fontSize = 19.sp,
-                                fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                fontWeight = FontWeight(400)))
-                  }
-
                   // Waveform
                   Box(
                       modifier = Modifier.weight(1f).fillMaxWidth(),
