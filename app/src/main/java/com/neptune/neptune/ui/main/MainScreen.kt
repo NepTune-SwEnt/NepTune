@@ -2,6 +2,7 @@ package com.neptune.neptune.ui.main
 
 import android.app.Application
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -57,8 +58,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -513,13 +516,10 @@ fun SampleCard(
                   Box(
                       modifier = Modifier.weight(1f).fillMaxWidth(),
                       contentAlignment = Alignment.Center) {
-                        Image(
-                            painter = painterResource(R.drawable.waveform),
-                            contentDescription = "Waveform",
-                            modifier = Modifier.fillMaxWidth(0.8f).height(40.dp),
-                            colorFilter =
-                                androidx.compose.ui.graphics.ColorFilter.tint(
-                                    NepTuneTheme.colors.inverse))
+                        SampleWaveform(
+                            amplitudes = emptyList(),
+                            color = NepTuneTheme.colors.inverse,
+                            modifier = Modifier.fillMaxWidth(0.8f).height(40.dp))
                       }
 
                   // Sample name and duration
@@ -797,5 +797,43 @@ fun IconWithTextPainter(
         modifier = Modifier.size(16.dp))
     Spacer(Modifier.width(3.dp))
     Text(text, color = NepTuneTheme.colors.background, fontSize = 10.sp)
+  }
+}
+
+@Composable
+fun SampleWaveform(amplitudes: List<Float>, color: Color, modifier: Modifier = Modifier) {
+  if (amplitudes.isNotEmpty()) {
+    Canvas(modifier = modifier) {
+      val barWidth = 2.dp.toPx()
+      val gapWidth = 2.dp.toPx()
+      val totalBars = (size.width / (barWidth + gapWidth)).toInt()
+      val centerY = size.height / 2f
+
+      val step = (amplitudes.size / totalBars.toFloat()).coerceAtLeast(1f).toInt()
+
+      for (i in 0 until totalBars) {
+        val dataIndex = (i * step).coerceIn(amplitudes.indices)
+        val normalizedAmp = amplitudes[dataIndex]
+
+        val barHeight = normalizedAmp * size.height * 0.8f
+        val startX = i * (barWidth + gapWidth)
+        val startY = centerY - (barHeight / 2)
+        val endY = centerY + (barHeight / 2)
+
+        drawLine(
+            color = color,
+            start = Offset(startX, startY),
+            end = Offset(startX, endY),
+            strokeWidth = barWidth,
+            cap = StrokeCap.Round)
+      }
+    }
+  } else {
+    Image(
+        painter = painterResource(R.drawable.waveform),
+        contentDescription = "Waveform",
+        modifier = modifier,
+        contentScale = ContentScale.FillBounds,
+        colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(color))
   }
 }
