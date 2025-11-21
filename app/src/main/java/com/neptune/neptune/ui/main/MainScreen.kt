@@ -178,7 +178,7 @@ fun MainScreen(
   // Depends on the size of the screen
   val maxColumns = if (screenWidth < 360.dp) 1 else 2
   val cardWidth = (screenWidth - horizontalPadding * 2 - spacing) / 2
-  val downloadProgress by mainViewModel.downloadProgress.collectAsState()
+  val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
   val lifecycleOwner = LocalLifecycleOwner.current
   fun onCommentClicked(sample: Sample) {
     mainViewModel.observeCommentsForSample(sample.id)
@@ -189,7 +189,7 @@ fun MainScreen(
     mainViewModel.addComment(sampleId, text)
     mainViewModel.observeCommentsForSample(sampleId)
   }
-  Box(modifier = Modifier.fillMaxSize()) {
+  Box(modifier = Modifier.fillMaxSize().testTag(MainScreenTestTags.MAIN_SCREEN)) {
     Scaffold(
         topBar = {
           Column {

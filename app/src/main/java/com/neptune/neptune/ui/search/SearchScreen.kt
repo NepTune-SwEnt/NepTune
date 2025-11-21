@@ -109,7 +109,7 @@ fun SearchScreen(
 ) {
   val samples by searchViewModel.samples.collectAsState()
   var searchText by remember { mutableStateOf("") }
-  val downloadProgress by searchViewModel.downloadProgress.collectAsState()
+  val downloadProgress: Int? by searchViewModel.downloadProgress.collectAsState()
   LaunchedEffect(searchText) {
     delay(400L) // debounce time
     searchViewModel.search(searchText)
