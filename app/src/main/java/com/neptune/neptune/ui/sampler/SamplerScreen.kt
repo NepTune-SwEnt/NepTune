@@ -36,20 +36,25 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.ui.sampler.SamplerTestTags.CURVE_EDITOR_SCROLL_CONTAINER
 import com.neptune.neptune.ui.sampler.SamplerTestTags.FADER_60HZ_TAG
+import com.neptune.neptune.ui.sampler.SamplerTestTags.PREVIEW_PLAY_BUTTON
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -97,6 +102,16 @@ object SamplerTestTags {
   const val INIT_TEMPO_SELECTOR = "initTempoSelector"
   const val INIT_PITCH_SELECTOR = "initPitchSelector"
   const val INIT_CONFIRM_BUTTON = "initConfirmButton"
+
+  const val TAP_TEMPO_BUTTON = "tapTempoButton"
+  const val PREVIEW_PLAY_BUTTON = "previewPlayButton"
+
+  // Settings-related test tags
+  const val SETTINGS_BUTTON = "settingsButton"
+  const val SETTINGS_DIALOG = "settingsDialog"
+  const val SETTINGS_CONFIRM_BUTTON = "settingsConfirmButton"
+  const val SETTINGS_CANCEL_BUTTON = "settingsCancelButton"
+  const val SETTINGS_PITCH_SELECTOR = "settingsPitchSelector"
 }
 
 val KnobBackground = Color.Black
@@ -141,6 +156,9 @@ fun SamplerScreen(
         }
       }
 
+  // Local state to control visibility of the floating settings dialog
+  var showSettingsDialog by remember { mutableStateOf(false) }
+
   LaunchedEffect(Unit) {
     if (decodedZipPath != null) {
       viewModel.loadProjectData(decodedZipPath)
@@ -154,36 +172,52 @@ fun SamplerScreen(
   Scaffold(
       containerColor = NepTuneTheme.colors.background,
       modifier = Modifier.testTag(SamplerTestTags.SCREEN_CONTAINER),
-  ) { paddingValues ->
-    Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp)) {
-      PlaybackAndWaveformControls(
-          isPlaying = uiState.isPlaying,
-          onTogglePlayPause = viewModel::togglePlayPause,
-          onSave = {
-            if (decodedZipPath != null) {
-              viewModel.saveProjectData(decodedZipPath)
-              Log.i("SamplerScreen", "Project saved in $decodedZipPath")
-            } else {
-              Log.w("SamplerScreen", "No project path found for saving")
+      floatingActionButton = {
+        FloatingActionButton(
+            onClick = { showSettingsDialog = true },
+            containerColor = NepTuneTheme.colors.accentPrimary,
+            modifier = Modifier.testTag(SamplerTestTags.SETTINGS_BUTTON)) {
+              Icon(
+                  imageVector = Icons.Default.Settings,
+                  contentDescription = "Settings",
+                  tint = Color.White)
             }
-          },
-          pitch = uiState.fullPitch,
-          tempo = uiState.tempo,
-          onPitchChange = viewModel::updatePitch,
-          onTempoChange = viewModel::updateTempo,
-          playbackPosition = uiState.playbackPosition,
-          onPositionChange = viewModel::updatePlaybackPosition,
-          onIncreasePitch = viewModel::increasePitch,
-          onDecreasePitch = viewModel::decreasePitch,
-          uiState = uiState,
-          viewModel = viewModel)
+      }) { paddingValues ->
+        Column(
+            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp)) {
+              PlaybackAndWaveformControls(
+                  isPlaying = uiState.isPlaying,
+                  onTogglePlayPause = viewModel::togglePlayPause,
+                  onSave = {
+                    if (decodedZipPath != null) {
+                      viewModel.saveProjectData(decodedZipPath)
+                      Log.i("SamplerScreen", "Project saved in $decodedZipPath")
+                    } else {
+                      Log.w("SamplerScreen", "No project path found for saving")
+                    }
+                  },
+                  pitch = uiState.fullPitch,
+                  tempo = uiState.tempo,
+                  onPitchChange = viewModel::updatePitch,
+                  onTempoChange = viewModel::updateTempo,
+                  playbackPosition = uiState.playbackPosition,
+                  onPositionChange = viewModel::updatePlaybackPosition,
+                  onIncreasePitch = viewModel::increasePitch,
+                  onDecreasePitch = viewModel::decreasePitch,
+                  uiState = uiState,
+                  viewModel = viewModel)
 
-      Spacer(modifier = Modifier.height(16.dp))
+              Spacer(modifier = Modifier.height(16.dp))
 
-      SamplerTabs(currentTab = uiState.currentTab, onTabSelected = viewModel::selectTab)
+              SamplerTabs(currentTab = uiState.currentTab, onTabSelected = viewModel::selectTab)
 
-      TabContent(currentTab = uiState.currentTab, uiState = uiState, viewModel = viewModel)
-    }
+              TabContent(currentTab = uiState.currentTab, uiState = uiState, viewModel = viewModel)
+            }
+      }
+
+  // Show a simple settings dialog when settings button is pressed
+  if (showSettingsDialog) {
+    SettingsDialog(viewModel = viewModel, onClose = { showSettingsDialog = false })
   }
 }
 
@@ -380,7 +414,6 @@ fun WaveformDisplay(
   val localDensity = LocalDensity.current
   val latestOnPositionChange = rememberUpdatedState(onPositionChange)
   val currentUri = uiState.currentAudioUri
-  val coroutineScope = rememberCoroutineScope()
 
   var waveform by remember { mutableStateOf<List<Float>>(emptyList()) }
 
@@ -392,7 +425,7 @@ fun WaveformDisplay(
               viewModel.extractWaveform(currentUri)
             } catch (e: Exception) {
               Log.e("WaveformDisplay", "Audio track error: ${e.message}")
-              emptyList<Float>()
+              emptyList()
             }
         waveform = wf
       }
@@ -465,7 +498,6 @@ fun WaveformDisplay(
         0
       }
 
-  // Expose beat count as an invisible text node for tests
   Box(
       modifier =
           modifier.background(spectrogramBackground).padding(8.dp).pointerInput(Unit) {
@@ -638,7 +670,7 @@ fun WaveformDisplay(
             }
           } else {
             for (i in 0 until 50) {
-              val simulatedAmplitude = (sin(i * 0.4f) * 0.3f + 0.5f).toFloat()
+              val simulatedAmplitude = (sin(i * 0.4f) * 0.3f + 0.5f)
               val barHeight = simulatedAmplitude * (height - 2 * paddingPx) * 0.7f
               val startX = paddingPx + i * (barWidth + gapWidth) + barWidth / 2
               val startY = centerY - barHeight / 2
@@ -666,7 +698,7 @@ fun WaveformDisplay(
 @Composable
 fun SamplerTabs(currentTab: SamplerTab, onTabSelected: (SamplerTab) -> Unit) {
   Row(modifier = Modifier.fillMaxWidth().testTag(SamplerTestTags.SAMPLER_TABS)) {
-    SamplerTab.values().forEach { tab ->
+    SamplerTab.entries.forEach { tab ->
       val isSelected = tab == currentTab
       Text(
           text = tab.name.uppercase(),
@@ -922,7 +954,6 @@ fun CurveCanvas(
                           CurvePoint.P2 ->
                               onPointsChange(p1x, newNormX.coerceIn(p1x, p3x), newNormY, p3x)
                           CurvePoint.P3 -> onPointsChange(p1x, p2x, p2y, newNormX.coerceIn(p2x, 1f))
-                          else -> {}
                         }
                       }
                     })
@@ -1067,10 +1098,10 @@ fun UniversalKnob(
 
   val displayValue =
       when (unit) {
-        KnobUnit.SECONDS -> "${String.format("%.2f", value)}s"
+        KnobUnit.SECONDS -> String.format(Locale.ROOT, "%.2fs", value)
         KnobUnit.PERCENT -> "${(value * 100).roundToInt()}%"
         KnobUnit.MILLISECONDS -> "${value.roundToInt()}ms"
-        KnobUnit.NONE -> "${String.format("%.2f", value)}"
+        KnobUnit.NONE -> String.format(Locale.ROOT, "%.2f", value)
       }
   Column(modifier = modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
     Text(text = displayValue, color = accentColor, fontSize = 14.sp)
@@ -1193,7 +1224,7 @@ fun EQFader(
 
   LaunchedEffect(gain) { currentGain = gain }
 
-  val dBValueText = String.format("%+d", gain.roundToInt())
+  val dBValueText = String.format(Locale.ROOT, "%+d", gain.roundToInt())
 
   Column(
       modifier = modifier.height(200.dp).width(40.dp).padding(horizontal = 4.dp),
@@ -1254,7 +1285,7 @@ fun EQFader(
 
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            "${frequency} Hz",
+            "$frequency Hz",
             color = white,
             fontSize = 9.sp,
             fontWeight = FontWeight.SemiBold,
@@ -1444,6 +1475,7 @@ fun TimeDisplay(playbackPosition: Float, audioDurationMillis: Int, modifier: Mod
 
   val timeText =
       String.format(
+          Locale.ROOT,
           "%02d.%02d / %02d.%02d s",
           elapsedSeconds,
           elapsedMilliseconds,
@@ -1460,6 +1492,8 @@ fun TimeDisplay(playbackPosition: Float, audioDurationMillis: Int, modifier: Mod
 @Composable
 fun InitialSetupDialog(viewModel: SamplerViewModel) {
   val uiState by viewModel.uiState.collectAsState()
+  val context = NepTuneApplication.appContext
+
   AlertDialog(
       onDismissRequest = {},
       title = { Text("Setup required") },
@@ -1467,29 +1501,26 @@ fun InitialSetupDialog(viewModel: SamplerViewModel) {
         Column(
             modifier = Modifier.fillMaxWidth().testTag(SamplerTestTags.INIT_SETUP_CONTAINER),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
-              Text("Define the project pitch and tempo", style = MaterialTheme.typography.bodyLarge)
+              Text(
+                  "Define pitch & tempo for this sample",
+                  style = MaterialTheme.typography.bodyLarge)
 
-              OutlinedTextField(
-                  value = if (uiState.inputTempo == 0) "" else uiState.inputTempo.toString(),
-                  onValueChange = { newValue ->
-                    newValue.toIntOrNull()?.let { parsed -> viewModel.updateInputTempo(parsed) }
-                  },
-                  label = { Text("Tempo (BPM)") },
-                  keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                  modifier =
-                      Modifier.fillMaxWidth()
-                          .testTag(SamplerTestTags.INIT_TEMPO_SELECTOR)
-                          .onFocusChanged { focusState ->
-                            if (focusState.isFocused) {
-                              viewModel.updateInputTempo(0)
-                            }
-                          })
+              PreviewAudioRow(
+                  isPlaying = uiState.previewPlaying,
+                  onPlay = { viewModel.playPreview(context) },
+                  onStop = { viewModel.stopPreview() },
+              )
+
+              TempoRow(
+                  tempo = uiState.inputTempo,
+                  onTempoChange = viewModel::updateInputTempo,
+                  onTapTempo = viewModel::tapTempo)
 
               PitchSelectorField(
                   pitchNote = uiState.inputPitchNote,
                   pitchOctave = uiState.inputPitchOctave,
-                  onPitchUp = { viewModel.increaseInputPitch() },
-                  onPitchDown = { viewModel.decreaseInputPitch() },
+                  onPitchUp = viewModel::increaseInputPitch,
+                  onPitchDown = viewModel::decreaseInputPitch,
                   modifier = Modifier.testTag(SamplerTestTags.INIT_PITCH_SELECTOR))
             }
       },
@@ -1500,6 +1531,58 @@ fun InitialSetupDialog(viewModel: SamplerViewModel) {
               Text("Confirm")
             }
       })
+}
+
+@Composable
+fun PreviewAudioRow(isPlaying: Boolean, onPlay: () -> Unit, onStop: () -> Unit) {
+  Row(
+      modifier = Modifier.fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Button(
+            onClick = { if (isPlaying) onStop() else onPlay() },
+            modifier = Modifier.testTag(PREVIEW_PLAY_BUTTON)) {
+              Text(if (isPlaying) "Stop" else "Play")
+            }
+
+        Text("Preview audio", style = MaterialTheme.typography.bodyMedium)
+      }
+}
+
+@Composable
+fun TempoRow(tempo: Int, onTempoChange: (Int) -> Unit, onTapTempo: () -> Unit) {
+  var textState by remember(tempo) { mutableStateOf(TextFieldValue(tempo.toString())) }
+
+  var userIsEditing by remember { mutableStateOf(false) }
+
+  Row(
+      modifier = Modifier.fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        OutlinedTextField(
+            value = textState,
+            onValueChange = { newValue ->
+              textState = newValue
+              newValue.text.toIntOrNull()?.let(onTempoChange)
+              userIsEditing = true
+            },
+            label = { Text("Tempo BPM") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier =
+                Modifier.weight(1f).testTag(SamplerTestTags.INIT_TEMPO_SELECTOR).onFocusChanged {
+                    focusState ->
+                  if (focusState.isFocused &&
+                      textState.text == tempo.toString() &&
+                      !userIsEditing) {
+                    textState = TextFieldValue("", TextRange(0))
+                  }
+                })
+
+        Button(
+            onClick = onTapTempo, modifier = Modifier.testTag(SamplerTestTags.TAP_TEMPO_BUTTON)) {
+              Text("Tap")
+            }
+      }
 }
 
 @Composable
@@ -1573,10 +1656,73 @@ fun RatioInputField(
   }
 }
 
-/*
-@Preview(showBackground = true)
 @Composable
-fun PreviewSamplerScreen() {
-  MaterialTheme { SamplerScreen(viewModel = SamplerViewModel()) }
+fun SettingsDialog(viewModel: SamplerViewModel, onClose: () -> Unit) {
+  var bpmText by remember { mutableStateOf("") }
+  val uiState by viewModel.uiState.collectAsState()
+  val context = NepTuneApplication.appContext
+
+  // Keep bpmText in sync with the viewModel's inputTempo when dialog opens or state changes
+  LaunchedEffect(uiState.inputTempo) {
+    bpmText = if (uiState.inputTempo == 0) "" else uiState.inputTempo.toString()
+  }
+
+  AlertDialog(
+      onDismissRequest = onClose,
+      title = { Text("Settings") },
+      text = {
+        Column(modifier = Modifier.fillMaxWidth().testTag(SamplerTestTags.SETTINGS_DIALOG)) {
+          Text("Settings placeholder — add your settings here.")
+          Spacer(modifier = Modifier.height(8.dp))
+
+          PreviewAudioRow(
+              isPlaying = uiState.previewPlaying,
+              onPlay = { viewModel.playPreview(context) },
+              onStop = { viewModel.stopPreview() })
+
+          Spacer(modifier = Modifier.height(8.dp))
+
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = bpmText,
+                onValueChange = { newValue -> bpmText = newValue.filter { it.isDigit() } },
+                label = { Text("Initial BPM") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                modifier = Modifier.weight(1f))
+          }
+
+          Spacer(modifier = Modifier.height(12.dp))
+
+          // Allow changing the initial note (note + octave)
+          PitchSelectorField(
+              pitchNote = uiState.inputPitchNote,
+              pitchOctave = uiState.inputPitchOctave,
+              onPitchUp = viewModel::increaseInputPitch,
+              onPitchDown = viewModel::decreaseInputPitch,
+              modifier = Modifier.testTag(SamplerTestTags.SETTINGS_PITCH_SELECTOR))
+        }
+      },
+      confirmButton = {
+        Button(
+            onClick = {
+              // parse and save into viewModel.inputTempo, input pitch, then close
+              val newBpm = bpmText.toIntOrNull() ?: uiState.inputTempo
+              viewModel.updateInputTempo(newBpm)
+              // ensure input pitch state is persisted (updates already occur when user taps
+              // up/down)
+              viewModel.updateInputPitch(uiState.inputPitchNote, uiState.inputPitchOctave)
+              onClose()
+            },
+            modifier = Modifier.testTag(SamplerTestTags.SETTINGS_CONFIRM_BUTTON)) {
+              Text("Save & Close")
+            }
+      },
+      dismissButton = {
+        TextButton(
+            onClick = onClose,
+            modifier = Modifier.testTag(SamplerTestTags.SETTINGS_CANCEL_BUTTON)) {
+              Text("Cancel")
+            }
+      })
 }
-*/

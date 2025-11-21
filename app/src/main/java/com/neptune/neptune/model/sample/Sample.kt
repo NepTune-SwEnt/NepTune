@@ -1,5 +1,7 @@
 package com.neptune.neptune.model.sample
 
+import com.neptune.neptune.model.project.ProjectItem
+
 data class Sample(
     val id: String,
     val name: String,
@@ -11,9 +13,22 @@ data class Sample(
     val comments: Int,
     val downloads: Int,
     val isPublic: Boolean = false,
-    val uriString: String = "",
     val ownerId: String = "",
     val storageZipPath: String = "",
     val storageImagePath: String = "",
     val storagePreviewSamplePath: String = ""
-)
+) {
+  fun toProjectItem(): ProjectItem {
+    return ProjectItem(
+        uid = id,
+        name = name,
+        description = description,
+        tags = tags,
+        isStoredInCloud = true,
+        audioPreviewCloudUri = storagePreviewSamplePath,
+        imagePreviewCloudUri = storageImagePath,
+        projectFileCloudUri = storageZipPath,
+        ownerId = ownerId,
+        collaborators = emptyList())
+  }
+}

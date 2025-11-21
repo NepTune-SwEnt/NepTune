@@ -13,10 +13,17 @@
     },
     "ui": {
       "enabled": false
-    }
+    },
+    "functions": {
+      "port": 5001
+    },
+    "singleProjectMode": true
   },
   "firestore": {
     "rules": "firestore.rules"
+  },
+  "storage": {
+    "rules": "storage.rules"
   },
   "functions": [
     {

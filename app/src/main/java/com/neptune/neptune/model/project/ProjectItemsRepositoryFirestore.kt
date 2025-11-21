@@ -33,14 +33,14 @@ data class SampleDocument(
     val collaborators: List<String>
 )
 
-fun ProjectItem.toSample(): SampleDocument {
+fun ProjectItem.toSampleDocument(): SampleDocument {
   return SampleDocument(
       name = name,
       description = description,
       isFavorite = isFavorite,
       tags = tags,
-      audioPreviewUri = audioPreviewUri,
-      projectFileUri = projectFileUri,
+      audioPreviewUri = audioPreviewCloudUri,
+      projectFileUri = projectFileCloudUri,
       lastUpdated = lastUpdated,
       ownerId = ownerId,
       collaborators = collaborators,
@@ -77,14 +77,14 @@ class ProjectItemsRepositoryFirestore(private val db: FirebaseFirestore) : Proje
   override suspend fun addProject(project: ProjectItem) {
     db.collection(PROJECT_ITEMS_COLLECTION_PATH)
         .document(project.uid)
-        .set(project.toSample())
+        .set(project.toSampleDocument())
         .await()
   }
 
   override suspend fun editProject(projectID: String, newValue: ProjectItem) {
     db.collection(PROJECT_ITEMS_COLLECTION_PATH)
         .document(projectID)
-        .set(newValue.toSample(), SetOptions.merge())
+        .set(newValue.toSampleDocument(), SetOptions.merge())
         .await()
   }
 
@@ -118,8 +118,8 @@ class ProjectItemsRepositoryFirestore(private val db: FirebaseFirestore) : Proje
           isStoredInCloud = true,
           isFavorite = isFavorite,
           tags = tags,
-          audioPreviewUri = previewUrl,
-          projectFileUri = projectFileUri,
+          audioPreviewCloudUri = previewUrl,
+          projectFileCloudUri = projectFileUri,
           lastUpdated = lastUpdated,
           ownerId = ownerId,
           collaborators = collaborators)

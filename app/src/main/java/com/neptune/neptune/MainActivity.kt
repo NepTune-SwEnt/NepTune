@@ -192,7 +192,7 @@ fun NeptuneApp(
                                     Screen.Post.createRoute(projectItem.uid))
                               }
                               else -> {
-                                val pathToSend = projectItem.projectFilePath ?: projectItem.uid
+                                val pathToSend = projectItem.projectFileLocalPath ?: projectItem.uid
                                 val encodedFilePath =
                                     URLEncoder.encode(pathToSend, StandardCharsets.UTF_8.name())
                                 navigationActions.navigateTo(

@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
-class ProjectLoacalSavingTest {
+class ProjectLocalSavingTest {
 
   @Test
   fun testSaveProjectData() = runBlocking {
