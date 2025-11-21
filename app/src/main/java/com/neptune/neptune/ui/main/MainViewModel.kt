@@ -75,6 +75,7 @@ class MainViewModel(
   private val avatarCache = mutableMapOf<String, String?>()
   private val userNameCache = mutableMapOf<String, String>()
   private val coverImageCache = mutableMapOf<String, String?>()
+  private val audioUrlCache = mutableMapOf<String, String?>()
 
   init {
     if (useMockData) {
@@ -198,6 +199,20 @@ class MainViewModel(
     }
     val url = storageService.getDownloadUrl(storagePath)
     coverImageCache[storagePath] = url
+    return url
+  }
+
+  /*
+   * Function to get the Audio URL from the storage path.
+   */
+  suspend fun getSampleAudioUrl(sample: Sample): String? {
+    val storagePath = sample.storagePreviewSamplePath
+    if (storagePath.isBlank()) return null
+    if (audioUrlCache.containsKey(storagePath)) {
+      return audioUrlCache[storagePath]
+    }
+    val url = storageService.getDownloadUrl(storagePath)
+    audioUrlCache[storagePath] = url
     return url
   }
 

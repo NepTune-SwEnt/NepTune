@@ -81,6 +81,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -301,7 +302,8 @@ fun MainScreen(
                                     mainViewModel.getSampleOwnerAvatar(userId)
                                   },
                                   getUserName = { userId -> mainViewModel.getUserName(userId) },
-                                  getCoverUrl = { path -> mainViewModel.getSampleCoverUrl(path) })
+                                  getCoverUrl = { path -> mainViewModel.getSampleCoverUrl(path) },
+                                  getAudioUrl = { s -> mainViewModel.getSampleAudioUrl(s) })
                             }
                           }
                         }
@@ -325,7 +327,8 @@ fun MainScreen(
                       onDownloadClick = { sample -> mainViewModel.onDownloadSample(sample) },
                       getOwnerAvatar = { userId -> mainViewModel.getSampleOwnerAvatar(userId) },
                       getUserName = { userId -> mainViewModel.getUserName(userId) },
-                      getCoverUrl = { path -> mainViewModel.getSampleCoverUrl(path) })
+                      getCoverUrl = { path -> mainViewModel.getSampleCoverUrl(path) },
+                      getAudioUrl = { s -> mainViewModel.getSampleAudioUrl(s) })
                 }
               }
           // Comment Overlay
@@ -377,7 +380,8 @@ fun SampleCardRow(
     onDownloadClick: (Sample) -> Unit = {},
     getOwnerAvatar: suspend (String) -> String? = { null },
     getUserName: suspend (String) -> String = { "" },
-    getCoverUrl: suspend (String) -> String? = { null }
+    getCoverUrl: suspend (String) -> String? = { null },
+    getAudioUrl: suspend (Sample) -> String? = { null }
 ) {
   Row(
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -397,7 +401,8 @@ fun SampleCardRow(
               clickHandlers = clickHandlers,
               getOwnerAvatar = getOwnerAvatar,
               getUserName = getUserName,
-              getCoverUrl = getCoverUrl)
+              getCoverUrl = getCoverUrl,
+              getAudioUrl = getAudioUrl)
         }
       }
 }
@@ -436,7 +441,8 @@ fun SampleCard(
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
     getOwnerAvatar: suspend (String) -> String? = { null },
     getUserName: suspend (String) -> String = { "" },
-    getCoverUrl: suspend (String) -> String? = { null }
+    getCoverUrl: suspend (String) -> String? = { null },
+    getAudioUrl: suspend (Sample) -> String? = { null }
 ) {
   val likeDescription = if (isLiked) "liked" else "not liked"
   val heartColor = if (isLiked) Color.Red else NepTuneTheme.colors.background
@@ -444,6 +450,7 @@ fun SampleCard(
   var avatarUrl by remember { mutableStateOf<String?>(null) }
   var userName by remember { mutableStateOf("") }
   var coverImageUrl by remember { mutableStateOf<String?>(null) }
+  var audioUrl by remember { mutableStateOf<String?>(null) }
 
   LaunchedEffect(sample.ownerId) {
     avatarUrl = getOwnerAvatar(sample.ownerId)
@@ -454,13 +461,24 @@ fun SampleCard(
       coverImageUrl = getCoverUrl(sample.storageImagePath)
     }
   }
+  LaunchedEffect(sample.storagePreviewSamplePath) {
+    if (sample.storagePreviewSamplePath.isNotBlank()) {
+      audioUrl = getAudioUrl(sample)
+    }
+  }
 
   Card(
       modifier =
           Modifier.width(width)
               .height(height)
               .clickable(
-                  onClick = { mediaPlayer.togglePlay(mediaPlayer.getUriFromSampleId(sample.id)) })
+                  onClick = {
+                    if (audioUrl != null) {
+                      mediaPlayer.togglePlay(audioUrl!!.toUri())
+                    } else {
+                      mediaPlayer.togglePlay(mediaPlayer.getUriFromSampleId(sample.id))
+                    }
+                  })
               .testTag(testTags.SAMPLE_CARD),
       colors = CardDefaults.cardColors(containerColor = NepTuneTheme.colors.cardBackground),
       shape = RoundedCornerShape(12.dp),
