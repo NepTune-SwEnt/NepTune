@@ -67,7 +67,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
@@ -187,7 +186,6 @@ fun MainScreen(
   val maxColumns = if (screenWidth < 360.dp) 1 else 2
   val cardWidth = (screenWidth - horizontalPadding * 2 - spacing) / 2
   val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
-  val lifecycleOwner = LocalLifecycleOwner.current
   fun onCommentClicked(sample: Sample) {
     mainViewModel.observeCommentsForSample(sample.id)
     activeCommentSampleId = sample.id
@@ -197,75 +195,76 @@ fun MainScreen(
     mainViewModel.addComment(sampleId, text)
     mainViewModel.observeCommentsForSample(sampleId)
   }
-    Box(modifier = Modifier.fillMaxSize().testTag(MainScreenTestTags.MAIN_SCREEN)) {
-  Scaffold(
-      topBar = {
-        Column {
-          CenterAlignedTopAppBar(
-              modifier = Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
-              title = {
-                Text(
-                    text = "NepTune",
-                    style =
-                        TextStyle(
-                            fontSize = 45.sp,
-                            fontFamily = FontFamily(Font(R.font.lily_script_one)),
-                            fontWeight = FontWeight(149),
-                            color = NepTuneTheme.colors.onBackground,
-                        ),
-                    modifier = Modifier.padding(25.dp).testTag(MainScreenTestTags.TOP_BAR_TITLE),
-                    textAlign = TextAlign.Center)
-              },
-              actions = {
-                IconButton(
-                    onClick = navigateToProfile,
-                    modifier =
-                        Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
-                            .size(57.dp)
-                            .testTag(NavigationTestTags.PROFILE_BUTTON)) {
-                      AsyncImage(
-                          model =
-                              ImageRequest.Builder(LocalContext.current)
-                                  .data(userAvatar ?: R.drawable.profile)
-                                  .crossfade(true)
-                                  .build(),
-                          contentDescription = "Profile",
-                          modifier = Modifier.fillMaxSize().clip(CircleShape),
-                          contentScale = ContentScale.Crop,
-                          placeholder = painterResource(R.drawable.profile),
-                          error = painterResource(R.drawable.profile))
-                    }
-              },
-              colors =
-                  TopAppBarDefaults.centerAlignedTopAppBarColors(
-                      containerColor = NepTuneTheme.colors.background))
-          HorizontalDivider(
-              modifier = Modifier.fillMaxWidth(),
-              thickness = 0.75.dp,
-              color = NepTuneTheme.colors.onBackground)
-        }
-      },
-      floatingActionButton = {
-        FloatingActionButton(
-            onClick = navigateToProjectList,
-            containerColor = NepTuneTheme.colors.postButton,
-            contentColor = NepTuneTheme.colors.onBackground,
-            shape = CircleShape,
-            modifier =
-                Modifier.shadow(
-                        elevation = 4.dp,
-                        spotColor = NepTuneTheme.colors.shadow,
-                        ambientColor = NepTuneTheme.colors.shadow,
-                        shape = CircleShape)
-                    .size(52.dp)
-                    .testTag(MainScreenTestTags.POST_BUTTON)) {
-              Icon(
-                  imageVector = Icons.Default.Add,
-                  contentDescription = "Create a Post",
-                  modifier = Modifier.size(70.dp))
-            }
-      },
-      content = { paddingValues ->
+  Box(modifier = Modifier.fillMaxSize().testTag(MainScreenTestTags.MAIN_SCREEN)) {
+    Scaffold(
+        topBar = {
+          Column {
+            CenterAlignedTopAppBar(
+                modifier =
+                    Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
+                title = {
+                  Text(
+                      text = "NepTune",
+                      style =
+                          TextStyle(
+                              fontSize = 45.sp,
+                              fontFamily = FontFamily(Font(R.font.lily_script_one)),
+                              fontWeight = FontWeight(149),
+                              color = NepTuneTheme.colors.onBackground,
+                          ),
+                      modifier = Modifier.padding(25.dp).testTag(MainScreenTestTags.TOP_BAR_TITLE),
+                      textAlign = TextAlign.Center)
+                },
+                actions = {
+                  IconButton(
+                      onClick = navigateToProfile,
+                      modifier =
+                          Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
+                              .size(57.dp)
+                              .testTag(NavigationTestTags.PROFILE_BUTTON)) {
+                        AsyncImage(
+                            model =
+                                ImageRequest.Builder(LocalContext.current)
+                                    .data(userAvatar ?: R.drawable.profile)
+                                    .crossfade(true)
+                                    .build(),
+                            contentDescription = "Profile",
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentScale = ContentScale.Crop,
+                            placeholder = painterResource(R.drawable.profile),
+                            error = painterResource(R.drawable.profile))
+                      }
+                },
+                colors =
+                    TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = NepTuneTheme.colors.background))
+            HorizontalDivider(
+                modifier = Modifier.fillMaxWidth(),
+                thickness = 0.75.dp,
+                color = NepTuneTheme.colors.onBackground)
+          }
+        },
+        floatingActionButton = {
+          FloatingActionButton(
+              onClick = navigateToProjectList,
+              containerColor = NepTuneTheme.colors.postButton,
+              contentColor = NepTuneTheme.colors.onBackground,
+              shape = CircleShape,
+              modifier =
+                  Modifier.shadow(
+                          elevation = 4.dp,
+                          spotColor = NepTuneTheme.colors.shadow,
+                          ambientColor = NepTuneTheme.colors.shadow,
+                          shape = CircleShape)
+                      .size(52.dp)
+                      .testTag(MainScreenTestTags.POST_BUTTON)) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Create a Post",
+                    modifier = Modifier.size(70.dp))
+              }
+        },
+        content = { paddingValues ->
           LazyColumn(
               contentPadding = paddingValues, // Apply Scaffold padding
               modifier =
@@ -334,7 +333,7 @@ fun MainScreen(
                 }
               }
         },
-      containerColor = NepTuneTheme.colors.background)
+        containerColor = NepTuneTheme.colors.background)
     // Comment Overlay (Outside Scaffold content, but inside Box to float over everything)
     if (activeCommentSampleId != null) {
       CommentDialog(
