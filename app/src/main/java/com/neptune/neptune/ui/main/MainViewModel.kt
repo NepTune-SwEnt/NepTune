@@ -74,6 +74,7 @@ class MainViewModel(
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
   private val avatarCache = mutableMapOf<String, String?>()
   private val userNameCache = mutableMapOf<String, String>()
+  private val coverImageCache = mutableMapOf<String, String?>()
 
   init {
     if (useMockData) {
@@ -161,6 +162,9 @@ class MainViewModel(
     }
   }
 
+  /*
+   * function to get the avatar of the sample owner.
+   */
   suspend fun getSampleOwnerAvatar(userId: String): String? {
     if (avatarCache.containsKey(userId)) {
       return avatarCache[userId]
@@ -170,6 +174,9 @@ class MainViewModel(
     return url
   }
 
+  /*
+   * Function to get the user name.
+   */
   suspend fun getUserName(userId: String): String {
     if (userNameCache.containsKey(userId)) {
       return userNameCache[userId] ?: defaultName
@@ -178,6 +185,20 @@ class MainViewModel(
     userName = userName ?: defaultName
     userNameCache[userId] = userName
     return userName
+  }
+
+  /*
+   * Function to get the Download URL from the storage path.
+   */
+  suspend fun getSampleCoverUrl(storagePath: String): String? {
+    if (storagePath.isBlank()) return null
+
+    if (coverImageCache.containsKey(storagePath)) {
+      return coverImageCache[storagePath]
+    }
+    val url = storageService.getDownloadUrl(storagePath)
+    coverImageCache[storagePath] = url
+    return url
   }
 
   // Mock Data

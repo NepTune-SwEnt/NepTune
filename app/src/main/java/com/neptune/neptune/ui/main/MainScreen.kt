@@ -300,7 +300,8 @@ fun MainScreen(
                                   getOwnerAvatar = { userId ->
                                     mainViewModel.getSampleOwnerAvatar(userId)
                                   },
-                                  getUserName = { userId -> mainViewModel.getUserName(userId) })
+                                  getUserName = { userId -> mainViewModel.getUserName(userId) },
+                                  getCoverUrl = { path -> mainViewModel.getSampleCoverUrl(path) })
                             }
                           }
                         }
@@ -323,7 +324,8 @@ fun MainScreen(
                       onCommentClick = { sample -> onCommentClicked(sample) },
                       onDownloadClick = { sample -> mainViewModel.onDownloadSample(sample) },
                       getOwnerAvatar = { userId -> mainViewModel.getSampleOwnerAvatar(userId) },
-                      getUserName = { userId -> mainViewModel.getUserName(userId) })
+                      getUserName = { userId -> mainViewModel.getUserName(userId) },
+                      getCoverUrl = { path -> mainViewModel.getSampleCoverUrl(path) })
                 }
               }
           // Comment Overlay
@@ -374,7 +376,8 @@ fun SampleCardRow(
     onCommentClick: (Sample) -> Unit = {},
     onDownloadClick: (Sample) -> Unit = {},
     getOwnerAvatar: suspend (String) -> String? = { null },
-    getUserName: suspend (String) -> String = { "" }
+    getUserName: suspend (String) -> String = { "" },
+    getCoverUrl: suspend (String) -> String? = { null }
 ) {
   Row(
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -393,7 +396,8 @@ fun SampleCardRow(
               isLiked = isLiked,
               clickHandlers = clickHandlers,
               getOwnerAvatar = getOwnerAvatar,
-              getUserName = getUserName)
+              getUserName = getUserName,
+              getCoverUrl = getCoverUrl)
         }
       }
 }
@@ -431,17 +435,24 @@ fun SampleCard(
     clickHandlers: ClickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
     getOwnerAvatar: suspend (String) -> String? = { null },
-    getUserName: suspend (String) -> String = { "" }
+    getUserName: suspend (String) -> String = { "" },
+    getCoverUrl: suspend (String) -> String? = { null }
 ) {
   val likeDescription = if (isLiked) "liked" else "not liked"
   val heartColor = if (isLiked) Color.Red else NepTuneTheme.colors.background
   val heartIcon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder
   var avatarUrl by remember { mutableStateOf<String?>(null) }
   var userName by remember { mutableStateOf("") }
+  var coverImageUrl by remember { mutableStateOf<String?>(null) }
 
   LaunchedEffect(sample.ownerId) {
     avatarUrl = getOwnerAvatar(sample.ownerId)
     userName = getUserName(sample.ownerId)
+  }
+  LaunchedEffect(sample.storageImagePath) {
+    if (sample.storageImagePath.isNotBlank()) {
+      coverImageUrl = getCoverUrl(sample.storageImagePath)
+    }
   }
 
   Card(
@@ -456,11 +467,11 @@ fun SampleCard(
       border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground)) {
         Column(modifier = Modifier.fillMaxSize()) {
           Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            if (sample.storageImagePath.isNotBlank()) {
+            if (coverImageUrl != null) {
               AsyncImage(
                   model =
                       ImageRequest.Builder(LocalContext.current)
-                          .data(sample.storageImagePath)
+                          .data(coverImageUrl)
                           .crossfade(true)
                           .build(),
                   contentDescription = "Sample Cover",
