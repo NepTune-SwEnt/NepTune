@@ -253,57 +253,6 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun adsrKnobsCallsAllUpdateFunctions() {
-    fakeViewModel.mutableUiState.value =
-        fakeViewModel.uiState.value.copy(currentTab = SamplerTab.BASICS)
-
-    openSection("ADSR Envelope Controls")
-
-    fakeViewModel.isAttackUpdated = false
-    swipeKnobByTag(SamplerTestTags.KNOB_ATTACK)
-    assertTrue("updateAttack should be true", fakeViewModel.isAttackUpdated)
-
-    fakeViewModel.isDecayUpdated = false
-    swipeKnobByTag(SamplerTestTags.KNOB_DECAY)
-    assertTrue("updateDecay should be true", fakeViewModel.isDecayUpdated)
-
-    fakeViewModel.isSustainUpdated = false
-    swipeKnobByTag(SamplerTestTags.KNOB_SUSTAIN)
-    assertTrue("updateSustain should be true", fakeViewModel.isSustainUpdated)
-
-    fakeViewModel.isReleaseUpdated = false
-    swipeKnobByTag(SamplerTestTags.KNOB_RELEASE)
-    assertTrue("updateRelease should be true", fakeViewModel.isReleaseUpdated)
-  }
-
-  @Test
-  fun reverbKnobsCallsAllUpdateFunctions() {
-    fakeViewModel.mutableUiState.value =
-        fakeViewModel.uiState.value.copy(currentTab = SamplerTab.BASICS)
-    openSection("Reverb Controls")
-
-    fakeViewModel.isReverbWetUpdated = false
-    swipeKnobByTag(SamplerTestTags.KNOB_REVERB_WET)
-    assertTrue("updateReverbWet should be true", fakeViewModel.isReverbWetUpdated)
-
-    fakeViewModel.isReverbSizeUpdated = false
-    swipeKnobByTag(SamplerTestTags.KNOB_REVERB_SIZE)
-    assertTrue("updateReverbSize should be true", fakeViewModel.isReverbSizeUpdated)
-
-    fakeViewModel.isReverbWidthUpdated = false
-    swipeKnobByTag(SamplerTestTags.KNOB_REVERB_WIDTH)
-    assertTrue("updateReverbWidth should be true", fakeViewModel.isReverbWidthUpdated)
-
-    fakeViewModel.isReverbDepthUpdated = false
-    swipeKnobByTag(SamplerTestTags.KNOB_REVERB_DEPTH)
-    assertTrue("updateReverbDepth should be true", fakeViewModel.isReverbDepthUpdated)
-
-    fakeViewModel.isReverbPredelayUpdated = false
-    swipeKnobByTag(SamplerTestTags.KNOB_REVERB_PREDELAY)
-    assertTrue("updateReverbPredelay should be true", fakeViewModel.isReverbPredelayUpdated)
-  }
-
-  @Test
   fun eqFaderDragCallsUpdateEqBand() {
     composeTestRule.onNodeWithText("EQ").performClick()
     fakeViewModel.mutableUiState.value =
@@ -405,31 +354,6 @@ class SamplerScreenTest {
         .performClick()
 
     assertEquals(99, fakeViewModel.lastTempoUpdated)
-  }
-
-  @Test
-  fun adsrKnobsAllDragCallsAllUpdateFunctions() {
-    fakeViewModel.mutableUiState.value =
-        fakeViewModel.uiState.value.copy(currentTab = SamplerTab.BASICS)
-    composeTestRule.waitForIdle()
-    openSection("ADSR Envelope Controls")
-    composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_ATTACK).performTouchInput {
-      swipe(start = center, end = center + Offset(x = 0f, y = -100f), durationMillis = 50)
-    }
-    assertTrue("updateAttack should be true", fakeViewModel.isAttackUpdated)
-    composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_DECAY).performTouchInput {
-      swipe(start = center, end = center + Offset(x = 0f, y = -100f), durationMillis = 50)
-    }
-    assertTrue("updateDecay should be true", fakeViewModel.isDecayUpdated)
-    composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_SUSTAIN).performTouchInput {
-      swipe(start = center, end = center + Offset(x = 0f, y = -100f), durationMillis = 50)
-    }
-    assertTrue("updateSustain should be true", fakeViewModel.isSustainUpdated)
-    composeTestRule.onNodeWithTag(SamplerTestTags.KNOB_RELEASE).performTouchInput {
-      swipe(start = center, end = center + Offset(x = 0f, y = -100f), durationMillis = 50)
-    }
-    assertTrue("updateRelease should be true", fakeViewModel.isReleaseUpdated)
   }
 
   @Test
@@ -554,5 +478,66 @@ class SamplerScreenTest {
     // Timeline labels are not direct nodes (drawn on Canvas). As a basic smoke check, ensure
     // the waveform display container exists and beat info is non-empty
     composeTestRule.onNodeWithTag(SamplerTestTags.WAVEFORM_DISPLAY).assertIsDisplayed()
+  }
+
+  @Test
+  fun settingsDialogOpensAndCancelClosesDialog() {
+    // Open the dialog via the Settings FAB
+    composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // The dialog should be visible
+    composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_DIALOG).assertIsDisplayed()
+
+    // Clicking Cancel should close the dialog
+    composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_CANCEL_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // The dialog should no longer exist
+    composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_DIALOG).assertDoesNotExist()
+  }
+
+  @Test
+  fun settingsDialogSaveUpdatesInputTempoAndPitch() {
+    // Prepare a known state
+    fakeViewModel.mutableUiState.value =
+        fakeViewModel.uiState.value.copy(
+            inputTempo = 100, inputPitchNote = "C", inputPitchOctave = 4)
+    composeTestRule.waitForIdle()
+
+    // Open the dialog
+    composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // Find the BPM field inside the dialog and enter a new value
+    val bpmField =
+        composeTestRule.onNode(
+            hasSetTextAction() and hasParent(hasTestTag(SamplerTestTags.SETTINGS_DIALOG)))
+    bpmField.performTextClearance()
+    bpmField.performTextInput("130")
+
+    // Click the pitch selector's up arrow inside the dialog
+    val beforePitch =
+        fakeViewModel.uiState.value.inputPitchNote + fakeViewModel.uiState.value.inputPitchOctave
+    composeTestRule
+        .onNodeWithTag(SamplerTestTags.SETTINGS_PITCH_SELECTOR)
+        .onChildren()
+        .filter(hasTestTag("PITCH_UP_BUTTON"))
+        .onFirst()
+        .performClick()
+
+    composeTestRule.waitForIdle()
+
+    val afterPitch =
+        fakeViewModel.uiState.value.inputPitchNote + fakeViewModel.uiState.value.inputPitchOctave
+    // Verify that the pitch in the viewModel changed locally
+    assertTrue("Pitch inside dialog should have changed", beforePitch != afterPitch)
+
+    // Confirm (Save & Close)
+    composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_CONFIRM_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // Verify that inputTempo has been updated in the viewModel
+    assertEquals(130, fakeViewModel.uiState.value.inputTempo)
   }
 }

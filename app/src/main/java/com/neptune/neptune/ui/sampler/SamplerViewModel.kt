@@ -91,7 +91,7 @@ data class SamplerUiState(
 
 open class SamplerViewModel() : ViewModel() {
 
-  private val context: Context = NepTuneApplication.appContext
+  val context: Context = NepTuneApplication.appContext
 
   open val mediaPlayer = NeptuneMediaPlayer()
 
@@ -709,13 +709,13 @@ open class SamplerViewModel() : ViewModel() {
       val audioUri = state.currentAudioUri
 
       if (audioUri == null) {
-        Log.e("SamplerViewModel", "Aucun audio à sauvegarder, opération annulée.")
+        Log.e("SamplerViewModel", "No audio saved, action canceled.")
         return
       }
 
       val audioFile = File(audioUri.path ?: "")
       if (!audioFile.exists()) {
-        Log.e("SamplerViewModel", "Le fichier audio n'existe pas : ${audioFile.path}")
+        Log.e("SamplerViewModel", "The audio file doesn't exists: ${audioFile.path}")
         return
       }
 
@@ -760,9 +760,9 @@ open class SamplerViewModel() : ViewModel() {
       ProjectWriter()
           .writeProject(zipFile = zipFile, metadata = projectData, audioFiles = listOf(audioFile))
 
-      Log.i("SamplerViewModel", "Projet sauvegardé avec succès : ${zipFile.absolutePath}")
+      Log.i("SamplerViewModel", "Project saved: ${zipFile.absolutePath}")
     } catch (e: Exception) {
-      Log.e("SamplerViewModel", "Échec de la sauvegarde du projet ZIP : ${e.message}", e)
+      Log.e("SamplerViewModel", "Failed to save ZIP file: ${e.message}", e)
     }
   }
 
