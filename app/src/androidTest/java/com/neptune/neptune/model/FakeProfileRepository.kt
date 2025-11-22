@@ -72,4 +72,12 @@ class FakeProfileRepository(initial: Profile? = null) : ProfileRepository {
   }
 
   override suspend fun removeAvatar() {}
+
+  override suspend fun getAvatarUrlByUserId(userId: String): String? {
+    return userId
+  }
+
+  override suspend fun getUserNameByUserId(userId: String): String? {
+    return userId
+  }
 }

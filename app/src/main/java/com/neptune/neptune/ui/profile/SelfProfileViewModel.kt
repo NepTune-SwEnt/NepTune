@@ -140,10 +140,13 @@ class SelfProfileViewModel(
       _uiState.value = _uiState.value.copy(error = "User not logged in.")
       return
     }
-
-    val downloadUrl = storageService.uploadFileAndGetUrl(uriToSave, storagePath)
-
-    repo.updateAvatarUrl(downloadUrl)
+    storageService.uploadFile(uriToSave, storagePath)
+    val downloadUrl = storageService.getDownloadUrl(storagePath)
+    if (downloadUrl != null) {
+      repo.updateAvatarUrl(downloadUrl)
+    } else {
+      _uiState.value = _uiState.value.copy(error = "Failed to retrieve avatar URL.")
+    }
 
     imageRepo.saveImageFromUri(uriToSave, localCacheFileName)
 

@@ -1,6 +1,5 @@
 package com.neptune.neptune.screen
 
-import android.net.Uri
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -24,7 +23,6 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
 import androidx.compose.ui.test.swipeWithVelocity
-import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -53,7 +51,6 @@ open class FakeSamplerViewModel : SamplerViewModel() {
   var isReleaseUpdated = false
   var isSelectTabCalled: SamplerTab? = null
   var isTogglePlayPauseCalled = false
-  var isSaveSamplerCalled = false
   var isIncreasePitchCalled = false
   var isDecreasePitchCalled = false
   var isReverbWetUpdated = false
@@ -70,8 +67,6 @@ open class FakeSamplerViewModel : SamplerViewModel() {
   var isCompDecayUpdated = false
   var lastTempoUpdated: Int? = null
   var lastPlaybackPosition: Float? = null
-
-  var isWaveformExtracted = false
 
   var isSaveProjectDataCalled = false
   var lastSavedPath: String? = null
@@ -189,11 +184,6 @@ open class FakeSamplerViewModel : SamplerViewModel() {
     super.updateCompDecay(value)
   }
 
-  override fun extractWaveform(uri: Uri, sampleRate: Int): List<Float> {
-    isWaveformExtracted = true
-    return List(50) { 0.5f }
-  }
-
   override fun loadProjectData(zipFilePath: String) {
     mutableUiState.update { it.copy(attack = 0.35f, sustain = 0.6f, compRatio = 4) }
     super.loadProjectData(zipFilePath)
@@ -215,8 +205,6 @@ class SamplerScreenTest {
 
   @get:Rule val composeTestRule = createAndroidComposeRule<MainActivity>()
   private lateinit var fakeViewModel: FakeSamplerViewModel
-  private val playButtonDesc = "Play"
-  private val saveButtonDesc = "Save"
 
   @Before
   fun setup() {
@@ -470,10 +458,8 @@ class SamplerScreenTest {
     // Extract semantics text and check contents
     val beatSemantics = beatNode.fetchSemanticsNode()
     val beatTextList = beatSemantics.config[SemanticsProperties.Text]
-    val beatCombined = beatTextList?.joinToString("") { (it as AnnotatedString).text }
-    assertTrue(
-        "Beat info must contain 'beats:' prefix",
-        beatCombined != null && beatCombined.contains("beats:"))
+    val beatCombined = beatTextList.joinToString("") { it.text }
+    assertTrue("Beat info must contain 'beats:' prefix", beatCombined.contains("beats:"))
 
     // Timeline labels are not direct nodes (drawn on Canvas). As a basic smoke check, ensure
     // the waveform display container exists and beat info is non-empty

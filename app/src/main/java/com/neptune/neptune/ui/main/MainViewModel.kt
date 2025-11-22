@@ -3,10 +3,12 @@ package com.neptune.neptune.ui.main
 import android.content.Context
 import android.os.Environment
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.R
 import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.data.storage.StorageService
@@ -16,6 +18,8 @@ import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
+import com.neptune.neptune.util.AudioWaveformExtractor
+import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,10 +47,12 @@ class MainViewModel(
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val imageRepo: ImageStorageRepository = ImageStorageRepository(),
+    private val waveformExtractor: AudioWaveformExtractor = WaveformExtractor
 ) : ViewModel() {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
   val downloadProgress = MutableStateFlow<Int?>(null)
 
+  private val defaultName = "anonymous"
   val actions: SampleUiActions? =
       if (useMockData) {
         null
@@ -59,26 +65,26 @@ class MainViewModel(
   private val _followedSamples = MutableStateFlow<List<Sample>>(emptyList())
   val followedSamples: StateFlow<List<Sample>> = _followedSamples
 
-  private val _userAvatar = MutableStateFlow<Any?>(null)
-  val userAvatar: StateFlow<Any?> = _userAvatar.asStateFlow()
+  private val _userAvatar = MutableStateFlow<String?>(null)
+  val userAvatar: StateFlow<String?> = _userAvatar.asStateFlow()
 
   private val _currentUserFlow = MutableStateFlow(auth.currentUser)
   private val authListener =
       FirebaseAuth.AuthStateListener { firebaseAuth ->
         _currentUserFlow.value = firebaseAuth.currentUser
+        loadAvatar()
       }
-
-  private val avatarFileName: String?
-    get() = auth.currentUser?.uid?.let { "avatar_$it.jpg" }
-
-  private val avatarStoragePath: String?
-    get() = auth.currentUser?.uid?.let { "profile_pictures/$it.jpg" }
 
   private val _comments = MutableStateFlow<List<Comment>>(emptyList())
   val comments: StateFlow<List<Comment>> = _comments
 
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
+  private val avatarCache = mutableMapOf<String, String?>()
+  private val userNameCache = mutableMapOf<String, String>()
+  private val coverImageCache = mutableMapOf<String, String?>()
+  private val audioUrlCache = mutableMapOf<String, String?>()
+  private val waveformCache = mutableMapOf<String, List<Float>>()
 
   init {
     if (useMockData) {
@@ -112,30 +118,9 @@ class MainViewModel(
 
   private fun loadAvatar() {
     viewModelScope.launch {
-      val storagePath = avatarStoragePath
-      val fileName = avatarFileName
-
-      val cachedUri = if (fileName != null) imageRepo.getImageUri(fileName) else null
-      if (cachedUri != null) {
-        _userAvatar.value = cachedUri
-      }
-      if (storagePath != null && fileName != null) {
-        try {
-          val downloadUrl = storageService.getDownloadUrl(storagePath)
-          if (downloadUrl != null) {
-            imageRepo.saveImageFromUrl(downloadUrl, fileName)
-            val freshUri = imageRepo.getImageUri(fileName)
-            if (freshUri != null) {
-              _userAvatar.value =
-                  freshUri
-                      .buildUpon()
-                      .appendQueryParameter("t", System.currentTimeMillis().toString())
-                      .build()
-            }
-          }
-        } catch (_: Exception) {
-          // In case of an error we keep the cached avatar.
-        }
+      val currentUser = auth.currentUser
+      if (currentUser != null) {
+        _userAvatar.value = getSampleOwnerAvatar(currentUser.uid)
       } else {
         _userAvatar.value = null
       }
@@ -182,10 +167,86 @@ class MainViewModel(
   fun addComment(sampleId: String, text: String) {
     viewModelScope.launch {
       val profile = profileRepo.getProfile()
-      val username = profile?.username ?: "Anonymous"
+      val username = profile?.username ?: defaultName
       repo.addComment(sampleId, username, text.trim())
     }
   }
+
+  /*
+   * function to get the avatar of the sample owner.
+   */
+  suspend fun getSampleOwnerAvatar(userId: String): String? {
+    if (avatarCache.containsKey(userId)) {
+      return avatarCache[userId]
+    }
+    val url = profileRepo.getAvatarUrlByUserId(userId)
+    avatarCache[userId] = url
+    return url
+  }
+
+  /*
+   * Function to get the user name.
+   */
+  suspend fun getUserName(userId: String): String {
+    if (userNameCache.containsKey(userId)) {
+      return userNameCache[userId] ?: defaultName
+    }
+    var userName = profileRepo.getUserNameByUserId(userId)
+    userName = userName ?: defaultName
+    userNameCache[userId] = userName
+    return userName
+  }
+
+  /*
+   * Function to get the Download URL from the storage path.
+   */
+  suspend fun getSampleCoverUrl(storagePath: String): String? {
+    if (storagePath.isBlank()) return null
+
+    if (coverImageCache.containsKey(storagePath)) {
+      return coverImageCache[storagePath]
+    }
+    val url = storageService.getDownloadUrl(storagePath)
+    coverImageCache[storagePath] = url
+    return url
+  }
+
+  /*
+   * Function to get the Audio URL from the storage path.
+   */
+  suspend fun getSampleAudioUrl(sample: Sample): String? {
+    val storagePath = sample.storagePreviewSamplePath
+    if (storagePath.isBlank()) return null
+    if (audioUrlCache.containsKey(storagePath)) {
+      return audioUrlCache[storagePath]
+    }
+    val url = storageService.getDownloadUrl(storagePath)
+    audioUrlCache[storagePath] = url
+    return url
+  }
+
+  /** Retrieves the waveform for a given Sample. */
+  suspend fun getSampleWaveform(sample: Sample): List<Float> {
+    if (waveformCache.containsKey(sample.id)) {
+      return waveformCache[sample.id]!!
+    }
+    val audioUrl = getSampleAudioUrl(sample) ?: return emptyList()
+
+    return try {
+      val waveform =
+          waveformExtractor.extractWaveform(
+              context = NepTuneApplication.appContext, uri = audioUrl.toUri(), samplesCount = 100)
+
+      if (waveform.isNotEmpty()) {
+        waveformCache[sample.id] = waveform
+      }
+      waveform
+    } catch (e: Exception) {
+      Log.e("MainViewModel", "Error extracting waveform for list: ${e.message}")
+      emptyList()
+    }
+  }
+
   // Mock Data
   private fun loadData() {
     _discoverSamples.value =

@@ -101,11 +101,12 @@ class StorageServiceTest {
         val testPath = "uploads/test.txt"
 
         // --- Act ---
-        val downloadUrl = storageService.uploadFileAndGetUrl(testUri, testPath)
+        storageService.uploadFile(testUri, testPath)
+        val downloadUrl = storageService.getDownloadUrl(testPath)
 
         // --- Assert ---
         Assert.assertNotNull(downloadUrl)
-        Assert.assertTrue(downloadUrl.contains("test.txt"))
+        Assert.assertTrue(downloadUrl!!.contains("test.txt"))
         Assert.assertTrue(downloadUrl.contains(Firebase.storage.reference.bucket))
       }
 
@@ -118,7 +119,7 @@ class StorageServiceTest {
 
         // --- Act & Assert ---
         try {
-          storageService.uploadFileAndGetUrl(badUri, testPath)
+          storageService.uploadFile(badUri, testPath)
           Assert.fail("Should have thrown an exception")
         } catch (e: Exception) {
           // Success
@@ -133,18 +134,19 @@ class StorageServiceTest {
         // --- Arrange ---
         val sampleId = "sample-test-123"
         val oldZipName = "old_file.zip"
+        val oldZipPath = "samples/$oldZipName"
         val newImageName = "new_image.png"
 
-        // 1. Create an old file to be deleted
         val oldFileUri = createDummyFile(oldZipName, "old zip data")
-        val oldUrl = storageService.uploadFileAndGetUrl(oldFileUri, "samples/$oldZipName")
+        storageService.uploadFile(oldFileUri, oldZipPath)
 
-        // 2. Create the old Sample in Firestore
+        Assert.assertNotNull(storageService.getDownloadUrl(oldZipPath))
+
         val oldSample =
             Sample(
                 id = sampleId,
                 name = "Old Sample",
-                storageZipPath = oldUrl, // The URL of the file to delete
+                storageZipPath = oldZipPath,
                 storageImagePath = "",
                 storagePreviewSamplePath = "",
                 description = "",
@@ -156,7 +158,6 @@ class StorageServiceTest {
                 downloads = 0)
         sampleRepo.addSample(oldSample)
 
-        // 3. Create the NEW local files
         val newZipUri = createDummyFile("new_sample.zip", "new zip data")
         val newImageUri = createDummyFile(newImageName, "new image data")
 
@@ -166,44 +167,31 @@ class StorageServiceTest {
 
         // --- Assert ---
 
-        // 1. Verify the old file is deleted
+        // 1. Verify the old file is deleted using its PATH
         try {
-          Firebase.storage.getReferenceFromUrl(oldUrl).metadata.await()
+          Firebase.storage.reference.child(oldZipPath).metadata.await()
           Assert.fail("Old file still exists, should have been deleted")
         } catch (_: Exception) {
-          // Success, file no longer exists
+          // Success, file no longer exists (StorageException)
         }
 
-        // 2. Verify the Sample in Firestore was updated
         val updatedSample = sampleRepo.getSample(sampleId)
         Assert.assertNotNull(updatedSample)
         Assert.assertEquals("New Sample Name", updatedSample.name)
 
-        // 3. Verify the new paths are correct
-        // Check that the encoded path (%2F instead of /) is in the final URL
-        Assert.assertTrue(updatedSample.storageZipPath.contains("samples%2F${sampleId}.zip"))
-        Assert.assertTrue(
-            updatedSample.storageImagePath.contains("sample_image%2F${sampleId}%2F$newImageName"))
+        Assert.assertEquals("samples/$sampleId.zip", updatedSample.storageZipPath)
+        Assert.assertEquals("sample_image/$sampleId/$newImageName", updatedSample.storageImagePath)
       }
 
   @Test
   fun getDownloadUrlWhenFileExistsReturnsCorrectUrl() =
       runBlocking(testDispatcher) {
-        // --- Arrange ---
         val testUri = createDummyFile("test-download.txt", "hello")
         val testPath = "public/test-download.txt"
-
-        // 1. Upload a file so it exists in storage
-        val expectedUrl = storageService.uploadFileAndGetUrl(testUri, testPath)
-        Assert.assertNotNull(expectedUrl)
-
-        // --- Act ---
-        // 2. Try to get the URL using the function under test
+        storageService.uploadFile(testUri, testPath)
         val actualUrl = storageService.getDownloadUrl(testPath)
-
-        // --- Assert ---
         Assert.assertNotNull(actualUrl)
-        Assert.assertEquals(expectedUrl, actualUrl)
+        Assert.assertTrue(actualUrl!!.contains("test-download.txt"))
       }
 
   @Test

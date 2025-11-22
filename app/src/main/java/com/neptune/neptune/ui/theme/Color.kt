@@ -18,11 +18,11 @@ val DarkPurple = Color(0xFF6f5ae8)
 val GhostWhite = Color(0xFFF1F3FF)
 val DarkBlue3 = Color(0xFF1C1F35)
 val LightLavenderBlue = Color(0xFFE3E8FF)
-val white = Color(0xFFFFFFFF)
 val LightPurple = Color(0xFFD0BCFF)
-val purple = Color(0xFFE6E6FA)
+val Purple = Color(0xFFE6E6FA)
 // shared
 val Black = Color(0xFF000000)
+val White = Color(0xFFFFFFFF)
 val ShadowColor = Color(0x40000000)
 
 // colorScheme

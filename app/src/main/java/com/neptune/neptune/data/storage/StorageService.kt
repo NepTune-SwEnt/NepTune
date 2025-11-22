@@ -20,7 +20,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
-class StorageService(val storage: FirebaseStorage) {
+open class StorageService(val storage: FirebaseStorage) {
   private val storageRef = storage.reference
   private val sampleRepo = com.neptune.neptune.model.sample.SampleRepositoryProvider.repository
 
@@ -120,32 +120,28 @@ class StorageService(val storage: FirebaseStorage) {
         }
 
     oldSample?.let {
-      deleteFileByUrl(it.storageZipPath)
-      deleteFileByUrl(it.storageImagePath)
-      deleteFileByUrl(it.storagePreviewSamplePath)
+      deleteFileByPath(it.storageZipPath)
+      deleteFileByPath(it.storageImagePath)
     }
 
     val newStorageZipPath = "samples/${sampleId}.zip"
     val newStorageImagePath =
         if (localImageUri != null) "sample_image/${sampleId}/${getFileNameFromUri(localImageUri)}"
-        else null
+        else ""
 
     coroutineScope {
-      val deferredZipUrl = async { uploadFileAndGetUrl(localZipUri, newStorageZipPath) }
+      val deferredZip = async { uploadFile(localZipUri, newStorageZipPath) }
 
-      val deferredImageUrl =
-          if (newStorageImagePath != null)
-              async { uploadFileAndGetUrl(localImageUri!!, newStorageImagePath) }
+      val deferredImage =
+          if (localImageUri != null && newStorageImagePath.isNotEmpty())
+              async { uploadFile(localImageUri, newStorageImagePath) }
           else null
 
-      val newZipUrl = deferredZipUrl.await()
-      val newImageUrl = deferredImageUrl?.await() ?: ""
+      deferredZip.await()
+      deferredImage?.await()
 
       val finalSample =
-          sample.copy(
-              storageZipPath = newZipUrl,
-              storageImagePath = newImageUrl,
-              storagePreviewSamplePath = "")
+          sample.copy(storageZipPath = newStorageZipPath, storageImagePath = newStorageImagePath)
       sampleRepo.addSample(finalSample)
     }
   }
@@ -157,29 +153,27 @@ class StorageService(val storage: FirebaseStorage) {
    * @param storagePath The full path in Firebase Storage (e.g., "profile_pictures/userID.jpg").
    * @return The public download URL of the file.
    */
-  suspend fun uploadFileAndGetUrl(localUri: Uri, storagePath: String): String {
+  suspend fun uploadFile(localUri: Uri, storagePath: String) {
     try {
-      return withContext(Dispatchers.IO) {
+      withContext(Dispatchers.IO) {
         val fileRef = storageRef.child(storagePath)
         fileRef.putFile(localUri).await()
-        val downloadUrl = fileRef.downloadUrl.await()
-        downloadUrl.toString()
       }
     } catch (e: Exception) {
-      throw Exception("Failed to upload file: ${e.message}", e)
+      throw Exception("Failed to upload file to $storagePath: ${e.message}", e)
     }
   }
 
-  private suspend fun deleteFileByUrl(fileUrl: String) {
-    if (fileUrl.isBlank()) return
+  private suspend fun deleteFileByPath(storagePath: String) {
+    if (storagePath.isBlank()) return
 
     try {
       withContext(Dispatchers.IO) {
-        val fileRef = storage.getReferenceFromUrl(fileUrl)
+        val fileRef = storageRef.child(storagePath)
         fileRef.delete().await()
       }
     } catch (e: Exception) {
-      Log.w("StorageService", "Failed to delete old file: $fileUrl", e)
+      Log.w("StorageService", "Failed to delete old file: $storagePath", e)
     }
   }
 
@@ -214,7 +208,8 @@ class StorageService(val storage: FirebaseStorage) {
    * @param storagePath The full path to the file.
    * @return The download URL, or null in case of an error.
    */
-  suspend fun getDownloadUrl(storagePath: String): String? {
+  open suspend fun getDownloadUrl(storagePath: String): String? {
+    if (storagePath.isBlank()) return null
     return try {
       val fileRef = storageRef.child(storagePath)
       fileRef.downloadUrl.await().toString()
