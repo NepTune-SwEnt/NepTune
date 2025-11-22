@@ -14,13 +14,17 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.zip.ZipInputStream
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
-open class StorageService(val storage: FirebaseStorage) {
+open class StorageService(
+    val storage: FirebaseStorage,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
   private val storageRef = storage.reference
   private val sampleRepo = com.neptune.neptune.model.sample.SampleRepositoryProvider.repository
 
@@ -39,7 +43,7 @@ open class StorageService(val storage: FirebaseStorage) {
       context: Context,
       onProgress: (Int) -> Unit = {}
   ): File =
-      withContext(Dispatchers.IO) {
+      withContext(ioDispatcher) {
         val sampleRef = storageRef.child(sample.storageZipPath)
         if (!exists(sampleRef))
             throw IllegalArgumentException(
@@ -155,7 +159,7 @@ open class StorageService(val storage: FirebaseStorage) {
    */
   suspend fun uploadFile(localUri: Uri, storagePath: String) {
     try {
-      withContext(Dispatchers.IO) {
+      withContext(ioDispatcher) {
         val fileRef = storageRef.child(storagePath)
         fileRef.putFile(localUri).await()
       }
@@ -168,7 +172,7 @@ open class StorageService(val storage: FirebaseStorage) {
     if (storagePath.isBlank()) return
 
     try {
-      withContext(Dispatchers.IO) {
+      withContext(ioDispatcher) {
         val fileRef = storageRef.child(storagePath)
         fileRef.delete().await()
       }
@@ -181,7 +185,7 @@ open class StorageService(val storage: FirebaseStorage) {
   suspend fun getFileNameFromUri(uri: Uri): String? {
     if (uri.scheme == "content") {
       val contentName =
-          withContext(Dispatchers.IO) {
+          withContext(ioDispatcher) {
             NepTuneApplication.appContext.contentResolver.query(uri, null, null, null, null)?.use {
                 cursor ->
               if (cursor.moveToFirst()) {

@@ -1,6 +1,7 @@
 package com.neptune.neptune.model.profile
 
 import android.net.Uri
+import android.util.Log
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.DocumentSnapshot
@@ -293,8 +294,9 @@ class ProfileRepositoryFirebase(
     return try {
       val snapshot = profiles.document(userId).get().await()
       snapshot.getString("avatarUrl")
-    } catch (_: Exception) {
+    } catch (e: Exception) {
       // In case of a network error, do nothing.
+      Log.e("ProfileRepository", "Error fetching avatar URL for userId=$userId", e)
       null
     }
   }
@@ -303,8 +305,9 @@ class ProfileRepositoryFirebase(
     return try {
       val snapshot = profiles.document(userId).get().await()
       snapshot.getString("username")
-    } catch (_: Exception) {
+    } catch (e: Exception) {
       // In case of a network error, do nothing.
+      Log.e("ProfileRepository", "Error fetching username for userId=$userId", e)
       null
     }
   }
