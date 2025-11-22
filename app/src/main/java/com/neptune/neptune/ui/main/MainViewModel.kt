@@ -55,7 +55,7 @@ class MainViewModel(
     downloadsFolder: File =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val waveformExtractor: AudioWaveformExtractor = WaveformExtractor
+    private val waveformExtractor: AudioWaveformExtractor = WaveformExtractor()
 ) : ViewModel() {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
   val downloadProgress = MutableStateFlow<Int?>(null)

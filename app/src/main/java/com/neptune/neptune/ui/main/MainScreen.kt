@@ -571,7 +571,7 @@ fun SampleCard(
                         SampleWaveform(
                             amplitudes = resourceState.waveform,
                             color = NepTuneTheme.colors.inverse,
-                            modifier = Modifier.fillMaxWidth(0.8f).height(40.dp))
+                            modifier = Modifier.fillMaxWidth(0.95f).height(70.dp))
                       }
 
                   // Sample name and duration
@@ -868,7 +868,7 @@ fun SampleWaveform(amplitudes: List<Float>, color: Color, modifier: Modifier = M
         val dataIndex = (i * step).coerceIn(amplitudes.indices)
         val normalizedAmp = amplitudes[dataIndex]
 
-        val barHeight = normalizedAmp * size.height * 0.8f
+        val barHeight = normalizedAmp * size.height
         val startX = i * (barWidth + gapWidth)
         val startY = centerY - (barHeight / 2)
         val endY = centerY + (barHeight / 2)

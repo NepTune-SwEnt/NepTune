@@ -157,14 +157,17 @@ open class SearchViewModel(
   }
 
   private suspend fun getSampleWaveform(sample: Sample): List<Float> {
-    if (waveformCache.containsKey(sample.id)) return waveformCache[sample.id]!!
+    if (waveformCache.containsKey(sample.id))
+        waveformCache[sample.id]?.let {
+          return it
+        }
 
     val audioUrl = getSampleAudioUrl(sample) ?: return emptyList()
 
     return try {
       val waveform =
-          WaveformExtractor.extractWaveform(
-              context = context, uri = audioUrl.toUri(), samplesCount = 100)
+          WaveformExtractor()
+              .extractWaveform(context = context, uri = audioUrl.toUri(), samplesCount = 100)
       if (waveform.isNotEmpty()) {
         waveformCache[sample.id] = waveform
       }

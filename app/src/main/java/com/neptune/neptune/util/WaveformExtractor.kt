@@ -7,6 +7,7 @@ import android.media.MediaFormat
 import android.net.Uri
 import android.util.Log
 import kotlin.math.abs
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -14,11 +15,15 @@ import kotlinx.coroutines.withContext
 interface AudioWaveformExtractor {
   suspend fun extractWaveform(context: Context, uri: Uri, samplesCount: Int = 100): List<Float>
 }
+
 /**
- * Utility singleton for decoding audio files and extracting amplitude data for waveform
- * visualization. This object was made using AI assistance.
+ * Utility class for decoding audio files. Changed from 'object' to 'class' to allow Constructor
+ * Injection.
+ *
+ * @param ioDispatcher The dispatcher to run the heavy decoding on. Defaults to Dispatchers.IO.
  */
-object WaveformExtractor : AudioWaveformExtractor {
+open class WaveformExtractor(private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO) :
+    AudioWaveformExtractor {
 
   /**
    * Decodes an audio file from a URI and returns a list of normalized amplitude samples.
@@ -34,7 +39,7 @@ object WaveformExtractor : AudioWaveformExtractor {
    *   list if processing fails.
    */
   override suspend fun extractWaveform(context: Context, uri: Uri, samplesCount: Int): List<Float> =
-      withContext(Dispatchers.IO) {
+      withContext(ioDispatcher) {
         val extractor = MediaExtractor()
         try {
           extractor.setDataSource(context, uri, null)
@@ -116,7 +121,9 @@ object WaveformExtractor : AudioWaveformExtractor {
             codec.stop()
             codec.release()
             extractor.release()
-          } catch (_: Exception) {}
+          } catch (e: Exception) {
+            Log.e("WaveformExtractor", "Error releasing resources", e)
+          }
         }
 
         return@withContext resample(decodedSamples, samplesCount)
