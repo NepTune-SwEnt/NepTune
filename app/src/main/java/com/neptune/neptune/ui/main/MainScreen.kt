@@ -304,7 +304,8 @@ fun MainScreen(
                                   },
                                   getUserName = { userId -> mainViewModel.getUserName(userId) },
                                   getCoverUrl = { path -> mainViewModel.getSampleCoverUrl(path) },
-                                  getAudioUrl = { s -> mainViewModel.getSampleAudioUrl(s) })
+                                  getAudioUrl = { s -> mainViewModel.getSampleAudioUrl(s) },
+                                  getWaveform = { s -> mainViewModel.getSampleWaveform(s) })
                             }
                           }
                         }
@@ -329,7 +330,8 @@ fun MainScreen(
                       getOwnerAvatar = { userId -> mainViewModel.getSampleOwnerAvatar(userId) },
                       getUserName = { userId -> mainViewModel.getUserName(userId) },
                       getCoverUrl = { path -> mainViewModel.getSampleCoverUrl(path) },
-                      getAudioUrl = { s -> mainViewModel.getSampleAudioUrl(s) })
+                      getAudioUrl = { s -> mainViewModel.getSampleAudioUrl(s) },
+                      getWaveform = { s -> mainViewModel.getSampleWaveform(s) })
                 }
               }
         },
@@ -360,7 +362,8 @@ fun SampleItem(
     getOwnerAvatar: suspend (String) -> String? = { null },
     getUserName: suspend (String) -> String = { "" },
     getCoverUrl: suspend (String) -> String? = { null },
-    getAudioUrl: suspend (Sample) -> String? = { null }
+    getAudioUrl: suspend (Sample) -> String? = { null },
+    getWaveform: suspend (Sample) -> List<Float> = { emptyList() }
 ) {
   var avatarUrl by remember { mutableStateOf<String?>(null) }
   var userName by remember { mutableStateOf("") }
@@ -386,7 +389,8 @@ fun SampleItem(
         clickHandlers = clickHandlers,
         testTags = testTags,
         getCoverUrl = getCoverUrl,
-        getAudioUrl = getAudioUrl)
+        getAudioUrl = getAudioUrl,
+        getWaveform = getWaveform)
   }
 }
 
@@ -469,7 +473,8 @@ fun SampleCardRow(
     getOwnerAvatar: suspend (String) -> String? = { null },
     getUserName: suspend (String) -> String = { "" },
     getCoverUrl: suspend (String) -> String? = { null },
-    getAudioUrl: suspend (Sample) -> String? = { null }
+    getAudioUrl: suspend (Sample) -> String? = { null },
+    getWaveform: suspend (Sample) -> List<Float> = { emptyList() }
 ) {
   Row(
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -490,7 +495,8 @@ fun SampleCardRow(
               getOwnerAvatar = getOwnerAvatar,
               getUserName = getUserName,
               getCoverUrl = getCoverUrl,
-              getAudioUrl = getAudioUrl)
+              getAudioUrl = getAudioUrl,
+              getWaveform = getWaveform)
         }
       }
 }
@@ -528,13 +534,15 @@ fun SampleCard(
     clickHandlers: ClickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
     getCoverUrl: suspend (String) -> String? = { null },
-    getAudioUrl: suspend (Sample) -> String? = { null }
+    getAudioUrl: suspend (Sample) -> String? = { null },
+    getWaveform: suspend (Sample) -> List<Float> = { emptyList() }
 ) {
   val likeDescription = if (isLiked) "liked" else "not liked"
   val heartColor = if (isLiked) Color.Red else NepTuneTheme.colors.background
   val heartIcon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder
   var coverImageUrl by remember { mutableStateOf<String?>(null) }
   var audioUrl by remember { mutableStateOf<String?>(null) }
+  var waveform by remember { mutableStateOf<List<Float>>(emptyList()) }
 
   LaunchedEffect(sample.storageImagePath) {
     if (sample.storageImagePath.isNotBlank()) {
@@ -544,6 +552,12 @@ fun SampleCard(
   LaunchedEffect(sample.storagePreviewSamplePath) {
     if (sample.storagePreviewSamplePath.isNotBlank()) {
       audioUrl = getAudioUrl(sample)
+    }
+  }
+  LaunchedEffect(sample.id) {
+    val data = getWaveform(sample)
+    if (data.isNotEmpty()) {
+      waveform = data
     }
   }
 
@@ -595,7 +609,7 @@ fun SampleCard(
                       modifier = Modifier.weight(1f).fillMaxWidth(),
                       contentAlignment = Alignment.Center) {
                         SampleWaveform(
-                            amplitudes = emptyList(),
+                            amplitudes = waveform,
                             color = NepTuneTheme.colors.inverse,
                             modifier = Modifier.fillMaxWidth(0.8f).height(40.dp))
                       }

@@ -3,10 +3,12 @@ package com.neptune.neptune.ui.main
 import android.content.Context
 import android.os.Environment
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.R
 import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.data.storage.StorageService
@@ -16,6 +18,7 @@ import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
+import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -79,6 +82,7 @@ class MainViewModel(
   private val userNameCache = mutableMapOf<String, String>()
   private val coverImageCache = mutableMapOf<String, String?>()
   private val audioUrlCache = mutableMapOf<String, String?>()
+  private val waveformCache = mutableMapOf<String, List<Float>>()
 
   init {
     if (useMockData) {
@@ -217,6 +221,28 @@ class MainViewModel(
     val url = storageService.getDownloadUrl(storagePath)
     audioUrlCache[storagePath] = url
     return url
+  }
+
+  /** Retrieves the waveform for a given Sample. */
+  suspend fun getSampleWaveform(sample: Sample): List<Float> {
+    if (waveformCache.containsKey(sample.id)) {
+      return waveformCache[sample.id]!!
+    }
+    val audioUrl = getSampleAudioUrl(sample) ?: return emptyList()
+
+    return try {
+      val waveform =
+          WaveformExtractor.extractWaveform(
+              context = NepTuneApplication.appContext, uri = audioUrl.toUri(), samplesCount = 100)
+
+      if (waveform.isNotEmpty()) {
+        waveformCache[sample.id] = waveform
+      }
+      waveform
+    } catch (e: Exception) {
+      Log.e("MainViewModel", "Error extracting waveform for list: ${e.message}")
+      emptyList()
+    }
   }
 
   // Mock Data

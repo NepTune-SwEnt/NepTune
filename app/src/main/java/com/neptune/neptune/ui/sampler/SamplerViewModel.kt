@@ -16,6 +16,7 @@ import com.neptune.neptune.model.project.ParameterMetadata
 import com.neptune.neptune.model.project.ProjectExtractor
 import com.neptune.neptune.model.project.ProjectWriter
 import com.neptune.neptune.model.project.SamplerProjectData
+import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
 import kotlin.math.abs
 import kotlin.math.cos
@@ -458,78 +459,8 @@ open class SamplerViewModel() : ViewModel() {
     _uiState.update { it.copy(compDecay = value.coerceIn(0.0f, COMP_TIME_MAX)) }
   }
 
-  open fun extractWaveform(uri: Uri, sampleRate: Int = 100): List<Float> {
-    val extractor = MediaExtractor()
-    extractor.setDataSource(context, uri, null)
-
-    var trackIndex = -1
-    var audioTrackFound = false
-    var i = 0
-    while (i < extractor.trackCount && !audioTrackFound) {
-      val format = extractor.getTrackFormat(i)
-      val mime = format.getString(MediaFormat.KEY_MIME)
-
-      if (mime?.startsWith("audio/") == true) {
-        trackIndex = i
-        extractor.selectTrack(i)
-        audioTrackFound = true
-      }
-      i++
-    }
-
-    if (trackIndex == -1) throw IllegalArgumentException("No audio track")
-
-    val format = extractor.getTrackFormat(trackIndex)
-    val codec = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
-    codec.configure(format, null, null, 0)
-    codec.start()
-
-    val waveform = mutableListOf<Float>()
-    val bufferInfo = MediaCodec.BufferInfo()
-    var isEOS = false
-
-    while (!isEOS) {
-      val inputIndex = codec.dequeueInputBuffer(10000)
-      if (inputIndex >= 0) {
-        val inputBuffer = codec.getInputBuffer(inputIndex)!!
-        val sampleSize = extractor.readSampleData(inputBuffer, 0)
-        if (sampleSize < 0) {
-          codec.queueInputBuffer(inputIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
-          isEOS = true
-        } else {
-          codec.queueInputBuffer(inputIndex, 0, sampleSize, extractor.sampleTime, 0)
-          extractor.advance()
-        }
-      }
-
-      var outputIndex = codec.dequeueOutputBuffer(bufferInfo, 10000)
-      while (outputIndex >= 0) {
-        val outputBuffer = codec.getOutputBuffer(outputIndex)!!
-        val shortBuffer = outputBuffer.asShortBuffer()
-        val chunk = ShortArray(shortBuffer.remaining())
-        shortBuffer.get(chunk)
-
-        if (chunk.isNotEmpty()) {
-          val avgAmplitude = chunk.map { abs(it.toFloat()) }.average().toFloat()
-          val normalized = (avgAmplitude / Short.MAX_VALUE).coerceIn(0f, 1f)
-          if (!normalized.isNaN()) {
-            waveform.add(normalized)
-          }
-        }
-
-        codec.releaseOutputBuffer(outputIndex, false)
-        outputIndex = codec.dequeueOutputBuffer(bufferInfo, 0)
-      }
-    }
-
-    codec.stop()
-    codec.release()
-    extractor.release()
-
-    Log.d(
-        "WaveformDisplay",
-        "Waveform extracted: ${waveform.size} samples, min=${waveform.minOrNull()}, max=${waveform.maxOrNull()}")
-    return waveform
+  open suspend fun extractWaveform(uri: Uri): List<Float> {
+    return WaveformExtractor.extractWaveform(context, uri, samplesCount = 100)
   }
 
   open fun loadProjectData(zipFilePath: String) {
