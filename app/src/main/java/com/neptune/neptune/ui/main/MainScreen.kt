@@ -186,6 +186,8 @@ fun MainScreen(
   val maxColumns = if (screenWidth < 360.dp) 1 else 2
   val cardWidth = (screenWidth - horizontalPadding * 2 - spacing) / 2
   val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
+  val sampleResources by mainViewModel.sampleResources.collectAsState()
+
   fun onCommentClicked(sample: Sample) {
     mainViewModel.observeCommentsForSample(sample.id)
     activeCommentSampleId = sample.id
@@ -283,6 +285,10 @@ fun MainScreen(
                         items(columns) { samplesColumn ->
                           Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
                             samplesColumn.forEach { sample ->
+                              LaunchedEffect(sample.id) {
+                                mainViewModel.loadSampleResources(sample)
+                              }
+                              val resources = sampleResources[sample.id] ?: SampleResourceState()
                               val clickHandlers =
                                   onClickFunctions(
                                       onDownloadClick = { mainViewModel.onDownloadSample(sample) },
@@ -299,13 +305,7 @@ fun MainScreen(
                                   width = cardWidth,
                                   isLiked = likedSamples[sample.id] == true,
                                   clickHandlers = clickHandlers,
-                                  getOwnerAvatar = { userId ->
-                                    mainViewModel.getSampleOwnerAvatar(userId)
-                                  },
-                                  getUserName = { userId -> mainViewModel.getUserName(userId) },
-                                  getCoverUrl = { path -> mainViewModel.getSampleCoverUrl(path) },
-                                  getAudioUrl = { s -> mainViewModel.getSampleAudioUrl(s) },
-                                  getWaveform = { s -> mainViewModel.getSampleWaveform(s) })
+                                  resourceState = resources)
                             }
                           }
                         }
@@ -327,11 +327,8 @@ fun MainScreen(
                       },
                       onCommentClick = { sample -> onCommentClicked(sample) },
                       onDownloadClick = { sample -> mainViewModel.onDownloadSample(sample) },
-                      getOwnerAvatar = { userId -> mainViewModel.getSampleOwnerAvatar(userId) },
-                      getUserName = { userId -> mainViewModel.getUserName(userId) },
-                      getCoverUrl = { path -> mainViewModel.getSampleCoverUrl(path) },
-                      getAudioUrl = { s -> mainViewModel.getSampleAudioUrl(s) },
-                      getWaveform = { s -> mainViewModel.getSampleWaveform(s) })
+                      sampleResources = sampleResources,
+                      onLoadResources = { s -> mainViewModel.loadSampleResources(s) })
                 }
               }
         },
@@ -360,25 +357,14 @@ fun SampleItem(
     clickHandlers: ClickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
     testTags: BaseSampleTestTags = MainScreenTestTags,
-    getOwnerAvatar: suspend (String) -> String? = { null },
-    getUserName: suspend (String) -> String = { "" },
-    getCoverUrl: suspend (String) -> String? = { null },
-    getAudioUrl: suspend (Sample) -> String? = { null },
-    getWaveform: suspend (Sample) -> List<Float> = { emptyList() }
+    resourceState: SampleResourceState = SampleResourceState(),
 ) {
-  var avatarUrl by remember { mutableStateOf<String?>(null) }
-  var userName by remember { mutableStateOf("") }
-
-  LaunchedEffect(sample.ownerId) {
-    avatarUrl = getOwnerAvatar(sample.ownerId)
-    userName = getUserName(sample.ownerId)
-  }
 
   Column(modifier = Modifier.width(width)) {
     // Header (Avatar + Name)
     SampleCardHeader(
-        avatarUrl = avatarUrl,
-        userName = userName,
+        avatarUrl = resourceState.ownerAvatarUrl,
+        userName = resourceState.ownerName,
         onProfileClick = clickHandlers.onProfileClick,
         testTags = testTags)
 
@@ -390,9 +376,7 @@ fun SampleItem(
         clickHandlers = clickHandlers,
         testTags = testTags,
         mediaPlayer = mediaPlayer,
-        getCoverUrl = getCoverUrl,
-        getAudioUrl = getAudioUrl,
-        getWaveform = getWaveform)
+        resourceState = resourceState)
   }
 }
 
@@ -473,16 +457,15 @@ fun SampleCardRow(
     onLikeClick: (Sample, Boolean) -> Unit = { _, _ -> },
     onCommentClick: (Sample) -> Unit = {},
     onDownloadClick: (Sample) -> Unit = {},
-    getOwnerAvatar: suspend (String) -> String? = { null },
-    getUserName: suspend (String) -> String = { "" },
-    getCoverUrl: suspend (String) -> String? = { null },
-    getAudioUrl: suspend (Sample) -> String? = { null },
-    getWaveform: suspend (Sample) -> List<Float> = { emptyList() }
+    sampleResources: Map<String, SampleResourceState> = emptyMap(),
+    onLoadResources: (Sample) -> Unit = {},
 ) {
   Row(
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
       horizontalArrangement = Arrangement.spacedBy(25.dp)) {
         samples.forEach { sample ->
+          LaunchedEffect(sample.id) { onLoadResources(sample) }
+          val resources = sampleResources[sample.id] ?: SampleResourceState()
           val isLiked = likedSamples[sample.id] == true
           val clickHandlers =
               onClickFunctions(
@@ -495,11 +478,7 @@ fun SampleCardRow(
               width = cardWidth,
               isLiked = isLiked,
               clickHandlers = clickHandlers,
-              getOwnerAvatar = getOwnerAvatar,
-              getUserName = getUserName,
-              getCoverUrl = getCoverUrl,
-              getAudioUrl = getAudioUrl,
-              getWaveform = getWaveform)
+              resourceState = resources)
         }
       }
 }
@@ -536,33 +515,11 @@ fun SampleCard(
     testTags: BaseSampleTestTags = MainScreenTestTags,
     clickHandlers: ClickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
-    getCoverUrl: suspend (String) -> String? = { null },
-    getAudioUrl: suspend (Sample) -> String? = { null },
-    getWaveform: suspend (Sample) -> List<Float> = { emptyList() }
+    resourceState: SampleResourceState = SampleResourceState(),
 ) {
   val likeDescription = if (isLiked) "liked" else "not liked"
   val heartColor = if (isLiked) Color.Red else NepTuneTheme.colors.background
   val heartIcon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder
-  var coverImageUrl by remember { mutableStateOf<String?>(null) }
-  var audioUrl by remember { mutableStateOf<String?>(null) }
-  var waveform by remember { mutableStateOf<List<Float>>(emptyList()) }
-
-  LaunchedEffect(sample.storageImagePath) {
-    if (sample.storageImagePath.isNotBlank()) {
-      coverImageUrl = getCoverUrl(sample.storageImagePath)
-    }
-  }
-  LaunchedEffect(sample.storagePreviewSamplePath) {
-    if (sample.storagePreviewSamplePath.isNotBlank()) {
-      audioUrl = getAudioUrl(sample)
-    }
-  }
-  LaunchedEffect(sample.id) {
-    val data = getWaveform(sample)
-    if (data.isNotEmpty()) {
-      waveform = data
-    }
-  }
 
   Card(
       modifier =
@@ -570,8 +527,8 @@ fun SampleCard(
               .height(height)
               .clickable(
                   onClick = {
-                    if (audioUrl != null) {
-                      mediaPlayer.togglePlay(audioUrl!!.toUri())
+                    if (resourceState.audioUrl != null) {
+                      mediaPlayer.togglePlay(resourceState.audioUrl.toUri())
                     } else {
                       mediaPlayer.togglePlay(mediaPlayer.getUriFromSampleId(sample.id))
                     }
@@ -582,11 +539,11 @@ fun SampleCard(
       border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground)) {
         Column(modifier = Modifier.fillMaxSize()) {
           Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            if (coverImageUrl != null) {
+            if (resourceState.coverImageUrl != null) {
               AsyncImage(
                   model =
                       ImageRequest.Builder(LocalContext.current)
-                          .data(coverImageUrl)
+                          .data(resourceState.coverImageUrl)
                           .crossfade(true)
                           .build(),
                   contentDescription = "Sample Cover",
@@ -612,7 +569,7 @@ fun SampleCard(
                       modifier = Modifier.weight(1f).fillMaxWidth(),
                       contentAlignment = Alignment.Center) {
                         SampleWaveform(
-                            amplitudes = waveform,
+                            amplitudes = resourceState.waveform,
                             color = NepTuneTheme.colors.inverse,
                             modifier = Modifier.fillMaxWidth(0.8f).height(40.dp))
                       }

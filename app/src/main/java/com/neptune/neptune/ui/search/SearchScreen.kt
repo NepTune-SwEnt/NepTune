@@ -34,6 +34,7 @@ import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.main.CommentDialog
 import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.main.SampleItem
+import com.neptune.neptune.ui.main.SampleResourceState
 import com.neptune.neptune.ui.main.onClickFunctions
 import com.neptune.neptune.ui.projectlist.SearchBar
 import com.neptune.neptune.ui.theme.NepTuneTheme
@@ -110,6 +111,8 @@ fun SearchScreen(
   val samples by searchViewModel.samples.collectAsState()
   var searchText by remember { mutableStateOf("") }
   val downloadProgress: Int? by searchViewModel.downloadProgress.collectAsState()
+  val sampleResources by searchViewModel.sampleResources.collectAsState()
+
   LaunchedEffect(searchText) {
     delay(400L) // debounce time
     searchViewModel.search(searchText)
@@ -131,12 +134,11 @@ fun SearchScreen(
               searchViewModel = searchViewModel,
               modifier = Modifier.padding(pd),
               mediaPlayer = mediaPlayer,
-              searchText = searchText,
               likedSamples = likedSamples,
               activeCommentSampleId = activeCommentSampleId,
               comments = comments,
               navigateToOtherUserProfile = navigateToOtherUserProfile,
-          )
+              sampleResources = sampleResources)
         })
     if (downloadProgress != null && downloadProgress != 0) {
       DownloadProgressBar(downloadProgress = downloadProgress!!, SearchScreenTestTags.DOWNLOAD_BAR)
@@ -150,11 +152,11 @@ fun ScrollableColumnOfSamples(
     samples: List<Sample>,
     searchViewModel: SearchViewModel,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
-    searchText: String = "",
     likedSamples: Map<String, Boolean> = emptyMap(),
     activeCommentSampleId: String? = null,
     comments: List<Comment> = emptyList(),
     navigateToOtherUserProfile: (String) -> Unit = {},
+    sampleResources: Map<String, SampleResourceState> = emptyMap(),
 ) {
   // Ensure the possibility to like in local
   LazyColumn(
@@ -167,6 +169,8 @@ fun ScrollableColumnOfSamples(
       horizontalAlignment = Alignment.CenterHorizontally) {
         val width = 300.dp
         items(samples) { sample ->
+          LaunchedEffect(sample.id) { searchViewModel.loadSampleResources(sample) }
+          val resources = sampleResources[sample.id] ?: SampleResourceState()
           // change height and width if necessary
           val testTags = SearchScreenTestTagsPerSampleCard(idInColumn = sample.id)
           val isLiked = likedSamples[sample.id] == true
@@ -187,11 +191,7 @@ fun ScrollableColumnOfSamples(
               isLiked = likedSamples[sample.id] == true,
               testTags = testTags,
               mediaPlayer = mediaPlayer,
-              getOwnerAvatar = { id -> searchViewModel.getSampleOwnerAvatar(id) },
-              getUserName = { id -> searchViewModel.getUserName(id) },
-              getCoverUrl = { path -> searchViewModel.getSampleCoverUrl(path) },
-              getAudioUrl = { s -> searchViewModel.getSampleAudioUrl(s) },
-              getWaveform = { s -> searchViewModel.getSampleWaveform(s) })
+              resourceState = resources)
         }
       } // Comment Overlay
   if (activeCommentSampleId != null) {

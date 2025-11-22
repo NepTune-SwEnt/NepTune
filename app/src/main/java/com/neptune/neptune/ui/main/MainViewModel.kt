@@ -10,7 +10,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
 import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.R
-import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
@@ -25,7 +24,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+data class SampleResourceState(
+    val ownerName: String = "",
+    val ownerAvatarUrl: String? = null,
+    val coverImageUrl: String? = null,
+    val audioUrl: String? = null,
+    val waveform: List<Float> = emptyList(),
+    val isLoading: Boolean = false
+)
 
 /**
  * ViewModel for managing the state and operations related to the samples. This has been written
@@ -46,7 +55,6 @@ class MainViewModel(
     downloadsFolder: File =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val imageRepo: ImageStorageRepository = ImageStorageRepository(),
     private val waveformExtractor: AudioWaveformExtractor = WaveformExtractor
 ) : ViewModel() {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
@@ -85,6 +93,8 @@ class MainViewModel(
   private val coverImageCache = mutableMapOf<String, String?>()
   private val audioUrlCache = mutableMapOf<String, String?>()
   private val waveformCache = mutableMapOf<String, List<Float>>()
+  private val _sampleResources = MutableStateFlow<Map<String, SampleResourceState>>(emptyMap())
+  val sampleResources = _sampleResources.asStateFlow()
 
   init {
     if (useMockData) {
@@ -175,7 +185,7 @@ class MainViewModel(
   /*
    * function to get the avatar of the sample owner.
    */
-  suspend fun getSampleOwnerAvatar(userId: String): String? {
+  private suspend fun getSampleOwnerAvatar(userId: String): String? {
     if (avatarCache.containsKey(userId)) {
       return avatarCache[userId]
     }
@@ -187,7 +197,7 @@ class MainViewModel(
   /*
    * Function to get the user name.
    */
-  suspend fun getUserName(userId: String): String {
+  private suspend fun getUserName(userId: String): String {
     if (userNameCache.containsKey(userId)) {
       return userNameCache[userId] ?: defaultName
     }
@@ -200,7 +210,7 @@ class MainViewModel(
   /*
    * Function to get the Download URL from the storage path.
    */
-  suspend fun getSampleCoverUrl(storagePath: String): String? {
+  private suspend fun getSampleCoverUrl(storagePath: String): String? {
     if (storagePath.isBlank()) return null
 
     if (coverImageCache.containsKey(storagePath)) {
@@ -214,7 +224,7 @@ class MainViewModel(
   /*
    * Function to get the Audio URL from the storage path.
    */
-  suspend fun getSampleAudioUrl(sample: Sample): String? {
+  private suspend fun getSampleAudioUrl(sample: Sample): String? {
     val storagePath = sample.storagePreviewSamplePath
     if (storagePath.isBlank()) return null
     if (audioUrlCache.containsKey(storagePath)) {
@@ -225,10 +235,15 @@ class MainViewModel(
     return url
   }
 
-  /** Retrieves the waveform for a given Sample. */
-  suspend fun getSampleWaveform(sample: Sample): List<Float> {
+  /*
+   * Retrieves the waveform for a given Sample.
+   */
+
+  private suspend fun getSampleWaveform(sample: Sample): List<Float> {
     if (waveformCache.containsKey(sample.id)) {
-      return waveformCache[sample.id]!!
+      waveformCache[sample.id]?.let {
+        return it
+      }
     }
     val audioUrl = getSampleAudioUrl(sample) ?: return emptyList()
 
@@ -244,6 +259,38 @@ class MainViewModel(
     } catch (e: Exception) {
       Log.e("MainViewModel", "Error extracting waveform for list: ${e.message}")
       emptyList()
+    }
+  }
+
+  /** Function to trigger loading */
+  fun loadSampleResources(sample: Sample) {
+    if (_sampleResources.value.containsKey(sample.id)) return
+
+    viewModelScope.launch {
+      _sampleResources.update { current ->
+        current + (sample.id to SampleResourceState(isLoading = true))
+      }
+
+      val avatarUrl = getSampleOwnerAvatar(sample.ownerId)
+      val userName = getUserName(sample.ownerId)
+      val coverUrl =
+          if (sample.storageImagePath.isNotBlank()) getSampleCoverUrl(sample.storageImagePath)
+          else null
+      val audioUrl =
+          if (sample.storagePreviewSamplePath.isNotBlank()) getSampleAudioUrl(sample) else null
+      val waveform = getSampleWaveform(sample)
+
+      _sampleResources.update { current ->
+        current +
+            (sample.id to
+                SampleResourceState(
+                    ownerName = userName,
+                    ownerAvatarUrl = avatarUrl,
+                    coverImageUrl = coverUrl,
+                    audioUrl = audioUrl,
+                    waveform = waveform,
+                    isLoading = false))
+      }
     }
   }
 
