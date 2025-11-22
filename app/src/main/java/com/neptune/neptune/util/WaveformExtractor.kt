@@ -10,11 +10,15 @@ import kotlin.math.abs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+// Define the interface for testing
+interface AudioWaveformExtractor {
+  suspend fun extractWaveform(context: Context, uri: Uri, samplesCount: Int = 100): List<Float>
+}
 /**
  * Utility singleton for decoding audio files and extracting amplitude data for waveform
  * visualization. This object was made using AI assistance.
  */
-object WaveformExtractor {
+object WaveformExtractor : AudioWaveformExtractor {
 
   /**
    * Decodes an audio file from a URI and returns a list of normalized amplitude samples.
@@ -29,7 +33,7 @@ object WaveformExtractor {
    * @return A list of [Float] values ranging from 0.0 to 1.0 representing the waveform, or an empty
    *   list if processing fails.
    */
-  suspend fun extractWaveform(context: Context, uri: Uri, samplesCount: Int = 100): List<Float> =
+  override suspend fun extractWaveform(context: Context, uri: Uri, samplesCount: Int): List<Float> =
       withContext(Dispatchers.IO) {
         val extractor = MediaExtractor()
         try {

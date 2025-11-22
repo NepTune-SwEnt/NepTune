@@ -20,7 +20,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
-class StorageService(val storage: FirebaseStorage) {
+open class StorageService(val storage: FirebaseStorage) {
   private val storageRef = storage.reference
   private val sampleRepo = com.neptune.neptune.model.sample.SampleRepositoryProvider.repository
 
@@ -208,7 +208,7 @@ class StorageService(val storage: FirebaseStorage) {
    * @param storagePath The full path to the file.
    * @return The download URL, or null in case of an error.
    */
-  suspend fun getDownloadUrl(storagePath: String): String? {
+  open suspend fun getDownloadUrl(storagePath: String): String? {
     if (storagePath.isBlank()) return null
     return try {
       val fileRef = storageRef.child(storagePath)

@@ -18,6 +18,7 @@ import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
+import com.neptune.neptune.util.AudioWaveformExtractor
 import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,6 +47,7 @@ class MainViewModel(
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val imageRepo: ImageStorageRepository = ImageStorageRepository(),
+    private val waveformExtractor: AudioWaveformExtractor = WaveformExtractor
 ) : ViewModel() {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
   val downloadProgress = MutableStateFlow<Int?>(null)
@@ -232,7 +234,7 @@ class MainViewModel(
 
     return try {
       val waveform =
-          WaveformExtractor.extractWaveform(
+          waveformExtractor.extractWaveform(
               context = NepTuneApplication.appContext, uri = audioUrl.toUri(), samplesCount = 100)
 
       if (waveform.isNotEmpty()) {
