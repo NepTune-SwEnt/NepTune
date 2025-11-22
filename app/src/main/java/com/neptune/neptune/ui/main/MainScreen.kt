@@ -403,8 +403,7 @@ fun SampleCardHeader(
 ) {
   Row(
       verticalAlignment = Alignment.CenterVertically,
-      modifier =
-          Modifier.fillMaxWidth().padding(bottom = 6.dp).clickable(onClick = onProfileClick)) {
+      modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
         AsyncImage(
             model =
                 ImageRequest.Builder(LocalContext.current)
@@ -416,7 +415,8 @@ fun SampleCardHeader(
                 Modifier.size(28.dp)
                     .clip(CircleShape)
                     .border(1.dp, NepTuneTheme.colors.onBackground, CircleShape)
-                    .testTag(testTags.SAMPLE_PROFILE_ICON),
+                    .testTag(testTags.SAMPLE_PROFILE_ICON)
+                    .clickable(onClick = onProfileClick),
             contentScale = ContentScale.Crop,
             placeholder = painterResource(R.drawable.profile),
             error = painterResource(R.drawable.profile))
@@ -431,7 +431,8 @@ fun SampleCardHeader(
                     fontSize = 19.sp,
                     fontFamily = FontFamily(Font(R.font.markazi_text)),
                     fontWeight = FontWeight(400)),
-            modifier = Modifier.testTag(testTags.SAMPLE_USERNAME))
+            modifier =
+                Modifier.testTag(testTags.SAMPLE_USERNAME).clickable(onClick = onProfileClick))
       }
 }
 
@@ -624,7 +625,7 @@ fun SampleCard(
                             color = NepTuneTheme.colors.inverse,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).testTag(testTags.SAMPLE_NAME),
                             style =
                                 TextStyle(
                                     fontSize = 12.sp,
@@ -636,7 +637,8 @@ fun SampleCard(
                         Text(
                             "%02d:%02d".format(minutes, seconds),
                             color = NepTuneTheme.colors.inverse,
-                            modifier = Modifier.padding(start = 8.dp),
+                            modifier =
+                                Modifier.padding(start = 8.dp).testTag(testTags.SAMPLE_DURATION),
                             style =
                                 TextStyle(
                                     fontSize = 12.sp,
