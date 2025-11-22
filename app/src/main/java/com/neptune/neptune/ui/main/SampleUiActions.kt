@@ -39,7 +39,7 @@ import kotlinx.coroutines.withContext
  */
 class SampleUiActions(
     private val repo: SampleRepository,
-    val storageService: StorageService,
+    private val storageService: StorageService,
     private val downloadsFolder: File,
     private val context: Context,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
@@ -89,6 +89,11 @@ class SampleUiActions(
       // Doesn't change
       alreadyLiked
     }
+  }
+
+  /** Delegate function to get download URL from StorageService */
+  suspend fun getDownloadUrl(storagePath: String): String? {
+    return storageService.getDownloadUrl(storagePath)
   }
 }
 

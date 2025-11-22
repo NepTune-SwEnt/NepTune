@@ -84,7 +84,8 @@ data class SamplerUiState(
     val inputPitchOctave: Int = 4,
     val timeSignature: String = "4/4",
     val previewPlaying: Boolean = false,
-    val projectLoadError: String? = null
+    val projectLoadError: String? = null,
+    val waveform: List<Float> = emptyList()
 ) {
   val fullPitch: String
     get() = "$pitchNote$pitchOctave"
@@ -459,8 +460,20 @@ open class SamplerViewModel() : ViewModel() {
     _uiState.update { it.copy(compDecay = value.coerceIn(0.0f, COMP_TIME_MAX)) }
   }
 
-  open suspend fun extractWaveform(uri: Uri): List<Float> {
-    return WaveformExtractor.extractWaveform(context, uri, samplesCount = 100)
+  fun loadWaveform(uri: Uri) {
+    viewModelScope.launch {
+      val wf = extractWaveformInternal(uri)
+      _uiState.update { it.copy(waveform = wf) }
+    }
+  }
+
+  private suspend fun extractWaveformInternal(uri: Uri): List<Float> {
+    return try {
+      WaveformExtractor().extractWaveform(context, uri, samplesCount = 100)
+    } catch (e: Exception) {
+      Log.e("SamplerViewModel", "Error extracting waveform", e)
+      emptyList()
+    }
   }
 
   open fun loadProjectData(zipFilePath: String) {

@@ -139,8 +139,7 @@ open class SearchViewModel(
   private suspend fun getSampleCoverUrl(storagePath: String): String? {
     if (storagePath.isBlank()) return null
     if (coverImageCache.containsKey(storagePath)) return coverImageCache[storagePath]
-    val service = actions?.storageService ?: return null
-    val url = service.getDownloadUrl(storagePath)
+    val url = actions?.getDownloadUrl(storagePath) ?: return null
     coverImageCache[storagePath] = url
     return url
   }
@@ -150,8 +149,7 @@ open class SearchViewModel(
     if (storagePath.isBlank()) return null
     if (audioUrlCache.containsKey(storagePath)) return audioUrlCache[storagePath]
 
-    val service = actions?.storageService ?: return null
-    val url = service.getDownloadUrl(storagePath)
+    val url = actions?.getDownloadUrl(storagePath) ?: return null
     audioUrlCache[storagePath] = url
     return url
   }
