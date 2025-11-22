@@ -128,11 +128,25 @@ class MainViewModel(
 
   private fun loadAvatar() {
     viewModelScope.launch {
-      val currentUser = auth.currentUser
-      if (currentUser != null) {
-        _userAvatar.value = getSampleOwnerAvatar(currentUser.uid)
-      } else {
-        _userAvatar.value = null
+      profileRepo.observeProfile().collectLatest { profile ->
+        // Update the user avatar
+        val newAvatarUrl = profile?.avatarUrl
+        _userAvatar.value = newAvatarUrl
+        // Update avatar for samplers owned by current user
+        val currentUserId = auth.currentUser?.uid ?: return@collectLatest
+        avatarCache[currentUserId] = newAvatarUrl
+        _sampleResources.update { currentResources ->
+          val updatedResources = currentResources.toMutableMap()
+          val allLoadedSamples = _discoverSamples.value + _followedSamples.value
+          val mySamples = allLoadedSamples.filter { it.ownerId == currentUserId }
+          mySamples.forEach { sample ->
+            val currentState = updatedResources[sample.id]
+            if (currentState != null) {
+              updatedResources[sample.id] = currentState.copy(ownerAvatarUrl = newAvatarUrl)
+            }
+          }
+          updatedResources
+        }
       }
     }
   }
