@@ -39,7 +39,7 @@ import kotlinx.coroutines.withContext
  */
 class SampleUiActions(
     private val repo: SampleRepository,
-    private val storageService: StorageService,
+    val storageService: StorageService,
     private val downloadsFolder: File,
     private val context: Context,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,

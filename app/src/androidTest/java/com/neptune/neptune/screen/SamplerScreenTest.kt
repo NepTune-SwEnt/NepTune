@@ -459,10 +459,7 @@ class SamplerScreenTest {
     val beatSemantics = beatNode.fetchSemanticsNode()
     val beatTextList = beatSemantics.config[SemanticsProperties.Text]
     val beatCombined = beatTextList.joinToString("") { it.text }
-    assertTrue(
-        "Beat info must contain 'beats:' prefix",
-        beatCombined.contains("beats:")
-    )
+    assertTrue("Beat info must contain 'beats:' prefix", beatCombined.contains("beats:"))
 
     // Timeline labels are not direct nodes (drawn on Canvas). As a basic smoke check, ensure
     // the waveform display container exists and beat info is non-empty

@@ -33,7 +33,7 @@ import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.main.CommentDialog
 import com.neptune.neptune.ui.main.DownloadProgressBar
-import com.neptune.neptune.ui.main.SampleCard
+import com.neptune.neptune.ui.main.SampleItem
 import com.neptune.neptune.ui.main.onClickFunctions
 import com.neptune.neptune.ui.projectlist.SearchBar
 import com.neptune.neptune.ui.theme.NepTuneTheme
@@ -180,13 +180,18 @@ fun ScrollableColumnOfSamples(
                   onCommentClick = { searchViewModel.onCommentClicked(sample) },
                   onProfileClick = { navigateToOtherUserProfile(sample.ownerId) },
               )
-          SampleCard(
+          SampleItem(
               sample = sample,
               width = width,
               clickHandlers = actions,
               isLiked = likedSamples[sample.id] == true,
               testTags = testTags,
-              mediaPlayer = mediaPlayer)
+              mediaPlayer = mediaPlayer,
+              getOwnerAvatar = { id -> searchViewModel.getSampleOwnerAvatar(id) },
+              getUserName = { id -> searchViewModel.getUserName(id) },
+              getCoverUrl = { path -> searchViewModel.getSampleCoverUrl(path) },
+              getAudioUrl = { s -> searchViewModel.getSampleAudioUrl(s) },
+              getWaveform = { s -> searchViewModel.getSampleWaveform(s) })
         }
       } // Comment Overlay
   if (activeCommentSampleId != null) {

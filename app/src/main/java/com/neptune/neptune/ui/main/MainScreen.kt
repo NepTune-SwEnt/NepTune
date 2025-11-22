@@ -358,6 +358,7 @@ fun SampleItem(
     width: Dp,
     isLiked: Boolean,
     clickHandlers: ClickHandlers,
+    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
     testTags: BaseSampleTestTags = MainScreenTestTags,
     getOwnerAvatar: suspend (String) -> String? = { null },
     getUserName: suspend (String) -> String = { "" },
@@ -388,6 +389,7 @@ fun SampleItem(
         isLiked = isLiked,
         clickHandlers = clickHandlers,
         testTags = testTags,
+        mediaPlayer = mediaPlayer,
         getCoverUrl = getCoverUrl,
         getAudioUrl = getAudioUrl,
         getWaveform = getWaveform)
