@@ -40,21 +40,24 @@ class OtherProfileViewModel(
           .collectLatest { (otherProfile, currentProfile) ->
             if (otherProfile != null) {
               val isCurrentUserFollowing = currentProfile?.following?.contains(userId) == true
+              val updatedProfile =
+                  SelfProfileUiState(
+                      name = otherProfile.name.orEmpty(),
+                      username = otherProfile.username,
+                      bio = otherProfile.bio.orEmpty(),
+                      avatarUrl = otherProfile.avatarUrl,
+                      subscribers = otherProfile.subscribers.toInt(),
+                      subscriptions = otherProfile.subscriptions.toInt(),
+                      likes = otherProfile.likes.toInt(),
+                      posts = otherProfile.posts.toInt(),
+                      tags = otherProfile.tags,
+                      error = null)
+
               _uiState.value =
-                  OtherProfileUiState(
-                      profile =
-                          SelfProfileUiState(
-                              name = otherProfile.name.orEmpty(),
-                              username = otherProfile.username,
-                              bio = otherProfile.bio.orEmpty(),
-                              avatarUrl = otherProfile.avatarUrl,
-                              subscribers = otherProfile.subscribers.toInt(),
-                              subscriptions = otherProfile.subscriptions.toInt(),
-                              likes = otherProfile.likes.toInt(),
-                              posts = otherProfile.posts.toInt(),
-                              tags = otherProfile.tags,
-                              error = null),
-                      isCurrentUserFollowing = isCurrentUserFollowing)
+                  _uiState.value.copy(
+                      profile = updatedProfile,
+                      isCurrentUserFollowing = isCurrentUserFollowing,
+                      errorMessage = null)
             }
           }
     }
@@ -63,6 +66,7 @@ class OtherProfileViewModel(
   /** Simple toggle for follow/unfollow with local follower count update. */
   fun onFollow() {
     val isCurrentUserFollowing = _uiState.value.isCurrentUserFollowing
+    _uiState.value = _uiState.value.copy(errorMessage = null)
 
     viewModelScope.launch {
       try {
@@ -73,8 +77,7 @@ class OtherProfileViewModel(
         }
       } catch (e: Exception) {
         _uiState.value =
-            _uiState.value.copy(
-                profile = _uiState.value.profile.copy(error = "Unable to update follow state"))
+            _uiState.value.copy(errorMessage = "Unable to update follow state")
       }
     }
   }

@@ -51,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -198,6 +199,7 @@ sealed interface ProfileViewConfig {
   data class OtherProfileConfig(
       val isFollowing: Boolean,
       private val onFollow: () -> Unit,
+      private val errorMessage: String?,
   ) : ProfileViewConfig {
     override val topBarContent = null
     override val belowStatsButton =
@@ -205,16 +207,27 @@ sealed interface ProfileViewConfig {
           val label = if (isFollowing) "Unfollow" else "Follow"
           val icon = if (isFollowing) Icons.Default.Clear else Icons.Default.Add
 
-          Button(
-              onClick = onFollow,
-              enabled = true,
-              modifier =
-                  Modifier.padding(bottom = BottomButtonBottomPadding)
-                      .testTag(ProfileScreenTestTags.FOLLOW_BUTTON)) {
-                Icon(imageVector = icon, contentDescription = "Follow")
-                Spacer(Modifier.width(ButtonIconSpacing))
-                Text(label)
-              }
+          Column(
+              modifier = Modifier.padding(bottom = BottomButtonBottomPadding),
+                horizontalAlignment = Alignment.CenterHorizontally
+              ) {
+            Button(
+                onClick = onFollow,
+                enabled = true,
+                modifier = Modifier.testTag(ProfileScreenTestTags.FOLLOW_BUTTON)) {
+                  Icon(imageVector = icon, contentDescription = "Follow")
+                  Spacer(Modifier.width(ButtonIconSpacing))
+                  Text(label)
+                }
+            if (!errorMessage.isNullOrBlank()) {
+              Spacer(Modifier.height(8.dp))
+              Text(
+                  text = errorMessage,
+                  color = Color.Red,
+                  style = MaterialTheme.typography.bodySmall,
+                  modifier = Modifier.testTag("profile/follow_error"))
+            }
+          }
         }
     override val bottomScreenButton = null
     override val samplesSection = null // FIXME: implement samples section
@@ -752,7 +765,9 @@ fun OtherUserProfileRoute(
 
   val viewConfig =
       ProfileViewConfig.OtherProfileConfig(
-          isFollowing = state.isCurrentUserFollowing, onFollow = viewModel::onFollow)
+          isFollowing = state.isCurrentUserFollowing,
+          onFollow = viewModel::onFollow,
+          errorMessage = state.errorMessage)
 
   ProfileScreen(
       uiState = state.profile,

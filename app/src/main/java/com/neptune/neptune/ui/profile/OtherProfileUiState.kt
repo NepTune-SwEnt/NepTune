@@ -9,4 +9,5 @@ package com.neptune.neptune.ui.profile
 data class OtherProfileUiState(
     val profile: SelfProfileUiState = SelfProfileUiState(),
     val isCurrentUserFollowing: Boolean = false,
+    val errorMessage: String? = null,
 )
