@@ -37,7 +37,7 @@ class MainDispatcherRule(val dispatcher: TestDispatcher = UnconfinedTestDispatch
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ProfileViewModelTest {
+class SelfProfileViewModelTest {
 
   @get:Rule val mainRule = MainDispatcherRule()
 
