@@ -127,6 +127,10 @@ class MainViewModel(
   }
 
   private fun loadAvatar() {
+    if (auth.currentUser == null) {
+      _userAvatar.value = null
+      return
+    }
     viewModelScope.launch {
       profileRepo.observeProfile().collectLatest { profile ->
         // Update the user avatar

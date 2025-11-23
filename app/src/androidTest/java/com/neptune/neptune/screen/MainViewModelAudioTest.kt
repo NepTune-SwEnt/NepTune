@@ -13,7 +13,9 @@ import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.util.AudioWaveformExtractor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -56,6 +58,8 @@ class MainViewModelAudioTest {
     Dispatchers.setMain(testDispatcher)
     val appContext = InstrumentationRegistry.getInstrumentation().targetContext
 
+    whenever(mockProfileRepo.observeProfile()).thenReturn(flowOf(null))
+
     whenever(mockAuth.currentUser).thenReturn(mockUser)
     whenever(mockUser.uid).thenReturn("test_uid")
 
@@ -83,8 +87,10 @@ class MainViewModelAudioTest {
   fun getSampleAudioUrlReturnsNullWhenStoragePathIsEmpty() =
       runTest(testDispatcher) {
         val sample = createSample(storagePath = "")
-        val result = viewModel.getSampleAudioUrl(sample)
-        assertEquals(null, result)
+        viewModel.loadSampleResources(sample)
+        advanceUntilIdle()
+        val resources = viewModel.sampleResources.value[sample.id]
+        assertEquals(null, resources?.audioUrl)
       }
 
   @Test
@@ -96,9 +102,11 @@ class MainViewModelAudioTest {
 
         whenever(mockStorageService.getDownloadUrl(path)).thenReturn(expectedUrl)
 
-        val result = viewModel.getSampleAudioUrl(sample)
+        viewModel.loadSampleResources(sample)
+        advanceUntilIdle()
+        val resources = viewModel.sampleResources.value[sample.id]
 
-        assertEquals(expectedUrl, result)
+        assertEquals(expectedUrl, resources?.audioUrl)
         verify(mockStorageService, times(1)).getDownloadUrl(path)
       }
 
@@ -110,11 +118,13 @@ class MainViewModelAudioTest {
         val sample = createSample(storagePath = path)
 
         whenever(mockStorageService.getDownloadUrl(path)).thenReturn(expectedUrl)
+        viewModel.loadSampleResources(sample)
+        advanceUntilIdle()
+        viewModel.loadSampleResources(sample)
+        advanceUntilIdle()
+        val resources = viewModel.sampleResources.value[sample.id]
+        assertEquals(expectedUrl, resources?.audioUrl)
 
-        viewModel.getSampleAudioUrl(sample)
-        val result2 = viewModel.getSampleAudioUrl(sample)
-
-        assertEquals(expectedUrl, result2)
         verify(mockStorageService, times(1)).getDownloadUrl(path)
       }
 
@@ -126,8 +136,12 @@ class MainViewModelAudioTest {
   fun getSampleWaveformReturnsEmptyListWhenAudioUrlIsNull() =
       runTest(testDispatcher) {
         val sample = createSample(storagePath = "")
-        val result = viewModel.getSampleWaveform(sample)
-        assertTrue(result.isEmpty())
+        viewModel.loadSampleResources(sample)
+        advanceUntilIdle()
+
+        val resources = viewModel.sampleResources.value[sample.id]
+
+        assertTrue(resources?.waveform?.isEmpty() == true)
       }
 
   @Test
@@ -145,11 +159,14 @@ class MainViewModelAudioTest {
         whenever(mockWaveformExtractor.extractWaveform(any(), eq(expectedUri), any()))
             .thenReturn(expectedWaveform)
 
-        val result = viewModel.getSampleWaveform(sample)
-        assertEquals(expectedWaveform, result)
+        viewModel.loadSampleResources(sample)
+        advanceUntilIdle()
 
-        val resultCached = viewModel.getSampleWaveform(sample)
-        assertEquals(expectedWaveform, resultCached)
+        val resources = viewModel.sampleResources.value[sample.id]
+        assertEquals(expectedWaveform, resources?.waveform)
+
+        viewModel.loadSampleResources(sample)
+        advanceUntilIdle()
 
         verify(mockWaveformExtractor, times(1)).extractWaveform(any(), eq(expectedUri), any())
       }
@@ -167,9 +184,12 @@ class MainViewModelAudioTest {
         whenever(mockWaveformExtractor.extractWaveform(any(), eq(expectedUri), any()))
             .thenThrow(RuntimeException("Extraction failed"))
 
-        val result = viewModel.getSampleWaveform(sample)
+        viewModel.loadSampleResources(sample)
+        advanceUntilIdle()
 
-        assertTrue(result.isEmpty())
+        val resources = viewModel.sampleResources.value[sample.id]
+
+        assertTrue(resources?.waveform?.isEmpty() == true)
       }
 
   private fun createSample(storagePath: String): Sample {
