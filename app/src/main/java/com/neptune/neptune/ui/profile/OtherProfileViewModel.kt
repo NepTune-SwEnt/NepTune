@@ -76,8 +76,7 @@ class OtherProfileViewModel(
           repo.followUser(userId)
         }
       } catch (e: Exception) {
-        _uiState.value =
-            _uiState.value.copy(errorMessage = "Unable to update follow state")
+        _uiState.value = _uiState.value.copy(errorMessage = "Unable to update follow state")
       }
     }
   }

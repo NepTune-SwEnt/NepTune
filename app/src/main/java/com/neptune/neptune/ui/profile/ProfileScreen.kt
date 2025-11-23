@@ -209,25 +209,24 @@ sealed interface ProfileViewConfig {
 
           Column(
               modifier = Modifier.padding(bottom = BottomButtonBottomPadding),
-                horizontalAlignment = Alignment.CenterHorizontally
-              ) {
-            Button(
-                onClick = onFollow,
-                enabled = true,
-                modifier = Modifier.testTag(ProfileScreenTestTags.FOLLOW_BUTTON)) {
-                  Icon(imageVector = icon, contentDescription = "Follow")
-                  Spacer(Modifier.width(ButtonIconSpacing))
-                  Text(label)
+              horizontalAlignment = Alignment.CenterHorizontally) {
+                Button(
+                    onClick = onFollow,
+                    enabled = true,
+                    modifier = Modifier.testTag(ProfileScreenTestTags.FOLLOW_BUTTON)) {
+                      Icon(imageVector = icon, contentDescription = "Follow")
+                      Spacer(Modifier.width(ButtonIconSpacing))
+                      Text(label)
+                    }
+                if (!errorMessage.isNullOrBlank()) {
+                  Spacer(Modifier.height(8.dp))
+                  Text(
+                      text = errorMessage,
+                      color = Color.Red,
+                      style = MaterialTheme.typography.bodySmall,
+                      modifier = Modifier.testTag("profile/follow_error"))
                 }
-            if (!errorMessage.isNullOrBlank()) {
-              Spacer(Modifier.height(8.dp))
-              Text(
-                  text = errorMessage,
-                  color = Color.Red,
-                  style = MaterialTheme.typography.bodySmall,
-                  modifier = Modifier.testTag("profile/follow_error"))
-            }
-          }
+              }
         }
     override val bottomScreenButton = null
     override val samplesSection = null // FIXME: implement samples section
