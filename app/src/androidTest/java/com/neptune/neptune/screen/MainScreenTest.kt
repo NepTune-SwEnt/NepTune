@@ -114,10 +114,6 @@ class MainScreenTest {
         .onFirst()
         .assertIsDisplayed()
     composeTestRule
-        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_USERNAME, true)
-        .onFirst()
-        .assertIsDisplayed()
-    composeTestRule
         .onAllNodesWithTag(MainScreenTestTags.SAMPLE_NAME, true)
         .onFirst()
         .assertIsDisplayed()

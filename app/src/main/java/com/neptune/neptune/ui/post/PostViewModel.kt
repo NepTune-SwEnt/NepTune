@@ -56,8 +56,7 @@ class PostViewModel(
           return@launch
         }
         _localZipUri.value = rawPath.toUri()
-        // TODO: change the durationSeconds to the actual duration of the project
-        val durationSeconds = 0
+        val durationSeconds = storageService?.getProjectDuration(_localZipUri.value) ?: 0
         val sample =
             Sample(
                 id = project.uid,

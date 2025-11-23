@@ -90,6 +90,11 @@ class SampleUiActions(
       alreadyLiked
     }
   }
+
+  /** Delegate function to get download URL from StorageService */
+  suspend fun getDownloadUrl(storagePath: String): String? {
+    return storageService.getDownloadUrl(storagePath)
+  }
 }
 
 @Composable
