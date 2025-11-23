@@ -68,7 +68,7 @@ class SelfProfileViewModel(
 
   init {
     viewModelScope.launch {
-      repo.observeProfile().collectLatest { p ->
+      repo.observeCurrentProfile().collectLatest { p ->
         snapshot = p
 
         if (p != null && _uiState.value.mode == ProfileMode.VIEW) {

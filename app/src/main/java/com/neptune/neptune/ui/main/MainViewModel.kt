@@ -94,7 +94,7 @@ class MainViewModel(
   private fun loadSamplesFromFirebase() {
     viewModelScope.launch {
       // Get current user's profile
-      val profile = profileRepo.getProfile()
+      val profile = profileRepo.getCurrentProfile()
       val following = profile?.following.orEmpty()
       repo.observeSamples().collectLatest { samples ->
         _discoverSamples.value = samples.filter { it.ownerId !in following }
@@ -181,7 +181,7 @@ class MainViewModel(
 
   fun addComment(sampleId: String, text: String) {
     viewModelScope.launch {
-      val profile = profileRepo.getProfile()
+      val profile = profileRepo.getCurrentProfile()
       val username = profile?.username ?: "Anonymous"
       repo.addComment(sampleId, username, text.trim())
     }

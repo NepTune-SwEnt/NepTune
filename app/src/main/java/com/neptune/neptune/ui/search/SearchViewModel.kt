@@ -236,7 +236,7 @@ open class SearchViewModel(
 
   fun addComment(sampleId: String, text: String) {
     viewModelScope.launch {
-      val profile = profileRepo.getProfile()
+      val profile = profileRepo.getCurrentProfile()
       val username = profile?.username ?: "Anonymous"
       repo.addComment(sampleId, username, text.trim())
       load(useMockData)

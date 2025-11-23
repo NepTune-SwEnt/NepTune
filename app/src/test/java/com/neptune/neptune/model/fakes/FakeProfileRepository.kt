@@ -20,9 +20,17 @@ class FakeProfileRepository(
 
   private val state = MutableStateFlow(initial)
 
-  override suspend fun getProfile(): Profile? = state.value
+  override suspend fun getCurrentProfile(): Profile? {
+    TODO("Not yet implemented")
+  }
 
-  override fun observeProfile(): Flow<Profile?> = state.asStateFlow()
+  override suspend fun getProfile(uid: String): Profile? = state.value
+
+  override fun observeCurrentProfile(): Flow<Profile?> = state.asStateFlow()
+
+  override fun observeProfile(uid: String): Flow<Profile?> {
+    TODO("Not yet implemented")
+  }
 
   override suspend fun ensureProfile(
       suggestedUsernameBase: String?,

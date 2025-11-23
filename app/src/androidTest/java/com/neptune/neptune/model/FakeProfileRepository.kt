@@ -10,11 +10,19 @@ class FakeProfileRepository(initial: Profile? = null) : ProfileRepository {
 
   private var profile: Profile? = initial
 
-  override suspend fun getProfile(): Profile? = profile
+    override suspend fun getCurrentProfile(): Profile? = profile
 
-  override fun observeProfile(): Flow<Profile?> = flowOf(profile)
+  override suspend fun getProfile(uid: String): Profile? {
+      TODO("Not yet implemented")
+  }
 
-  override suspend fun ensureProfile(
+    override fun observeCurrentProfile(): Flow<Profile?> = flowOf(profile)
+
+    override fun observeProfile(uid: String): Flow<Profile?> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun ensureProfile(
       suggestedUsernameBase: String?,
       name: String?,
   ): Profile {

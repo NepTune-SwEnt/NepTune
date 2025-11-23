@@ -201,7 +201,7 @@ class ProfileRepositoryFirebaseTest {
     val original = profile.username
     val newDesired = "zz_${Random.nextInt(10000, 99999)}"
     repo.setUsername(newDesired)
-    val after = repo.getProfile()!!
+    val after = repo.getCurrentProfile()!!
     assertEquals(newDesired, after.username)
 
     val okToReclaim = runCatching { repo.setUsername(original) }.isSuccess
@@ -238,7 +238,7 @@ class ProfileRepositoryFirebaseTest {
     repo.updateName("Arianna")
     repo.updateBio("Hi there!")
 
-    val after = repo.getProfile()!!
+    val after = repo.getCurrentProfile()!!
     assertEquals("Arianna", after.name)
     assertEquals("Hi there!", after.bio)
     assertEquals(originalUsername, after.username)
@@ -248,12 +248,12 @@ class ProfileRepositoryFirebaseTest {
   fun removeAvatarAndUploadAvatarStubsDoNotThrow() = runBlocking {
     repo.ensureProfile("pic", null)
     runCatching { repo.removeAvatar() }.getOrThrow()
-    val p1 = repo.getProfile()!!
+    val p1 = repo.getCurrentProfile()!!
     assertEquals("", p1.avatarUrl)
 
     val returned = repo.uploadAvatar(Uri.parse("file:///tmp/fake.jpg"))
     assertEquals("", returned)
-    val p2 = repo.getProfile()!!
+    val p2 = repo.getCurrentProfile()!!
     assertEquals("", p2.avatarUrl)
   }
 
@@ -264,7 +264,7 @@ class ProfileRepositoryFirebaseTest {
     runCatching { auth.signOut() }
     auth.signInAnonymously().await()
 
-    repo.observeProfile().test {
+    repo.observeCurrentProfile().test {
       // first emission: should be null (no doc)
       assertNull("fist emission should be null when doc is missing", awaitItem())
 
