@@ -33,6 +33,7 @@ import com.neptune.neptune.ui.profile.ProfileViewConfig
 import com.neptune.neptune.ui.profile.SelfProfileUiState
 import com.neptune.neptune.ui.profile.profileScreenCallbacks
 import com.neptune.neptune.ui.theme.SampleAppTheme
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
@@ -528,7 +529,9 @@ class ProfileScreenTest {
   @Test
   fun viewingOtherProfileHidesSelfOnlyControls() {
     setContentViewMode(
-        viewConfig = ProfileViewConfig.OtherProfileConfig(isFollowing = false, onFollow = {}))
+        viewConfig =
+            ProfileViewConfig.OtherProfileConfig(
+                isFollowing = false, onFollow = {}, errorMessage = null))
 
     composeTestRule
         .onNodeWithTag(ProfileScreenTestTags.FOLLOW_BUTTON, useUnmergedTree = true)
@@ -547,7 +550,7 @@ class ProfileScreenTest {
     setContentViewMode(
         viewConfig =
             ProfileViewConfig.OtherProfileConfig(
-                isFollowing = true, onFollow = { unfollowCalled = true }))
+                isFollowing = true, onFollow = { unfollowCalled = true }, errorMessage = null))
 
     composeTestRule
         .onNodeWithTag(ProfileScreenTestTags.FOLLOW_BUTTON, useUnmergedTree = true)
@@ -581,7 +584,7 @@ class ProfileScreenTest {
     setContentViewMode(
         viewConfig =
             ProfileViewConfig.OtherProfileConfig(
-                isFollowing = false, onFollow = { followClicked = true }))
+                isFollowing = false, onFollow = { followClicked = true }, errorMessage = null))
 
     composeTestRule
         .onNodeWithTag(ProfileScreenTestTags.FOLLOW_BUTTON, useUnmergedTree = true)
@@ -596,14 +599,19 @@ class ProfileScreenTest {
   @Test
   fun followButtonShowsUnfollowLabelWhenAlreadyFollowing() {
     setContentViewMode(
-        viewConfig = ProfileViewConfig.OtherProfileConfig(isFollowing = true, onFollow = {}))
+        viewConfig =
+            ProfileViewConfig.OtherProfileConfig(
+                isFollowing = true, onFollow = {}, errorMessage = null))
 
     composeTestRule.onNode(hasText("Unfollow"), useUnmergedTree = true).assertExists()
   }
 
   @Test
-  fun followButtonUpdatesFollowersCount() {
+  fun followButtonReflectsRemoteFollowerUpdates() {
     val initialFollowers = 12
+    var followRequests = 0
+    var remoteUpdate: ((Boolean, Int) -> Unit)? = null
+
     composeTestRule.setContent {
       var state by remember {
         mutableStateOf(
@@ -618,20 +626,24 @@ class ProfileScreenTest {
       }
       var isFollowing by remember { mutableStateOf(false) }
 
+      remoteUpdate = { following, followerCount ->
+        isFollowing = following
+        state = state.copy(subscribers = followerCount)
+      }
+
       SampleAppTheme {
         ProfileScreen(
             uiState = state,
             viewConfig =
                 ProfileViewConfig.OtherProfileConfig(
                     isFollowing = isFollowing,
-                    onFollow = {
-                      isFollowing = !isFollowing
-                      val delta = if (isFollowing) 1 else -1
-                      state = state.copy(subscribers = state.subscribers + delta)
-                    }),
+                    onFollow = { followRequests++ },
+                    errorMessage = null),
             callbacks = profileScreenCallbacks(goBackClick = {}))
       }
     }
+
+    composeTestRule.waitUntil(3_000) { remoteUpdate != null }
 
     val followButton =
         composeTestRule
@@ -640,15 +652,30 @@ class ProfileScreenTest {
 
     followButton.performClick()
 
+    composeTestRule.runOnIdle { assertEquals(1, followRequests) }
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.FOLLOWERS_BLOCK, useUnmergedTree = true)
+        .assertTextEquals("$initialFollowers")
+
+    composeTestRule.runOnIdle { remoteUpdate?.invoke(true, initialFollowers + 1) }
+
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.FOLLOWERS_BLOCK, useUnmergedTree = true)
+        .assertTextEquals("${initialFollowers + 1}")
+    composeTestRule.onNode(hasText("Unfollow"), useUnmergedTree = true).assertExists()
+
+    followButton.performClick()
+    composeTestRule.runOnIdle { assertEquals(2, followRequests) }
     composeTestRule
         .onNodeWithTag(ProfileScreenTestTags.FOLLOWERS_BLOCK, useUnmergedTree = true)
         .assertTextEquals("${initialFollowers + 1}")
 
-    followButton.performClick()
+    composeTestRule.runOnIdle { remoteUpdate?.invoke(false, initialFollowers) }
 
     composeTestRule
         .onNodeWithTag(ProfileScreenTestTags.FOLLOWERS_BLOCK, useUnmergedTree = true)
         .assertTextEquals("$initialFollowers")
+    composeTestRule.onNode(hasText("Follow"), useUnmergedTree = true).assertExists()
   }
 
   @Test
