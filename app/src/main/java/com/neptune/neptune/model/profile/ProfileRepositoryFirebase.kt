@@ -7,6 +7,7 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Transaction
+import com.google.firebase.functions.FirebaseFunctions
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -26,6 +27,7 @@ private const val DEFAULT_BIO = "Hello! New NepTune user here!"
  */
 class ProfileRepositoryFirebase(
     private val db: FirebaseFirestore,
+    private val functions: FirebaseFunctions = FirebaseFunctions.getInstance("us-east1"),
 ) : ProfileRepository {
 
   val profiles = db.collection(PROFILES_COLLECTION_PATH)
@@ -69,57 +71,31 @@ class ProfileRepositoryFirebase(
   }
 
   override suspend fun unfollowUser(uid: String) {
-    updateFollowState(uid = uid, follow = false)
+    callFollowFunction(targetUid = uid, follow = false)
   }
 
   override suspend fun followUser(uid: String) {
-    updateFollowState(uid = uid, follow = true)
+    callFollowFunction(targetUid = uid, follow = true)
   }
 
-    /**
-     * Updates the follow state between the current user and the given [uid]. If [follow] is true,
-     * the current user will follow the other user; if false, they will unfollow them
-     */
-  private suspend fun updateFollowState(uid: String, follow: Boolean) {
+  /**
+   * Updates the follow state between the current user and the given [targetUid]. If [follow] is
+   * true, the current user will follow the other user; if false, they will unfollow them.
+   */
+  private suspend fun callFollowFunction(targetUid: String, follow: Boolean) {
+    if (targetUid.isBlank()) {
+      throw IllegalArgumentException("UID cannot be blank")
+    }
     val currentUid = requireCurrentUid()
-    if (currentUid == uid) {
+    if (currentUid == targetUid) {
       throw IllegalArgumentException("Cannot follow/unfollow oneself")
     }
-
-    db.runTransaction { tx ->
-          val currentUserProfileRef = profiles.document(currentUid)
-          val otherUserProfileRef = profiles.document(uid)
-
-          val currentUserProfileSnap = tx.get(currentUserProfileRef)
-          val otherUserProfileSnap = tx.get(otherUserProfileRef)
-
-          val currentFollowing =
-              (currentUserProfileSnap.get("following") as? List<*>)?.filterIsInstance<String>()
-                  ?: emptyList()
-          val otherSubscribers = otherUserProfileSnap.getLong("subscribers") ?: 0L
-          val currentSubscriptions = currentUserProfileSnap.getLong("subscriptions") ?: 0L
-
-          if (follow) {
-            // Follow user
-            if (!currentFollowing.contains(uid)) {
-              // Add to current user following list, increment other subscribers and current
-              // subscriptions
-              tx.update(currentUserProfileRef, "following", FieldValue.arrayUnion(uid))
-              tx.update(otherUserProfileRef, "subscribers", otherSubscribers + 1)
-              tx.update(currentUserProfileRef, "subscriptions", currentSubscriptions + 1)
-            }
-          } else {
-            // Unfollow user
-            if (currentFollowing.contains(uid)) {
-              // Remove from current user following list, decrement other subscribers and current
-              // subscriptions
-              tx.update(currentUserProfileRef, "following", FieldValue.arrayRemove(uid))
-              tx.update(otherUserProfileRef, "subscribers", maxOf(0L, otherSubscribers - 1))
-              tx.update(currentUserProfileRef, "subscriptions", maxOf(0L, currentSubscriptions - 1))
-            }
-          }
-        }
-        .await()
+    val data = mapOf("targetUid" to targetUid, "follow" to follow)
+    try {
+      functions.getHttpsCallable("followUser").call(data).await()
+    } catch (e: Exception) {
+      throw e
+    }
   }
 
   /** Converts a Firestore [DocumentSnapshot] to a [Profile] instance, or null if missing. */
