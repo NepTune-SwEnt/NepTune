@@ -15,13 +15,14 @@ import kotlinx.coroutines.flow.update
  *
  * @author Angéline Bignens
  */
-class SelectMessagesViewModel : ViewModel() {
+class SelectMessagesViewModel(initialUsers: List<UserMessagePreview>? = null /*for testing only*/) :
+    ViewModel() {
 
   private val _users = MutableStateFlow(emptyList<UserMessagePreview>())
   val users: StateFlow<List<UserMessagePreview>> = _users.asStateFlow()
 
   init {
-    loadFakeData()
+    if (initialUsers == null) loadFakeData()
   }
 
   // Fake preview data with profiles

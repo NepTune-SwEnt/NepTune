@@ -96,7 +96,6 @@ object MainScreenTestTags : BaseSampleTestTags {
   // General
   const val MAIN_SCREEN = "mainScreen"
   const val POST_BUTTON = "postButton"
-  const val MESSAGES_BUTTON = "messagesButton"
   const val DOWNlOAD_PROGRESS = "downloadProgressBar"
 
   // Top Bar
@@ -205,7 +204,7 @@ fun MainScreen(
                       modifier =
                           Modifier.padding(vertical = 38.dp, horizontal = 25.dp)
                               .size(38.dp)
-                              .testTag(MainScreenTestTags.MESSAGES_BUTTON)) {
+                              .testTag(NavigationTestTags.MESSAGE_BUTTON)) {
                         Icon(
                             painter = painterResource(id = R.drawable.messageicon),
                             contentDescription = "Messages",
