@@ -225,7 +225,12 @@ open class StorageService(
     }
   }
 
-  /** Attempts to read the duration from the JSON. If it is 0, extracts the audio to measure it. */
+  /**
+   * Attempts to read the duration from the JSON. If it is 0, extracts the audio to measure it.
+   *
+   * This function is temporally using the duration of the audio without his effects. It should be
+   * improved in the future to calculate with the effects applied.
+   */
   suspend fun getProjectDuration(zipUri: Uri?): Int {
     if (zipUri == null) return 0
 
