@@ -123,8 +123,7 @@ class ProfileRepositoryFirebase(
    * a free username and default fields.
    */
   override suspend fun ensureProfile(suggestedUsernameBase: String?, name: String?): Profile {
-    val currentUser = Firebase.auth.currentUser
-    val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
+    val uid = requireCurrentUid()
     // Transaction: if profile missing, create it with a free username
     return db.runTransaction<Profile> { tx ->
           val profile = profiles.document(uid)
@@ -217,7 +216,7 @@ class ProfileRepositoryFirebase(
    */
   @Throws(UsernameTakenException::class)
   override suspend fun setUsername(newUsername: String) {
-    val uid = Firebase.auth.currentUser?.uid ?: error("No authenticated user")
+    val uid = requireCurrentUid()
     val desired = normalizeUsername(newUsername)
 
     db.runTransaction { tx ->
@@ -275,37 +274,32 @@ class ProfileRepositoryFirebase(
 
   /** Updates only the `name` field of the current user's profile. */
   override suspend fun updateName(newName: String) {
-    val currentUser = Firebase.auth.currentUser
-    val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
+    val uid = requireCurrentUid()
     profiles.document(uid).update("name", newName).await()
   }
 
   /** Updates only the `bio` field of the current user's profile. */
   override suspend fun updateBio(newBio: String) {
-    val currentUser = Firebase.auth.currentUser
-    val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
+    val uid = requireCurrentUid()
     profiles.document(uid).update("bio", newBio).await()
   }
 
   /** Updates only the `avatarUrl` field of the current user's profile. */
   override suspend fun updateAvatarUrl(newUrl: String) {
-    val currentUser = Firebase.auth.currentUser
-    val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
+    val uid = requireCurrentUid()
     profiles.document(uid).update("avatarUrl", newUrl).await()
   }
 
   /** Adds a new tag to the current user's profile. */
   override suspend fun addNewTag(tag: String) {
-    val currentUser = Firebase.auth.currentUser
-    val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
+    val uid = requireCurrentUid()
     // no check for existence needed: we rely on Firestore’s built-in atomic behavior
     profiles.document(uid).update("tags", FieldValue.arrayUnion(normalizeTag(tag))).await()
   }
 
   /** Removes a tag from the current user's profile. */
   override suspend fun removeTag(tag: String) {
-    val currentUser = Firebase.auth.currentUser
-    val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
+    val uid = requireCurrentUid()
     profiles.document(uid).update("tags", FieldValue.arrayRemove(normalizeTag(tag))).await()
   }
 
@@ -318,16 +312,14 @@ class ProfileRepositoryFirebase(
    * returns the uploaded URL (currently empty).
    */
   override suspend fun uploadAvatar(localUri: Uri): String {
-    val currentUser = Firebase.auth.currentUser
-    val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
+    val uid = requireCurrentUid()
     profiles.document(uid).update("avatarUrl", "").await()
     return ""
   }
 
   /** Removes the current user's avatar and clears `avatarUrl`. */
   override suspend fun removeAvatar() {
-    val currentUser = Firebase.auth.currentUser
-    val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
+    val uid = requireCurrentUid()
     profiles.document(uid).update("avatarUrl", "").await()
   }
 
