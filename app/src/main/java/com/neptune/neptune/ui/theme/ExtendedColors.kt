@@ -19,7 +19,9 @@ data class ExtendedColors(
     val profileIcon: Color,
     val postButton: Color,
     val shadow: Color,
-    val animation: Color
+    val animation: Color,
+    val online: Color,
+    val offline: Color
 )
 
 val DarkExtendedColors =
@@ -37,7 +39,9 @@ val DarkExtendedColors =
         profileIcon = Color.Unspecified,
         postButton = PurpleBlue,
         shadow = ShadowColor,
-        animation = DarkPurple)
+        animation = DarkPurple,
+        online = Green,
+        offline = Gray)
 
 val LightExtendedColors =
     ExtendedColors(
@@ -54,7 +58,9 @@ val LightExtendedColors =
         profileIcon = DarkBlue3,
         postButton = LightPurple,
         shadow = ShadowColor,
-        animation = purple)
+        animation = purple,
+        online = Green,
+        offline = Gray)
 
 val LocalExtendedColors = staticCompositionLocalOf {
   // default value
