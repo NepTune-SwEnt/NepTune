@@ -43,6 +43,8 @@ sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
   object SettingsAccount : Screen(route = "settings_account", showBottomBar = false)
 
   object ImportFile : Screen(route = "import_file")
+
+  object SelectMessages : Screen(route = "select_messages", showBottomBar = false)
 }
 
 /**
@@ -75,6 +77,7 @@ open class NavigationActions(
       route == Screen.SettingsAccount.route -> Screen.SettingsAccount
       route == Screen.ImportFile.route -> Screen.ImportFile
       route == Screen.OtherUserProfile.route -> Screen.OtherUserProfile
+      route == Screen.SelectMessages.route -> Screen.SelectMessages
       else -> Screen.SignIn
     }
   }
