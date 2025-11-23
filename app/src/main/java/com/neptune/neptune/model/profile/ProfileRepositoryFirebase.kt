@@ -39,11 +39,11 @@ class ProfileRepositoryFirebase(
     return profile.toProfileOrNull()
   }
 
-    override suspend fun getProfile(uid: String): Profile? {
-        TODO("Not yet implemented")
-    }
+  override suspend fun getProfile(uid: String): Profile? {
+    TODO("Not yet implemented")
+  }
 
-    /** Observes real-time updates to the current user's profile as a [Flow]. */
+  /** Observes real-time updates to the current user's profile as a [Flow]. */
   override fun observeCurrentProfile(): Flow<Profile?> = callbackFlow {
     val currentUser = Firebase.auth.currentUser
     val uid = currentUser?.uid ?: throw IllegalStateException("No authenticated user")
@@ -60,11 +60,11 @@ class ProfileRepositoryFirebase(
     // =====================================================
   }
 
-    override fun observeProfile(uid: String): Flow<Profile?> {
-        TODO("Not yet implemented")
-    }
+  override fun observeProfile(uid: String): Flow<Profile?> {
+    TODO("Not yet implemented")
+  }
 
-    /** Converts a Firestore [DocumentSnapshot] to a [Profile] instance, or null if missing. */
+  /** Converts a Firestore [DocumentSnapshot] to a [Profile] instance, or null if missing. */
   private fun DocumentSnapshot.toProfileOrNull(): Profile? {
     return if (!exists()) {
       null
