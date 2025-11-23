@@ -76,6 +76,10 @@ class ProfileRepositoryFirebase(
     updateFollowState(uid = uid, follow = true)
   }
 
+    /**
+     * Updates the follow state between the current user and the given [uid]. If [follow] is true,
+     * the current user will follow the other user; if false, they will unfollow them
+     */
   private suspend fun updateFollowState(uid: String, follow: Boolean) {
     val currentUid = requireCurrentUid()
     if (currentUid == uid) {
