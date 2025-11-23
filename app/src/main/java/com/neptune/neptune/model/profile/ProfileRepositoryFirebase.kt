@@ -68,73 +68,57 @@ class ProfileRepositoryFirebase(
     // =====================================================
   }
 
-    override suspend fun unfollowUser(uid: String) {
-        updateFollowState(uid = uid, follow = false)
+  override suspend fun unfollowUser(uid: String) {
+    updateFollowState(uid = uid, follow = false)
+  }
+
+  override suspend fun followUser(uid: String) {
+    updateFollowState(uid = uid, follow = true)
+  }
+
+  private suspend fun updateFollowState(uid: String, follow: Boolean) {
+    val currentUid = requireCurrentUid()
+    if (currentUid == uid) {
+      throw IllegalArgumentException("Cannot follow/unfollow oneself")
     }
 
-    override suspend fun followUser(uid: String) {
-        updateFollowState(uid = uid, follow = true)
-    }
+    db.runTransaction { tx ->
+          val currentUserProfileRef = profiles.document(currentUid)
+          val otherUserProfileRef = profiles.document(uid)
 
-    private suspend fun updateFollowState(uid: String, follow: Boolean) {
-        val currentUid = requireCurrentUid()
-        if (currentUid == uid) {
-            throw IllegalArgumentException("Cannot follow/unfollow oneself")
-        }
+          val currentUserProfileSnap = tx.get(currentUserProfileRef)
+          val otherUserProfileSnap = tx.get(otherUserProfileRef)
 
-        db.runTransaction { tx ->
-            val currentUserProfileRef = profiles.document(currentUid)
-            val otherUserProfileRef = profiles.document(uid)
+          val currentFollowing =
+              (currentUserProfileSnap.get("following") as? List<*>)?.filterIsInstance<String>()
+                  ?: emptyList()
+          val otherSubscribers = otherUserProfileSnap.getLong("subscribers") ?: 0L
+          val currentSubscriptions = currentUserProfileSnap.getLong("subscriptions") ?: 0L
 
-            val currentUserProfileSnap = tx.get(currentUserProfileRef)
-            val otherUserProfileSnap = tx.get(otherUserProfileRef)
-
-            val currentFollowing =
-                (currentUserProfileSnap.get("following") as? List<*>)?.filterIsInstance<String>()
-                    ?: emptyList()
-            val otherSubscribers =
-                otherUserProfileSnap.getLong("subscribers") ?: 0L
-            val currentSubscriptions = currentUserProfileSnap.getLong("subscriptions") ?: 0L
-
-            if (follow) {
-                // Follow user
-                if (!currentFollowing.contains(uid)) {
-                    // Add to current user following list, increment other subscribers and current subscriptions
-                    tx.update(
-                        currentUserProfileRef,
-                        "following",
-                        FieldValue.arrayUnion(uid))
-                    tx.update(
-                        otherUserProfileRef,
-                        "subscribers",
-                        otherSubscribers + 1)
-                    tx.update(
-                        currentUserProfileRef,
-                        "subscriptions",
-                        currentSubscriptions + 1)
-                }
-            } else {
-                // Unfollow user
-                if (currentFollowing.contains(uid)) {
-                    // Remove from current user following list, decrement other subscribers and current subscriptions
-                    tx.update(
-                        currentUserProfileRef,
-                        "following",
-                        FieldValue.arrayRemove(uid))
-                    tx.update(
-                        otherUserProfileRef,
-                        "subscribers",
-                        maxOf(0L, otherSubscribers - 1))
-                    tx.update(
-                        currentUserProfileRef,
-                        "subscriptions",
-                        maxOf(0L, currentSubscriptions - 1))
-                }
+          if (follow) {
+            // Follow user
+            if (!currentFollowing.contains(uid)) {
+              // Add to current user following list, increment other subscribers and current
+              // subscriptions
+              tx.update(currentUserProfileRef, "following", FieldValue.arrayUnion(uid))
+              tx.update(otherUserProfileRef, "subscribers", otherSubscribers + 1)
+              tx.update(currentUserProfileRef, "subscriptions", currentSubscriptions + 1)
             }
-        }.await()
-    }
+          } else {
+            // Unfollow user
+            if (currentFollowing.contains(uid)) {
+              // Remove from current user following list, decrement other subscribers and current
+              // subscriptions
+              tx.update(currentUserProfileRef, "following", FieldValue.arrayRemove(uid))
+              tx.update(otherUserProfileRef, "subscribers", maxOf(0L, otherSubscribers - 1))
+              tx.update(currentUserProfileRef, "subscriptions", maxOf(0L, currentSubscriptions - 1))
+            }
+          }
+        }
+        .await()
+  }
 
-    /** Converts a Firestore [DocumentSnapshot] to a [Profile] instance, or null if missing. */
+  /** Converts a Firestore [DocumentSnapshot] to a [Profile] instance, or null if missing. */
   private fun DocumentSnapshot.toProfileOrNull(): Profile? {
     return if (!exists()) {
       null
