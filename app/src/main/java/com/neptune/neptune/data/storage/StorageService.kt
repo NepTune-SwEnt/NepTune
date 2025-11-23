@@ -1,6 +1,7 @@
 package com.neptune.neptune.data.storage
 
 import android.content.Context
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Log
@@ -8,6 +9,7 @@ import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageException
 import com.google.firebase.storage.StorageReference
 import com.neptune.neptune.NepTuneApplication
+import com.neptune.neptune.model.project.ProjectExtractor
 import com.neptune.neptune.model.sample.Sample
 import java.io.File
 import java.io.FileInputStream
@@ -220,6 +222,62 @@ open class StorageService(
     } catch (e: Exception) {
       Log.w("StorageService", "Failed to get download URL: $storagePath", e)
       null
+    }
+  }
+
+  /** Attempts to read the duration from the JSON. If it is 0, extracts the audio to measure it. */
+  suspend fun getProjectDuration(zipUri: Uri?): Int {
+    if (zipUri == null) return 0
+
+    return withContext(ioDispatcher) {
+      try {
+        val context = NepTuneApplication.appContext
+        val zipFile = File(zipUri.path ?: "")
+        if (!zipFile.exists()) return@withContext 0
+
+        val extractor = ProjectExtractor()
+
+        val metadata = extractor.extractMetadata(zipFile)
+        val firstAudio = metadata.audioFiles.firstOrNull()
+
+        val durationFromMeta = firstAudio?.durationSeconds ?: 0f
+        if (durationFromMeta > 0.1f) {
+          return@withContext durationFromMeta.toInt()
+        }
+
+        Log.w(
+            "StorageService", "Duration not found in the JSON, calculated via audio extraction...")
+
+        val audioFileName = firstAudio?.name ?: return@withContext 0
+        val tempAudioUri = extractor.extractAudioFile(zipFile, context, audioFileName)
+
+        val realDuration = getAudioDuration(context, tempAudioUri)
+
+        File(tempAudioUri.path ?: "").delete()
+
+        return@withContext realDuration
+      } catch (e: Exception) {
+        Log.e("StorageService", "Failed to calculate project duration", e)
+        0
+      }
+    }
+  }
+
+  /** Helper to retrieve the duration of an audio file (mp3/wav) via MediaMetadataRetriever */
+  private suspend fun getAudioDuration(context: Context, audioUri: Uri): Int {
+    return withContext(ioDispatcher) {
+      val retriever = MediaMetadataRetriever()
+      try {
+        retriever.setDataSource(context, audioUri)
+        val time = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+        val timeInMs = time?.toLongOrNull() ?: 0L
+        (timeInMs / 1000).toInt()
+      } catch (e: Exception) {
+        Log.e("StorageService", "Failed to retrieve audio duration", e)
+        0
+      } finally {
+        retriever.release()
+      }
     }
   }
 }
