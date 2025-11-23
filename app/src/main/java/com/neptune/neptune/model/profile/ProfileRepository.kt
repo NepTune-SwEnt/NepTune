@@ -44,6 +44,20 @@ interface ProfileRepository {
   fun observeProfile(uid: String): Flow<Profile?>
 
   /**
+   * Makes the current user unfollow the user with the given uid.
+   *
+   * @param uid the user ID of the profile to unfollow
+   */
+  suspend fun unfollowUser(uid: String)
+
+  /**
+   * Makes the current user follow the user with the given uid.
+   *
+   * @param uid the user ID of the profile to follow
+   */
+  suspend fun followUser(uid: String)
+
+  /**
    * This method is only related to the current user. Creates profiles/{uid} if missing on first
    * sign-in. Returns the created/loaded profile.
    *

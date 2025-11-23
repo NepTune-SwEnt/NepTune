@@ -32,6 +32,14 @@ class FakeProfileRepository(
     TODO("Not yet implemented")
   }
 
+  override suspend fun unfollowUser(uid: String) {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun followUser(uid: String) {
+    TODO("Not yet implemented")
+  }
+
   override suspend fun ensureProfile(
       suggestedUsernameBase: String?,
       name: String?,
