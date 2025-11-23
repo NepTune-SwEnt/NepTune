@@ -6,13 +6,13 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
 import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.data.storage.StorageService
-import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 /**
@@ -32,54 +32,50 @@ class OtherProfileViewModel(
   private val _uiState = MutableStateFlow(OtherProfileUiState())
   val uiState: StateFlow<OtherProfileUiState> = _uiState.asStateFlow()
 
-  /** Latest snapshot we saw from Firestore, used to detect changes on save. */
-  private var snapshot: Profile? = null
-
   init {
     viewModelScope.launch {
-      val currentProfile = repo.getCurrentProfile()
-      val isCurrentUserFollowing = currentProfile?.following?.contains(userId) == true
-
-      repo.observeProfile(userId).collectLatest { p ->
-        snapshot = p
-
-        if (p != null) {
-          _uiState.value =
-              _uiState.value.copy(
-                  profile =
-                      SelfProfileUiState(
-                          name = p.name.orEmpty(),
-                          username = p.username,
-                          bio = p.bio.orEmpty(),
-                          avatarUrl = p.avatarUrl,
-                          subscribers = p.subscribers.toInt(),
-                          subscriptions = p.subscriptions.toInt(),
-                          likes = p.likes.toInt(),
-                          posts = p.posts.toInt(),
-                          tags = p.tags,
-                          error = null),
-                  isCurrentUserFollowing = isCurrentUserFollowing)
-        }
-      }
+      combine(repo.observeProfile(userId), repo.observeCurrentProfile()) { other, current ->
+            other to current
+          }
+          .collectLatest { (otherProfile, currentProfile) ->
+            if (otherProfile != null) {
+              val isCurrentUserFollowing = currentProfile?.following?.contains(userId) == true
+              _uiState.value =
+                  OtherProfileUiState(
+                      profile =
+                          SelfProfileUiState(
+                              name = otherProfile.name.orEmpty(),
+                              username = otherProfile.username,
+                              bio = otherProfile.bio.orEmpty(),
+                              avatarUrl = otherProfile.avatarUrl,
+                              subscribers = otherProfile.subscribers.toInt(),
+                              subscriptions = otherProfile.subscriptions.toInt(),
+                              likes = otherProfile.likes.toInt(),
+                              posts = otherProfile.posts.toInt(),
+                              tags = otherProfile.tags,
+                              error = null),
+                      isCurrentUserFollowing = isCurrentUserFollowing)
+            }
+          }
     }
   }
 
   /** Simple toggle for follow/unfollow with local follower count update. */
   fun onFollow() {
-    val current = _uiState.value
-    val newIsFollowing = !current.isCurrentUserFollowing
-    val delta = if (newIsFollowing) 1 else -1
+    val isCurrentUserFollowing = _uiState.value.isCurrentUserFollowing
 
-    // TODO: real repo call
-    _uiState.value =
-        current.copy(
-            isCurrentUserFollowing = newIsFollowing,
-            profile =
-                current.profile.copy(
-                    subscribers =
-                        (current.profile.subscribers + delta).coerceAtLeast(
-                            0), // don’t go below zero
-                ),
-        )
+    viewModelScope.launch {
+      try {
+        if (isCurrentUserFollowing) {
+          repo.unfollowUser(userId)
+        } else {
+          repo.followUser(userId)
+        }
+      } catch (e: Exception) {
+        _uiState.value =
+            _uiState.value.copy(
+                profile = _uiState.value.profile.copy(error = "Unable to update follow state"))
+      }
+    }
   }
 }
