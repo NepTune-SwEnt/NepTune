@@ -257,8 +257,13 @@ open class StorageService(
         val tempAudioUri = extractor.extractAudioFile(zipFile, context, audioFileName)
 
         val realDuration = getAudioDuration(context, tempAudioUri)
+        var path = tempAudioUri.path
+        if (path == null) {
+          path = ""
+          Log.w("StorageService", "Failed to calculate project duration")
+        }
 
-        File(tempAudioUri.path ?: "").delete()
+        File(path).delete()
 
         return@withContext realDuration
       } catch (e: Exception) {
