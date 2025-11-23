@@ -11,16 +11,16 @@ class OtherProfileViewModelTest {
   @Test
   fun followToggleUpdatesFollowerCount() {
     val viewModel = OtherProfileViewModel(userId = "artist-42")
-    val initialFollowers = viewModel.uiState.value.profile.followers
+    val initialFollowers = viewModel.uiState.value.profile.subscribers
 
     viewModel.onFollow()
     val followingState = viewModel.uiState.value
-    assertTrue(followingState.isFollowing)
-    assertEquals(initialFollowers + 1, followingState.profile.followers)
+    assertTrue(followingState.isCurrentUserFollowing)
+    assertEquals(initialFollowers + 1, followingState.profile.subscribers)
 
     viewModel.onFollow()
     val unfollowingState = viewModel.uiState.value
-    assertFalse(unfollowingState.isFollowing)
-    assertEquals(initialFollowers, unfollowingState.profile.followers)
+    assertFalse(unfollowingState.isCurrentUserFollowing)
+    assertEquals(initialFollowers, unfollowingState.profile.subscribers)
   }
 }

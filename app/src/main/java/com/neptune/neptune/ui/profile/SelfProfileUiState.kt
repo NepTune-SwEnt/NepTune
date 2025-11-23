@@ -13,8 +13,8 @@ enum class ProfileMode {
  * @property username The user's unique username.
  * @property bio The user's biography text.
  * @property avatarUrl Optional URL to the user's avatar image.
- * @property followers Number of followers.
- * @property following Number of followed accounts.
+ * @property subscribers Number of followers.
+ * @property subscriptions Number of followed accounts.
  * @property mode The current display mode ([ProfileMode.VIEW] or [ProfileMode.EDIT]).
  * @property isSaving True if a save operation is currently in progress.
  * @property error General error message, if any.
@@ -28,10 +28,11 @@ data class SelfProfileUiState(
     val username: String = "",
     val bio: String = "",
     val avatarUrl: String? = null,
-    val followers: Int = 0,
-    val following: Int = 0,
+    val subscribers: Int = 0,
+    val subscriptions: Int = 0,
     val likes: Int = 0,
     val posts: Int = 0,
+    val followingList: List<String> = emptyList(),
     val tags: List<String> = emptyList(),
     val inputTag: String = "",
     val mode: ProfileMode = ProfileMode.VIEW,

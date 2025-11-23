@@ -78,8 +78,8 @@ class SelfProfileViewModel(
                   username = p.username,
                   bio = p.bio.orEmpty(),
                   avatarUrl = p.avatarUrl,
-                  followers = p.subscribers.toInt(),
-                  following = p.subscriptions.toInt(),
+                  subscribers = p.subscribers.toInt(),
+                  subscriptions = p.subscriptions.toInt(),
                   likes = p.likes.toInt(),
                   posts = p.posts.toInt(),
                   tags = p.tags,
@@ -87,8 +87,8 @@ class SelfProfileViewModel(
         } else if (p != null && _uiState.value.mode == ProfileMode.EDIT) {
           _uiState.value =
               _uiState.value.copy(
-                  followers = p.subscribers.toInt(),
-                  following = p.subscriptions.toInt(),
+                  subscribers = p.subscribers.toInt(),
+                  subscriptions = p.subscriptions.toInt(),
                   likes = p.likes.toInt(),
                   posts = p.posts.toInt(),
                   tags = p.tags,
@@ -164,8 +164,8 @@ class SelfProfileViewModel(
                 username = prof.username,
                 bio = prof.bio.orEmpty(),
                 avatarUrl = prof.avatarUrl,
-                followers = prof.subscribers.toInt(),
-                following = prof.subscriptions.toInt(),
+                subscribers = prof.subscribers.toInt(),
+                subscriptions = prof.subscriptions.toInt(),
                 likes = prof.likes.toInt(),
                 posts = prof.posts.toInt(),
                 tags = prof.tags,

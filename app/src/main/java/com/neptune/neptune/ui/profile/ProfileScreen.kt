@@ -577,12 +577,12 @@ private fun StatRow(state: SelfProfileUiState) {
         testTag = ProfileScreenTestTags.LIKES_BLOCK)
     StatBlock(
         label = "Followers",
-        value = state.followers,
+        value = state.subscribers,
         modifier = Modifier.weight(1f),
         testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
     StatBlock(
         label = "Following",
-        value = state.following,
+        value = state.subscriptions,
         modifier = Modifier.weight(1f),
         testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
   }
@@ -738,7 +738,10 @@ fun OtherUserProfileRoute(
       object : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
           if (modelClass.isAssignableFrom(OtherProfileViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST") return OtherProfileViewModel(userId) as T
+            @Suppress("UNCHECKED_CAST")
+            return OtherProfileViewModel(
+                repo = ProfileRepositoryProvider.repository, userId = userId)
+                as T
           }
           throw IllegalArgumentException("Unknown ViewModel class")
         }
@@ -749,7 +752,7 @@ fun OtherUserProfileRoute(
 
   val viewConfig =
       ProfileViewConfig.OtherProfileConfig(
-          isFollowing = state.isFollowing, onFollow = viewModel::onFollow)
+          isFollowing = state.isCurrentUserFollowing, onFollow = viewModel::onFollow)
 
   ProfileScreen(
       uiState = state.profile,

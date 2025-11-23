@@ -87,8 +87,8 @@ class ProfileScreenTest {
               name = "John Doe",
               username = "johndoe",
               bio = "I make sounds and share samples on NepTune.",
-              followers = 1234,
-              following = 56,
+              subscribers = 1234,
+              subscriptions = 56,
               likes = 3,
               posts = 10,
               mode = ProfileMode.VIEW),
@@ -115,8 +115,8 @@ class ProfileScreenTest {
               name = "John Doe",
               username = "johndoe",
               bio = "I make sounds and share samples on NepTune.",
-              followers = 1234,
-              following = 56,
+              subscribers = 1234,
+              subscriptions = 56,
               likes = 3,
               posts = 10,
               mode = ProfileMode.EDIT),
@@ -179,8 +179,8 @@ class ProfileScreenTest {
             name = "Jane Roe",
             username = "janeroe",
             bio = "Hello world",
-            followers = 42,
-            following = 7,
+            subscribers = 42,
+            subscriptions = 7,
             likes = 3,
             posts = 10,
             mode = ProfileMode.VIEW)
@@ -515,8 +515,8 @@ class ProfileScreenTest {
                 bio = "",
                 likes = 0,
                 posts = 0,
-                followers = 0,
-                following = 0,
+                subscribers = 0,
+                subscriptions = 0,
                 mode = ProfileMode.VIEW,
                 tags = arrayListOf("rock")))
 
@@ -610,8 +610,8 @@ class ProfileScreenTest {
             SelfProfileUiState(
                 name = "Demo User",
                 username = "demo",
-                followers = initialFollowers,
-                following = 5,
+                subscribers = initialFollowers,
+                subscriptions = 5,
                 likes = 9,
                 posts = 1,
                 mode = ProfileMode.VIEW))
@@ -627,7 +627,7 @@ class ProfileScreenTest {
                     onFollow = {
                       isFollowing = !isFollowing
                       val delta = if (isFollowing) 1 else -1
-                      state = state.copy(followers = state.followers + delta)
+                      state = state.copy(subscribers = state.subscribers + delta)
                     }),
             callbacks = profileScreenCallbacks(goBackClick = {}))
       }
