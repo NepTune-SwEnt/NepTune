@@ -132,7 +132,7 @@ class MainViewModel(
       return
     }
     viewModelScope.launch {
-      profileRepo.observeProfile().collectLatest { profile ->
+      profileRepo.observeCurrentProfile().collectLatest { profile ->
         // Update the user avatar
         val newAvatarUrl = profile?.avatarUrl
         _userAvatar.value = newAvatarUrl
