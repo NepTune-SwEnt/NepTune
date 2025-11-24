@@ -180,4 +180,12 @@ private class FollowToggleTestRepository(
   override suspend fun removeAvatar() {
     throw UnsupportedOperationException("Not needed in this test")
   }
+
+  override suspend fun getAvatarUrlByUserId(userId: String): String? {
+    throw UnsupportedOperationException("Not needed in this test")
+  }
+
+  override suspend fun getUserNameByUserId(userId: String): String? {
+    throw UnsupportedOperationException("Not needed in this test")
+  }
 }
