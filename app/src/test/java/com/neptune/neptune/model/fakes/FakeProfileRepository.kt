@@ -123,4 +123,12 @@ class FakeProfileRepository(
     val cur = state.value ?: return
     state.value = cur.copy(avatarUrl = "")
   }
+
+  override suspend fun getAvatarUrlByUserId(userId: String): String? {
+    return userId
+  }
+
+  override suspend fun getUserNameByUserId(userId: String): String? {
+    return userId
+  }
 }

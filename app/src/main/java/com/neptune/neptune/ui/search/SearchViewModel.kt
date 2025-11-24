@@ -3,6 +3,7 @@ package com.neptune.neptune.ui.search
 import android.content.Context
 import android.os.Environment
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -15,12 +16,15 @@ import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
+import com.neptune.neptune.ui.main.SampleResourceState
 import com.neptune.neptune.ui.main.SampleUiActions
+import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 const val NATURE_TAG = "#nature"
@@ -51,7 +55,6 @@ open class SearchViewModel(
       }
 
   private val _currentUserFlow = MutableStateFlow(firebaseAuth?.currentUser)
-  val currentUserFlow: StateFlow<com.google.firebase.auth.FirebaseUser?> = _currentUserFlow
 
   private val authListener: FirebaseAuth.AuthStateListener? =
       firebaseAuth?.let {
@@ -71,6 +74,8 @@ open class SearchViewModel(
   private val allSamples = MutableStateFlow<List<Sample>>(emptyList())
   private val _activeCommentSampleId = MutableStateFlow<String?>(null)
   val activeCommentSampleId: StateFlow<String?> = _activeCommentSampleId.asStateFlow()
+  private val _sampleResources = MutableStateFlow<Map<String, SampleResourceState>>(emptyMap())
+  val sampleResources = _sampleResources.asStateFlow()
 
   fun onCommentClicked(sample: Sample) {
     observeCommentsForSample(sample.id)
@@ -104,11 +109,103 @@ open class SearchViewModel(
             repo, storageService, downloadsFolder, context, downloadProgress = downloadProgress)
       }
 
+  private val avatarCache = mutableMapOf<String, String?>()
+  private val userNameCache = mutableMapOf<String, String>()
+  private val coverImageCache = mutableMapOf<String, String?>()
+  private val audioUrlCache = mutableMapOf<String, String?>()
+  private val waveformCache = mutableMapOf<String, List<Float>>()
+
   init {
     if (firebaseAuth != null && authListener != null) {
       firebaseAuth.addAuthStateListener(authListener)
     }
     load(useMockData)
+  }
+
+  private suspend fun getSampleOwnerAvatar(userId: String): String? {
+    if (avatarCache.containsKey(userId)) return avatarCache[userId]
+    val url = profileRepo.getAvatarUrlByUserId(userId)
+    avatarCache[userId] = url
+    return url
+  }
+
+  private suspend fun getUserName(userId: String): String {
+    if (userNameCache.containsKey(userId)) return userNameCache[userId] ?: "Anonymous"
+    val userName = profileRepo.getUserNameByUserId(userId) ?: "Anonymous"
+    userNameCache[userId] = userName
+    return userName
+  }
+
+  private suspend fun getSampleCoverUrl(storagePath: String): String? {
+    if (storagePath.isBlank()) return null
+    if (coverImageCache.containsKey(storagePath)) return coverImageCache[storagePath]
+    val url = actions?.getDownloadUrl(storagePath) ?: return null
+    coverImageCache[storagePath] = url
+    return url
+  }
+
+  private suspend fun getSampleAudioUrl(sample: Sample): String? {
+    val storagePath = sample.storagePreviewSamplePath
+    if (storagePath.isBlank()) return null
+    if (audioUrlCache.containsKey(storagePath)) return audioUrlCache[storagePath]
+
+    val url = actions?.getDownloadUrl(storagePath) ?: return null
+    audioUrlCache[storagePath] = url
+    return url
+  }
+
+  private suspend fun getSampleWaveform(sample: Sample): List<Float> {
+    if (waveformCache.containsKey(sample.id))
+        waveformCache[sample.id]?.let {
+          return it
+        }
+
+    val audioUrl = getSampleAudioUrl(sample) ?: return emptyList()
+
+    return try {
+      val waveform =
+          WaveformExtractor()
+              .extractWaveform(context = context, uri = audioUrl.toUri(), samplesCount = 100)
+      if (waveform.isNotEmpty()) {
+        waveformCache[sample.id] = waveform
+      }
+      waveform
+    } catch (e: Exception) {
+      Log.e("SearchViewModel", "Waveform error: ${e.message}")
+      emptyList()
+    }
+  }
+
+  /** Function to trigger loading */
+  fun loadSampleResources(sample: Sample) {
+    if (_sampleResources.value.containsKey(sample.id)) return
+
+    viewModelScope.launch {
+      _sampleResources.update { current ->
+        current + (sample.id to SampleResourceState(isLoading = true))
+      }
+
+      val avatarUrl = getSampleOwnerAvatar(sample.ownerId)
+      val userName = getUserName(sample.ownerId)
+      val coverUrl =
+          if (sample.storageImagePath.isNotBlank()) getSampleCoverUrl(sample.storageImagePath)
+          else null
+      val audioUrl =
+          if (sample.storagePreviewSamplePath.isNotBlank()) getSampleAudioUrl(sample) else null
+      val waveform = getSampleWaveform(sample)
+
+      _sampleResources.update { current ->
+        current +
+            (sample.id to
+                SampleResourceState(
+                    ownerName = userName,
+                    ownerAvatarUrl = avatarUrl,
+                    coverImageUrl = coverUrl,
+                    audioUrl = audioUrl,
+                    waveform = waveform,
+                    isLoading = false))
+      }
+    }
   }
 
   override fun onCleared() {

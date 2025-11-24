@@ -1,6 +1,7 @@
 package com.neptune.neptune.model.profile
 
 import android.net.Uri
+import android.util.Log
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
@@ -323,6 +324,28 @@ class ProfileRepositoryFirebase(
   override suspend fun removeAvatar() {
     val uid = requireCurrentUid()
     profiles.document(uid).update("avatarUrl", "").await()
+  }
+
+  override suspend fun getAvatarUrlByUserId(userId: String): String? {
+    return try {
+      val snapshot = profiles.document(userId).get().await()
+      snapshot.getString("avatarUrl")
+    } catch (e: Exception) {
+      // In case of a network error, do nothing.
+      Log.e("ProfileRepository", "Error fetching avatar URL for userId=$userId", e)
+      null
+    }
+  }
+
+  override suspend fun getUserNameByUserId(userId: String): String? {
+    return try {
+      val snapshot = profiles.document(userId).get().await()
+      snapshot.getString("username")
+    } catch (e: Exception) {
+      // In case of a network error, do nothing.
+      Log.e("ProfileRepository", "Error fetching username for userId=$userId", e)
+      null
+    }
   }
 
   /** Converts an input string to a valid username base (lowercase, alphanumeric + underscores). */

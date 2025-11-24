@@ -146,4 +146,13 @@ interface ProfileRepository {
    * present, sets avatarUrl="", uses placeholder picture).
    */
   suspend fun removeAvatar()
+
+  /**
+   * Retrieves the URL of a specific user's avatar via their ID. Used to display the profile picture
+   * of sample creators.
+   */
+  suspend fun getAvatarUrlByUserId(userId: String): String?
+
+  /** Retrieves the username of a specific user via their ID. */
+  suspend fun getUserNameByUserId(userId: String): String?
 }
