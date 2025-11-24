@@ -26,6 +26,10 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
+import com.neptune.neptune.model.profile.Profile
+import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import com.neptune.neptune.ui.profile.OtherUserProfileRoute
 import com.neptune.neptune.ui.profile.ProfileMode
 import com.neptune.neptune.ui.profile.ProfileScreen
 import com.neptune.neptune.ui.profile.ProfileScreenTestTags
@@ -36,6 +40,8 @@ import com.neptune.neptune.ui.theme.SampleAppTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class ProfileScreenTest {
 
@@ -80,6 +86,16 @@ class ProfileScreenTest {
       return
     } catch (_: AssertionError) {}
     scrollAnyScrollableTo(hasTestTag(tag))
+  }
+
+  private fun <T> withProfileRepository(repo: ProfileRepository, block: () -> T): T {
+    val previous = ProfileRepositoryProvider.repository
+    ProfileRepositoryProvider.repository = repo
+    return try {
+      block()
+    } finally {
+      ProfileRepositoryProvider.repository = previous
+    }
   }
 
   private fun setContentViewMode(
@@ -679,6 +695,34 @@ class ProfileScreenTest {
   }
 
   @Test
+  fun followErrorMessageIsDisplayedWhenProvided() {
+    val errorMsg = "Unable to follow right now"
+    setContentViewMode(
+        viewConfig =
+            ProfileViewConfig.OtherProfileConfig(
+                isFollowing = false, onFollow = {}, errorMessage = errorMsg))
+
+    composeTestRule.bringIntoView(ProfileScreenTestTags.FOLLOW_BUTTON)
+    composeTestRule
+        .onNodeWithTag("profile/follow_error", useUnmergedTree = true)
+        .assertExists()
+        .assertTextEquals(errorMsg)
+  }
+
+  @Test
+  fun followErrorMessageHiddenWhenBlank() {
+    setContentViewMode(
+        viewConfig =
+            ProfileViewConfig.OtherProfileConfig(
+                isFollowing = true, onFollow = {}, errorMessage = "  "))
+
+    composeTestRule.bringIntoView(ProfileScreenTestTags.FOLLOW_BUTTON)
+    composeTestRule
+        .onAllNodes(hasTestTag("profile/follow_error"), useUnmergedTree = true)
+        .assertCountEquals(0)
+  }
+
+  @Test
   fun goBackButtonTriggersCallback() {
     var goBackCalled = false
     setContentViewMode(goBack = { goBackCalled = true })
@@ -691,4 +735,151 @@ class ProfileScreenTest {
     composeTestRule.waitUntil(3_000) { goBackCalled }
     assert(goBackCalled)
   }
+
+  @Test
+  fun otherUserProfileRouteDisplaysRemoteProfileAndHandlesFollow() {
+    val userId = "remote-artist"
+    val repo =
+        FakeOtherProfileRepository(
+            targetUserId = userId,
+            initialOtherProfile =
+                Profile(
+                    uid = userId,
+                    name = "Remote Artist",
+                    username = "remote_artist",
+                    bio = "Space vibes",
+                    subscribers = 99,
+                    subscriptions = 5,
+                    likes = 12,
+                    posts = 3,
+                    tags = listOf("ambient")),
+            initialCurrentProfile = Profile(uid = "current-user", following = emptyList()))
+
+    withProfileRepository(repo) {
+      composeTestRule.setContent {
+        SampleAppTheme { OtherUserProfileRoute(userId = userId) }
+      }
+
+      composeTestRule.waitForTag(ProfileScreenTestTags.NAME)
+      composeTestRule
+          .onNodeWithTag(ProfileScreenTestTags.NAME, useUnmergedTree = true)
+          .assertTextEquals("Remote Artist")
+      composeTestRule
+          .onNodeWithTag(ProfileScreenTestTags.USERNAME, useUnmergedTree = true)
+          .assertTextEquals("@remote_artist")
+
+      val followButton =
+          composeTestRule
+              .onNodeWithTag(ProfileScreenTestTags.FOLLOW_BUTTON, useUnmergedTree = true)
+              .assertExists()
+
+      followButton.performClick()
+      composeTestRule.waitUntil(5_000) { repo.followRequests > 0 }
+      composeTestRule.onNode(hasText("Unfollow"), useUnmergedTree = true).assertExists()
+    }
+  }
+
+  @Test
+  fun otherUserProfileRouteGoBackButtonInvokesCallback() {
+    val userId = "remote-artist"
+    val repo =
+        FakeOtherProfileRepository(
+            targetUserId = userId,
+            initialOtherProfile = Profile(uid = userId, name = "Remote Artist"),
+            initialCurrentProfile = Profile(uid = "current-user", following = listOf(userId)))
+    var goBackCalled = false
+
+    withProfileRepository(repo) {
+      composeTestRule.setContent {
+        SampleAppTheme {
+          OtherUserProfileRoute(userId = userId, goBack = { goBackCalled = true })
+        }
+      }
+
+      composeTestRule.waitForTag(ProfileScreenTestTags.GOBACK_BUTTON)
+      composeTestRule
+          .onNodeWithTag(ProfileScreenTestTags.GOBACK_BUTTON, useUnmergedTree = true)
+          .performClick()
+
+      composeTestRule.waitUntil(3_000) { goBackCalled }
+      assert(goBackCalled)
+    }
+  }
+}
+
+private class FakeOtherProfileRepository(
+    private val targetUserId: String,
+    initialOtherProfile: Profile,
+    initialCurrentProfile: Profile
+) : ProfileRepository {
+
+  private val otherProfile = MutableStateFlow<Profile?>(initialOtherProfile)
+  private val currentProfile = MutableStateFlow<Profile?>(initialCurrentProfile)
+
+  var followRequests = 0
+    private set
+  var unfollowRequests = 0
+    private set
+
+  override suspend fun getCurrentProfile(): Profile? = currentProfile.value
+
+  override suspend fun getProfile(uid: String): Profile? =
+      if (uid == targetUserId) otherProfile.value else null
+
+  override fun observeCurrentProfile(): Flow<Profile?> = currentProfile
+
+  override fun observeProfile(uid: String): Flow<Profile?> =
+      if (uid == targetUserId) otherProfile else MutableStateFlow<Profile?>(null)
+
+  override suspend fun unfollowUser(uid: String) {
+    unfollowRequests++
+    currentProfile.value =
+        currentProfile.value?.let { profile ->
+          profile.copy(following = profile.following.filterNot { it == uid })
+        }
+  }
+
+  override suspend fun followUser(uid: String) {
+    followRequests++
+    currentProfile.value =
+        currentProfile.value?.let { profile ->
+          if (profile.following.contains(uid)) profile
+          else profile.copy(following = profile.following + uid)
+        }
+  }
+
+  override suspend fun ensureProfile(
+      suggestedUsernameBase: String?,
+      name: String?,
+  ): Profile {
+    return currentProfile.value ?: Profile(uid = "current", name = name)
+  }
+
+  override suspend fun isUsernameAvailable(username: String): Boolean = true
+
+  override suspend fun setUsername(newUsername: String) {}
+
+  override suspend fun generateRandomFreeUsername(base: String): String = "${base}_generated"
+
+  override suspend fun updateName(newName: String) {
+    currentProfile.value = currentProfile.value?.copy(name = newName)
+  }
+
+  override suspend fun updateBio(newBio: String) {
+    currentProfile.value = currentProfile.value?.copy(bio = newBio)
+  }
+
+  override suspend fun updateAvatarUrl(newUrl: String) {}
+
+  override suspend fun addNewTag(tag: String) {}
+
+  override suspend fun removeTag(tag: String) {}
+
+  override suspend fun uploadAvatar(localUri: android.net.Uri): String = ""
+
+  override suspend fun removeAvatar() {}
+
+  override suspend fun getAvatarUrlByUserId(userId: String): String? = null
+
+  override suspend fun getUserNameByUserId(userId: String): String? = null
 }
