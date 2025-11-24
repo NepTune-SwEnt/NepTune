@@ -86,9 +86,7 @@ class ProfileRepositoryFirebase(
    * true, the current user will follow the other user; if false, they will unfollow them.
    */
   private suspend fun callFollowFunction(targetUid: String, follow: Boolean) {
-    if (targetUid.isBlank()) {
-      throw IllegalArgumentException("UID cannot be blank")
-    }
+    require(!(targetUid.isBlank())) { "UID cannot be blank" }
     val currentUid = requireCurrentUid()
     if (currentUid == targetUid) {
       throw IllegalArgumentException("Cannot follow/unfollow oneself")
