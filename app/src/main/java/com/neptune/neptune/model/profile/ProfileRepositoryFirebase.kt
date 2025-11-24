@@ -2,6 +2,7 @@ package com.neptune.neptune.model.profile
 
 import android.net.Uri
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
@@ -28,6 +29,7 @@ private const val DEFAULT_BIO = "Hello! New NepTune user here!"
 class ProfileRepositoryFirebase(
     private val db: FirebaseFirestore,
     private val functions: FirebaseFunctions = FirebaseFunctions.getInstance("us-east1"),
+    private val auth: FirebaseAuth = Firebase.auth,
 ) : ProfileRepository {
 
   val profiles = db.collection(PROFILES_COLLECTION_PATH)
@@ -35,7 +37,7 @@ class ProfileRepositoryFirebase(
 
   /** Returns the UID of the current authenticated user, or throws if none exists. */
   private fun requireCurrentUid(): String {
-    val currentUser = Firebase.auth.currentUser
+    val currentUser = auth.currentUser
     return currentUser?.uid ?: throw IllegalStateException("No authenticated user")
   }
 
@@ -200,7 +202,7 @@ class ProfileRepositoryFirebase(
    * already owned by this user.
    */
   override suspend fun isUsernameAvailable(username: String): Boolean {
-    val uid = Firebase.auth.currentUser?.uid ?: error("No authenticated user")
+    val uid = auth.currentUser?.uid ?: error("No authenticated user")
     val desired = normalizeUsername(username)
     val doc = usernames.document(desired).get().await()
     if (!doc.exists()) return true
