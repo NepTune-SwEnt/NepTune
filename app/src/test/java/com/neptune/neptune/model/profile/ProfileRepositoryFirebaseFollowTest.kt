@@ -68,17 +68,13 @@ class ProfileRepositoryFirebaseFollowTest {
 
   @Test
   fun followUserRejectsBlankUid() {
-    runBlocking {
-      assertFailsWith<IllegalArgumentException> { repo.followUser("   ") }
-    }
+    runBlocking { assertFailsWith<IllegalArgumentException> { repo.followUser("   ") } }
     verify(exactly = 0) { functions.getHttpsCallable("followUser") }
   }
 
   @Test
   fun followUserRejectsSelfFollow() {
-    runBlocking {
-      assertFailsWith<IllegalArgumentException> { repo.followUser(CURRENT_UID) }
-    }
+    runBlocking { assertFailsWith<IllegalArgumentException> { repo.followUser(CURRENT_UID) } }
     verify(exactly = 0) { functions.getHttpsCallable("followUser") }
   }
 
@@ -86,13 +82,10 @@ class ProfileRepositoryFirebaseFollowTest {
   fun followUserPropagatesCallableException() {
     val payloadSlot = slot<Any>()
     every { callable.call(capture(payloadSlot)) } returns
-            Tasks.forException(IllegalStateException("firestore down"))
+        Tasks.forException(IllegalStateException("firestore down"))
 
-    runBlocking {
-      assertFailsWith<IllegalStateException> { repo.followUser("abc") }
-    }
+    runBlocking { assertFailsWith<IllegalStateException> { repo.followUser("abc") } }
   }
-
 
   companion object {
     private const val CURRENT_UID = "current-user"
