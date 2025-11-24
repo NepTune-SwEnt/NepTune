@@ -37,11 +37,11 @@ import com.neptune.neptune.ui.profile.ProfileViewConfig
 import com.neptune.neptune.ui.profile.SelfProfileUiState
 import com.neptune.neptune.ui.profile.profileScreenCallbacks
 import com.neptune.neptune.ui.theme.SampleAppTheme
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 
 class ProfileScreenTest {
 
@@ -756,9 +756,7 @@ class ProfileScreenTest {
             initialCurrentProfile = Profile(uid = "current-user", following = emptyList()))
 
     withProfileRepository(repo) {
-      composeTestRule.setContent {
-        SampleAppTheme { OtherUserProfileRoute(userId = userId) }
-      }
+      composeTestRule.setContent { SampleAppTheme { OtherUserProfileRoute(userId = userId) } }
 
       composeTestRule.waitForTag(ProfileScreenTestTags.NAME)
       composeTestRule
@@ -791,9 +789,7 @@ class ProfileScreenTest {
 
     withProfileRepository(repo) {
       composeTestRule.setContent {
-        SampleAppTheme {
-          OtherUserProfileRoute(userId = userId, goBack = { goBackCalled = true })
-        }
+        SampleAppTheme { OtherUserProfileRoute(userId = userId, goBack = { goBackCalled = true }) }
       }
 
       composeTestRule.waitForTag(ProfileScreenTestTags.GOBACK_BUTTON)
@@ -818,6 +814,7 @@ private class FakeOtherProfileRepository(
 
   var followRequests = 0
     private set
+
   var unfollowRequests = 0
     private set
 
