@@ -88,9 +88,7 @@ class ProfileRepositoryFirebase(
   private suspend fun callFollowFunction(targetUid: String, follow: Boolean) {
     require(!(targetUid.isBlank())) { "UID cannot be blank" }
     val currentUid = requireCurrentUid()
-    if (currentUid == targetUid) {
-      throw IllegalArgumentException("Cannot follow/unfollow oneself")
-    }
+    require(currentUid != targetUid) { "Cannot follow/unfollow oneself" }
     val data = mapOf("targetUid" to targetUid, "follow" to follow)
     try {
       functions.getHttpsCallable("followUser").call(data).await()
