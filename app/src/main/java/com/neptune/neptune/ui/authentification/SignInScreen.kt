@@ -131,7 +131,7 @@ fun SignInScreen(
           Spacer(modifier = Modifier.height(200.dp))
 
           ElevatedButton(
-              onClick = { signInViewModel.beginSignIn(context as Activity) },
+              onClick = { signInViewModel.signInAnonymouslyForDebug() },
               enabled =
                   signInStatus != SignInStatus.SIGN_IN_REQUESTED &&
                       signInStatus != SignInStatus.IN_PROGRESS_FIREBASE_AUTH,
