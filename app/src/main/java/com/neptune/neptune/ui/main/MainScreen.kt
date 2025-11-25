@@ -285,7 +285,7 @@ fun MainScreen(
                         items(columns) { samplesColumn ->
                           Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
                             samplesColumn.forEach { sample ->
-                              LaunchedEffect(sample.id) {
+                              LaunchedEffect(sample.id, sample.storagePreviewSamplePath) {
                                 mainViewModel.loadSampleResources(sample)
                               }
                               val resources = sampleResources[sample.id] ?: SampleResourceState()
@@ -464,7 +464,7 @@ fun SampleCardRow(
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
       horizontalArrangement = Arrangement.spacedBy(25.dp)) {
         samples.forEach { sample ->
-          LaunchedEffect(sample.id) { onLoadResources(sample) }
+          LaunchedEffect(sample.id, sample.storagePreviewSamplePath) { onLoadResources(sample) }
           val resources = sampleResources[sample.id] ?: SampleResourceState()
           val isLiked = likedSamples[sample.id] == true
           val clickHandlers =
