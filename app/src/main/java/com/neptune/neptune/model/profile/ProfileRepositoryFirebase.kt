@@ -113,7 +113,8 @@ class ProfileRepositoryFirebase(
           posts = getLong("posts") ?: 0L,
           tags = (get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
           avatarUrl = getString("avatarUrl").orEmpty(),
-          following = (get("following") as? List<*>)?.filterIsInstance<String>() ?: emptyList())
+          following = (get("following") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+          isAnonymous = getBoolean("isAnonymous") ?: false)
     }
   }
 
@@ -147,7 +148,8 @@ class ProfileRepositoryFirebase(
                     subscriptions = 0L,
                     following = emptyList(),
                     likes = 0L,
-                    posts = 0L)
+                    posts = 0L,
+                    isAnonymous = auth.currentUser?.isAnonymous == true)
 
             // Persist exactly what we’re returning
             tx.set(
@@ -163,7 +165,8 @@ class ProfileRepositoryFirebase(
                     "likes" to 0L,
                     "posts" to 0L,
                     "tags" to emptyList<String>(),
-                    "following" to emptyList<String>()))
+                    "following" to emptyList<String>(),
+                    "isAnonymous" to (auth.currentUser?.isAnonymous == true)))
 
             created
           }

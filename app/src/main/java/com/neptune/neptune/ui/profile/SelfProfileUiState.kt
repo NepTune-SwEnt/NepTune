@@ -37,6 +37,7 @@ data class SelfProfileUiState(
     val inputTag: String = "",
     val mode: ProfileMode = ProfileMode.VIEW,
     val isSaving: Boolean = false,
+    val isAnonymousUser: Boolean = false,
     val error: String? = null,
     val nameError: String? = null,
     val usernameError: String? = null,

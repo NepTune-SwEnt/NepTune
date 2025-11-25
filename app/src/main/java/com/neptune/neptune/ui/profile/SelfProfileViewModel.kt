@@ -83,6 +83,7 @@ class SelfProfileViewModel(
                   likes = p.likes.toInt(),
                   posts = p.posts.toInt(),
                   tags = p.tags,
+                  isAnonymousUser = p.isAnonymous,
                   error = null)
         } else if (p != null && _uiState.value.mode == ProfileMode.EDIT) {
           _uiState.value =
@@ -93,6 +94,7 @@ class SelfProfileViewModel(
                   posts = p.posts.toInt(),
                   tags = p.tags,
                   avatarUrl = p.avatarUrl,
+                  isAnonymousUser = p.isAnonymous,
               )
         }
         loadInitialLocalAvatar()
