@@ -561,6 +561,18 @@ class ProfileScreenTest {
   }
 
   @Test
+  fun editButtonHiddenForAnonymousSelfProfile() {
+    setContentViewMode(
+        viewConfig =
+            ProfileViewConfig.SelfProfileConfig(
+                onEdit = {}, settings = {}, canEditProfile = false))
+
+    composeTestRule
+        .onAllNodes(hasTestTag(ProfileScreenTestTags.EDIT_BUTTON), useUnmergedTree = true)
+        .assertCountEquals(0)
+  }
+
+  @Test
   fun followButtonHiddenWhenTargetCannotBeFollowed() {
     setContentViewMode(
         viewConfig =
@@ -786,6 +798,26 @@ class ProfileScreenTest {
       followButton.performClick()
       composeTestRule.waitUntil(5_000) { repo.followRequests > 0 }
       composeTestRule.onNode(hasText("Unfollow"), useUnmergedTree = true).assertExists()
+    }
+  }
+
+  @Test
+  fun otherUserProfileRouteHidesFollowButtonWhenCurrentUserAnonymous() {
+    val userId = "anon-view"
+    val repo =
+        FakeOtherProfileRepository(
+            targetUserId = userId,
+            initialOtherProfile = Profile(uid = userId, name = "Public Artist"),
+            initialCurrentProfile =
+                Profile(uid = "current-user", name = "Viewer", isAnonymous = true))
+
+    withProfileRepository(repo) {
+      composeTestRule.setContent { SampleAppTheme { OtherUserProfileRoute(userId = userId) } }
+
+      composeTestRule.waitForTag(ProfileScreenTestTags.NAME)
+      composeTestRule
+          .onAllNodes(hasTestTag(ProfileScreenTestTags.FOLLOW_BUTTON), useUnmergedTree = true)
+          .assertCountEquals(0)
     }
   }
 

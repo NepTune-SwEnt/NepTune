@@ -11,4 +11,5 @@ data class OtherProfileUiState(
     val isCurrentUserFollowing: Boolean = false,
     val errorMessage: String? = null,
     val isFollowActionInProgress: Boolean = false,
+    val isCurrentUserAnonymous: Boolean = false,
 )

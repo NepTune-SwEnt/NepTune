@@ -94,6 +94,36 @@ class OtherProfileViewModelTest {
         assertFalse(unfollowingState.isCurrentUserFollowing)
         assertEquals(120, unfollowingState.profile.subscribers)
       }
+
+  @Test
+  fun anonymousCurrentUserCannotFollow() =
+      runTest(dispatcher) {
+        val targetUserId = "artist-42"
+        val otherProfile = Profile(uid = targetUserId, username = "artist")
+        val currentProfile =
+            Profile(uid = "viewer-1", username = "viewer", isAnonymous = true, following = emptyList())
+        val repo = FollowToggleTestRepository(otherProfile, currentProfile)
+        val mockAuth: FirebaseAuth = mock()
+        val mockImageRepo: ImageStorageRepository = mock()
+        val mockStorageService: StorageService = mock()
+
+        val viewModel =
+            OtherProfileViewModel(
+                repo = repo,
+                userId = targetUserId,
+                auth = mockAuth,
+                imageRepo = mockImageRepo,
+                storageService = mockStorageService)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.isCurrentUserAnonymous)
+
+        viewModel.onFollow()
+        advanceUntilIdle()
+
+        assertTrue(repo.followCalls.isEmpty())
+        assertTrue(repo.unfollowCalls.isEmpty())
+      }
 }
 
 private class FollowToggleTestRepository(

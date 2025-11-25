@@ -40,6 +40,7 @@ class OtherProfileViewModel(
           .collectLatest { (otherProfile, currentProfile) ->
             if (otherProfile != null) {
               val isCurrentUserFollowing = currentProfile?.following?.contains(userId) == true
+              val isCurrentUserAnonymous = currentProfile?.isAnonymous == true
               val updatedProfile =
                   SelfProfileUiState(
                       name = otherProfile.name.orEmpty(),
@@ -59,7 +60,8 @@ class OtherProfileViewModel(
                       profile = updatedProfile,
                       isCurrentUserFollowing = isCurrentUserFollowing,
                       errorMessage = null,
-                      isFollowActionInProgress = false)
+                      isFollowActionInProgress = false,
+                      isCurrentUserAnonymous = isCurrentUserAnonymous)
             }
           }
     }
@@ -67,7 +69,7 @@ class OtherProfileViewModel(
 
   /** Simple toggle for follow/unfollow with local follower count update. */
   fun onFollow() {
-    if (_uiState.value.profile.isAnonymousUser) return
+    if (_uiState.value.profile.isAnonymousUser || _uiState.value.isCurrentUserAnonymous) return
     val isCurrentUserFollowing = _uiState.value.isCurrentUserFollowing
     _uiState.value =
         _uiState.value.copy(
