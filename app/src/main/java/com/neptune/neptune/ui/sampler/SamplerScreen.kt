@@ -61,8 +61,6 @@ import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlin.math.sin
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 object SamplerTestTags {
   const val SCREEN_CONTAINER = "samplerScreenContainer"
@@ -415,24 +413,12 @@ fun WaveformDisplay(
   val latestOnPositionChange = rememberUpdatedState(onPositionChange)
   val currentUri = uiState.currentAudioUri
 
-  var waveform by remember { mutableStateOf<List<Float>>(emptyList()) }
-
   LaunchedEffect(currentUri) {
     if (currentUri != null) {
-      withContext(Dispatchers.IO) {
-        val wf =
-            try {
-              viewModel.extractWaveform(currentUri)
-            } catch (e: Exception) {
-              Log.e("WaveformDisplay", "Audio track error: ${e.message}")
-              emptyList()
-            }
-        waveform = wf
-      }
-    } else {
-      waveform = emptyList()
+      viewModel.loadWaveform(currentUri)
     }
   }
+  val waveform = uiState.waveform
 
   val playbackPositionAnimatable = remember { Animatable(playbackPosition) }
 

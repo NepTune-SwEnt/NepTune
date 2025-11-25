@@ -2,8 +2,10 @@ package com.neptune.neptune.ui.main
 
 import android.app.Application
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,13 +57,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
@@ -76,10 +81,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.neptune.neptune.R
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
@@ -179,7 +186,8 @@ fun MainScreen(
   val maxColumns = if (screenWidth < 360.dp) 1 else 2
   val cardWidth = (screenWidth - horizontalPadding * 2 - spacing) / 2
   val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
-  val lifecycleOwner = LocalLifecycleOwner.current
+  val sampleResources by mainViewModel.sampleResources.collectAsState()
+
   fun onCommentClicked(sample: Sample) {
     mainViewModel.observeCommentsForSample(sample.id)
     activeCommentSampleId = sample.id
@@ -217,12 +225,16 @@ fun MainScreen(
                               .size(57.dp)
                               .testTag(NavigationTestTags.PROFILE_BUTTON)) {
                         AsyncImage(
-                            model = userAvatar ?: R.drawable.profile,
+                            model =
+                                ImageRequest.Builder(LocalContext.current)
+                                    .data(userAvatar ?: R.drawable.profile)
+                                    .crossfade(true)
+                                    .build(),
                             contentDescription = "Profile",
                             modifier = Modifier.fillMaxSize().clip(CircleShape),
                             contentScale = ContentScale.Crop,
-                            placeholder = painterResource(id = R.drawable.profile),
-                            error = painterResource(id = R.drawable.profile))
+                            placeholder = painterResource(R.drawable.profile),
+                            error = painterResource(R.drawable.profile))
                       }
                 },
                 colors =
@@ -234,17 +246,26 @@ fun MainScreen(
                 color = NepTuneTheme.colors.onBackground)
           }
         },
-        floatingActionButton = { // 1. FAB is now correctly defined here
+        floatingActionButton = {
           FloatingActionButton(
               onClick = navigateToProjectList,
               containerColor = NepTuneTheme.colors.postButton,
               contentColor = NepTuneTheme.colors.onBackground,
               shape = CircleShape,
-              modifier = Modifier.testTag(MainScreenTestTags.POST_BUTTON)) {
-                Icon(Icons.Default.Add, contentDescription = "Post New Sample")
+              modifier =
+                  Modifier.shadow(
+                          elevation = 4.dp,
+                          spotColor = NepTuneTheme.colors.shadow,
+                          ambientColor = NepTuneTheme.colors.shadow,
+                          shape = CircleShape)
+                      .size(52.dp)
+                      .testTag(MainScreenTestTags.POST_BUTTON)) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Create a Post",
+                    modifier = Modifier.size(70.dp))
               }
         },
-        // 2. Main content goes here, receiving the necessary padding
         content = { paddingValues ->
           LazyColumn(
               contentPadding = paddingValues, // Apply Scaffold padding
@@ -264,6 +285,10 @@ fun MainScreen(
                         items(columns) { samplesColumn ->
                           Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
                             samplesColumn.forEach { sample ->
+                              LaunchedEffect(sample.id) {
+                                mainViewModel.loadSampleResources(sample)
+                              }
+                              val resources = sampleResources[sample.id] ?: SampleResourceState()
                               val clickHandlers =
                                   onClickFunctions(
                                       onDownloadClick = { mainViewModel.onDownloadSample(sample) },
@@ -275,11 +300,12 @@ fun MainScreen(
                                         navigateToOtherUserProfile(sample.ownerId)
                                       },
                                   )
-                              SampleCard(
+                              SampleItem(
                                   sample = sample,
                                   width = cardWidth,
                                   isLiked = likedSamples[sample.id] == true,
-                                  clickHandlers = clickHandlers)
+                                  clickHandlers = clickHandlers,
+                                  resourceState = resources)
                             }
                           }
                         }
@@ -300,10 +326,13 @@ fun MainScreen(
                         mainViewModel.onLikeClicked(sample, isLiked)
                       },
                       onCommentClick = { sample -> onCommentClicked(sample) },
-                      onDownloadClick = { sample -> mainViewModel.onDownloadSample(sample) })
+                      onDownloadClick = { sample -> mainViewModel.onDownloadSample(sample) },
+                      sampleResources = sampleResources,
+                      onLoadResources = { s -> mainViewModel.loadSampleResources(s) })
                 }
               }
-        })
+        },
+        containerColor = NepTuneTheme.colors.background)
     // Comment Overlay (Outside Scaffold content, but inside Box to float over everything)
     if (activeCommentSampleId != null) {
       CommentDialog(
@@ -318,6 +347,79 @@ fun MainScreen(
           downloadProgress = downloadProgress!!, MainScreenTestTags.DOWNlOAD_PROGRESS)
     }
   }
+}
+
+@Composable
+fun SampleItem(
+    sample: Sample,
+    width: Dp,
+    isLiked: Boolean,
+    clickHandlers: ClickHandlers,
+    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
+    testTags: BaseSampleTestTags = MainScreenTestTags,
+    resourceState: SampleResourceState = SampleResourceState(),
+) {
+
+  Column(modifier = Modifier.width(width)) {
+    // Header (Avatar + Name)
+    SampleCardHeader(
+        avatarUrl = resourceState.ownerAvatarUrl,
+        userName = resourceState.ownerName,
+        onProfileClick = clickHandlers.onProfileClick,
+        testTags = testTags)
+
+    // Card (Image + Waveform + Title)
+    SampleCard(
+        sample = sample,
+        width = width,
+        isLiked = isLiked,
+        clickHandlers = clickHandlers,
+        testTags = testTags,
+        mediaPlayer = mediaPlayer,
+        resourceState = resourceState)
+  }
+}
+
+@Composable
+fun SampleCardHeader(
+    avatarUrl: String?,
+    userName: String,
+    onProfileClick: () -> Unit,
+    testTags: BaseSampleTestTags
+) {
+  Row(
+      verticalAlignment = Alignment.CenterVertically,
+      modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
+        AsyncImage(
+            model =
+                ImageRequest.Builder(LocalContext.current)
+                    .data(avatarUrl ?: R.drawable.profile)
+                    .crossfade(true)
+                    .build(),
+            contentDescription = "Profile",
+            modifier =
+                Modifier.size(28.dp)
+                    .clip(CircleShape)
+                    .border(1.dp, NepTuneTheme.colors.onBackground, CircleShape)
+                    .testTag(testTags.SAMPLE_PROFILE_ICON)
+                    .clickable(onClick = onProfileClick),
+            contentScale = ContentScale.Crop,
+            placeholder = painterResource(R.drawable.profile),
+            error = painterResource(R.drawable.profile))
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = userName,
+            color = NepTuneTheme.colors.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style =
+                TextStyle(
+                    fontSize = 19.sp,
+                    fontFamily = FontFamily(Font(R.font.markazi_text)),
+                    fontWeight = FontWeight(400)),
+            modifier =
+                Modifier.testTag(testTags.SAMPLE_USERNAME).clickable(onClick = onProfileClick))
+      }
 }
 
 // ----------------Section Header-----------------
@@ -354,12 +456,16 @@ fun SampleCardRow(
     onProfileClick: (Sample) -> Unit = {},
     onLikeClick: (Sample, Boolean) -> Unit = { _, _ -> },
     onCommentClick: (Sample) -> Unit = {},
-    onDownloadClick: (Sample) -> Unit = {}
+    onDownloadClick: (Sample) -> Unit = {},
+    sampleResources: Map<String, SampleResourceState> = emptyMap(),
+    onLoadResources: (Sample) -> Unit = {},
 ) {
   Row(
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
       horizontalArrangement = Arrangement.spacedBy(25.dp)) {
         samples.forEach { sample ->
+          LaunchedEffect(sample.id) { onLoadResources(sample) }
+          val resources = sampleResources[sample.id] ?: SampleResourceState()
           val isLiked = likedSamples[sample.id] == true
           val clickHandlers =
               onClickFunctions(
@@ -367,8 +473,12 @@ fun SampleCardRow(
                   onLikeClick = { isLiked -> onLikeClick(sample, isLiked) },
                   onCommentClick = { onCommentClick(sample) },
                   onDownloadClick = { onDownloadClick(sample) })
-          SampleCard(
-              sample = sample, width = cardWidth, isLiked = isLiked, clickHandlers = clickHandlers)
+          SampleItem(
+              sample = sample,
+              width = cardWidth,
+              isLiked = isLiked,
+              clickHandlers = clickHandlers,
+              resourceState = resources)
         }
       }
 }
@@ -405,89 +515,99 @@ fun SampleCard(
     testTags: BaseSampleTestTags = MainScreenTestTags,
     clickHandlers: ClickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
+    resourceState: SampleResourceState = SampleResourceState(),
 ) {
   val likeDescription = if (isLiked) "liked" else "not liked"
   val heartColor = if (isLiked) Color.Red else NepTuneTheme.colors.background
   val heartIcon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder
+
   Card(
       modifier =
           Modifier.width(width)
               .height(height)
               .clickable(
-                  onClick = { mediaPlayer.togglePlay(mediaPlayer.getUriFromSampleId(sample.id)) })
+                  onClick = {
+                    if (resourceState.audioUrl != null) {
+                      mediaPlayer.togglePlay(resourceState.audioUrl.toUri())
+                    } else {
+                      mediaPlayer.togglePlay(mediaPlayer.getUriFromSampleId(sample.id))
+                    }
+                  })
               .testTag(testTags.SAMPLE_CARD),
       colors = CardDefaults.cardColors(containerColor = NepTuneTheme.colors.cardBackground),
       shape = RoundedCornerShape(12.dp),
       border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground)) {
-        Column(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
-          // Profile and Name
-          Row(
-              verticalAlignment = Alignment.CenterVertically,
-              modifier = Modifier.padding(start = 4.dp, top = 2.dp)) {
-                Icon(
-                    painter = painterResource(R.drawable.profile),
-                    contentDescription = "Profile",
-                    tint = Color.Unspecified,
-                    modifier =
-                        Modifier.clickable(onClick = clickHandlers.onProfileClick)
-                            .size(22.dp)
-                            .testTag(testTags.SAMPLE_PROFILE_ICON))
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    text = sample.name,
-                    color = NepTuneTheme.colors.onBackground,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.testTag(testTags.SAMPLE_USERNAME),
-                    style =
-                        TextStyle(
-                            fontSize = 19.sp,
-                            fontFamily = FontFamily(Font(R.font.markazi_text)),
-                            fontWeight = FontWeight(400)))
-              }
+        Column(modifier = Modifier.fillMaxSize()) {
+          Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            if (resourceState.coverImageUrl != null) {
+              AsyncImage(
+                  model =
+                      ImageRequest.Builder(LocalContext.current)
+                          .data(resourceState.coverImageUrl)
+                          .crossfade(true)
+                          .build(),
+                  contentDescription = "Sample Cover",
+                  contentScale = ContentScale.Crop,
+                  modifier = Modifier.fillMaxSize())
+              Box(
+                  modifier =
+                      Modifier.fillMaxSize()
+                          .background(
+                              Brush.verticalGradient(
+                                  colors =
+                                      listOf(
+                                          Color.Black.copy(alpha = 0.3f),
+                                          Color.Transparent,
+                                          Color.Black.copy(alpha = 0.8f)))))
+            }
 
-          Spacer(Modifier.height(8.dp))
+            Column(
+                modifier = Modifier.fillMaxSize().padding(8.dp),
+                verticalArrangement = Arrangement.SpaceBetween) {
+                  // Waveform
+                  Box(
+                      modifier = Modifier.weight(1f).fillMaxWidth(),
+                      contentAlignment = Alignment.Center) {
+                        SampleWaveform(
+                            amplitudes = resourceState.waveform,
+                            color = NepTuneTheme.colors.inverse,
+                            modifier = Modifier.fillMaxWidth(0.95f).height(70.dp))
+                      }
 
-          // Waveform Image
-          Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            Image(
-                painter = painterResource(R.drawable.waveform),
-                contentDescription = "Waveform",
-                modifier = Modifier.fillMaxWidth(0.8f).height(60.dp),
-                alignment = Alignment.Center)
+                  // Sample name and duration
+                  Row(
+                      modifier = Modifier.fillMaxWidth(),
+                      horizontalArrangement = Arrangement.SpaceBetween,
+                      verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            sample.name,
+                            color = NepTuneTheme.colors.inverse,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f).testTag(testTags.SAMPLE_NAME),
+                            style =
+                                TextStyle(
+                                    fontSize = 12.sp,
+                                    fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                    fontWeight = FontWeight(400)))
+
+                        val minutes = sample.durationSeconds / 60
+                        val seconds = sample.durationSeconds % 60
+                        Text(
+                            "%02d:%02d".format(minutes, seconds),
+                            color = NepTuneTheme.colors.inverse,
+                            modifier =
+                                Modifier.padding(start = 8.dp).testTag(testTags.SAMPLE_DURATION),
+                            style =
+                                TextStyle(
+                                    fontSize = 12.sp,
+                                    fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                    fontWeight = FontWeight(400),
+                                ))
+                      }
+                }
           }
 
-          Spacer(Modifier.height(4.dp))
-
-          // Sample name and duration
-          Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(
-                    sample.name,
-                    color = NepTuneTheme.colors.onBackground,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier =
-                        Modifier.padding(start = 6.dp).weight(1f).testTag(testTags.SAMPLE_NAME),
-                    style =
-                        TextStyle(
-                            fontSize = 10.sp,
-                            fontFamily = FontFamily(Font(R.font.markazi_text)),
-                            fontWeight = FontWeight(400)))
-                val minutes = sample.durationSeconds / 60
-                val seconds = sample.durationSeconds % 60
-                val durationText = "%02d:%02d".format(minutes, seconds)
-                Text(
-                    durationText,
-                    color = NepTuneTheme.colors.onBackground,
-                    modifier = Modifier.padding(end = 8.dp).testTag(testTags.SAMPLE_DURATION),
-                    style =
-                        TextStyle(
-                            fontSize = 10.sp,
-                            fontFamily = FontFamily(Font(R.font.markazi_text)),
-                            fontWeight = FontWeight(400)))
-              }
           // Bottom Turquoise bar
           Column(
               modifier =
@@ -517,7 +637,7 @@ fun SampleCard(
                     }
                 Spacer(Modifier.height(4.dp))
                 Row(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween) {
                       IconWithText(
                           icon = heartIcon,
@@ -528,7 +648,6 @@ fun SampleCard(
                                   .semantics { stateDescription = likeDescription }
                                   .clickable { clickHandlers.onLikeClick(!isLiked) },
                           tint = heartColor)
-
                       IconWithTextPainter(
                           icon = painterResource(R.drawable.comments),
                           iconDescription = "Comments",
@@ -731,5 +850,43 @@ fun IconWithTextPainter(
         modifier = Modifier.size(16.dp))
     Spacer(Modifier.width(3.dp))
     Text(text, color = NepTuneTheme.colors.background, fontSize = 10.sp)
+  }
+}
+
+@Composable
+fun SampleWaveform(amplitudes: List<Float>, color: Color, modifier: Modifier = Modifier) {
+  if (amplitudes.isNotEmpty()) {
+    Canvas(modifier = modifier) {
+      val barWidth = 2.dp.toPx()
+      val gapWidth = 2.dp.toPx()
+      val totalBars = (size.width / (barWidth + gapWidth)).toInt()
+      val centerY = size.height / 2f
+
+      val step = (amplitudes.size / totalBars.toFloat()).coerceAtLeast(1f).toInt()
+
+      for (i in 0 until totalBars) {
+        val dataIndex = (i * step).coerceIn(amplitudes.indices)
+        val normalizedAmp = amplitudes[dataIndex]
+
+        val barHeight = normalizedAmp * size.height
+        val startX = i * (barWidth + gapWidth)
+        val startY = centerY - (barHeight / 2)
+        val endY = centerY + (barHeight / 2)
+
+        drawLine(
+            color = color,
+            start = Offset(startX, startY),
+            end = Offset(startX, endY),
+            strokeWidth = barWidth,
+            cap = StrokeCap.Round)
+      }
+    }
+  } else {
+    Image(
+        painter = painterResource(R.drawable.waveform),
+        contentDescription = "Waveform",
+        modifier = modifier,
+        contentScale = ContentScale.FillBounds,
+        colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(color))
   }
 }

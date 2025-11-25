@@ -1,6 +1,7 @@
 package com.neptune.neptune.data.storage
 
 import android.content.Context
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Log
@@ -8,19 +9,24 @@ import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageException
 import com.google.firebase.storage.StorageReference
 import com.neptune.neptune.NepTuneApplication
+import com.neptune.neptune.model.project.ProjectExtractor
 import com.neptune.neptune.model.sample.Sample
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.zip.ZipInputStream
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
-class StorageService(val storage: FirebaseStorage) {
+open class StorageService(
+    val storage: FirebaseStorage,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
   private val storageRef = storage.reference
   private val sampleRepo = com.neptune.neptune.model.sample.SampleRepositoryProvider.repository
 
@@ -39,7 +45,7 @@ class StorageService(val storage: FirebaseStorage) {
       context: Context,
       onProgress: (Int) -> Unit = {}
   ): File =
-      withContext(Dispatchers.IO) {
+      withContext(ioDispatcher) {
         val sampleRef = storageRef.child(sample.storageZipPath)
         if (!exists(sampleRef))
             throw IllegalArgumentException(
@@ -120,32 +126,28 @@ class StorageService(val storage: FirebaseStorage) {
         }
 
     oldSample?.let {
-      deleteFileByUrl(it.storageZipPath)
-      deleteFileByUrl(it.storageImagePath)
-      deleteFileByUrl(it.storagePreviewSamplePath)
+      deleteFileByPath(it.storageZipPath)
+      deleteFileByPath(it.storageImagePath)
     }
 
     val newStorageZipPath = "samples/${sampleId}.zip"
     val newStorageImagePath =
         if (localImageUri != null) "sample_image/${sampleId}/${getFileNameFromUri(localImageUri)}"
-        else null
+        else ""
 
     coroutineScope {
-      val deferredZipUrl = async { uploadFileAndGetUrl(localZipUri, newStorageZipPath) }
+      val deferredZip = async { uploadFile(localZipUri, newStorageZipPath) }
 
-      val deferredImageUrl =
-          if (newStorageImagePath != null)
-              async { uploadFileAndGetUrl(localImageUri!!, newStorageImagePath) }
+      val deferredImage =
+          if (localImageUri != null && newStorageImagePath.isNotEmpty())
+              async { uploadFile(localImageUri, newStorageImagePath) }
           else null
 
-      val newZipUrl = deferredZipUrl.await()
-      val newImageUrl = deferredImageUrl?.await() ?: ""
+      deferredZip.await()
+      deferredImage?.await()
 
       val finalSample =
-          sample.copy(
-              storageZipPath = newZipUrl,
-              storageImagePath = newImageUrl,
-              storagePreviewSamplePath = "")
+          sample.copy(storageZipPath = newStorageZipPath, storageImagePath = newStorageImagePath)
       sampleRepo.addSample(finalSample)
     }
   }
@@ -157,29 +159,27 @@ class StorageService(val storage: FirebaseStorage) {
    * @param storagePath The full path in Firebase Storage (e.g., "profile_pictures/userID.jpg").
    * @return The public download URL of the file.
    */
-  suspend fun uploadFileAndGetUrl(localUri: Uri, storagePath: String): String {
+  suspend fun uploadFile(localUri: Uri, storagePath: String) {
     try {
-      return withContext(Dispatchers.IO) {
+      withContext(ioDispatcher) {
         val fileRef = storageRef.child(storagePath)
         fileRef.putFile(localUri).await()
-        val downloadUrl = fileRef.downloadUrl.await()
-        downloadUrl.toString()
       }
     } catch (e: Exception) {
-      throw Exception("Failed to upload file: ${e.message}", e)
+      throw Exception("Failed to upload file to $storagePath: ${e.message}", e)
     }
   }
 
-  private suspend fun deleteFileByUrl(fileUrl: String) {
-    if (fileUrl.isBlank()) return
+  private suspend fun deleteFileByPath(storagePath: String) {
+    if (storagePath.isBlank()) return
 
     try {
-      withContext(Dispatchers.IO) {
-        val fileRef = storage.getReferenceFromUrl(fileUrl)
+      withContext(ioDispatcher) {
+        val fileRef = storageRef.child(storagePath)
         fileRef.delete().await()
       }
     } catch (e: Exception) {
-      Log.w("StorageService", "Failed to delete old file: $fileUrl", e)
+      Log.w("StorageService", "Failed to delete old file: $storagePath", e)
     }
   }
 
@@ -187,7 +187,7 @@ class StorageService(val storage: FirebaseStorage) {
   suspend fun getFileNameFromUri(uri: Uri): String? {
     if (uri.scheme == "content") {
       val contentName =
-          withContext(Dispatchers.IO) {
+          withContext(ioDispatcher) {
             NepTuneApplication.appContext.contentResolver.query(uri, null, null, null, null)?.use {
                 cursor ->
               if (cursor.moveToFirst()) {
@@ -214,13 +214,80 @@ class StorageService(val storage: FirebaseStorage) {
    * @param storagePath The full path to the file.
    * @return The download URL, or null in case of an error.
    */
-  suspend fun getDownloadUrl(storagePath: String): String? {
+  open suspend fun getDownloadUrl(storagePath: String): String? {
+    if (storagePath.isBlank()) return null
     return try {
       val fileRef = storageRef.child(storagePath)
       fileRef.downloadUrl.await().toString()
     } catch (e: Exception) {
       Log.w("StorageService", "Failed to get download URL: $storagePath", e)
       null
+    }
+  }
+
+  /**
+   * Attempts to read the duration from the JSON. If it is 0, extracts the audio to measure it.
+   *
+   * This function is temporally using the duration of the audio without his effects. It should be
+   * improved in the future to calculate with the effects applied.
+   */
+  suspend fun getProjectDuration(zipUri: Uri?): Int {
+    if (zipUri == null) return 0
+
+    return withContext(ioDispatcher) {
+      try {
+        val context = NepTuneApplication.appContext
+        val zipFile = File(zipUri.path ?: "")
+        if (!zipFile.exists()) return@withContext 0
+
+        val extractor = ProjectExtractor()
+
+        val metadata = extractor.extractMetadata(zipFile)
+        val firstAudio = metadata.audioFiles.firstOrNull()
+
+        val durationFromMeta = firstAudio?.durationSeconds ?: 0f
+        if (durationFromMeta > 0.1f) {
+          return@withContext durationFromMeta.toInt()
+        }
+
+        Log.w(
+            "StorageService", "Duration not found in the JSON, calculated via audio extraction...")
+
+        val audioFileName = firstAudio?.name ?: return@withContext 0
+        val tempAudioUri = extractor.extractAudioFile(zipFile, context, audioFileName)
+
+        val realDuration = getAudioDuration(context, tempAudioUri)
+        var path = tempAudioUri.path
+        if (path == null) {
+          path = ""
+          Log.w("StorageService", "Failed to calculate project duration")
+        }
+
+        File(path).delete()
+
+        return@withContext realDuration
+      } catch (e: Exception) {
+        Log.e("StorageService", "Failed to calculate project duration", e)
+        0
+      }
+    }
+  }
+
+  /** Helper to retrieve the duration of an audio file (mp3/wav) via MediaMetadataRetriever */
+  private suspend fun getAudioDuration(context: Context, audioUri: Uri): Int {
+    return withContext(ioDispatcher) {
+      val retriever = MediaMetadataRetriever()
+      try {
+        retriever.setDataSource(context, audioUri)
+        val time = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+        val timeInMs = time?.toLongOrNull() ?: 0L
+        (timeInMs / 1000).toInt()
+      } catch (e: Exception) {
+        Log.e("StorageService", "Failed to retrieve audio duration", e)
+        0
+      } finally {
+        retriever.release()
+      }
     }
   }
 }
