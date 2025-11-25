@@ -1071,7 +1071,7 @@ open class SamplerViewModel() : ViewModel() {
         return byteArrayOf((value.toInt() and 0xFF).toByte(), ((value.toInt() shr 8) and 0xFF).toByte())
     }
 
-    internal fun applyReverb(
+    open fun applyReverb(
         input: FloatArray,
         sampleRate: Int,
         wet: Float,
@@ -1081,15 +1081,13 @@ open class SamplerViewModel() : ViewModel() {
         predelayMs: Float
     ): FloatArray {
 
-        if (wet <= 0.01f) return input // reverb disabled
+        if (wet <= 0.01f) return input
 
         val predelaySamples = (predelayMs / 1000f * sampleRate).toInt()
         val predelayed = FloatArray(input.size + predelaySamples)
 
-        // Apply predelay
         System.arraycopy(input, 0, predelayed, predelaySamples, input.size)
 
-        // Comb filter bank (uses size & depth)
         val combDelays = intArrayOf(1116, 1188, 1277, 1356).map {
             (it * size).toInt().coerceAtLeast(10)
         }
@@ -1101,14 +1099,12 @@ open class SamplerViewModel() : ViewModel() {
             processed = comb.process(processed)
         }
 
-        // Allpass filters (smooth the tail)
         val allpass1 = AllpassFilter((556 * width).toInt().coerceAtLeast(10), gain = 0.7)
         val allpass2 = AllpassFilter((441 * width).toInt().coerceAtLeast(10), gain = 0.7)
 
         processed = allpass1.process(processed)
         processed = allpass2.process(processed)
 
-        // Mix wet/dry
         val output = FloatArray(input.size)
 
         for (i in output.indices) {
