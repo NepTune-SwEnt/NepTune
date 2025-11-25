@@ -128,9 +128,7 @@ fun ProfileScreen(
     onAvatarEditClick: () -> Unit = {},
     viewConfig: ProfileViewConfig
 ) {
-  Column(modifier = Modifier
-      .padding(ScreenPadding)
-      .testTag(ProfileScreenTestTags.ROOT)) {
+  Column(modifier = Modifier.padding(ScreenPadding).testTag(ProfileScreenTestTags.ROOT)) {
     when (uiState.mode) {
       // Create profile screen view content
       ProfileMode.VIEW -> {
@@ -161,9 +159,7 @@ fun ProfileScreen(
 @Composable
 private fun SettingsButton(settings: () -> Unit) {
   IconButton(
-      modifier = Modifier
-          .size(SettingsButtonSize)
-          .testTag(ProfileScreenTestTags.SETTINGS_BUTTON),
+      modifier = Modifier.size(SettingsButtonSize).testTag(ProfileScreenTestTags.SETTINGS_BUTTON),
       onClick = settings) {
         Icon(
             modifier = Modifier.size(SettingsButtonSize),
@@ -208,32 +204,32 @@ sealed interface ProfileViewConfig {
       private val errorMessage: String?,
   ) : ProfileViewConfig {
     override val topBarContent = null
-    override val belowStatsButton: @Composable () -> Unit = composable@  {
-          if (!canFollowTarget) return@composable
-          val label = if (isFollowing) "Unfollow" else "Follow"
-          val icon = if (isFollowing) Icons.Default.Clear else Icons.Default.Add
+    override val belowStatsButton: @Composable () -> Unit = composable@{
+      if (!canFollowTarget) return@composable
+      val label = if (isFollowing) "Unfollow" else "Follow"
+      val icon = if (isFollowing) Icons.Default.Clear else Icons.Default.Add
 
-          Column(
-              modifier = Modifier.padding(bottom = BottomButtonBottomPadding),
-              horizontalAlignment = Alignment.CenterHorizontally) {
-                Button(
-                    onClick = onFollow,
-                    enabled = !isFollowActionInProgress,
-                    modifier = Modifier.testTag(ProfileScreenTestTags.FOLLOW_BUTTON)) {
-                      Icon(imageVector = icon, contentDescription = "Follow")
-                      Spacer(Modifier.width(ButtonIconSpacing))
-                      Text(label)
-                    }
-                if (!errorMessage.isNullOrBlank()) {
-                  Spacer(Modifier.height(8.dp))
-                  Text(
-                      text = errorMessage,
-                      color = Color.Red,
-                      style = MaterialTheme.typography.bodySmall,
-                      modifier = Modifier.testTag("profile/follow_error"))
+      Column(
+          modifier = Modifier.padding(bottom = BottomButtonBottomPadding),
+          horizontalAlignment = Alignment.CenterHorizontally) {
+            Button(
+                onClick = onFollow,
+                enabled = !isFollowActionInProgress,
+                modifier = Modifier.testTag(ProfileScreenTestTags.FOLLOW_BUTTON)) {
+                  Icon(imageVector = icon, contentDescription = "Follow")
+                  Spacer(Modifier.width(ButtonIconSpacing))
+                  Text(label)
                 }
-              }
-        }
+            if (!errorMessage.isNullOrBlank()) {
+              Spacer(Modifier.height(8.dp))
+              Text(
+                  text = errorMessage,
+                  color = Color.Red,
+                  style = MaterialTheme.typography.bodySmall,
+                  modifier = Modifier.testTag("profile/follow_error"))
+            }
+          }
+    }
     override val bottomScreenButton = null
     override val samplesSection = null // FIXME: implement samples section
   }
@@ -263,9 +259,7 @@ private fun ProfileViewContent(
       topBar = {
         Column {
           Row(
-              modifier = Modifier
-                  .fillMaxWidth()
-                  .padding(horizontal = TopBarHorizontalPadding),
+              modifier = Modifier.fillMaxWidth().padding(horizontal = TopBarHorizontalPadding),
               horizontalArrangement = Arrangement.SpaceBetween,
               verticalAlignment = Alignment.CenterVertically) {
                 // Go Back Button
@@ -282,13 +276,10 @@ private fun ProfileViewContent(
         }
       },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
-        Box(Modifier
-            .fillMaxSize()
-            .padding(innerPadding)) {
+        Box(Modifier.fillMaxSize().padding(innerPadding)) {
           Column(
               modifier =
-                  Modifier
-                      .fillMaxSize()
+                  Modifier.fillMaxSize()
                       .verticalScroll(rememberScrollState())
                       .padding(bottom = 88.dp)
                       .testTag(ProfileScreenTestTags.VIEW_CONTENT),
@@ -411,8 +402,7 @@ private fun ProfileEditContent(
 ) {
   Column(
       modifier =
-          Modifier
-              .fillMaxSize()
+          Modifier.fillMaxSize()
               .verticalScroll(rememberScrollState())
               .testTag(ProfileScreenTestTags.EDIT_CONTENT),
       horizontalAlignment = Alignment.CenterHorizontally,
@@ -434,9 +424,7 @@ private fun ProfileEditContent(
             onValueChange = onNameChange,
             label = { Text("Name") },
             colors = TextFieldColors(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag(ProfileScreenTestTags.FIELD_NAME),
+            modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_NAME),
             isError = uiState.nameError != null,
             supportingText = {
               val err = uiState.nameError
@@ -460,9 +448,7 @@ private fun ProfileEditContent(
             onValueChange = onUsernameChange,
             label = { Text("Username") },
             colors = TextFieldColors(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag(ProfileScreenTestTags.FIELD_USERNAME),
+            modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_USERNAME),
             isError = uiState.usernameError != null,
             supportingText = {
               val err = uiState.usernameError
@@ -486,9 +472,7 @@ private fun ProfileEditContent(
             onValueChange = onBioChange,
             label = { Text("Bio") },
             colors = TextFieldColors(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag(ProfileScreenTestTags.FIELD_BIO),
+            modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_BIO),
             minLines = 3,
             isError = uiState.bioError != null,
             supportingText = {
@@ -517,9 +501,7 @@ private fun ProfileEditContent(
               label = { Text("My music genre") },
               colors = TextFieldColors(),
               singleLine = true,
-              modifier = Modifier
-                  .weight(1f)
-                  .testTag(ProfileScreenTestTags.FIELD_ADD_TAG),
+              modifier = Modifier.weight(1f).testTag(ProfileScreenTestTags.FIELD_ADD_TAG),
               supportingText = {
                 Text(
                     text =
@@ -535,9 +517,7 @@ private fun ProfileEditContent(
           Spacer(Modifier.width(12.dp))
           Button(
               onClick = onTagSubmit,
-              modifier = Modifier
-                  .fillMaxHeight()
-                  .testTag(ProfileScreenTestTags.ADD_TAG_BUTTON)) {
+              modifier = Modifier.fillMaxHeight().testTag(ProfileScreenTestTags.ADD_TAG_BUTTON)) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Add")
               }
         }
@@ -646,8 +626,7 @@ fun Avatar(
         model = model,
         contentDescription = "Avatar",
         modifier =
-            Modifier
-                .fillMaxSize()
+            Modifier.fillMaxSize()
                 .clip(CircleShape)
                 .border(2.dp, NepTuneTheme.colors.accentPrimary, CircleShape),
         contentScale = ContentScale.Crop,
@@ -686,12 +665,11 @@ fun EditableTagChip(tagText: String, onRemove: (String) -> Unit, modifier: Modif
             contentDescription = "Remove tag",
             tint = NepTuneTheme.colors.onBackground,
             modifier =
-                Modifier
-                    .clickable(
+                Modifier.clickable(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() }) {
-                        onRemove(tagText)
-                    }
+                          onRemove(tagText)
+                        }
                     .testTag("profile/tag/remove/${tagText.replace(' ', '_')}"))
       },
       colors =

@@ -565,10 +565,7 @@ class ProfileScreenTest {
     setContentViewMode(
         viewConfig =
             ProfileViewConfig.OtherProfileConfig(
-                isFollowing = false,
-                canFollowTarget = false,
-                onFollow = {},
-                errorMessage = null))
+                isFollowing = false, canFollowTarget = false, onFollow = {}, errorMessage = null))
 
     composeTestRule
         .onAllNodes(hasTestTag(ProfileScreenTestTags.FOLLOW_BUTTON), useUnmergedTree = true)
