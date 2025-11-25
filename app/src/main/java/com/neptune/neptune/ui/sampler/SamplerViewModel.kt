@@ -257,7 +257,6 @@ open class SamplerViewModel() : ViewModel() {
     _uiState.update { it.copy(tempo = newTempo) }
   }
 
-  // New: update selected time signature
   open fun updateTimeSignature(newSignature: String) {
     _uiState.update { it.copy(timeSignature = newSignature) }
   }
@@ -648,14 +647,10 @@ open class SamplerViewModel() : ViewModel() {
     return viewModelScope.launch {
       val newUri = audioBuilding()
 
-      // 2. Utiliser la nouvelle URI (ou l'ancienne si l'audioBuilding a échoué)
       if (newUri != null) {
-        // Mettre à jour l'état final avant la sauvegarde pour s'assurer que le fichier correct est
-        // écrit
         _uiState.update { it.copy(currentAudioUri = newUri) }
       }
 
-      // 3. Sauvegarder (la fonction synchrone)
       saveProjectDataSync(zipFilePath)
     }
   }
@@ -664,7 +659,6 @@ open class SamplerViewModel() : ViewModel() {
     try {
       val state = _uiState.value
 
-      // CLÉ 1: Déterminer l'URI du fichier qui contient les effets (Current Audio URI)
       val audioUriWithEffects = state.currentAudioUri
 
       if (audioUriWithEffects == null) {
@@ -672,7 +666,6 @@ open class SamplerViewModel() : ViewModel() {
         return
       }
 
-      // CLÉ 2: Récupérer le fichier réel (qui contient les effets EQ/Reverb)
       val audioFile = File(audioUriWithEffects.path ?: "")
       if (!audioFile.exists()) {
         Log.e("SamplerViewModel", "The audio file doesn't exists: ${audioFile.path}")
@@ -766,19 +759,15 @@ open class SamplerViewModel() : ViewModel() {
 
     if (currentAudioUri == null) return null
 
-    // 1. Decode PCM
     val audioData = decodeAudioToPCM(currentAudioUri) ?: return null
     var (samples, sampleRate, channelCount) = audioData
 
-    // 2. Equalizer
     samples = applyEQFilters(samples, sampleRate, eqBands)
 
-    // 3. Reverb
     samples =
         applyReverb(
             samples, sampleRate, reverbWet, reverbSize, reverbWidth, reverbDepth, reverbPredelay)
 
-    // 4. Output WAV
     val originalName = currentAudioUri.lastPathSegment ?: "audio"
     val base = originalName.substringBeforeLast(".")
     val out = File(context.cacheDir, "${base}_processed.wav")
@@ -797,7 +786,6 @@ open class SamplerViewModel() : ViewModel() {
     }
 
     try {
-      // Decode audio to PCM samples
       val audioData = decodeAudioToPCM(audioUri)
       if (audioData == null) {
         Log.e("SamplerViewModel", "Failed to decode audio to PCM")
@@ -809,19 +797,15 @@ open class SamplerViewModel() : ViewModel() {
           "SamplerViewModel",
           "Decoded ${samples.size} samples at $sampleRate Hz, $channelCount channel(s)")
 
-      // Apply EQ filters to the samples
       val equalizedSamples = applyEQFilters(samples, sampleRate, eqBands)
 
-      // Determine output file name and path in app cache directory
       val originalName = audioUri.lastPathSegment ?: "sample_audio"
       val dotIndex = originalName.lastIndexOf('.')
       val baseName = if (dotIndex > 0) originalName.substring(0, dotIndex) else originalName
       val outFile = File(context.cacheDir, "${baseName}_equalized.wav")
 
-      // Encode equalized samples back to WAV file
       encodePCMToWAV(equalizedSamples, sampleRate, channelCount, outFile)
 
-      // Update UI state with the new audio Uri
       val newUri = Uri.fromFile(outFile)
       _uiState.update { current -> current.copy(currentAudioUri = newUri) }
 
@@ -890,7 +874,6 @@ open class SamplerViewModel() : ViewModel() {
           val chunk = ShortArray(shortBuffer.remaining())
           shortBuffer.get(chunk)
 
-          // Convert PCM16 to float (-1.0 to 1.0)
           for (sample in chunk) {
             allSamples.add(sample.toFloat() / Short.MAX_VALUE)
           }
@@ -919,25 +902,16 @@ open class SamplerViewModel() : ViewModel() {
   ): FloatArray {
     var processedSamples = samples.copyOf()
 
-    // Apply a parametric EQ filter for each band
     EQ_FREQUENCIES.forEachIndexed { index, frequency ->
       val gainDB = eqBands.getOrElse(index) { EQ_GAIN_DEFAULT }
 
-      // Skip if gain is near zero (no effect)
       if (abs(gainDB) < 0.1f) {
         return@forEachIndexed
       }
 
-      // Create a parametric EQ filter using biquad peak filter
       val filter =
-          BiquadPeakFilter(
-              frequency.toDouble(),
-              sampleRate.toDouble(),
-              gainDB.toDouble(),
-              1.0 // Q factor (bandwidth)
-              )
+          BiquadPeakFilter(frequency.toDouble(), sampleRate.toDouble(), gainDB.toDouble(), 1.0)
 
-      // Apply filter to all samples
       processedSamples = filter.process(processedSamples)
 
       Log.d("SamplerViewModel", "Applied EQ at ${frequency}Hz with gain ${gainDB}dB")
@@ -946,7 +920,6 @@ open class SamplerViewModel() : ViewModel() {
     return processedSamples
   }
 
-  // Biquad peak filter for parametric EQ
   internal class BiquadPeakFilter(
       centerFreq: Double,
       sampleRate: Double,
@@ -1005,9 +978,7 @@ open class SamplerViewModel() : ViewModel() {
       outputFile: File
   ) {
     try {
-      // Convert float samples back to PCM16
-      val pcmData = ByteArray(samples.size * 2) // 16-bit = 2 bytes per sample
-
+      val pcmData = ByteArray(samples.size * 2)
       for (i in samples.indices) {
         val sample =
             (samples[i] * Short.MAX_VALUE)
@@ -1018,30 +989,25 @@ open class SamplerViewModel() : ViewModel() {
         pcmData[i * 2 + 1] = ((sample.toInt() shr 8) and 0xFF).toByte()
       }
 
-      // Write WAV file with header
       outputFile.outputStream().use { out ->
-        // WAV header
         val bitsPerSample = 16
         val byteRate = sampleRate * channelCount * bitsPerSample / 8
         val blockAlign = channelCount * bitsPerSample / 8
         val dataSize = pcmData.size
 
-        // RIFF chunk
         out.write("RIFF".toByteArray())
-        out.write(intToBytes(36 + dataSize)) // ChunkSize
+        out.write(intToBytes(36 + dataSize))
         out.write("WAVE".toByteArray())
 
-        // fmt chunk
         out.write("fmt ".toByteArray())
-        out.write(intToBytes(16)) // Subchunk1Size (16 for PCM)
-        out.write(shortToBytes(1)) // AudioFormat (1 = PCM)
+        out.write(intToBytes(16))
+        out.write(shortToBytes(1))
         out.write(shortToBytes(channelCount.toShort()))
         out.write(intToBytes(sampleRate))
         out.write(intToBytes(byteRate))
         out.write(shortToBytes(blockAlign.toShort()))
         out.write(shortToBytes(bitsPerSample.toShort()))
 
-        // data chunk
         out.write("data".toByteArray())
         out.write(intToBytes(dataSize))
         out.write(pcmData)
