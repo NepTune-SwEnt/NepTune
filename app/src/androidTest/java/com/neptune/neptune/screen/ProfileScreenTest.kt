@@ -564,8 +564,7 @@ class ProfileScreenTest {
   fun editButtonHiddenForAnonymousSelfProfile() {
     setContentViewMode(
         viewConfig =
-            ProfileViewConfig.SelfProfileConfig(
-                onEdit = {}, settings = {}, canEditProfile = false))
+            ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = {}, canEditProfile = false))
 
     composeTestRule
         .onAllNodes(hasTestTag(ProfileScreenTestTags.EDIT_BUTTON), useUnmergedTree = true)
@@ -835,6 +834,28 @@ class ProfileScreenTest {
       composeTestRule.setContent { SampleAppTheme { OtherUserProfileRoute(userId = userId) } }
 
       composeTestRule.waitForTag(ProfileScreenTestTags.NAME)
+      composeTestRule
+          .onAllNodes(hasTestTag(ProfileScreenTestTags.FOLLOW_BUTTON), useUnmergedTree = true)
+          .assertCountEquals(0)
+    }
+  }
+
+  @Test
+  fun normalUserOpeningAnonymousProfileDoesNotSeeFollowButton() {
+    val userId = "anonymous-target"
+    val repo =
+        FakeOtherProfileRepository(
+            targetUserId = userId,
+            initialOtherProfile = Profile(uid = userId, name = "Hidden Artist", isAnonymous = true),
+            initialCurrentProfile = Profile(uid = "current-user", name = "Viewer"))
+
+    withProfileRepository(repo) {
+      composeTestRule.setContent { SampleAppTheme { OtherUserProfileRoute(userId = userId) } }
+
+      composeTestRule.waitForTag(ProfileScreenTestTags.AVATAR)
+      composeTestRule
+          .onNodeWithTag(ProfileScreenTestTags.AVATAR, useUnmergedTree = true)
+          .assertExists()
       composeTestRule
           .onAllNodes(hasTestTag(ProfileScreenTestTags.FOLLOW_BUTTON), useUnmergedTree = true)
           .assertCountEquals(0)

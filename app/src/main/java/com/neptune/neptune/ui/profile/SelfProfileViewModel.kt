@@ -174,6 +174,7 @@ class SelfProfileViewModel(
                 likes = prof.likes.toInt(),
                 posts = prof.posts.toInt(),
                 tags = prof.tags,
+                isAnonymousUser = prof.isAnonymous || auth.currentUser?.isAnonymous == true,
                 isSaving = false,
                 error = null)
       } catch (t: Throwable) {

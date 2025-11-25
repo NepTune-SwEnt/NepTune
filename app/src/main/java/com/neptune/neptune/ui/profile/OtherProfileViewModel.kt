@@ -40,7 +40,8 @@ class OtherProfileViewModel(
           .collectLatest { (otherProfile, currentProfile) ->
             if (otherProfile != null) {
               val isCurrentUserFollowing = currentProfile?.following?.contains(userId) == true
-              val isCurrentUserAnonymous = currentProfile?.isAnonymous == true
+              val authAnonymous = auth.currentUser?.isAnonymous == true
+              val isCurrentUserAnonymous = authAnonymous || currentProfile?.isAnonymous == true
               val updatedProfile =
                   SelfProfileUiState(
                       name = otherProfile.name.orEmpty(),
