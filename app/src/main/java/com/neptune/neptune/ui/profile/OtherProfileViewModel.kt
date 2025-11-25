@@ -51,6 +51,7 @@ class OtherProfileViewModel(
                       likes = otherProfile.likes.toInt(),
                       posts = otherProfile.posts.toInt(),
                       tags = otherProfile.tags,
+                      isAnonymousUser = otherProfile.isAnonymous,
                       error = null)
 
               _uiState.value =
@@ -66,6 +67,7 @@ class OtherProfileViewModel(
 
   /** Simple toggle for follow/unfollow with local follower count update. */
   fun onFollow() {
+    if (_uiState.value.profile.isAnonymousUser) return
     val isCurrentUserFollowing = _uiState.value.isCurrentUserFollowing
     _uiState.value =
         _uiState.value.copy(
