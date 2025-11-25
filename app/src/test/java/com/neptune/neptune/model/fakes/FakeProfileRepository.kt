@@ -21,7 +21,7 @@ class FakeProfileRepository(
   private val state = MutableStateFlow(initial)
 
   override suspend fun getCurrentProfile(): Profile? {
-    TODO("Not yet implemented")
+    throw UnsupportedOperationException("Not needed in this test")
   }
 
   override suspend fun getProfile(uid: String): Profile? = state.value
@@ -29,15 +29,15 @@ class FakeProfileRepository(
   override fun observeCurrentProfile(): Flow<Profile?> = state.asStateFlow()
 
   override fun observeProfile(uid: String): Flow<Profile?> {
-    TODO("Not yet implemented")
+    throw UnsupportedOperationException("Not needed in this test")
   }
 
   override suspend fun unfollowUser(uid: String) {
-    TODO("Not yet implemented")
+    throw UnsupportedOperationException("Not needed in this test")
   }
 
   override suspend fun followUser(uid: String) {
-    TODO("Not yet implemented")
+    throw UnsupportedOperationException("Not needed in this test")
   }
 
   override suspend fun ensureProfile(

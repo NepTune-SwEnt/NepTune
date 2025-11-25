@@ -13,21 +13,21 @@ class FakeProfileRepository(initial: Profile? = null) : ProfileRepository {
   override suspend fun getCurrentProfile(): Profile? = profile
 
   override suspend fun getProfile(uid: String): Profile? {
-    TODO("Not yet implemented")
+    throw UnsupportedOperationException("Not needed in this test")
   }
 
   override fun observeCurrentProfile(): Flow<Profile?> = flowOf(profile)
 
   override fun observeProfile(uid: String): Flow<Profile?> {
-    TODO("Not yet implemented")
+      throw UnsupportedOperationException("Not needed in this test")
   }
 
   override suspend fun unfollowUser(uid: String) {
-    TODO("Not yet implemented")
+      throw UnsupportedOperationException("Not needed in this test")
   }
 
   override suspend fun followUser(uid: String) {
-    TODO("Not yet implemented")
+      throw UnsupportedOperationException("Not needed in this test")
   }
 
   override suspend fun ensureProfile(
