@@ -175,23 +175,29 @@ sealed interface ProfileViewConfig {
   val bottomScreenButton: (@Composable (modifier: Modifier) -> Unit)?
   val samplesSection: (@Composable () -> Unit)?
 
-  data class SelfProfileConfig(private val onEdit: () -> Unit, private val settings: () -> Unit) :
+  data class SelfProfileConfig(
+      private val onEdit: () -> Unit,
+      private val settings: () -> Unit,
+      val canEditProfile: Boolean = true,
+  ) :
       ProfileViewConfig {
     override val topBarContent = @Composable { SettingsButton(settings) }
     override val belowStatsButton = null
     override val bottomScreenButton =
         @Composable { modifier: Modifier ->
-          Button(
-              onClick = onEdit,
-              enabled = true,
-              modifier =
-                  modifier
-                      .padding(bottom = BottomButtonBottomPadding)
-                      .testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
-                Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
-                Spacer(Modifier.width(ButtonIconSpacing))
-                Text("Edit")
-              }
+          if (canEditProfile) {
+            Button(
+                onClick = onEdit,
+                enabled = true,
+                modifier =
+                    modifier
+                        .padding(bottom = BottomButtonBottomPadding)
+                        .testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
+                  Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
+                  Spacer(Modifier.width(ButtonIconSpacing))
+                  Text("Edit")
+                }
+          }
         }
     override val samplesSection = null
   }
@@ -718,7 +724,10 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
           })
 
   val viewConfig =
-      ProfileViewConfig.SelfProfileConfig(onEdit = viewModel::onEditClick, settings = settings)
+      ProfileViewConfig.SelfProfileConfig(
+          onEdit = viewModel::onEditClick,
+          settings = settings,
+          canEditProfile = !state.isAnonymousUser)
 
   ProfileScreen(
       uiState = state,
@@ -768,7 +777,7 @@ fun OtherUserProfileRoute(
       ProfileViewConfig.OtherProfileConfig(
           isFollowing = state.isCurrentUserFollowing,
           isFollowActionInProgress = state.isFollowActionInProgress,
-          canFollowTarget = !state.profile.isAnonymousUser,
+          canFollowTarget = !state.profile.isAnonymousUser && !state.isCurrentUserAnonymous,
           onFollow = viewModel::onFollow,
           errorMessage = state.errorMessage)
 

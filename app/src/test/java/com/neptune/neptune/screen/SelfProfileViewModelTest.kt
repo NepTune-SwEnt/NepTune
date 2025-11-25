@@ -6,6 +6,7 @@ import com.google.firebase.auth.FirebaseUser
 import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.fakes.FakeProfileRepository
+import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.ui.profile.ProfileMode
 import com.neptune.neptune.ui.profile.SelfProfileViewModel
 import kotlinx.coroutines.Dispatchers
@@ -166,6 +167,28 @@ class SelfProfileViewModelTest {
     assertEquals("Alice", s.name)
     assertEquals("alice_123", s.username)
     assertEquals("Hello there", s.bio)
+  }
+
+  @Test
+  fun anonymousUserCannotEnterEditOrSave() {
+    val anonymousRepo =
+        FakeProfileRepository(
+            initial =
+                Profile(
+                    uid = "anon",
+                    username = "anon",
+                    name = "Anon",
+                    bio = "hidden",
+                    avatarUrl = "",
+                    isAnonymous = true))
+    val anonymousViewModel =
+        SelfProfileViewModel(anonymousRepo, mockAuth, mockImageRepo, mockStorageService)
+
+    anonymousViewModel.onEditClick()
+    assertEquals(ProfileMode.VIEW, anonymousViewModel.uiState.value.mode)
+
+    anonymousViewModel.onSaveClick()
+    assertEquals(ProfileMode.VIEW, anonymousViewModel.uiState.value.mode)
   }
 
   @Test

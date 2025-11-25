@@ -184,6 +184,7 @@ class SelfProfileViewModel(
 
   /** Enters edit mode and restores current saved profile data for editing. */
   fun onEditClick() {
+    if (_uiState.value.isAnonymousUser) return
     _uiState.value =
         _uiState.value
             .copy(
@@ -317,6 +318,7 @@ class SelfProfileViewModel(
    */
   fun onSaveClick() {
     val currentState = _uiState.value
+    if (currentState.isAnonymousUser) return
     if (currentState.mode != ProfileMode.EDIT || currentState.isSaving) return
 
     val validated = currentState.validated()
