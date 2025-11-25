@@ -199,7 +199,7 @@ class ProfileRepositoryFirebase(
    * already owned by this user.
    */
   override suspend fun isUsernameAvailable(username: String): Boolean {
-    val uid = auth.currentUser?.uid ?: error("No authenticated user")
+    val uid = requireCurrentUid()
     val desired = normalizeUsername(username)
     val doc = usernames.document(desired).get().await()
     if (!doc.exists()) return true
