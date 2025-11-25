@@ -179,8 +179,7 @@ sealed interface ProfileViewConfig {
       private val onEdit: () -> Unit,
       private val settings: () -> Unit,
       val canEditProfile: Boolean = true,
-  ) :
-      ProfileViewConfig {
+  ) : ProfileViewConfig {
     override val topBarContent = @Composable { SettingsButton(settings) }
     override val belowStatsButton = null
     override val bottomScreenButton =

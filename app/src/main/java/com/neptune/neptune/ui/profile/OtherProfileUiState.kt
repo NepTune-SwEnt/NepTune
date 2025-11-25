@@ -7,7 +7,7 @@ package com.neptune.neptune.ui.profile
  * @property isCurrentUserFollowing True if the current user is following this profile.
  */
 data class OtherProfileUiState(
-    val profile: SelfProfileUiState = SelfProfileUiState(),
+    val profile: SelfProfileUiState = SelfProfileUiState(isAnonymousUser = true),
     val isCurrentUserFollowing: Boolean = false,
     val errorMessage: String? = null,
     val isFollowActionInProgress: Boolean = false,
