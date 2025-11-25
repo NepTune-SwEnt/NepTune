@@ -4,6 +4,7 @@ package com.neptune.neptune.ui
 
 import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.Profile
@@ -22,6 +23,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OtherProfileViewModelTest {
@@ -101,9 +103,40 @@ class OtherProfileViewModelTest {
         val targetUserId = "artist-42"
         val otherProfile = Profile(uid = targetUserId, username = "artist")
         val currentProfile =
-            Profile(uid = "viewer-1", username = "viewer", isAnonymous = true, following = emptyList())
+            Profile(
+                uid = "viewer-1", username = "viewer", isAnonymous = true, following = emptyList())
         val repo = FollowToggleTestRepository(otherProfile, currentProfile)
         val mockAuth: FirebaseAuth = mock()
+        val mockImageRepo: ImageStorageRepository = mock()
+        val mockStorageService: StorageService = mock()
+        val viewModel =
+            OtherProfileViewModel(
+                repo = repo,
+                userId = targetUserId,
+                auth = mockAuth,
+                imageRepo = mockImageRepo,
+                storageService = mockStorageService)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.isCurrentUserAnonymous)
+
+        viewModel.onFollow()
+        advanceUntilIdle()
+
+        assertTrue(repo.followCalls.isEmpty())
+        assertTrue(repo.unfollowCalls.isEmpty())
+      }
+
+  @Test
+  fun anonymousAuthUserWithoutProfileCannotFollow() =
+      runTest(dispatcher) {
+        val targetUserId = "artist-24"
+        val otherProfile = Profile(uid = targetUserId, username = "artist24")
+        val repo = FollowToggleTestRepository(otherProfile, initialCurrentProfile = null)
+        val mockAuth: FirebaseAuth = mock()
+        val mockUser: FirebaseUser = mock()
+        whenever(mockAuth.currentUser).thenReturn(mockUser)
+        whenever(mockUser.isAnonymous).thenReturn(true)
         val mockImageRepo: ImageStorageRepository = mock()
         val mockStorageService: StorageService = mock()
 
@@ -128,7 +161,7 @@ class OtherProfileViewModelTest {
 
 private class FollowToggleTestRepository(
     initialOtherProfile: Profile,
-    initialCurrentProfile: Profile
+    initialCurrentProfile: Profile?
 ) : ProfileRepository {
 
   private val otherProfileState = MutableStateFlow<Profile?>(initialOtherProfile)
@@ -141,7 +174,7 @@ private class FollowToggleTestRepository(
     otherProfileState.value = profile
   }
 
-  fun updateCurrent(profile: Profile) {
+  fun updateCurrent(profile: Profile?) {
     currentProfileState.value = profile
   }
 
