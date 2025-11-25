@@ -130,33 +130,6 @@ class SignInViewModel(
       _signInStatus.value = SignInStatus.SIGNED_OUT
     }
   }
-  /**
-   * Tente de connecter l'utilisateur anonymement.
-   * Utile pour le débogage ou pour permettre un accès limité sans création de compte.
-   */
-  fun signInAnonymouslyForDebug() {
-    // On signale que l'authentification est en cours
-    _signInStatus.value = SignInStatus.IN_PROGRESS_FIREBASE_AUTH
-
-    viewModelScope.launch {
-      try {
-        // Appel à la méthode native de Firebase pour l'anonymat
-        val authResult = firebaseAuth.signInAnonymously().await()
-
-        // Mise à jour de l'utilisateur et du statut
-        _currentUser.value = authResult.user
-        _signInStatus.value = SignInStatus.SUCCESS
-
-        // Navigation vers l'écran principal
-        navigateMain()
-      } catch (e: Exception) {
-        // Gestion d'erreur
-        _currentUser.value = null
-        _signInStatus.value = SignInStatus.ERROR
-        e.printStackTrace() // Utile pour voir l'erreur dans le Logcat
-      }
-    }
-  }
 
   /**
    * Initiates the Google Sign-In flow using the Credential Manager.
