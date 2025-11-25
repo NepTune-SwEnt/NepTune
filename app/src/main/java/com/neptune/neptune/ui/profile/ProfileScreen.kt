@@ -198,6 +198,7 @@ sealed interface ProfileViewConfig {
 
   data class OtherProfileConfig(
       val isFollowing: Boolean,
+      val isFollowActionInProgress: Boolean,
       private val onFollow: () -> Unit,
       private val errorMessage: String?,
   ) : ProfileViewConfig {
@@ -212,7 +213,7 @@ sealed interface ProfileViewConfig {
               horizontalAlignment = Alignment.CenterHorizontally) {
                 Button(
                     onClick = onFollow,
-                    enabled = true,
+                    enabled = !isFollowActionInProgress,
                     modifier = Modifier.testTag(ProfileScreenTestTags.FOLLOW_BUTTON)) {
                       Icon(imageVector = icon, contentDescription = "Follow")
                       Spacer(Modifier.width(ButtonIconSpacing))
@@ -765,6 +766,7 @@ fun OtherUserProfileRoute(
   val viewConfig =
       ProfileViewConfig.OtherProfileConfig(
           isFollowing = state.isCurrentUserFollowing,
+          isFollowActionInProgress = state.isFollowActionInProgress,
           onFollow = viewModel::onFollow,
           errorMessage = state.errorMessage)
 

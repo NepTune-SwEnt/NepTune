@@ -57,7 +57,8 @@ class OtherProfileViewModel(
                   _uiState.value.copy(
                       profile = updatedProfile,
                       isCurrentUserFollowing = isCurrentUserFollowing,
-                      errorMessage = null)
+                      errorMessage = null,
+                      isFollowActionInProgress = false)
             }
           }
     }
@@ -66,7 +67,11 @@ class OtherProfileViewModel(
   /** Simple toggle for follow/unfollow with local follower count update. */
   fun onFollow() {
     val isCurrentUserFollowing = _uiState.value.isCurrentUserFollowing
-    _uiState.value = _uiState.value.copy(errorMessage = null)
+    _uiState.value =
+        _uiState.value.copy(
+            errorMessage = null,
+            isFollowActionInProgress = true,
+        )
 
     viewModelScope.launch {
       try {
@@ -76,7 +81,11 @@ class OtherProfileViewModel(
           repo.followUser(userId)
         }
       } catch (e: Exception) {
-        _uiState.value = _uiState.value.copy(errorMessage = "Unable to update follow state")
+        _uiState.value =
+            _uiState.value.copy(
+                errorMessage = "Unable to update follow state",
+                isFollowActionInProgress = false,
+            )
       }
     }
   }
