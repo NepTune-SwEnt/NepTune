@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import com.neptune.neptune.ui.authentification.EmailAuthUiState
 import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInScreenTags
 import com.neptune.neptune.ui.authentification.SignInStatus
@@ -32,10 +33,12 @@ class SignInScreenTest {
 
   /** Tests that the initial UI displays all elements and the button is enabled by default. */
   @Test
-  fun signInScreen_displaysCoreElements_andButtonIsEnabled_whenSignedOut() {
+  fun signInScreenDisplaysCoreElementsAndButtonIsEnabledWhenSignedOut() {
     // GIVEN: The ViewModel is in the SIGNED_OUT state (default)
     val mockViewModel = mockk<SignInViewModel>(relaxed = true)
     every { mockViewModel.signInStatus } returns MutableStateFlow(SignInStatus.SIGNED_OUT)
+    // Provide email/password UI state used by the composable
+    every { mockViewModel.emailAuthUiState } returns MutableStateFlow(EmailAuthUiState())
 
     // WHEN: The UI is rendered
     setContent(signInViewModel = mockViewModel)
@@ -50,10 +53,11 @@ class SignInScreenTest {
 
   /** Tests that clicking the enabled login button triggers the ViewModel. */
   @Test
-  fun clickingLoginButton_triggersViewModel_whenEnabled() {
+  fun clickingLoginButtonTriggersViewModelWhenEnabled() {
     // GIVEN: The button is enabled
     val mockViewModel = mockk<SignInViewModel>(relaxed = true)
     every { mockViewModel.signInStatus } returns MutableStateFlow(SignInStatus.SIGNED_OUT)
+    every { mockViewModel.emailAuthUiState } returns MutableStateFlow(EmailAuthUiState())
     setContent(signInViewModel = mockViewModel)
 
     // WHEN: The user clicks the login button
@@ -65,10 +69,11 @@ class SignInScreenTest {
 
   /** Tests that the login button is correctly disabled when sign-in is requested. */
   @Test
-  fun loginButton_isDisabled_whenSignInIsRequested() {
+  fun loginButtonIsDisabledWhenSignInIsRequested() {
     // GIVEN: The ViewModel is in the SIGN_IN_REQUESTED state
     val mockViewModel = mockk<SignInViewModel>(relaxed = true)
     every { mockViewModel.signInStatus } returns MutableStateFlow(SignInStatus.SIGN_IN_REQUESTED)
+    every { mockViewModel.emailAuthUiState } returns MutableStateFlow(EmailAuthUiState())
 
     // WHEN: The UI is rendered
     setContent(signInViewModel = mockViewModel)
@@ -80,11 +85,12 @@ class SignInScreenTest {
 
   /** Tests that the login button is also disabled during Firebase authentication. */
   @Test
-  fun loginButton_isDisabled_whenInProgressFirebaseAuth() {
+  fun loginButtonIsDisabledWhenInProgressFirebaseAuth() {
     // GIVEN: The ViewModel is authenticating with Firebase
     val mockViewModel = mockk<SignInViewModel>(relaxed = true)
     every { mockViewModel.signInStatus } returns
         MutableStateFlow(SignInStatus.IN_PROGRESS_FIREBASE_AUTH)
+    every { mockViewModel.emailAuthUiState } returns MutableStateFlow(EmailAuthUiState())
 
     // WHEN: The UI is rendered
     setContent(signInViewModel = mockViewModel)
@@ -96,10 +102,11 @@ class SignInScreenTest {
 
   /** Tests that the button becomes enabled again after an error, allowing the user to retry. */
   @Test
-  fun loginButton_isEnabled_afterError() {
+  fun loginButtonIsEnabledAfterError() {
     // GIVEN: The ViewModel is in the ERROR state
     val mockViewModel = mockk<SignInViewModel>(relaxed = true)
     every { mockViewModel.signInStatus } returns MutableStateFlow(SignInStatus.ERROR)
+    every { mockViewModel.emailAuthUiState } returns MutableStateFlow(EmailAuthUiState())
 
     // WHEN: The UI is rendered
     setContent(signInViewModel = mockViewModel)
@@ -110,10 +117,11 @@ class SignInScreenTest {
   }
   /** Ensures that a click is ignored when the button is disabled. */
   @Test
-  fun clickingDisabledLoginButton_doesNotTriggerViewModel() {
+  fun clickingDisabledLoginButtonDoesNotTriggerViewModel() {
     // GIVEN: The ViewModel is in a state where the button is disabled
     val mockViewModel = mockk<SignInViewModel>(relaxed = true)
     every { mockViewModel.signInStatus } returns MutableStateFlow(SignInStatus.SIGN_IN_REQUESTED)
+    every { mockViewModel.emailAuthUiState } returns MutableStateFlow(EmailAuthUiState())
     setContent(signInViewModel = mockViewModel)
 
     // WHEN: A click is attempted on the (disabled) button
@@ -128,7 +136,7 @@ class SignInScreenTest {
    * initialization process.
    */
   @Test
-  fun successfulNavigationIsCalled_fromViewModelInteraction() {
+  fun successfulNavigationIsCalledFromViewModelInteraction() {
     val navigateLambdaSlot = slot<() -> Unit>()
 
     val mockViewModel =
@@ -136,6 +144,7 @@ class SignInScreenTest {
           every { initialize(any(), capture(navigateLambdaSlot), any()) } returns Unit
 
           every { signInStatus } returns MutableStateFlow(SignInStatus.SIGNED_OUT)
+          every { emailAuthUiState } returns MutableStateFlow(EmailAuthUiState())
         }
 
     val mockNavigateMain: () -> Unit = mockk(relaxed = true)

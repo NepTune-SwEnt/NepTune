@@ -20,7 +20,8 @@ import org.junit.Test
 class SignInViewModelTest {
 
   private fun buildViewModel(firebaseAuth: FirebaseAuth): SignInViewModel {
-    return SignInViewModel(firebaseAuth = firebaseAuth, googleIdOptionFactory = mockk(relaxed = true))
+    return SignInViewModel(
+        firebaseAuth = firebaseAuth, googleIdOptionFactory = mockk(relaxed = true))
   }
 
   private fun initialize(viewModel: SignInViewModel) {
@@ -29,7 +30,7 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun validateEmailPassword_invalidEmail_setsError() = runTest {
+  fun validateEmailPasswordInvalidEmailSetsError() = runTest {
     val auth = mockk<FirebaseAuth>(relaxed = true)
     val vm = buildViewModel(auth)
     initialize(vm)
@@ -44,7 +45,7 @@ class SignInViewModelTest {
   }
 
   @Test
-  fun validateEmailPassword_shortPassword_setsError() = runTest {
+  fun validateEmailPasswordShortPasswordSetsError() = runTest {
     val auth = mockk<FirebaseAuth>(relaxed = true)
     val vm = buildViewModel(auth)
     initialize(vm)
@@ -77,9 +78,10 @@ class SignInViewModelTest {
   fun signInWithEmail_success_updatesState() = runTest {
     val user = mockk<FirebaseUser>(relaxed = true)
     val authResult = mockk<AuthResult> { every { user } returns user }
-    val auth = mockk<FirebaseAuth> {
-      every { signInWithEmailAndPassword(any(), any()) } returns Tasks.forResult(authResult)
-    }
+    val auth =
+        mockk<FirebaseAuth> {
+          every { signInWithEmailAndPassword(any(), any()) } returns Tasks.forResult(authResult)
+        }
     val vm = buildViewModel(auth)
     initialize(vm)
     vm.setEmail("user@example.com")
@@ -96,9 +98,10 @@ class SignInViewModelTest {
   fun registerWithEmail_success_updatesState() = runTest {
     val user = mockk<FirebaseUser>(relaxed = true)
     val authResult = mockk<AuthResult> { every { user } returns user }
-    val auth = mockk<FirebaseAuth> {
-      every { createUserWithEmailAndPassword(any(), any()) } returns Tasks.forResult(authResult)
-    }
+    val auth =
+        mockk<FirebaseAuth> {
+          every { createUserWithEmailAndPassword(any(), any()) } returns Tasks.forResult(authResult)
+        }
     val vm = buildViewModel(auth)
     initialize(vm)
     vm.toggleRegisterMode()
@@ -115,10 +118,11 @@ class SignInViewModelTest {
 
   @Test
   fun signInWithEmail_invalidCredentials_mapsError() = runTest {
-    val auth = mockk<FirebaseAuth> {
-      every { signInWithEmailAndPassword(any(), any()) } returns
-          Tasks.forException(FirebaseAuthInvalidCredentialsException("code", "bad"))
-    }
+    val auth =
+        mockk<FirebaseAuth> {
+          every { signInWithEmailAndPassword(any(), any()) } returns
+              Tasks.forException(FirebaseAuthInvalidCredentialsException("code", "bad"))
+        }
     val vm = buildViewModel(auth)
     initialize(vm)
     vm.setEmail("user@example.com")
@@ -132,10 +136,11 @@ class SignInViewModelTest {
 
   @Test
   fun register_emailAlreadyInUse_mapsError() = runTest {
-    val auth = mockk<FirebaseAuth> {
-      every { createUserWithEmailAndPassword(any(), any()) } returns
-          Tasks.forException(FirebaseAuthUserCollisionException("code", "exists"))
-    }
+    val auth =
+        mockk<FirebaseAuth> {
+          every { createUserWithEmailAndPassword(any(), any()) } returns
+              Tasks.forException(FirebaseAuthUserCollisionException("code", "exists"))
+        }
     val vm = buildViewModel(auth)
     initialize(vm)
     vm.toggleRegisterMode()
@@ -153,7 +158,7 @@ class SignInViewModelTest {
     val user = mockk<FirebaseUser>(relaxed = true)
     val authResult = mockk<AuthResult> { every { user } returns user }
     val auth =
-      mockk<FirebaseAuth> { every { signInAnonymously() } returns Tasks.forResult(authResult) }
+        mockk<FirebaseAuth> { every { signInAnonymously() } returns Tasks.forResult(authResult) }
     val vm = buildViewModel(auth)
     initialize(vm)
 
@@ -165,9 +170,10 @@ class SignInViewModelTest {
 
   @Test
   fun signInAnonymously_networkError_mapsError() = runTest {
-    val auth = mockk<FirebaseAuth> {
-      every { signInAnonymously() } returns Tasks.forException(FirebaseNetworkException("net"))
-    }
+    val auth =
+        mockk<FirebaseAuth> {
+          every { signInAnonymously() } returns Tasks.forException(FirebaseNetworkException("net"))
+        }
     val vm = buildViewModel(auth)
     initialize(vm)
 
