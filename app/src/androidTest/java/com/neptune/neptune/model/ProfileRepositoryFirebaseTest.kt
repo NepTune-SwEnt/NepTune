@@ -266,7 +266,7 @@ class ProfileRepositoryFirebaseTest {
 
     repo.observeCurrentProfile().test {
       // first emission: should be null (no doc)
-      assertNull("fist emission should be null when doc is missing", awaitItem())
+      assertNull("first emission should be null when doc is missing", awaitItem())
 
       // create the profile: next emission
       val created = repo.ensureProfile(suggestedUsernameBase = "obstest", name = null)
