@@ -13,6 +13,7 @@ data class ExtendedColors(
     val searchBar: Color,       // search bar background color
     val accentPrimary: Color,   // primary accent color for highlights
     val onBackground: Color,    // text, icons and cards color on background
+    val onPrimary: Color,       // text color used on primary (buttons)
     val smallText: Color,       // secondary text color
     val loginText: Color,       // text color for login screen
     val soundWave: Color,       // sound wave color in the player
@@ -30,6 +31,7 @@ val DarkExtendedColors =
         searchBar = FadedDarkBlue,
         accentPrimary = LightPurpleBlue,
         onBackground = LightTurquoise,
+        onPrimary = White,
         smallText = LightLavender,
         loginText = Black,
         soundWave = LightSkyBlue,
@@ -46,6 +48,7 @@ val LightExtendedColors =
         searchBar = LightLavenderBlue,
         accentPrimary = LightPurpleBlue,
         onBackground = DarkBlue3,
+        onPrimary = White,
         smallText = Black,
         loginText = White,
         soundWave = DarkBlue3,
