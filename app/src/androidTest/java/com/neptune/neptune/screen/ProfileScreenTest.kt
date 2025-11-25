@@ -561,6 +561,21 @@ class ProfileScreenTest {
   }
 
   @Test
+  fun followButtonHiddenWhenTargetCannotBeFollowed() {
+    setContentViewMode(
+        viewConfig =
+            ProfileViewConfig.OtherProfileConfig(
+                isFollowing = false,
+                canFollowTarget = false,
+                onFollow = {},
+                errorMessage = null))
+
+    composeTestRule
+        .onAllNodes(hasTestTag(ProfileScreenTestTags.FOLLOW_BUTTON), useUnmergedTree = true)
+        .assertCountEquals(0)
+  }
+
+  @Test
   fun unfollowingOtherProfileInvokesCallback() {
     var unfollowCalled = false
     setContentViewMode(
@@ -774,6 +789,26 @@ class ProfileScreenTest {
       followButton.performClick()
       composeTestRule.waitUntil(5_000) { repo.followRequests > 0 }
       composeTestRule.onNode(hasText("Unfollow"), useUnmergedTree = true).assertExists()
+    }
+  }
+
+  @Test
+  fun otherUserProfileRouteHidesFollowButtonForAnonymousProfiles() {
+    val userId = "remote-anon"
+    val repo =
+        FakeOtherProfileRepository(
+            targetUserId = userId,
+            initialOtherProfile =
+                Profile(uid = userId, name = "Anonymous Artist", isAnonymous = true),
+            initialCurrentProfile = Profile(uid = "current-user", following = emptyList()))
+
+    withProfileRepository(repo) {
+      composeTestRule.setContent { SampleAppTheme { OtherUserProfileRoute(userId = userId) } }
+
+      composeTestRule.waitForTag(ProfileScreenTestTags.NAME)
+      composeTestRule
+          .onAllNodes(hasTestTag(ProfileScreenTestTags.FOLLOW_BUTTON), useUnmergedTree = true)
+          .assertCountEquals(0)
     }
   }
 
