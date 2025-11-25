@@ -22,7 +22,7 @@ class SelectMessagesViewModel(initialUsers: List<UserMessagePreview>? = null /*f
   val users: StateFlow<List<UserMessagePreview>> = _users.asStateFlow()
 
   init {
-    if (initialUsers == null) loadFakeData()
+    if (initialUsers == null) loadFakeData() // TODO: Change to real data
   }
 
   // Fake preview data with profiles

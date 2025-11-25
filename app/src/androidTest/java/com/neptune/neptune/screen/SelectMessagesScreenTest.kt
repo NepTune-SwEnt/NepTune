@@ -11,6 +11,8 @@ import androidx.compose.ui.test.performScrollTo
 import com.neptune.neptune.ui.messages.SelectMessagesScreen
 import com.neptune.neptune.ui.messages.SelectMessagesScreenTestTags
 import com.neptune.neptune.ui.messages.SelectMessagesViewModel
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -86,7 +88,7 @@ class SelectMessagesScreenTest {
     var backClicked = false
     setContent(goBack = { backClicked = true })
     composeTestRule.onNodeWithTag(SelectMessagesScreenTestTags.BACK_BUTTON).performClick()
-    assert(backClicked)
+    assertTrue(backClicked)
   }
 
   /** Tests that clicking on a User correctly trigger a callback */
@@ -98,7 +100,7 @@ class SelectMessagesScreenTest {
         .onAllNodesWithTag(SelectMessagesScreenTestTags.USER_ROW, useUnmergedTree = true)
         .onFirst()
         .performClick()
-    assert(selectedUserId != null)
+    assertNotNull(selectedUserId != null)
   }
 
   /** Tests that when we don't have any conversations the text correctly display */

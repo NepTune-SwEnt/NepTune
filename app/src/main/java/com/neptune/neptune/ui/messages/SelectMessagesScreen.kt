@@ -122,17 +122,17 @@ fun SelectMessagesScreen(
                 fontSize = 30.sp,
                 modifier = Modifier.testTag(SelectMessagesScreenTestTags.NO_CONVERSATIONS_TEXT))
           }
-          return
-        }
+        } else {
 
-        // List of Users
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().testTag(SelectMessagesScreenTestTags.USER_LIST),
-            verticalArrangement = Arrangement.spacedBy(4.dp)) {
-              items(users) { user ->
-                UserMessagePreviewRow(user = user, onClick = { onSelectUser(user.uid) })
+          // List of Users
+          LazyColumn(
+              modifier = Modifier.fillMaxSize().testTag(SelectMessagesScreenTestTags.USER_LIST),
+              verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                items(users) { user ->
+                  UserMessagePreviewRow(user = user, onClick = { onSelectUser(user.uid) })
+                }
               }
-            }
+        }
       }
 }
 
@@ -166,8 +166,7 @@ fun UserMessagePreviewRow(user: UserMessagePreview, onClick: () -> Unit) {
                       .background(
                           color =
                               if (user.isOnline) NepTuneTheme.colors.online
-                              else NepTuneTheme.colors.offline,
-                          shape = CircleShape)
+                              else NepTuneTheme.colors.offline)
                       .testTag(SelectMessagesScreenTestTags.ONLINE_INDICATOR))
         }
 
