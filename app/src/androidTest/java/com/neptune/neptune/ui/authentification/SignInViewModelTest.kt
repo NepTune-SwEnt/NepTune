@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.authentification
 
+import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.credentials.CredentialManager
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.FirebaseNetworkException
@@ -14,10 +15,12 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert
+import org.junit.Rule
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SignInViewModelTest {
+  @get:Rule val composeRule = createComposeRule()
 
   private fun buildViewModel(firebaseAuth: FirebaseAuth): SignInViewModel {
     return SignInViewModel(
@@ -32,6 +35,7 @@ class SignInViewModelTest {
   @Test
   fun validateEmailPasswordInvalidEmailSetsError() = runTest {
     val auth = mockk<FirebaseAuth>(relaxed = true)
+    every { auth.currentUser } returns null
     val vm = buildViewModel(auth)
     initialize(vm)
 
@@ -39,6 +43,7 @@ class SignInViewModelTest {
     vm.setPassword("123456")
     vm.submitEmailAuth() // sign in mode
 
+    composeRule.waitForIdle()
     val state = vm.emailAuthUiState.first()
     Assert.assertEquals("Invalid email", state.emailError)
     Assert.assertEquals(SignInStatus.SIGNED_OUT, vm.signInStatus.first())
@@ -47,6 +52,7 @@ class SignInViewModelTest {
   @Test
   fun validateEmailPasswordShortPasswordSetsError() = runTest {
     val auth = mockk<FirebaseAuth>(relaxed = true)
+    every { auth.currentUser } returns null
     val vm = buildViewModel(auth)
     initialize(vm)
 
@@ -54,13 +60,15 @@ class SignInViewModelTest {
     vm.setPassword("123")
     vm.submitEmailAuth()
 
+    composeRule.waitForIdle()
     val state = vm.emailAuthUiState.first()
     Assert.assertEquals("Min 6 characters", state.passwordError)
   }
 
   @Test
-  fun validateEmailPassword_registerMode_mismatch_setsError() = runTest {
+  fun validateEmailPasswordRegisterModeMismatchSetsError() = runTest {
     val auth = mockk<FirebaseAuth>(relaxed = true)
+    every { auth.currentUser } returns null
     val vm = buildViewModel(auth)
     initialize(vm)
 
@@ -70,17 +78,19 @@ class SignInViewModelTest {
     vm.setConfirmPassword("different")
     vm.submitEmailAuth()
 
+    composeRule.waitForIdle()
     val state = vm.emailAuthUiState.first()
     Assert.assertEquals("Passwords don't match", state.confirmPasswordError)
   }
 
   @Test
-  fun signInWithEmail_success_updatesState() = runTest {
+  fun signInWithEmailSuccessUpdatesState() = runTest {
     val firebaseUser = mockk<FirebaseUser>(relaxed = true)
-    val authResult = mockk<AuthResult>()
+    val authResult = mockk<AuthResult>(relaxed = true)
     every { authResult.user } returns firebaseUser
     val auth =
         mockk<FirebaseAuth> {
+          every { currentUser } returns null
           every { signInWithEmailAndPassword(any(), any()) } returns Tasks.forResult(authResult)
         }
     val vm = buildViewModel(auth)
@@ -90,18 +100,20 @@ class SignInViewModelTest {
 
     vm.submitEmailAuth()
 
+    composeRule.waitForIdle()
     Assert.assertEquals(SignInStatus.SUCCESS, vm.signInStatus.first())
     Assert.assertTrue(vm.emailAuthUiState.first().email.isEmpty())
     Assert.assertNotNull(vm.currentUser.first())
   }
 
   @Test
-  fun registerWithEmail_success_updatesState() = runTest {
+  fun registerWithEmailSuccessUpdatesState() = runTest {
     val firebaseUser = mockk<FirebaseUser>(relaxed = true)
-    val authResult = mockk<AuthResult>()
+    val authResult = mockk<AuthResult>(relaxed = true)
     every { authResult.user } returns firebaseUser
     val auth =
         mockk<FirebaseAuth> {
+          every { currentUser } returns null
           every { createUserWithEmailAndPassword(any(), any()) } returns Tasks.forResult(authResult)
         }
     val vm = buildViewModel(auth)
@@ -113,15 +125,17 @@ class SignInViewModelTest {
 
     vm.submitEmailAuth()
 
+    composeRule.waitForIdle()
     Assert.assertEquals(SignInStatus.SUCCESS, vm.signInStatus.first())
     Assert.assertTrue(vm.emailAuthUiState.first().email.isEmpty())
     Assert.assertNotNull(vm.currentUser.first())
   }
 
   @Test
-  fun signInWithEmail_invalidCredentials_mapsError() = runTest {
+  fun signInWithEmailInvalidCredentialsMapsError() = runTest {
     val auth =
         mockk<FirebaseAuth> {
+          every { currentUser } returns null
           every { signInWithEmailAndPassword(any(), any()) } returns
               Tasks.forException(FirebaseAuthInvalidCredentialsException("code", "bad"))
         }
@@ -132,14 +146,16 @@ class SignInViewModelTest {
 
     vm.submitEmailAuth()
 
+    composeRule.waitForIdle()
     Assert.assertEquals(SignInStatus.ERROR, vm.signInStatus.first())
     Assert.assertEquals("Invalid credentials", vm.emailAuthUiState.first().generalError)
   }
 
   @Test
-  fun register_emailAlreadyInUse_mapsError() = runTest {
+  fun registerEmailAlreadyInUseMapsError() = runTest {
     val auth =
         mockk<FirebaseAuth> {
+          every { currentUser } returns null
           every { createUserWithEmailAndPassword(any(), any()) } returns
               Tasks.forException(FirebaseAuthUserCollisionException("code", "exists"))
         }
@@ -152,29 +168,35 @@ class SignInViewModelTest {
 
     vm.submitEmailAuth()
 
+    composeRule.waitForIdle()
     Assert.assertEquals("Email already in use", vm.emailAuthUiState.first().generalError)
   }
 
   @Test
-  fun signInAnonymously_success_setsSuccess() = runTest {
+  fun signInAnonymouslySuccessSetsSuccess() = runTest {
     val firebaseUser = mockk<FirebaseUser>(relaxed = true)
-    val authResult = mockk<AuthResult>()
+    val authResult = mockk<AuthResult>(relaxed = true)
     every { authResult.user } returns firebaseUser
     val auth =
-        mockk<FirebaseAuth> { every { signInAnonymously() } returns Tasks.forResult(authResult) }
+        mockk<FirebaseAuth> {
+          every { currentUser } returns null
+          every { signInAnonymously() } returns Tasks.forResult(authResult)
+        }
     val vm = buildViewModel(auth)
     initialize(vm)
 
     vm.signInAnonymously()
 
+    composeRule.waitForIdle()
     Assert.assertEquals(SignInStatus.SUCCESS, vm.signInStatus.first())
     Assert.assertNotNull(vm.currentUser.first())
   }
 
   @Test
-  fun signInAnonymously_networkError_mapsError() = runTest {
+  fun signInAnonymouslyNetworkErrorMapsError() = runTest {
     val auth =
         mockk<FirebaseAuth> {
+          every { currentUser } returns null
           every { signInAnonymously() } returns Tasks.forException(FirebaseNetworkException("net"))
         }
     val vm = buildViewModel(auth)
@@ -182,18 +204,21 @@ class SignInViewModelTest {
 
     vm.signInAnonymously()
 
+    composeRule.waitForIdle()
     Assert.assertEquals(SignInStatus.ERROR, vm.signInStatus.first())
     Assert.assertEquals("Network error", vm.emailAuthUiState.first().generalError)
   }
 
   @Test
-  fun toggleRegisterMode_clearsErrors() = runTest {
+  fun toggleRegisterModeClearsErrors() = runTest {
     val auth = mockk<FirebaseAuth>(relaxed = true)
+    every { auth.currentUser } returns null
     val vm = buildViewModel(auth)
     initialize(vm)
     vm.setEmail("invalid")
     vm.setPassword("123")
     vm.submitEmailAuth()
+    composeRule.waitForIdle()
     Assert.assertEquals("Invalid email", vm.emailAuthUiState.first().emailError)
     vm.toggleRegisterMode()
     val state = vm.emailAuthUiState.first()
