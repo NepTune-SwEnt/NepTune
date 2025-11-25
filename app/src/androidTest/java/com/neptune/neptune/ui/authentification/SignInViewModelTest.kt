@@ -76,8 +76,9 @@ class SignInViewModelTest {
 
   @Test
   fun signInWithEmail_success_updatesState() = runTest {
-    val user = mockk<FirebaseUser>(relaxed = true)
-    val authResult = mockk<AuthResult> { every { user } returns user }
+    val firebaseUser = mockk<FirebaseUser>(relaxed = true)
+    val authResult = mockk<AuthResult>()
+    every { authResult.user } returns firebaseUser
     val auth =
         mockk<FirebaseAuth> {
           every { signInWithEmailAndPassword(any(), any()) } returns Tasks.forResult(authResult)
@@ -96,8 +97,9 @@ class SignInViewModelTest {
 
   @Test
   fun registerWithEmail_success_updatesState() = runTest {
-    val user = mockk<FirebaseUser>(relaxed = true)
-    val authResult = mockk<AuthResult> { every { user } returns user }
+    val firebaseUser = mockk<FirebaseUser>(relaxed = true)
+    val authResult = mockk<AuthResult>()
+    every { authResult.user } returns firebaseUser
     val auth =
         mockk<FirebaseAuth> {
           every { createUserWithEmailAndPassword(any(), any()) } returns Tasks.forResult(authResult)
@@ -155,8 +157,9 @@ class SignInViewModelTest {
 
   @Test
   fun signInAnonymously_success_setsSuccess() = runTest {
-    val user = mockk<FirebaseUser>(relaxed = true)
-    val authResult = mockk<AuthResult> { every { user } returns user }
+    val firebaseUser = mockk<FirebaseUser>(relaxed = true)
+    val authResult = mockk<AuthResult>()
+    every { authResult.user } returns firebaseUser
     val auth =
         mockk<FirebaseAuth> { every { signInAnonymously() } returns Tasks.forResult(authResult) }
     val vm = buildViewModel(auth)
