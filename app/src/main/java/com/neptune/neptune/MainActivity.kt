@@ -44,6 +44,7 @@ import com.neptune.neptune.ui.projectlist.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.search.SearchScreen
 import com.neptune.neptune.ui.settings.SettingsAccountScreen
+import com.neptune.neptune.ui.settings.SettingsCustomThemeScreen
 import com.neptune.neptune.ui.settings.SettingsScreen
 import com.neptune.neptune.ui.settings.SettingsThemeScreen
 import com.neptune.neptune.ui.settings.SettingsViewModel
@@ -73,10 +74,20 @@ class MainActivity : ComponentActivity() {
       // so the ViewModel instance receives the DataStore dependency.
       val settingsViewModel: SettingsViewModel = viewModel(factory = settingsViewModelFactory)
 
-      // Collect the current theme setting (SYSTEM, LIGHT, or DARK) as a Composable state.
+      // Collect the current theme setting and persisted custom Color values
       val themeSetting by settingsViewModel.theme.collectAsState()
+      val customPrimary by settingsViewModel.customPrimaryColor.collectAsState()
+      val customBackground by settingsViewModel.customBackgroundColor.collectAsState()
+      val customOnBackground by settingsViewModel.customOnBackgroundColor.collectAsState()
+      val customOnPrimary by settingsViewModel.customOnPrimaryColor.collectAsState()
+
       // A surface container using the 'background' color from the theme
-      SampleAppTheme(themeSetting = themeSetting) {
+      SampleAppTheme(
+          themeSetting = themeSetting,
+          customPrimary = customPrimary,
+          customBackground = customBackground,
+          customOnBackground = customOnBackground,
+          customOnPrimary = customOnPrimary) {
         Surface(
             modifier = Modifier.fillMaxSize().semantics { testTag = C.Tag.main_screen_container },
             color = MaterialTheme.colorScheme.background) {
@@ -210,8 +221,16 @@ fun NeptuneApp(
                 composable(Screen.SettingsTheme.route) {
                   SettingsThemeScreen(
                       settingsViewModel = settingsViewModel,
-                      goBack = { navigationActions.goBack() })
+                      goBack = { navigationActions.goBack() },
+                      goCustomTheme = { navigationActions.navigateTo(Screen.SettingsCustomTheme) })
                 }
+              composable(Screen.SettingsCustomTheme.route) {
+                  SettingsCustomThemeScreen(
+                      settingsViewModel = settingsViewModel,
+                      goBack = { navigationActions.goBack() }
+
+                  )
+              }
                 composable(Screen.SettingsAccount.route) {
                   SettingsAccountScreen(
                       goBack = { navigationActions.goBack() },

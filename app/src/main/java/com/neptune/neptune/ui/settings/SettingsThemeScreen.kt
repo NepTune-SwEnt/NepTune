@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,11 +43,13 @@ import com.neptune.neptune.ui.theme.NepTuneTheme
  *   state, such as the current theme. Defaults to the ViewModel provided by `viewModel()`.
  * @param goBack A lambda function to be invoked when the user clicks the back button, typically
  *   used for navigation.
+ * @param goCustomTheme A lambda invoked when the user wants to open the custom theme editor.
  */
 @Composable
 fun SettingsThemeScreen(
     settingsViewModel: SettingsViewModel = viewModel(),
     goBack: () -> Unit = {},
+    goCustomTheme: () -> Unit = {},
 ) {
   Scaffold(
       topBar = {
@@ -70,13 +73,13 @@ fun SettingsThemeScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp),
         ) {
-          item { ThemeSettingsSection(settingsViewModel) }
+          item { ThemeSettingsSection(settingsViewModel, goCustomTheme) }
         }
       }
 }
 
 @Composable
-private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel) {
+private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel, goCustomTheme: () -> Unit) {
   val selectedTheme by settingsViewModel.theme.collectAsState()
 
   Column {
@@ -112,6 +115,7 @@ private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel) {
                           ThemeSetting.SYSTEM -> "System Default"
                           ThemeSetting.LIGHT -> "Light"
                           ThemeSetting.DARK -> "Dark"
+                            ThemeSetting.CUSTOM -> "Custom"
                         }
                       }(),
                   style =
@@ -125,6 +129,25 @@ private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel) {
                   modifier = Modifier.padding(start = 16.dp))
             }
       }
+
+      // New row that navigates to the Custom Theme editor
+      Row(
+          Modifier.fillMaxWidth()
+              .clickable { goCustomTheme() }
+              .padding(vertical = 12.dp),
+          verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "Custom Theme",
+                style =
+                    TextStyle(
+                        fontSize = 24.sp,
+                        fontFamily = FontFamily(Font(R.font.markazi_text)),
+                        fontWeight = FontWeight(400),
+                        color = NepTuneTheme.colors.onBackground,
+                    ),
+                color = NepTuneTheme.colors.onBackground,
+                modifier = Modifier.padding(start = 16.dp))
+          }
     }
   }
 }
