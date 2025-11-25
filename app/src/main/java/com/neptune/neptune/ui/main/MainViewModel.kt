@@ -155,6 +155,12 @@ class MainViewModel(
     }
   }
 
+  /** True when [ownerId] matches the currently signed-in Firebase user. */
+  fun isCurrentUser(ownerId: String?): Boolean {
+    val currentUserId = auth.currentUser?.uid ?: return false
+    return !ownerId.isNullOrBlank() && ownerId == currentUserId
+  }
+
   fun onDownloadSample(sample: Sample) {
     viewModelScope.launch {
       try {

@@ -148,6 +148,7 @@ fun NeptuneApp(
 
                 composable(Screen.Search.route) {
                   SearchScreen(
+                      navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
                       navigateToOtherUserProfile = { userId ->
                         navigationActions.navigateTo(Screen.OtherUserProfile.createRoute(userId))
                       })

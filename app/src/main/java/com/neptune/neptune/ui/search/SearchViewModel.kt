@@ -371,4 +371,10 @@ open class SearchViewModel(
       loadSamplesFromFirebase()
     }
   }
+
+  /** True when [ownerId] refers to the currently signed-in Firebase user. */
+  open fun isCurrentUser(ownerId: String?): Boolean {
+    val currentUserId = firebaseAuth?.currentUser?.uid ?: return false
+    return !ownerId.isNullOrBlank() && ownerId == currentUserId
+  }
 }
