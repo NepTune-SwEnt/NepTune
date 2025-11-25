@@ -195,9 +195,11 @@ fun ScrollableColumnOfSamples(
         }
       } // Comment Overlay
   if (activeCommentSampleId != null) {
+    val usernames by searchViewModel.usernames.collectAsState()
     CommentDialog(
         sampleId = activeCommentSampleId,
         comments = comments,
+        usernames = usernames,
         onDismiss = { searchViewModel.resetCommentSampleId() },
         onAddComment = { id, text -> searchViewModel.onAddComment(id, text) })
   }

@@ -89,7 +89,8 @@ class MainViewModel(
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
   private val avatarCache = mutableMapOf<String, String?>()
-  private val userNameCache = mutableMapOf<String, String>()
+  private val _usernames = MutableStateFlow<Map<String, String>>(emptyMap())
+  val usernames: StateFlow<Map<String, String>> = _usernames.asStateFlow()
   private val coverImageCache = mutableMapOf<String, String?>()
   private val audioUrlCache = mutableMapOf<String, String?>()
   private val waveformCache = mutableMapOf<String, List<Float>>()
@@ -127,7 +128,8 @@ class MainViewModel(
   }
 
   private fun loadAvatar() {
-    if (auth.currentUser == null) {
+    val currentUser = auth.currentUser
+    if (currentUser == null) {
       _userAvatar.value = null
       return
     }
@@ -136,6 +138,16 @@ class MainViewModel(
         // Update the user avatar
         val newAvatarUrl = profile?.avatarUrl
         _userAvatar.value = newAvatarUrl
+
+        // Update username
+        val newUsername = profile?.username
+        if (newUsername != null) {
+          val old = _usernames.value[currentUser.uid]
+          if (old == null || old != newUsername) {
+            _usernames.update { it + (currentUser.uid to newUsername) }
+          }
+        }
+
         // Update avatar for samplers owned by current user
         val currentUserId = auth.currentUser?.uid ?: return@collectLatest
         avatarCache[currentUserId] = newAvatarUrl
@@ -152,6 +164,21 @@ class MainViewModel(
           updatedResources
         }
       }
+    }
+  }
+  /*
+   * Function to load the username.
+   */
+  fun loadUsername(userId: String) {
+    viewModelScope.launch {
+      // Check cache
+      val cached = _usernames.value[userId]
+      if (cached != null && cached != defaultName) return@launch
+
+      // Fetch latest username
+      val userName = profileRepo.getUserNameByUserId(userId) ?: defaultName
+
+      _usernames.update { it + (userId to userName) }
     }
   }
 
@@ -189,14 +216,21 @@ class MainViewModel(
   }
 
   fun observeCommentsForSample(sampleId: String) {
-    viewModelScope.launch { repo.observeComments(sampleId).collectLatest { _comments.value = it } }
+    viewModelScope.launch {
+      repo.observeComments(sampleId).collectLatest { list ->
+        // Ensure usernames are loaded for each author
+        list.forEach { comment -> loadUsername(comment.authorId) }
+        _comments.value = list
+      }
+    }
   }
 
   fun addComment(sampleId: String, text: String) {
     viewModelScope.launch {
       val profile = profileRepo.getProfile()
-      val username = profile?.username ?: defaultName
-      repo.addComment(sampleId, username, text.trim())
+      val authorId = profile?.uid ?: auth.currentUser?.uid ?: "unknown"
+      val authorName = profile?.username ?: defaultName
+      repo.addComment(sampleId, authorId, authorName, text.trim())
     }
   }
 
@@ -216,12 +250,12 @@ class MainViewModel(
    * Function to get the user name.
    */
   private suspend fun getUserName(userId: String): String {
-    if (userNameCache.containsKey(userId)) {
-      return userNameCache[userId] ?: defaultName
+    _usernames.value[userId]?.let {
+      return it
     }
-    var userName = profileRepo.getUserNameByUserId(userId)
-    userName = userName ?: defaultName
-    userNameCache[userId] = userName
+
+    val userName = profileRepo.getUserNameByUserId(userId) ?: defaultName
+    _usernames.update { it + (userId to userName) }
     return userName
   }
 
