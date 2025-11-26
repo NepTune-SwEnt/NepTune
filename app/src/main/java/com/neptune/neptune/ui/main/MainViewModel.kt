@@ -96,6 +96,8 @@ class MainViewModel(
   private val waveformCache = mutableMapOf<String, List<Float>>()
   private val _sampleResources = MutableStateFlow<Map<String, SampleResourceState>>(emptyMap())
   val sampleResources = _sampleResources.asStateFlow()
+  private val _isRefreshing = MutableStateFlow(false)
+  val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
   init {
     if (useMockData) {
@@ -110,15 +112,30 @@ class MainViewModel(
 
   private fun loadSamplesFromFirebase() {
     viewModelScope.launch {
-      // Get current user's profile
-      val profile = profileRepo.getProfile()
-      val following = profile?.following.orEmpty()
-      repo.observeSamples().collectLatest { samples ->
+      _isRefreshing.value = true
+      // clear old data
+      _discoverSamples.value = emptyList()
+      _followedSamples.value = emptyList()
+      _sampleResources.value = emptyMap()
+      avatarCache.clear()
+      userNameCache.clear()
+      coverImageCache.clear()
+      audioUrlCache.clear()
+      waveformCache.clear()
+      try {
+        // Get current user's profile
+        val profile = profileRepo.getCurrentProfile()
+        val following = profile?.following.orEmpty()
+        val samples = repo.getSamples()
         val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
         _discoverSamples.value = readySamples.filter { it.ownerId !in following }
         _followedSamples.value = readySamples.filter { it.ownerId in following }
 
         refreshLikeStates()
+      } catch (e: Exception) {
+        Log.e("MainViewModel", "Error refreshing samples", e)
+      } finally {
+        _isRefreshing.value = false
       }
     }
   }
@@ -134,7 +151,7 @@ class MainViewModel(
       return
     }
     viewModelScope.launch {
-      profileRepo.observeProfile().collectLatest { profile ->
+      profileRepo.observeCurrentProfile().collectLatest { profile ->
         // Update the user avatar
         val newAvatarUrl = profile?.avatarUrl
         _userAvatar.value = newAvatarUrl
@@ -155,6 +172,12 @@ class MainViewModel(
         }
       }
     }
+  }
+
+  /** True when [ownerId] matches the currently signed-in Firebase user. */
+  fun isCurrentUser(ownerId: String?): Boolean {
+    val currentUserId = auth.currentUser?.uid ?: return false
+    return !ownerId.isNullOrBlank() && ownerId == currentUserId
   }
 
   fun onDownloadSample(sample: Sample) {
@@ -196,7 +219,7 @@ class MainViewModel(
 
   fun addComment(sampleId: String, text: String) {
     viewModelScope.launch {
-      val profile = profileRepo.getProfile()
+      val profile = profileRepo.getCurrentProfile()
       val username = profile?.username ?: defaultName
       repo.addComment(sampleId, username, text.trim())
     }
@@ -320,6 +343,11 @@ class MainViewModel(
                     loadedSamplePath = sample.storagePreviewSamplePath))
       }
     }
+  }
+
+  /** Function to be called when a refresh is triggered. */
+  fun refresh() {
+    loadSamplesFromFirebase()
   }
 
   // Mock Data

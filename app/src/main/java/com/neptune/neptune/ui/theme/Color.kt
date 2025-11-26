@@ -24,6 +24,8 @@ val Purple = Color(0xFFE6E6FA)
 val Black = Color(0xFF000000)
 val White = Color(0xFFFFFFFF)
 val ShadowColor = Color(0x40000000)
+val Green = Color(0xFF00FF55)
+val Gray = Color(0xFF808080)
 
 // colorScheme
 val PurpleGrey80 = Color(0xFFCCC2DC)
