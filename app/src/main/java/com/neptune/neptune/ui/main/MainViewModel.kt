@@ -79,6 +79,7 @@ class MainViewModel(
   val userAvatar: StateFlow<String?> = _userAvatar.asStateFlow()
 
   private val _currentUserFlow = MutableStateFlow(auth.currentUser)
+  private val observingSampleIds = mutableSetOf<String>()
   private val authListener =
       FirebaseAuth.AuthStateListener { firebaseAuth ->
         _currentUserFlow.value = firebaseAuth.currentUser
@@ -137,8 +138,10 @@ class MainViewModel(
   }
 
   private fun watchPendingSample(sampleId: String, following: List<String>) {
+    if (observingSampleIds.contains(sampleId)) return
     viewModelScope.launch {
       try {
+        observingSampleIds.add(sampleId)
         repo
             .observeSample(sampleId)
             .first { updatedSample ->
@@ -147,6 +150,8 @@ class MainViewModel(
             ?.let { finishedSample -> addSampleToList(finishedSample, following) }
       } catch (e: Exception) {
         Log.w("MainViewModel", "Stop watching sample $sampleId", e)
+      } finally {
+        observingSampleIds.remove(sampleId)
       }
     }
   }
@@ -158,9 +163,15 @@ class MainViewModel(
 
   private fun addSampleToList(newSample: Sample, following: List<String>) {
     if (newSample.ownerId !in following) {
-      _discoverSamples.update { currentList -> listOf(newSample) + currentList }
+      _discoverSamples.update { currentList ->
+        if (currentList.any { it.id == newSample.id }) currentList
+        else listOf(newSample) + currentList
+      }
     } else {
-      _followedSamples.update { currentList -> listOf(newSample) + currentList }
+      _followedSamples.update { currentList ->
+        if (currentList.any { it.id == newSample.id }) currentList
+        else listOf(newSample) + currentList
+      }
     }
 
     loadSampleResources(newSample)
