@@ -49,7 +49,7 @@ fun SettingsScreen(
 ) {
   Scaffold(
       topBar = {
-        Column {
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
           CenterAlignedTopAppBar(
               title = {
                 Text(
@@ -65,14 +65,12 @@ fun SettingsScreen(
                     textAlign = TextAlign.Center)
               },
               navigationIcon = {
-                IconButton(
-                    onClick = goBack,
-                    modifier = Modifier.padding(vertical = 30.dp, horizontal = 17.dp)) {
-                      Icon(
-                          imageVector = Icons.Default.ArrowBackIosNew,
-                          contentDescription = "Go Back",
-                          tint = NepTuneTheme.colors.onBackground)
-                    }
+                IconButton(onClick = goBack, modifier = Modifier.padding(horizontal = 12.dp)) {
+                  Icon(
+                      imageVector = Icons.Default.ArrowBackIosNew,
+                      contentDescription = "Go Back",
+                      tint = NepTuneTheme.colors.onBackground)
+                }
               },
               colors =
                   TopAppBarDefaults.centerAlignedTopAppBarColors(
