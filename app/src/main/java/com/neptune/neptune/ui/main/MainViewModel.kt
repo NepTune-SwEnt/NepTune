@@ -127,9 +127,8 @@ class MainViewModel(
         val profile = profileRepo.getCurrentProfile()
         val following = profile?.following.orEmpty()
         val samples = repo.getSamples()
-        val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
-        _discoverSamples.value = readySamples.filter { it.ownerId !in following }
-        _followedSamples.value = readySamples.filter { it.ownerId in following }
+        _discoverSamples.value = samples.filter { it.ownerId !in following }
+        _followedSamples.value = samples.filter { it.ownerId in following }
 
         refreshLikeStates()
       } catch (e: Exception) {

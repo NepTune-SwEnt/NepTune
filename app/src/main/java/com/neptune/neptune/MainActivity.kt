@@ -1,5 +1,6 @@
 package com.neptune.neptune
 
+import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -31,6 +32,8 @@ import com.neptune.neptune.resources.C
 import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInViewModel
 import com.neptune.neptune.ui.main.MainScreen
+import com.neptune.neptune.ui.main.MainViewModel
+import com.neptune.neptune.ui.main.factory
 import com.neptune.neptune.ui.messages.SelectMessagesScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
@@ -102,6 +105,9 @@ fun NeptuneApp(
   val importViewModel: ImportViewModel = viewModel(factory = importAppRoot())
   val currentScreen = navigationActions.currentScreen(currentRoute ?: startDestination)
 
+  val mainViewModel: MainViewModel =
+      viewModel(factory = factory(LocalContext.current.applicationContext as Application))
+
   // Media Player values
   val mediaPlayer = remember { NeptuneMediaPlayer() }
 
@@ -131,7 +137,8 @@ fun NeptuneApp(
                       },
                       navigateToSelectMessages = {
                         navigationActions.navigateTo(Screen.SelectMessages)
-                      })
+                      },
+                      mainViewModel = mainViewModel)
                 }
                 composable(Screen.Profile.route) {
                   SelfProfileRoute(
@@ -169,7 +176,10 @@ fun NeptuneApp(
 
                       PostScreen(
                           goBack = { navigationActions.goBack() },
-                          navigateToMainScreen = { navigationActions.navigateTo(Screen.Main) },
+                          navigateToMainScreen = {
+                            mainViewModel.refresh()
+                            navigationActions.navigateTo(Screen.Main)
+                          },
                           projectId = projectId)
                     }
                 composable(Screen.ImportFile.route) {
