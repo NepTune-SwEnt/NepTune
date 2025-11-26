@@ -1,7 +1,6 @@
 package com.neptune.neptune.ui.settings
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
@@ -25,7 +23,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
-import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -35,6 +32,7 @@ import com.godaddy.android.colorpicker.harmony.HarmonyColorPicker
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.draw.clip
 import androidx.compose.material3.IconButton as M3IconButton
 import com.godaddy.android.colorpicker.HsvColor
@@ -47,9 +45,6 @@ fun SettingsCustomThemeScreen(
     settingsViewModel: SettingsViewModel = viewModel(),
     goBack: () -> Unit = {}
 ) {
-    var harmonyMode by remember { mutableStateOf(ColorHarmonyMode.COMPLEMENTARY) }
-    var expanded by remember { mutableStateOf(false) }
-
     // collect current stored colors
     val currentPrimary by settingsViewModel.customPrimaryColor.collectAsState()
     val currentBackground by settingsViewModel.customBackgroundColor.collectAsState()
@@ -57,7 +52,7 @@ fun SettingsCustomThemeScreen(
     val currentOnPrimary by settingsViewModel.customOnPrimaryColor.collectAsState()
 
     // which color are we editing? 0=primary,1=background,2=onBackground,3=onPrimary
-    var editingIndex by remember { mutableStateOf(0) }
+    var editingIndex by remember { mutableIntStateOf(0) }
 
     // Local temporary colors — avoid persisting on every picker move to prevent lag
     var tempPrimary by remember { mutableStateOf(currentPrimary) }
@@ -100,15 +95,15 @@ fun SettingsCustomThemeScreen(
     Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
         // Picker mode selector
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = "Harmony mode:", color = NepTuneTheme.colors.onBackground)
+            Text(text = "Editing color:", color = NepTuneTheme.colors.onBackground)
             Spacer(Modifier.width(12.dp))
             Button(onClick = { expanded = true }) {
-                Text(harmonyMode.name.lowercase().replaceFirstChar { it.uppercase() })
+                Text(items[editingIndex])
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                ColorHarmonyMode.entries.forEach { mode ->
-                    DropdownMenuItem(text = { Text(mode.name.lowercase().replaceFirstChar { it.uppercase() }) }, onClick = {
-                        harmonyMode = mode
+                items.forEachIndexed { index, text ->
+                    DropdownMenuItem(text = { Text(text) }, onClick = {
+                        editingIndex = index
                         expanded = false
                     })
                 }
@@ -162,16 +157,14 @@ fun SettingsCustomThemeScreen(
         // Use a slightly smaller picker and update only temp state on color changes to avoid
         // frequent DataStore writes which cause UI lag. Persist when user taps Apply.
          HarmonyColorPicker(
-              modifier = Modifier.size(340.dp),
-              harmonyMode = harmonyMode,
-              color = HsvColor.from(
-                  when (editingIndex) {
+              modifier = Modifier.size(340.dp).align(Alignment.CenterHorizontally),
+              harmonyMode = ColorHarmonyMode.NONE,
+              color = when (editingIndex) {
                     0 -> tempPrimary
                     1 -> tempBackground
                     2 -> tempOnBackground
                     else -> tempOnPrimary
-                  }
-              ),
+              },
               showBrightnessBar = true,
              onColorChanged = { color ->
                 val picked = color.toColor()
@@ -183,7 +176,7 @@ fun SettingsCustomThemeScreen(
                 }
              })
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(16.dp))
 
         // Apply / Cancel controls: persist only when user confirms
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -200,6 +193,6 @@ fun SettingsCustomThemeScreen(
                 tempOnPrimary = currentOnPrimary
             }) { Text("Cancel") }
         }
-    }
-  }
-}
+     }
+   }
+ }
