@@ -1,6 +1,9 @@
 package com.neptune.neptune.ui.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -11,10 +14,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -36,8 +38,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.material3.IconButton as M3IconButton
 import com.godaddy.android.colorpicker.HsvColor
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * Custom theme editor: save colorpicker output as custom colors and set ThemeSetting.CUSTOM.
@@ -59,6 +64,22 @@ fun SettingsCustomThemeScreen(
     var tempPrimary by remember { mutableStateOf(HsvColor.from(currentPrimary)) }
     var tempBackground by remember { mutableStateOf(HsvColor.from(currentBackground)) }
     var tempOnBackground by remember { mutableStateOf(HsvColor.from(currentOnBackground)) }
+
+    var showContrastWarning by remember { mutableStateOf(false) }
+    var contrastWarningMessage by remember { mutableStateOf("") }
+
+    if (showContrastWarning) {
+        AlertDialog(
+            onDismissRequest = { showContrastWarning = false },
+            title = { Text("Low Contrast Warning") },
+            text = { Text(contrastWarningMessage) },
+            confirmButton = {
+                Button(onClick = { showContrastWarning = false }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
 
     // keep temps in sync when persisted values change
     LaunchedEffect(currentPrimary, currentBackground, currentOnBackground) {
