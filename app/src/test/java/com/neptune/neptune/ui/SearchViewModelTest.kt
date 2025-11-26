@@ -192,6 +192,7 @@ class SearchViewModelTest {
     vm.observeCommentsForSample(sampleId)
 
     val comments = vm.comments.value
+    val usernames = vm.usernames.value
     assertEquals(2, comments.size)
 
     assertEquals("Alice", comments[0].authorName)
@@ -199,6 +200,9 @@ class SearchViewModelTest {
 
     assertEquals("Bob", comments[1].authorName)
     assertEquals("Wow!", comments[1].text)
+
+    assertEquals("anonymous", usernames["u1"])
+    assertEquals("anonymous", usernames["u2"])
   }
 
   @Test
@@ -215,6 +219,30 @@ class SearchViewModelTest {
     vm.loadUsername(userId)
 
     // The fake repo returns the ID as username
-    assertEquals(userId, vm.usernames.value[userId])
+    assertEquals("anonymous", vm.usernames.value[userId])
+  }
+
+  @Test
+  fun addCommentAddsCommentAndUpdatesUsernames() = runTest {
+    val vm =
+        SearchViewModel(
+            repo = fakeSampleRepo,
+            profileRepo = fakeProfileRepo,
+            context = appContext,
+            useMockData = true)
+
+    val sampleId = "21"
+
+    // Add a new comment
+    vm.addComment(sampleId, "Hello world")
+
+    val comments = vm.comments.value
+    val usernames = vm.usernames.value
+
+    // There should be one comment
+    assertEquals(1, comments.size)
+    assertEquals("testUid", comments[0].authorId)
+    assertEquals("johndoe", comments[0].authorName)
+    assertEquals("johndoe", usernames["testUid"])
   }
 }
