@@ -267,6 +267,7 @@ open class SamplerViewModel() : ViewModel() {
     _uiState.update { it.copy(tempo = newTempo) }
   }
 
+  // New: update selected time signature
   open fun updateTimeSignature(newSignature: String) {
     _uiState.update { it.copy(timeSignature = newSignature) }
   }
@@ -829,7 +830,7 @@ open class SamplerViewModel() : ViewModel() {
     }
 
     try {
-      // 1. Decode PCM (MediaCodec)
+      // Decode PCM (MediaCodec)
       val audioData = decodeAudioToPCM(audioUri)
       if (audioData == null) {
         Log.e("SamplerViewModel", "Failed to decode audio to PCM")
@@ -841,23 +842,34 @@ open class SamplerViewModel() : ViewModel() {
           "SamplerViewModel",
           "Decoded ${samples.size} samples at $sampleRate Hz, $channelCount channel(s)")
 
-      // 2. Apply EQ Filters
-      val equalizedSamples = applyEQFilters(samples, sampleRate, eqBands)
+      // Apply EQ filters to the samples
+      var processedSamples = applyEQFilters(samples, sampleRate, eqBands)
 
-      // 3. Define output path (saving a new file named _equalized.wav)
-      val originalName = audioUri.lastPathSegment ?: DEFAULT_AUDIO_BASENAME
+      // Apply Compression
+      val state = _uiState.value
+      val compressor =
+          Compressor(
+              sampleRate = sampleRate,
+              thresholdDb = state.compThreshold,
+              ratio = state.compRatio.toFloat(),
+              kneeDb = state.compKnee,
+              makeUpDb = state.compGain,
+              attackSeconds = state.compAttack,
+              releaseSeconds = state.compDecay)
+      processedSamples = compressor.process(processedSamples)
+
+      // Determine output file name and path in app cache directory
+      val originalName = audioUri.lastPathSegment ?: "sample_audio"
       val dotIndex = originalName.lastIndexOf('.')
       val baseName = if (dotIndex > 0) originalName.substring(0, dotIndex) else originalName
       val outFile = File(context.cacheDir, "${baseName}_equalized.wav")
 
-      // 4. Encode WAV
-      encodePCMToWAV(equalizedSamples, sampleRate, channelCount, outFile)
+      // Encode equalized samples back to WAV file
+      encodePCMToWAV(processedSamples, sampleRate, channelCount, outFile)
 
-      // 5. Update UI state with the new audio Uri
+      // Update UI state with the new audio Uri
       val newUri = Uri.fromFile(outFile)
-      _uiState.update { current ->
-        current.copy(currentAudioUri = newUri)
-      } // Replaces current audio
+      _uiState.update { current -> current.copy(currentAudioUri = newUri) }
 
       Log.i("SamplerViewModel", "Equalized audio written to ${outFile.absolutePath}")
     } catch (e: Exception) {
@@ -988,6 +1000,7 @@ open class SamplerViewModel() : ViewModel() {
     return processedSamples
   }
 
+  // Biquad peak filter for parametric EQ
   internal class BiquadPeakFilter(
       centerFreq: Double,
       sampleRate: Double,

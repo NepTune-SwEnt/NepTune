@@ -276,6 +276,7 @@ class SearchScreenAllTests {
     return info.current
   }
 
+  @Test
   fun profileIconPropagatesOwnerIdToNavigationCallback() {
     val vm = createTestSearchViewModel()
     val sample =
@@ -304,5 +305,52 @@ class SearchScreenAllTests {
     composeRule.onNodeWithTag(profileIconTag).assertIsDisplayed().performClick()
 
     composeRule.runOnIdle { assert(navigatedTo == "artist-123") }
+  }
+
+  @Test
+  fun profileIconNavigatesToSelfProfileWhenOwnerMatchesCurrentUser() {
+    val fakeSampleRepo = FakeSampleRepository()
+    val fakeProfileRepo = FakeProfileRepository()
+    val vm =
+        object :
+            SearchViewModel(
+                repo = fakeSampleRepo,
+                context = appContext,
+                useMockData = true,
+                profileRepo = fakeProfileRepo) {
+          override fun isCurrentUser(ownerId: String?): Boolean = ownerId == "current-user"
+        }
+    val sample =
+        Sample(
+            id = "self-sample",
+            name = "My Loop",
+            description = "Personal content",
+            durationSeconds = 12,
+            tags = emptyList(),
+            likes = 0,
+            usersLike = emptyList(),
+            comments = 0,
+            downloads = 0,
+            ownerId = "current-user")
+
+    var navigatedToSelf = false
+    var navigatedToOther: String? = null
+
+    composeRule.setContent {
+      ScrollableColumnOfSamples(
+          samples = listOf(sample),
+          searchViewModel = vm,
+          mediaPlayer = fakeMediaPlayer,
+          navigateToProfile = { navigatedToSelf = true },
+          navigateToOtherUserProfile = { navigatedToOther = it })
+    }
+
+    val profileIconTag = SearchScreenTestTagsPerSampleCard("self-sample").SAMPLE_PROFILE_ICON
+    composeRule.onNodeWithTag(profileIconTag).assertIsDisplayed().performClick()
+
+    composeRule.runOnIdle {
+      assert(navigatedToSelf)
+      assert(navigatedToOther == null)
+    }
   }
 }

@@ -80,4 +80,11 @@ class MainViewModelTest {
     Assert.assertEquals(2, followed.size)
     Assert.assertEquals("Sample 5", followed[0].name)
   }
+
+  @Test
+  fun isCurrentUserMatchesCurrentFirebaseUserId() {
+    Assert.assertTrue(viewModel.isCurrentUser("fake_user_id_for_test"))
+    Assert.assertFalse(viewModel.isCurrentUser("someone_else"))
+    Assert.assertFalse(viewModel.isCurrentUser(null))
+  }
 }

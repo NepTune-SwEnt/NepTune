@@ -31,6 +31,7 @@ import com.neptune.neptune.resources.C
 import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInViewModel
 import com.neptune.neptune.ui.main.MainScreen
+import com.neptune.neptune.ui.messages.SelectMessagesScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
 import com.neptune.neptune.ui.navigation.Screen
@@ -127,6 +128,9 @@ fun NeptuneApp(
                       },
                       navigateToOtherUserProfile = { userId ->
                         navigationActions.navigateTo(Screen.OtherUserProfile.createRoute(userId))
+                      },
+                      navigateToSelectMessages = {
+                        navigationActions.navigateTo(Screen.SelectMessages)
                       })
                 }
                 composable(Screen.Profile.route) {
@@ -148,6 +152,7 @@ fun NeptuneApp(
 
                 composable(Screen.Search.route) {
                   SearchScreen(
+                      navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
                       navigateToOtherUserProfile = { userId ->
                         navigationActions.navigateTo(Screen.OtherUserProfile.createRoute(userId))
                       })
@@ -232,6 +237,12 @@ fun NeptuneApp(
                           goBack = { navigationActions.goBack() },
                       )
                     }
+                composable(Screen.SelectMessages.route) {
+                  SelectMessagesScreen(
+                      goBack = { navigationActions.goBack() },
+                      onSelectUser = {} // TODO: Add the Message Screen
+                      )
+                }
               }
         })
   }

@@ -52,17 +52,15 @@ fun SettingsThemeScreen(
       topBar = {
         Column {
           Row(
-              modifier = Modifier.fillMaxWidth(),
+              modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp, horizontal = 16.dp),
               horizontalArrangement = Arrangement.Start,
               verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = goBack,
-                    modifier = Modifier.padding(vertical = 30.dp, horizontal = 17.dp)) {
-                      Icon(
-                          imageVector = Icons.Default.ArrowBackIosNew,
-                          contentDescription = "Go Back",
-                          tint = NepTuneTheme.colors.onBackground)
-                    }
+                IconButton(onClick = goBack) {
+                  Icon(
+                      imageVector = Icons.Default.ArrowBackIosNew,
+                      contentDescription = "Go Back",
+                      tint = NepTuneTheme.colors.onBackground)
+                }
               }
         }
       },
