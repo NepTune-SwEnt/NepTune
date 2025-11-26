@@ -98,52 +98,56 @@ fun SettingsCustomThemeScreen(
   ) { innerPadding ->
     Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
 
-        var expanded by remember { mutableStateOf(false) }
-        val items = listOf("Primary", "Background", "OnBackground")
-        // Selector for which color to edit
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = "Editing color:", color = NepTuneTheme.colors.onBackground)
-            Spacer(Modifier.width(12.dp))
-            Button(onClick = { expanded = true }) {
-                Text(items[editingIndex])
-            }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                items.forEachIndexed { index, text ->
-                    DropdownMenuItem(text = { Text(text) }, onClick = {
-                        editingIndex = index
-                        expanded = false
-                    })
-                }
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
-
         // preview of all three
         Row(verticalAlignment = Alignment.CenterVertically) {
             val primaryColor = tempPrimary.toColor()
             val backgroundColor = tempBackground.toColor()
             val onBackgroundColor = tempOnBackground.toColor()
-            Column(
+
+            Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(primaryColor)
-            ) {}
+                    .size(width = 90.dp, height = 40.dp)
+                    .clickable { editingIndex = 0 }
+                    .background(primaryColor, shape = RoundedCornerShape(6.dp))
+                    .border(
+                        width = if (editingIndex == 0) 2.dp else 0.dp,
+                        color = Color.Gray,
+                        shape = RoundedCornerShape(6.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Primary", color = onBackgroundColor)
+            }
             Spacer(Modifier.width(6.dp))
-            Column(
+            Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(backgroundColor)
-            ) {}
+                    .size(width = 90.dp, height = 40.dp)
+                    .clickable { editingIndex = 1 }
+                    .background(backgroundColor, shape = RoundedCornerShape(6.dp))
+                    .border(
+                        width = if (editingIndex == 1) 2.dp else 0.dp,
+                        color = Color.Gray,
+                        shape = RoundedCornerShape(6.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Background", color = onBackgroundColor)
+            }
             Spacer(Modifier.width(6.dp))
-            Column(
+            Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(onBackgroundColor)
-            ) {}
+                    .size(width = 90.dp, height = 40.dp)
+                    .clickable { editingIndex = 2 }
+                    .background(onBackgroundColor, shape = RoundedCornerShape(6.dp))
+                    .border(
+                        width = if (editingIndex == 2) 2.dp else 0.dp,
+                        color = Color.Gray,
+                        shape = RoundedCornerShape(6.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Text", color = backgroundColor)
+            }
         }
 
         Spacer(Modifier.height(12.dp))
@@ -170,12 +174,36 @@ fun SettingsCustomThemeScreen(
         Row(modifier = Modifier.align(Alignment.CenterHorizontally)) {
             Button(
                 onClick = {
-                    settingsViewModel.updateCustomColors(
-                        tempPrimary.toColor(),
-                        tempBackground.toColor(),
-                        tempOnBackground.toColor(),
-                    )
-                    settingsViewModel.updateTheme(ThemeSetting.CUSTOM)
+                    val primaryColor = tempPrimary.toColor()
+                    val backgroundColor = tempBackground.toColor()
+                    val onBackgroundColor = tempOnBackground.toColor()
+
+                    val onBackgroundContrast = calculateContrastRatio(onBackgroundColor, backgroundColor)
+                    val onPrimaryContrast = calculateContrastRatio(onBackgroundColor, primaryColor) // onPrimary is onBackground
+                    val primaryBackgroundContrast = calculateContrastRatio(primaryColor, backgroundColor)
+
+                    val messages = mutableListOf<String>()
+                    if (onBackgroundContrast < 1.5f) {
+                        messages.add("The text color has low contrast with the background color.")
+                    }
+                    if (onPrimaryContrast < 1.5f) {
+                        messages.add("The text color has low contrast with the primary color.")
+                    }
+                    if (primaryBackgroundContrast < 1.5f) {
+                        messages.add("The primary and background colors are too similar.")
+                    }
+
+                    if (messages.isNotEmpty()) {
+                        contrastWarningMessage = messages.joinToString(" ") + " Please adjust for better readability and distinction."
+                        showContrastWarning = true
+                    } else {
+                        settingsViewModel.updateCustomColors(
+                            primaryColor,
+                            backgroundColor,
+                            onBackgroundColor,
+                        )
+                        settingsViewModel.updateTheme(ThemeSetting.CUSTOM)
+                    }
                 },
             ) {
                 Text("Apply")
@@ -194,4 +222,12 @@ fun SettingsCustomThemeScreen(
         }
      }
    }
- }
+}
+
+private fun calculateContrastRatio(color1: Color, color2: Color): Float {
+    val luminance1 = color1.luminance()
+    val luminance2 = color2.luminance()
+    val lighterLuminance = max(luminance1, luminance2)
+    val darkerLuminance = min(luminance1, luminance2)
+    return (lighterLuminance + 0.05f) / (darkerLuminance + 0.05f)
+}
