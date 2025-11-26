@@ -79,15 +79,13 @@ class MainActivity : ComponentActivity() {
       val customPrimary by settingsViewModel.customPrimaryColor.collectAsState()
       val customBackground by settingsViewModel.customBackgroundColor.collectAsState()
       val customOnBackground by settingsViewModel.customOnBackgroundColor.collectAsState()
-      val customOnPrimary by settingsViewModel.customOnPrimaryColor.collectAsState()
 
       // A surface container using the 'background' color from the theme
       SampleAppTheme(
           themeSetting = themeSetting,
           customPrimary = customPrimary,
           customBackground = customBackground,
-          customOnBackground = customOnBackground,
-          customOnPrimary = customOnPrimary) {
+          customOnBackground = customOnBackground) {
         Surface(
             modifier = Modifier.fillMaxSize().semantics { testTag = C.Tag.main_screen_container },
             color = MaterialTheme.colorScheme.background) {

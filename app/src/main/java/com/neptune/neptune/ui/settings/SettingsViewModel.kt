@@ -47,18 +47,16 @@ class SettingsViewModel(private val themeDataStore: ThemeDataStore) : ViewModel(
           started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
           initialValue = ThemeDataStore.DEFAULT_ONBACKGROUND_COLOR)
 
-  val customOnPrimaryColor: StateFlow<Color> =
-      themeDataStore.customOnPrimaryColor.stateIn(
-          scope = viewModelScope,
-          started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
-          initialValue = ThemeDataStore.DEFAULT_ONPRIMARY_COLOR)
-
   fun updateTheme(newTheme: ThemeSetting) {
     viewModelScope.launch { themeDataStore.setTheme(newTheme) }
   }
 
-  fun updateCustomColors(primary: Color, background: Color, onBackground: Color, onPrimary: Color) {
-    viewModelScope.launch { themeDataStore.setCustomColors(primary, background, onBackground, onPrimary) }
+  fun updateCustomColors(primary: Color, background: Color, onBackground: Color) {
+    viewModelScope.launch { themeDataStore.setCustomColors(primary, background, onBackground, onBackground) }
+  }
+
+  fun resetCustomColors() {
+    viewModelScope.launch { themeDataStore.resetCustomColors() }
   }
 }
 

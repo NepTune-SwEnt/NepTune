@@ -38,7 +38,6 @@ fun SampleAppTheme(
     customBackground: Color? = null,
     customAccent: Color? = null,
     customOnBackground: Color? = null,
-    customOnPrimary: Color? = null,
     content: @Composable () -> Unit
 ) {
   val darkTheme =
@@ -59,7 +58,7 @@ fun SampleAppTheme(
       val background = customBackground ?: ThemeDataStore.DEFAULT_BACKGROUND_COLOR
       val accentPrimary = customAccent ?: primary
       val onBackground = customOnBackground ?: if (background.luminance() > 0.5f) Black else White
-      val onPrimary = customOnPrimary ?: if (primary.luminance() > 0.5f) Black else White
+      val onPrimary = onBackground
 
       // Derive other colors from these inputs with simple heuristics
       val cardBackground = if (darkTheme) background.copy(alpha = 0.95f) else background.copy(alpha = 0.98f)
@@ -106,7 +105,7 @@ fun SampleAppTheme(
   val colorScheme =
       if (themeSetting == ThemeSetting.CUSTOM) {
         val primary = customPrimary ?: ThemeDataStore.DEFAULT_PRIMARY_COLOR
-        val onPrimary = customOnPrimary ?: if (primary.luminance() > 0.5f) Black else White
+        val onPrimary = customOnBackground ?: if ((customPrimary ?: ThemeDataStore.DEFAULT_PRIMARY_COLOR).luminance() > 0.5f) Black else White
         if (darkTheme) darkColorScheme(primary = primary, onPrimary = onPrimary) else lightColorScheme(primary = primary, onPrimary = onPrimary)
       } else {
         if (darkTheme) DarkColorScheme else LightColorScheme

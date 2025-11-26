@@ -23,19 +23,15 @@ class ThemeDataStore(private val context: Context) {
   private val CUSTOM_PRIMARY_KEY = stringPreferencesKey("custom_primary_hex")
   private val CUSTOM_BACKGROUND_KEY = stringPreferencesKey("custom_background_hex")
   private val CUSTOM_ONBACKGROUND_KEY = stringPreferencesKey("custom_onbackground_hex")
-  private val CUSTOM_ONPRIMARY_KEY = stringPreferencesKey("custom_onprimary_hex")
 
   companion object {
     // sensible defaults (match existing app colors)
     const val DEFAULT_PRIMARY_HEX = "#6650A4" // Purple40
     const val DEFAULT_BACKGROUND_HEX = "#F1F3FF" // GhostWhite
     const val DEFAULT_ONBACKGROUND_HEX = "#1C1F35" // DarkBlue3 (good readable)
-    const val DEFAULT_ONPRIMARY_HEX = "#FFFFFFFF" // white on primary
-
     val DEFAULT_PRIMARY_COLOR = Color(DEFAULT_PRIMARY_HEX.toColorInt())
     val DEFAULT_BACKGROUND_COLOR = Color(DEFAULT_BACKGROUND_HEX.toColorInt())
     val DEFAULT_ONBACKGROUND_COLOR = Color(DEFAULT_ONBACKGROUND_HEX.toColorInt())
-    val DEFAULT_ONPRIMARY_COLOR = Color(DEFAULT_ONPRIMARY_HEX.toColorInt())
   }
 
   /**
@@ -68,13 +64,6 @@ class ThemeDataStore(private val context: Context) {
         try { Color(hex.toColorInt()) } catch (_: Exception) { DEFAULT_ONBACKGROUND_COLOR }
       }
 
-  /** Flow emitting the saved custom onPrimary Color. */
-  val customOnPrimaryColor: Flow<Color> =
-      context.dataStore.data.map { prefs ->
-        val hex = prefs[CUSTOM_ONPRIMARY_KEY] ?: DEFAULT_ONPRIMARY_HEX
-        try { Color(hex.toColorInt()) } catch (_: Exception) { DEFAULT_ONPRIMARY_COLOR }
-      }
-
   /**
    * Suspended function to persist the user's selected [ThemeSetting] to DataStore.
    */
@@ -87,12 +76,19 @@ class ThemeDataStore(private val context: Context) {
     val primaryHex = String.format("#%06X", 0xFFFFFF and primary.toArgb())
     val backgroundHex = String.format("#%06X", 0xFFFFFF and background.toArgb())
     val onBackgroundHex = String.format("#%06X", 0xFFFFFF and onBackground.toArgb())
-    val onPrimaryHex = String.format("#%06X", 0xFFFFFF and onPrimary.toArgb())
     context.dataStore.edit { settings ->
       settings[CUSTOM_PRIMARY_KEY] = primaryHex
       settings[CUSTOM_BACKGROUND_KEY] = backgroundHex
       settings[CUSTOM_ONBACKGROUND_KEY] = onBackgroundHex
-      settings[CUSTOM_ONPRIMARY_KEY] = onPrimaryHex
     }
+  }
+  
+  /** Reset all custom colors to their default values. */
+  suspend fun resetCustomColors() {
+      context.dataStore.edit { settings ->
+          settings.remove(CUSTOM_PRIMARY_KEY)
+          settings.remove(CUSTOM_BACKGROUND_KEY)
+          settings.remove(CUSTOM_ONBACKGROUND_KEY)
+      }
   }
 }
