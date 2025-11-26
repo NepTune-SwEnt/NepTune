@@ -55,33 +55,17 @@ fun SettingsCustomThemeScreen(
     var editingIndex by remember { mutableIntStateOf(0) }
 
     // Local temporary colors — avoid persisting on every picker move to prevent lag
-    var tempPrimary by remember { mutableStateOf(currentPrimary) }
-    var tempBackground by remember { mutableStateOf(currentBackground) }
-    var tempOnBackground by remember { mutableStateOf(currentOnBackground) }
-    var tempOnPrimary by remember { mutableStateOf(currentOnPrimary) }
+    var tempPrimary by remember { mutableStateOf(HsvColor.from(currentPrimary)) }
+    var tempBackground by remember { mutableStateOf(HsvColor.from(currentBackground)) }
+    var tempOnBackground by remember { mutableStateOf(HsvColor.from(currentOnBackground)) }
+    var tempOnPrimary by remember { mutableStateOf(HsvColor.from(currentOnPrimary)) }
 
     // keep temps in sync when persisted values change (e.g., on enter)
     LaunchedEffect(currentPrimary, currentBackground, currentOnBackground, currentOnPrimary) {
-      tempPrimary = currentPrimary
-      tempBackground = currentBackground
-      tempOnBackground = currentOnBackground
-      tempOnPrimary = currentOnPrimary
-    }
-
-    // Auto-apply debounce: persist temporary colors after the user stops changing them for a short delay
-    val AUTO_APPLY_DELAY = 800L
-    LaunchedEffect(tempPrimary, tempBackground, tempOnBackground, tempOnPrimary) {
-      // If temps match persisted values, don't trigger a write
-      if (tempPrimary == currentPrimary &&
-          tempBackground == currentBackground &&
-          tempOnBackground == currentOnBackground &&
-          tempOnPrimary == currentOnPrimary) {
-        return@LaunchedEffect
-      }
-      delay(AUTO_APPLY_DELAY)
-      // Persist once after debounce
-      settingsViewModel.updateCustomColors(tempPrimary, tempBackground, tempOnBackground, tempOnPrimary)
-      settingsViewModel.updateTheme(ThemeSetting.CUSTOM)
+      tempPrimary = HsvColor.from(currentPrimary)
+      tempBackground = HsvColor.from(currentBackground)
+      tempOnBackground = HsvColor.from(currentOnBackground)
+      tempOnPrimary = HsvColor.from(currentOnPrimary)
     }
 
   Scaffold(
@@ -93,7 +77,10 @@ fun SettingsCustomThemeScreen(
     containerColor = NepTuneTheme.colors.background
   ) { innerPadding ->
     Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
-        // Picker mode selector
+
+        var expanded by remember { mutableStateOf(false) }
+        val items = listOf("Primary", "Background", "OnBackground", "OnPrimary")
+        // Selector for which of the four colors to edit
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(text = "Editing color:", color = NepTuneTheme.colors.onBackground)
             Spacer(Modifier.width(12.dp))
@@ -112,44 +99,39 @@ fun SettingsCustomThemeScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // Selector for which of the four colors to edit + preview of all four
+        // preview of all four
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Button(onClick = { editingIndex = 0 }) { Text("Primary", color = if (editingIndex == 0) NepTuneTheme.colors.background else NepTuneTheme.colors.onBackground) }
-            Spacer(Modifier.width(8.dp))
-            Button(onClick = { editingIndex = 1 }) { Text("Background", color = if (editingIndex == 1) NepTuneTheme.colors.background else NepTuneTheme.colors.onBackground) }
-            Spacer(Modifier.width(8.dp))
-            Button(onClick = { editingIndex = 2 }) { Text("OnBackground", color = if (editingIndex == 2) NepTuneTheme.colors.background else NepTuneTheme.colors.onBackground) }
-            Spacer(Modifier.width(8.dp))
-            Button(onClick = { editingIndex = 3 }) { Text("OnPrimary", color = if (editingIndex == 3) NepTuneTheme.colors.background else NepTuneTheme.colors.onBackground) }
-            Spacer(Modifier.width(16.dp))
-            // preview boxes for all four (show temporary edits)
-            val primaryColor = tempPrimary
-            val backgroundColor = tempBackground
-            val onBackgroundColor = tempOnBackground
-            val onPrimaryColor = tempOnPrimary
-            Column {
-                Row {
-                    Column(modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(primaryColor)) {}
-                    Spacer(Modifier.width(6.dp))
-                    Column(modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(backgroundColor)) {}
-                    Spacer(Modifier.width(6.dp))
-                    Column(modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(onBackgroundColor)) {}
-                    Spacer(Modifier.width(6.dp))
-                    Column(modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(onPrimaryColor)) {}
-                }
-            }
+            val primaryColor = tempPrimary.toColor()
+            val backgroundColor = tempBackground.toColor()
+            val onBackgroundColor = tempOnBackground.toColor()
+            val onPrimaryColor = tempOnPrimary.toColor()
+            Column(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(primaryColor)
+            ) {}
+            Spacer(Modifier.width(6.dp))
+            Column(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(backgroundColor)
+            ) {}
+            Spacer(Modifier.width(6.dp))
+            Column(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(onBackgroundColor)
+            ) {}
+            Spacer(Modifier.width(6.dp))
+            Column(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(onPrimaryColor)
+            ) {}
         }
 
         Spacer(Modifier.height(12.dp))
@@ -167,31 +149,29 @@ fun SettingsCustomThemeScreen(
               },
               showBrightnessBar = true,
              onColorChanged = { color ->
-                val picked = color.toColor()
                 when (editingIndex) {
-                  0 -> tempPrimary = picked
-                  1 -> tempBackground = picked
-                  2 -> tempOnBackground = picked
-                  else -> tempOnPrimary = picked
+                  0 -> tempPrimary = color
+                  1 -> tempBackground = color
+                  2 -> tempOnBackground = color
+                  else -> tempOnPrimary = color
                 }
              })
 
         Spacer(Modifier.height(16.dp))
 
-        // Apply / Cancel controls: persist only when user confirms
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Button(onClick = {
-                // persist current temporary palette once
-                settingsViewModel.updateCustomColors(tempPrimary, tempBackground, tempOnBackground, tempOnPrimary)
+        Button(
+            onClick = {
+                settingsViewModel.updateCustomColors(
+                    tempPrimary.toColor(),
+                    tempBackground.toColor(),
+                    tempOnBackground.toColor(),
+                    tempOnPrimary.toColor()
+                )
                 settingsViewModel.updateTheme(ThemeSetting.CUSTOM)
-            }) { Text("Apply") }
-            OutlinedButton(onClick = {
-                // revert temporary edits to persisted values
-                tempPrimary = currentPrimary
-                tempBackground = currentBackground
-                tempOnBackground = currentOnBackground
-                tempOnPrimary = currentOnPrimary
-            }) { Text("Cancel") }
+            },
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+            Text("Apply")
         }
      }
    }
