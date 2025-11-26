@@ -20,7 +20,9 @@ data class ExtendedColors(
     val postButton: Color,
     val shadow: Color,
     val animation: Color,
-    val inverse: Color
+    val inverse: Color,
+    val online: Color,
+    val offline: Color
 )
 
 val DarkExtendedColors =
@@ -39,7 +41,9 @@ val DarkExtendedColors =
         postButton = PurpleBlue,
         shadow = ShadowColor,
         animation = DarkPurple,
-        inverse = White)
+        inverse = White,
+        online = Green,
+        offline = Gray)
 
 val LightExtendedColors =
     ExtendedColors(
@@ -57,7 +61,9 @@ val LightExtendedColors =
         postButton = LightPurple,
         shadow = ShadowColor,
         animation = Purple,
-        inverse = DarkBlue3)
+        inverse = DarkBlue3,
+        online = Green,
+        offline = Gray)
 
 val LocalExtendedColors = staticCompositionLocalOf {
   // default value

@@ -169,6 +169,7 @@ fun MainScreen(
     navigateToProfile: () -> Unit = {},
     navigateToProjectList: () -> Unit = {},
     navigateToOtherUserProfile: (String) -> Unit = {},
+    navigateToSelectMessages: () -> Unit = {},
     mainViewModel: MainViewModel =
         viewModel(factory = factory(LocalContext.current.applicationContext as Application))
 ) {
@@ -213,6 +214,22 @@ fun MainScreen(
             CenterAlignedTopAppBar(
                 modifier =
                     Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
+                navigationIcon = {
+                  // Message Button
+                  IconButton(
+                      onClick = navigateToSelectMessages,
+                      modifier =
+                          Modifier.padding(vertical = 38.dp, horizontal = 25.dp)
+                              .size(38.dp)
+                              .testTag(NavigationTestTags.MESSAGE_BUTTON)) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.messageicon),
+                            contentDescription = "Messages",
+                            modifier = Modifier.size(30.dp),
+                            tint = NepTuneTheme.colors.onBackground,
+                        )
+                      }
+                },
                 title = {
                   Text(
                       text = "NepTune",
@@ -227,6 +244,7 @@ fun MainScreen(
                       textAlign = TextAlign.Center)
                 },
                 actions = {
+                  // Profile Button
                   IconButton(
                       onClick = navigateToProfile,
                       modifier =
