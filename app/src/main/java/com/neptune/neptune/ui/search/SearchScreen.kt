@@ -169,7 +169,9 @@ fun ScrollableColumnOfSamples(
       horizontalAlignment = Alignment.CenterHorizontally) {
         val width = 300.dp
         items(samples) { sample ->
-          LaunchedEffect(sample.id) { searchViewModel.loadSampleResources(sample) }
+          LaunchedEffect(sample.id, sample.storagePreviewSamplePath) {
+            searchViewModel.loadSampleResources(sample)
+          }
           val resources = sampleResources[sample.id] ?: SampleResourceState()
           // change height and width if necessary
           val testTags = SearchScreenTestTagsPerSampleCard(idInColumn = sample.id)

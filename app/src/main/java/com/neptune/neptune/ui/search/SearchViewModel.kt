@@ -178,11 +178,18 @@ open class SearchViewModel(
 
   /** Function to trigger loading */
   fun loadSampleResources(sample: Sample) {
-    if (_sampleResources.value.containsKey(sample.id)) return
+    val currentResources = _sampleResources.value[sample.id]
+    if (currentResources != null &&
+        currentResources.loadedSamplePath == sample.storagePreviewSamplePath) {
+      return
+    }
 
     viewModelScope.launch {
       _sampleResources.update { current ->
-        current + (sample.id to SampleResourceState(isLoading = true))
+        current +
+            (sample.id to
+                (current[sample.id]?.copy(isLoading = true)
+                    ?: SampleResourceState(isLoading = true)))
       }
 
       val avatarUrl = getSampleOwnerAvatar(sample.ownerId)
@@ -203,7 +210,8 @@ open class SearchViewModel(
                     coverImageUrl = coverUrl,
                     audioUrl = audioUrl,
                     waveform = waveform,
-                    isLoading = false))
+                    isLoading = false,
+                    loadedSamplePath = sample.storagePreviewSamplePath))
       }
     }
   }
@@ -269,11 +277,12 @@ open class SearchViewModel(
 
   fun loadSamplesFromFirebase() {
     viewModelScope.launch {
-      val loaded = repo.getSamples()
-      allSamples.value = loaded
-      _samples.value = loaded
-      refreshLikeStates()
-      applyFilter(query)
+      repo.observeSamples().collectLatest { samples ->
+        val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
+        allSamples.value = readySamples
+        applyFilter(query)
+        refreshLikeStates()
+      }
     }
   }
 

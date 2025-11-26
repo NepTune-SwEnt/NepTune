@@ -72,7 +72,6 @@ private val SectionVerticalSpacing = 40.dp
 private val LargeSectionSpacing = 100.dp
 private val BottomButtonBottomPadding = 24.dp
 private val ButtonIconSpacing = 8.dp
-private val TopBarHorizontalPadding = 8.dp
 private val TagsSpacing = 8.dp
 private val StatBlockLabelSpacing = 8.dp
 
@@ -245,7 +244,7 @@ private fun ProfileViewContent(
       topBar = {
         Column {
           Row(
-              modifier = Modifier.fillMaxWidth().padding(horizontal = TopBarHorizontalPadding),
+              modifier = Modifier.fillMaxWidth(),
               horizontalArrangement = Arrangement.SpaceBetween,
               verticalAlignment = Alignment.CenterVertically) {
                 // Go Back Button
