@@ -188,7 +188,10 @@ fun NeptuneApp(
                 composable(Screen.SignIn.route) {
                   SignInScreen(
                       signInViewModel = signInViewModel,
-                      navigateMain = { navigationActions.navigateTo(Screen.Main) })
+                      navigateMain = {
+                        mainViewModel.refresh()
+                        navigationActions.navigateTo(Screen.Main)
+                      })
                 }
                 composable(
                     route = Screen.ProjectList.route,

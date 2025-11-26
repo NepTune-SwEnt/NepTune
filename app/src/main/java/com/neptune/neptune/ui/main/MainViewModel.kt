@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -113,30 +114,56 @@ class MainViewModel(
   private fun loadSamplesFromFirebase() {
     viewModelScope.launch {
       _isRefreshing.value = true
-      // clear old data
-      _discoverSamples.value = emptyList()
-      _followedSamples.value = emptyList()
-      _sampleResources.value = emptyMap()
-      avatarCache.clear()
-      userNameCache.clear()
-      coverImageCache.clear()
-      audioUrlCache.clear()
-      waveformCache.clear()
       try {
-        // Get current user's profile
         val profile = profileRepo.getCurrentProfile()
         val following = profile?.following.orEmpty()
-        val samples = repo.getSamples()
-        _discoverSamples.value = samples.filter { it.ownerId !in following }
-        _followedSamples.value = samples.filter { it.ownerId in following }
+
+        val allSamples = repo.getSamples()
+
+        val readySamples = allSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
+
+        val pendingSamples = allSamples.filter { it.storagePreviewSamplePath.isBlank() }
+
+        updateLists(readySamples, following)
+        pendingSamples.forEach { pendingSample -> watchPendingSample(pendingSample.id, following) }
 
         refreshLikeStates()
       } catch (e: Exception) {
-        Log.e("MainViewModel", "Error refreshing samples", e)
+        Log.e("MainViewModel", "Error loading samples", e)
       } finally {
         _isRefreshing.value = false
       }
     }
+  }
+
+  private fun watchPendingSample(sampleId: String, following: List<String>) {
+    viewModelScope.launch {
+      try {
+        repo
+            .observeSample(sampleId)
+            .first { updatedSample ->
+              updatedSample != null && updatedSample.storagePreviewSamplePath.isNotBlank()
+            }
+            ?.let { finishedSample -> addSampleToList(finishedSample, following) }
+      } catch (e: Exception) {
+        Log.w("MainViewModel", "Stop watching sample $sampleId", e)
+      }
+    }
+  }
+
+  private fun updateLists(samples: List<Sample>, following: List<String>) {
+    _discoverSamples.value = samples.filter { it.ownerId !in following }
+    _followedSamples.value = samples.filter { it.ownerId in following }
+  }
+
+  private fun addSampleToList(newSample: Sample, following: List<String>) {
+    if (newSample.ownerId !in following) {
+      _discoverSamples.update { currentList -> listOf(newSample) + currentList }
+    } else {
+      _followedSamples.update { currentList -> listOf(newSample) + currentList }
+    }
+
+    loadSampleResources(newSample)
   }
 
   override fun onCleared() {

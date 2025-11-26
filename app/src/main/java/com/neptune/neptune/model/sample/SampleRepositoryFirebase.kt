@@ -48,6 +48,23 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
     awaitClose { reg.remove() }
   }
 
+  /** Observe a single sample in real time */
+  override fun observeSample(sampleId: String): Flow<Sample?> = callbackFlow {
+    val listener =
+        samples.document(sampleId).addSnapshotListener { snapshot, error ->
+          if (error != null) {
+            close(error)
+            return@addSnapshotListener
+          }
+          if (snapshot != null && snapshot.exists()) {
+            trySend(snapshot.toSampleOrNull())
+          } else {
+            trySend(null) // Le document a été supprimé ou n'existe pas
+          }
+        }
+    awaitClose { listener.remove() }
+  }
+
   /** Toggle like (increment or decrement count) */
   override suspend fun toggleLike(sampleId: String, isLiked: Boolean) {
     val userId =
