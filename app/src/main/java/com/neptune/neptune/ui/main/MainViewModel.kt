@@ -83,7 +83,7 @@ class MainViewModel(
   private val authListener =
       FirebaseAuth.AuthStateListener { firebaseAuth ->
         _currentUserFlow.value = firebaseAuth.currentUser
-        loadAvatar()
+        observeUserProfile()
       }
 
   private val _comments = MutableStateFlow<List<Comment>>(emptyList())
@@ -95,6 +95,7 @@ class MainViewModel(
   private val userNameCache = mutableMapOf<String, String>()
   private val coverImageCache = mutableMapOf<String, String?>()
   private val audioUrlCache = mutableMapOf<String, String?>()
+  private var allSamplesCache: List<Sample> = emptyList()
   private val waveformCache = mutableMapOf<String, List<Float>>()
   private val _sampleResources = MutableStateFlow<Map<String, SampleResourceState>>(emptyMap())
   val sampleResources = _sampleResources.asStateFlow()
@@ -109,7 +110,7 @@ class MainViewModel(
       loadSamplesFromFirebase()
     }
     auth.addAuthStateListener(authListener)
-    loadAvatar()
+    observeUserProfile()
   }
 
   private fun loadSamplesFromFirebase() {
@@ -120,6 +121,7 @@ class MainViewModel(
         val following = profile?.following.orEmpty()
 
         val allSamples = repo.getSamples()
+        allSamplesCache = allSamples
 
         val readySamples = allSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
 
@@ -147,7 +149,11 @@ class MainViewModel(
             .first { updatedSample ->
               updatedSample != null && updatedSample.storagePreviewSamplePath.isNotBlank()
             }
-            ?.let { finishedSample -> addSampleToList(finishedSample, following) }
+            ?.let { finishedSample ->
+              allSamplesCache =
+                  allSamplesCache.map { if (it.id == finishedSample.id) finishedSample else it }
+              addSampleToList(finishedSample, following)
+            }
       } catch (e: Exception) {
         Log.w("MainViewModel", "Stop watching sample $sampleId", e)
       } finally {
@@ -182,7 +188,7 @@ class MainViewModel(
     auth.removeAuthStateListener(authListener)
   }
 
-  private fun loadAvatar() {
+  private fun observeUserProfile() {
     if (auth.currentUser == null) {
       _userAvatar.value = null
       return
@@ -206,6 +212,11 @@ class MainViewModel(
             }
           }
           updatedResources
+        }
+        val following = profile?.following.orEmpty()
+        if (allSamplesCache.isNotEmpty()) {
+          val readySamples = allSamplesCache.filter { it.storagePreviewSamplePath.isNotBlank() }
+          updateLists(readySamples, following)
         }
       }
     }
