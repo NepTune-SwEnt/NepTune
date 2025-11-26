@@ -1,9 +1,19 @@
 package com.neptune.neptune.ui.profile
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.storage.FirebaseStorage
+import com.neptune.neptune.data.ImageStorageRepository
+import com.neptune.neptune.data.storage.StorageService
+import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
 
 /**
  * ViewModel for displaying another user's profile.
@@ -12,47 +22,76 @@ import kotlinx.coroutines.flow.asStateFlow
  * repository fetching by [userId].
  */
 class OtherProfileViewModel(
+    private val repo: ProfileRepository = ProfileRepositoryProvider.repository,
     private val userId: String,
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
+    private val imageRepo: ImageStorageRepository = ImageStorageRepository(),
+    private val storageService: StorageService = StorageService(FirebaseStorage.getInstance())
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(OtherProfileUiState())
   val uiState: StateFlow<OtherProfileUiState> = _uiState.asStateFlow()
 
   init {
-    // TODO: replace with real repository call in the future.
-    // For now: mocked profile based on userId.
-    _uiState.value =
-        OtherProfileUiState(
-            profile =
-                SelfProfileUiState(
-                    name = "Demo User",
-                    username = "demo_$userId",
-                    bio = "This is a mocked profile for $userId.",
-                    followers = 42,
-                    following = 17,
-                    likes = 123,
-                    posts = 5,
-                    tags = listOf("rock", "edm", "synthwave"),
-                    mode = ProfileMode.VIEW,
-                ),
-            isFollowing = false,
-        )
+    viewModelScope.launch {
+      combine(repo.observeProfile(userId), repo.observeCurrentProfile()) { other, current ->
+            other to current
+          }
+          .collectLatest { (otherProfile, currentProfile) ->
+            if (otherProfile != null) {
+              val isCurrentUserFollowing = currentProfile?.following?.contains(userId) == true
+              val authAnonymous = auth.currentUser?.isAnonymous == true
+              val isCurrentUserAnonymous = authAnonymous || currentProfile?.isAnonymous == true
+              val updatedProfile =
+                  SelfProfileUiState(
+                      name = otherProfile.name.orEmpty(),
+                      username = otherProfile.username,
+                      bio = otherProfile.bio.orEmpty(),
+                      avatarUrl = otherProfile.avatarUrl,
+                      subscribers = otherProfile.subscribers.toInt(),
+                      subscriptions = otherProfile.subscriptions.toInt(),
+                      likes = otherProfile.likes.toInt(),
+                      posts = otherProfile.posts.toInt(),
+                      tags = otherProfile.tags,
+                      isAnonymousUser = otherProfile.isAnonymous,
+                      error = null)
+
+              _uiState.value =
+                  _uiState.value.copy(
+                      profile = updatedProfile,
+                      isCurrentUserFollowing = isCurrentUserFollowing,
+                      errorMessage = null,
+                      isFollowActionInProgress = false,
+                      isCurrentUserAnonymous = isCurrentUserAnonymous)
+            }
+          }
+    }
   }
 
   /** Simple toggle for follow/unfollow with local follower count update. */
   fun onFollow() {
-    val current = _uiState.value
-    val newIsFollowing = !current.isFollowing
-    val delta = if (newIsFollowing) 1 else -1
-
+    if (_uiState.value.profile.isAnonymousUser || _uiState.value.isCurrentUserAnonymous) return
+    val isCurrentUserFollowing = _uiState.value.isCurrentUserFollowing
     _uiState.value =
-        current.copy(
-            isFollowing = newIsFollowing,
-            profile =
-                current.profile.copy(
-                    followers =
-                        (current.profile.followers + delta).coerceAtLeast(0), // don’t go below zero
-                ),
+        _uiState.value.copy(
+            errorMessage = null,
+            isFollowActionInProgress = true,
         )
+
+    viewModelScope.launch {
+      try {
+        if (isCurrentUserFollowing) {
+          repo.unfollowUser(userId)
+        } else {
+          repo.followUser(userId)
+        }
+      } catch (e: Exception) {
+        _uiState.value =
+            _uiState.value.copy(
+                errorMessage = "Unable to update follow state",
+                isFollowActionInProgress = false,
+            )
+      }
+    }
   }
 }

@@ -11,4 +11,6 @@ object NavigationTestTags {
   const val IMPORT_FILE_TAB = "ImportFile"
   const val OTHER_USER = "OtherUser"
   const val PROFILE_BUTTON = "ProfileButton"
+
+  const val MESSAGE_BUTTON = "MessageButton"
 }

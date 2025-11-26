@@ -33,7 +33,8 @@ data class SampleResourceState(
     val coverImageUrl: String? = null,
     val audioUrl: String? = null,
     val waveform: List<Float> = emptyList(),
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val loadedSamplePath: String? = null
 )
 
 /**
@@ -111,11 +112,12 @@ class MainViewModel(
   private fun loadSamplesFromFirebase() {
     viewModelScope.launch {
       // Get current user's profile
-      val profile = profileRepo.getProfile()
+      val profile = profileRepo.getCurrentProfile()
       val following = profile?.following.orEmpty()
       repo.observeSamples().collectLatest { samples ->
-        _discoverSamples.value = samples.filter { it.ownerId !in following }
-        _followedSamples.value = samples.filter { it.ownerId in following }
+        val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
+        _discoverSamples.value = readySamples.filter { it.ownerId !in following }
+        _followedSamples.value = readySamples.filter { it.ownerId in following }
 
         refreshLikeStates()
       }
@@ -134,7 +136,7 @@ class MainViewModel(
       return
     }
     viewModelScope.launch {
-      profileRepo.observeProfile().collectLatest { profile ->
+      profileRepo.observeCurrentProfile().collectLatest { profile ->
         // Update the user avatar
         val newAvatarUrl = profile?.avatarUrl
         _userAvatar.value = newAvatarUrl
@@ -182,6 +184,12 @@ class MainViewModel(
     }
   }
 
+  /** True when [ownerId] matches the currently signed-in Firebase user. */
+  fun isCurrentUser(ownerId: String?): Boolean {
+    val currentUserId = auth.currentUser?.uid ?: return false
+    return !ownerId.isNullOrBlank() && ownerId == currentUserId
+  }
+
   fun onDownloadSample(sample: Sample) {
     viewModelScope.launch {
       try {
@@ -227,7 +235,7 @@ class MainViewModel(
 
   fun addComment(sampleId: String, text: String) {
     viewModelScope.launch {
-      val profile = profileRepo.getProfile()
+      val profile = profileRepo.getCurrentProfile()
       val authorId = profile?.uid ?: auth.currentUser?.uid ?: "unknown"
       val authorName = profile?.username ?: defaultName
       repo.addComment(sampleId, authorId, authorName, text.trim())
@@ -316,11 +324,18 @@ class MainViewModel(
 
   /** Function to trigger loading */
   fun loadSampleResources(sample: Sample) {
-    if (_sampleResources.value.containsKey(sample.id)) return
+    val currentResources = _sampleResources.value[sample.id]
+    if (currentResources != null &&
+        currentResources.loadedSamplePath == sample.storagePreviewSamplePath) {
+      return
+    }
 
     viewModelScope.launch {
       _sampleResources.update { current ->
-        current + (sample.id to SampleResourceState(isLoading = true))
+        current +
+            (sample.id to
+                (current[sample.id]?.copy(isLoading = true)
+                    ?: SampleResourceState(isLoading = true)))
       }
 
       val avatarUrl = getSampleOwnerAvatar(sample.ownerId)
@@ -341,7 +356,8 @@ class MainViewModel(
                     coverImageUrl = coverUrl,
                     audioUrl = audioUrl,
                     waveform = waveform,
-                    isLoading = false))
+                    isLoading = false,
+                    loadedSamplePath = sample.storagePreviewSamplePath))
       }
     }
   }

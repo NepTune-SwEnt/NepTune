@@ -24,7 +24,7 @@ class SettingsViewModel(private val themeDataStore: ThemeDataStore) : ViewModel(
       themeDataStore.theme.stateIn(
           scope = viewModelScope,
           started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
-          initialValue = ThemeSetting.SYSTEM)
+          initialValue = ThemeSetting.DARK)
 
   fun updateTheme(newTheme: ThemeSetting) {
     viewModelScope.launch { themeDataStore.setTheme(newTheme) }

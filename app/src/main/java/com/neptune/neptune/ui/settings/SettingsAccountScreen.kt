@@ -41,16 +41,14 @@ fun SettingsAccountScreen(
   Scaffold(
       topBar = {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically) {
-              IconButton(
-                  onClick = goBack,
-                  modifier = Modifier.padding(vertical = 30.dp, horizontal = 17.dp)) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBackIosNew,
-                        contentDescription = "Go Back",
-                        tint = NepTuneTheme.colors.onBackground)
-                  }
+              IconButton(onClick = goBack) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBackIosNew,
+                    contentDescription = "Go Back",
+                    tint = NepTuneTheme.colors.onBackground)
+              }
             }
       },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->

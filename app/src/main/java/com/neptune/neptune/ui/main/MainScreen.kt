@@ -169,6 +169,7 @@ fun MainScreen(
     navigateToProfile: () -> Unit = {},
     navigateToProjectList: () -> Unit = {},
     navigateToOtherUserProfile: (String) -> Unit = {},
+    navigateToSelectMessages: () -> Unit = {},
     mainViewModel: MainViewModel =
         viewModel(factory = factory(LocalContext.current.applicationContext as Application))
 ) {
@@ -198,6 +199,15 @@ fun MainScreen(
     mainViewModel.addComment(sampleId, text)
     mainViewModel.observeCommentsForSample(sampleId)
   }
+
+  fun handleProfileNavigation(ownerId: String) {
+    if (ownerId.isBlank()) return
+    if (mainViewModel.isCurrentUser(ownerId)) {
+      navigateToProfile()
+    } else {
+      navigateToOtherUserProfile(ownerId)
+    }
+  }
   Box(modifier = Modifier.fillMaxSize().testTag(MainScreenTestTags.MAIN_SCREEN)) {
     Scaffold(
         topBar = {
@@ -205,6 +215,22 @@ fun MainScreen(
             CenterAlignedTopAppBar(
                 modifier =
                     Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
+                navigationIcon = {
+                  // Message Button
+                  IconButton(
+                      onClick = navigateToSelectMessages,
+                      modifier =
+                          Modifier.padding(vertical = 38.dp, horizontal = 25.dp)
+                              .size(38.dp)
+                              .testTag(NavigationTestTags.MESSAGE_BUTTON)) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.messageicon),
+                            contentDescription = "Messages",
+                            modifier = Modifier.size(30.dp),
+                            tint = NepTuneTheme.colors.onBackground,
+                        )
+                      }
+                },
                 title = {
                   Text(
                       text = "NepTune",
@@ -219,6 +245,7 @@ fun MainScreen(
                       textAlign = TextAlign.Center)
                 },
                 actions = {
+                  // Profile Button
                   IconButton(
                       onClick = navigateToProfile,
                       modifier =
@@ -286,7 +313,7 @@ fun MainScreen(
                         items(columns) { samplesColumn ->
                           Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
                             samplesColumn.forEach { sample ->
-                              LaunchedEffect(sample.id) {
+                              LaunchedEffect(sample.id, sample.storagePreviewSamplePath) {
                                 mainViewModel.loadSampleResources(sample)
                               }
                               val resources = sampleResources[sample.id] ?: SampleResourceState()
@@ -297,9 +324,7 @@ fun MainScreen(
                                         mainViewModel.onLikeClicked(sample, isLiked)
                                       },
                                       onCommentClick = { onCommentClicked(sample) },
-                                      onProfileClick = {
-                                        navigateToOtherUserProfile(sample.ownerId)
-                                      },
+                                      onProfileClick = { handleProfileNavigation(sample.ownerId) },
                                   )
                               SampleItem(
                                   sample = sample,
@@ -320,9 +345,7 @@ fun MainScreen(
                       samples = samples,
                       cardWidth = cardWidth,
                       likedSamples = likedSamples,
-                      onProfileClick = { sample ->
-                        if (sample.ownerId.isNotBlank()) navigateToOtherUserProfile(sample.ownerId)
-                      },
+                      onProfileClick = { sample -> handleProfileNavigation(sample.ownerId) },
                       onLikeClick = { sample, isLiked ->
                         mainViewModel.onLikeClicked(sample, isLiked)
                       },
@@ -466,7 +489,7 @@ fun SampleCardRow(
       modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
       horizontalArrangement = Arrangement.spacedBy(25.dp)) {
         samples.forEach { sample ->
-          LaunchedEffect(sample.id) { onLoadResources(sample) }
+          LaunchedEffect(sample.id, sample.storagePreviewSamplePath) { onLoadResources(sample) }
           val resources = sampleResources[sample.id] ?: SampleResourceState()
           val isLiked = likedSamples[sample.id] == true
           val clickHandlers =
