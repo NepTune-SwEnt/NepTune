@@ -64,8 +64,20 @@ fun SampleAppTheme(
       // Derive other colors from these inputs with simple heuristics
       val cardBackground = if (darkTheme) background.copy(alpha = 0.95f) else background.copy(alpha = 0.98f)
       val listBackground = cardBackground
-      val searchBar = background.copy(alpha = if (darkTheme) 0.12f else 0.9f)
-      val smallText = if (background.luminance() > 0.5f) Black else White
+        // Search bar should be slightly brighter if background is dark, slightly darker if background is light
+      val searchBar =
+          if (darkTheme) {
+            background.copy(
+                red = background.red * 0.9f + 0.1f,
+                green = background.green * 0.9f + 0.1f,
+                blue = background.blue * 0.9f + 0.1f)
+          } else {
+            background.copy(
+                red = background.red * 0.95f,
+                green = background.green * 0.95f,
+                blue = background.blue * 0.95f)
+          }
+      val smallText = if (darkTheme) Black else White
       val loginText = if (accentPrimary.luminance() > 0.5f) Black else White
       val soundWave = accentPrimary
       val postButton = accentPrimary
