@@ -113,6 +113,15 @@ class MainViewModel(
   private fun loadSamplesFromFirebase() {
     viewModelScope.launch {
       _isRefreshing.value = true
+      // clear old data
+      _discoverSamples.value = emptyList()
+      _followedSamples.value = emptyList()
+      _sampleResources.value = emptyMap()
+      avatarCache.clear()
+      userNameCache.clear()
+      coverImageCache.clear()
+      audioUrlCache.clear()
+      waveformCache.clear()
       try {
         // Get current user's profile
         val profile = profileRepo.getProfile()
