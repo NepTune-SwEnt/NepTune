@@ -6,15 +6,21 @@ import com.neptune.neptune.model.profile.ProfileRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
+/** Fake Profile Repository for testing purposes. This has been written with the help of LLMs. */
 class FakeProfileRepository(initial: Profile? = null) : ProfileRepository {
 
   private var profile: Profile? = initial
 
+  // Map userId -> username for testing
+  private val usernames = mutableMapOf<String, String>()
+
+  fun setUsernameForTest(userId: String, username: String) {
+    usernames[userId] = username
+  }
+
   override suspend fun getCurrentProfile(): Profile? = profile
 
-  override suspend fun getProfile(uid: String): Profile? {
-    throw UnsupportedOperationException("Not needed in this test")
-  }
+  override suspend fun getProfile(uid: String): Profile? = profile
 
   override fun observeCurrentProfile(): Flow<Profile?> = flowOf(profile)
 
@@ -94,6 +100,10 @@ class FakeProfileRepository(initial: Profile? = null) : ProfileRepository {
   }
 
   override suspend fun getUserNameByUserId(userId: String): String? {
-    return userId
+    // Return stored profile username if it matches
+    profile?.let { if (it.uid == userId) return it.username }
+
+    // Otherwise check test usernames map
+    return usernames[userId]
   }
 }
