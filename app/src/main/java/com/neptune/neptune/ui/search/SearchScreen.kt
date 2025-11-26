@@ -106,6 +106,7 @@ fun SearchScreen(
     searchViewModel: SearchViewModel =
         viewModel(factory = factory(LocalContext.current.applicationContext as Application)),
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
+    navigateToProfile: () -> Unit = {},
     navigateToOtherUserProfile: (String) -> Unit = {},
 ) {
   val samples by searchViewModel.samples.collectAsState()
@@ -137,6 +138,7 @@ fun SearchScreen(
               likedSamples = likedSamples,
               activeCommentSampleId = activeCommentSampleId,
               comments = comments,
+              navigateToProfile = navigateToProfile,
               navigateToOtherUserProfile = navigateToOtherUserProfile,
               sampleResources = sampleResources)
         })
@@ -155,6 +157,7 @@ fun ScrollableColumnOfSamples(
     likedSamples: Map<String, Boolean> = emptyMap(),
     activeCommentSampleId: String? = null,
     comments: List<Comment> = emptyList(),
+    navigateToProfile: () -> Unit = {},
     navigateToOtherUserProfile: (String) -> Unit = {},
     sampleResources: Map<String, SampleResourceState> = emptyMap(),
 ) {
@@ -184,7 +187,16 @@ fun ScrollableColumnOfSamples(
                     searchViewModel.onLikeClick(sample, newIsLiked)
                   },
                   onCommentClick = { searchViewModel.onCommentClicked(sample) },
-                  onProfileClick = { navigateToOtherUserProfile(sample.ownerId) },
+                  onProfileClick = {
+                    val ownerId = sample.ownerId
+                    if (ownerId.isNotBlank()) {
+                      if (searchViewModel.isCurrentUser(ownerId)) {
+                        navigateToProfile()
+                      } else {
+                        navigateToOtherUserProfile(ownerId)
+                      }
+                    }
+                  },
               )
           SampleItem(
               sample = sample,

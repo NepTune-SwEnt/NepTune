@@ -25,6 +25,7 @@ import com.neptune.neptune.model.profile.ProfileRepositoryFirebase
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
+import com.neptune.neptune.ui.messages.SelectMessagesScreenTestTags
 import com.neptune.neptune.ui.picker.ImportScreenTestTags
 import com.neptune.neptune.ui.post.PostScreen
 import com.neptune.neptune.ui.post.PostScreenTestTags
@@ -110,6 +111,7 @@ class NavigationTest {
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).assertIsDisplayed()
   }
 
   @Test
@@ -117,6 +119,16 @@ class NavigationTest {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
+  }
+
+  @Test
+  fun messageButtonNavigatesToSelectMessageScreen() {
+    setContent()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).performClick()
+    composeTestRule
+        .onNodeWithTag(SelectMessagesScreenTestTags.SELECT_MESSAGE_SCREEN)
+        .assertIsDisplayed()
   }
 
   @Test

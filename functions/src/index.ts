@@ -25,3 +25,4 @@ import {setGlobalOptions} from "firebase-functions";
 setGlobalOptions({maxInstances: 10});
 
 export {generateSamplePreview} from "./generateSamplePreview";
+export {followUser} from "./followUser";

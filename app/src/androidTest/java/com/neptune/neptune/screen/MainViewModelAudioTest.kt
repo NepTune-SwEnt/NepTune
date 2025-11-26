@@ -58,7 +58,7 @@ class MainViewModelAudioTest {
     Dispatchers.setMain(testDispatcher)
     val appContext = InstrumentationRegistry.getInstrumentation().targetContext
 
-    whenever(mockProfileRepo.observeProfile()).thenReturn(flowOf(null))
+    whenever(mockProfileRepo.observeCurrentProfile()).thenReturn(flowOf(null))
 
     whenever(mockAuth.currentUser).thenReturn(mockUser)
     whenever(mockUser.uid).thenReturn("test_uid")

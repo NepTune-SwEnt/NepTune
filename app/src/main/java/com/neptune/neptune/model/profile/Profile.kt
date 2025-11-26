@@ -17,6 +17,7 @@ package com.neptune.neptune.model.profile
  * @property tags List of user-defined tags associated with the profile.
  * @property following List of all the person that the user follows.
  * @property avatarUrl URL of the profile picture (empty string if not set).
+ * @property isAnonymous True if the owning Firebase user is still anonymous (no permanent sign-in).
  * @author Arianna Baur
  */
 data class Profile(
@@ -30,7 +31,8 @@ data class Profile(
     val posts: Long = 0,
     val tags: List<String> = emptyList(),
     val avatarUrl: String = "",
-    val following: List<String> = emptyList()
+    val following: List<String> = emptyList(),
+    val isAnonymous: Boolean = false,
 )
 
 /**

@@ -342,7 +342,7 @@ open class SearchViewModel(
 
   fun addComment(sampleId: String, text: String) {
     viewModelScope.launch {
-      val profile = profileRepo.getProfile()
+      val profile = profileRepo.getCurrentProfile()
       val username = profile?.username ?: "Anonymous"
       repo.addComment(sampleId, username, text.trim())
       load(useMockData)
@@ -379,5 +379,11 @@ open class SearchViewModel(
     } else {
       loadSamplesFromFirebase()
     }
+  }
+
+  /** True when [ownerId] refers to the currently signed-in Firebase user. */
+  open fun isCurrentUser(ownerId: String?): Boolean {
+    val currentUserId = firebaseAuth?.currentUser?.uid ?: return false
+    return !ownerId.isNullOrBlank() && ownerId == currentUserId
   }
 }

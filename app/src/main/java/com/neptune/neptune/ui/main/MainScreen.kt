@@ -172,6 +172,7 @@ fun MainScreen(
     navigateToProfile: () -> Unit = {},
     navigateToProjectList: () -> Unit = {},
     navigateToOtherUserProfile: (String) -> Unit = {},
+    navigateToSelectMessages: () -> Unit = {},
     mainViewModel: MainViewModel =
         viewModel(factory = factory(LocalContext.current.applicationContext as Application))
 ) {
@@ -213,164 +214,178 @@ fun MainScreen(
     mainViewModel.addComment(sampleId, text)
     mainViewModel.observeCommentsForSample(sampleId)
   }
-  Box(
-      modifier =
-          Modifier.fillMaxSize()
-              .nestedScroll(pullRefreshState.nestedScrollConnection)
-              .testTag(MainScreenTestTags.MAIN_SCREEN)) {
-        Scaffold(
-            topBar = {
-              Column {
-                CenterAlignedTopAppBar(
-                    modifier =
-                        Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
-                    title = {
-                      Text(
-                          text = "NepTune",
-                          style =
-                              TextStyle(
-                                  fontSize = 45.sp,
-                                  fontFamily = FontFamily(Font(R.font.lily_script_one)),
-                                  fontWeight = FontWeight(149),
-                                  color = NepTuneTheme.colors.onBackground,
-                              ),
-                          modifier =
-                              Modifier.padding(25.dp).testTag(MainScreenTestTags.TOP_BAR_TITLE),
-                          textAlign = TextAlign.Center)
-                    },
-                    actions = {
-                      IconButton(
-                          onClick = navigateToProfile,
-                          modifier =
-                              Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
-                                  .size(57.dp)
-                                  .testTag(NavigationTestTags.PROFILE_BUTTON)) {
-                            AsyncImage(
-                                model =
-                                    ImageRequest.Builder(LocalContext.current)
-                                        .data(userAvatar ?: R.drawable.profile)
-                                        .crossfade(true)
-                                        .build(),
-                                contentDescription = "Profile",
-                                modifier = Modifier.fillMaxSize().clip(CircleShape),
-                                contentScale = ContentScale.Crop,
-                                placeholder = painterResource(R.drawable.profile),
-                                error = painterResource(R.drawable.profile))
-                          }
-                    },
-                    colors =
-                        TopAppBarDefaults.centerAlignedTopAppBarColors(
-                            containerColor = NepTuneTheme.colors.background))
-                HorizontalDivider(
-                    modifier = Modifier.fillMaxWidth(),
-                    thickness = 0.75.dp,
-                    color = NepTuneTheme.colors.onBackground)
-              }
-            },
-            floatingActionButton = {
-              FloatingActionButton(
-                  onClick = navigateToProjectList,
-                  containerColor = NepTuneTheme.colors.postButton,
-                  contentColor = NepTuneTheme.colors.onBackground,
-                  shape = CircleShape,
-                  modifier =
-                      Modifier.shadow(
-                              elevation = 4.dp,
-                              spotColor = NepTuneTheme.colors.shadow,
-                              ambientColor = NepTuneTheme.colors.shadow,
-                              shape = CircleShape)
-                          .size(52.dp)
-                          .testTag(MainScreenTestTags.POST_BUTTON)) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Create a Post",
-                        modifier = Modifier.size(70.dp))
-                  }
-            },
-            content = { paddingValues ->
-              LazyColumn(
-                  contentPadding = paddingValues, // Apply Scaffold padding
-                  modifier =
-                      Modifier.fillMaxSize()
-                          .padding(horizontal = horizontalPadding) // Apply screen-specific padding
-                          .testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
-                    // ----------------Discover Section-----------------
-                    item { SectionHeader(title = "Discover") }
-                    item {
-                      LazyRow(
-                          horizontalArrangement = Arrangement.spacedBy(spacing),
-                          modifier = Modifier.fillMaxWidth()) {
-                            // As this element is horizontally scrollable, we can let 2
-                            val columns = discoverSamples.chunked(2)
 
-                            items(columns) { samplesColumn ->
-                              Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
-                                samplesColumn.forEach { sample ->
-                                  LaunchedEffect(sample.id, sample.storagePreviewSamplePath) {
-                                    mainViewModel.loadSampleResources(sample)
-                                  }
-                                  val resources =
-                                      sampleResources[sample.id] ?: SampleResourceState()
-                                  val clickHandlers =
-                                      onClickFunctions(
-                                          onDownloadClick = {
-                                            mainViewModel.onDownloadSample(sample)
-                                          },
-                                          onLikeClick = { isLiked ->
-                                            mainViewModel.onLikeClicked(sample, isLiked)
-                                          },
-                                          onCommentClick = { onCommentClicked(sample) },
-                                          onProfileClick = {
-                                            navigateToOtherUserProfile(sample.ownerId)
-                                          },
-                                      )
-                                  SampleItem(
-                                      sample = sample,
-                                      width = cardWidth,
-                                      isLiked = likedSamples[sample.id] == true,
-                                      clickHandlers = clickHandlers,
-                                      resourceState = resources)
-                                }
+  fun handleProfileNavigation(ownerId: String) {
+    if (ownerId.isBlank()) return
+    if (mainViewModel.isCurrentUser(ownerId)) {
+      navigateToProfile()
+    } else {
+      navigateToOtherUserProfile(ownerId)
+    }
+  }
+  Box(modifier = Modifier.fillMaxSize().
+  .nestedScroll(pullRefreshState.nestedScrollConnection).testTag(MainScreenTestTags.MAIN_SCREEN)) {
+    Scaffold(
+        topBar = {
+          Column {
+            CenterAlignedTopAppBar(
+                modifier =
+                    Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
+                navigationIcon = {
+                  // Message Button
+                  IconButton(
+                      onClick = navigateToSelectMessages,
+                      modifier =
+                          Modifier.padding(vertical = 38.dp, horizontal = 25.dp)
+                              .size(38.dp)
+                              .testTag(NavigationTestTags.MESSAGE_BUTTON)) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.messageicon),
+                            contentDescription = "Messages",
+                            modifier = Modifier.size(30.dp),
+                            tint = NepTuneTheme.colors.onBackground,
+                        )
+                      }
+                },
+                title = {
+                  Text(
+                      text = "NepTune",
+                      style =
+                          TextStyle(
+                              fontSize = 45.sp,
+                              fontFamily = FontFamily(Font(R.font.lily_script_one)),
+                              fontWeight = FontWeight(149),
+                              color = NepTuneTheme.colors.onBackground,
+                          ),
+                      modifier = Modifier.padding(25.dp).testTag(MainScreenTestTags.TOP_BAR_TITLE),
+                      textAlign = TextAlign.Center)
+                },
+                actions = {
+                  // Profile Button
+                  IconButton(
+                      onClick = navigateToProfile,
+                      modifier =
+                          Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
+                              .size(57.dp)
+                              .testTag(NavigationTestTags.PROFILE_BUTTON)) {
+                        AsyncImage(
+                            model =
+                                ImageRequest.Builder(LocalContext.current)
+                                    .data(userAvatar ?: R.drawable.profile)
+                                    .crossfade(true)
+                                    .build(),
+                            contentDescription = "Profile",
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentScale = ContentScale.Crop,
+                            placeholder = painterResource(R.drawable.profile),
+                            error = painterResource(R.drawable.profile))
+                      }
+                },
+                colors =
+                    TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = NepTuneTheme.colors.background))
+            HorizontalDivider(
+                modifier = Modifier.fillMaxWidth(),
+                thickness = 0.75.dp,
+                color = NepTuneTheme.colors.onBackground)
+          }
+        },
+        floatingActionButton = {
+          FloatingActionButton(
+              onClick = navigateToProjectList,
+              containerColor = NepTuneTheme.colors.postButton,
+              contentColor = NepTuneTheme.colors.onBackground,
+              shape = CircleShape,
+              modifier =
+                  Modifier.shadow(
+                          elevation = 4.dp,
+                          spotColor = NepTuneTheme.colors.shadow,
+                          ambientColor = NepTuneTheme.colors.shadow,
+                          shape = CircleShape)
+                      .size(52.dp)
+                      .testTag(MainScreenTestTags.POST_BUTTON)) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Create a Post",
+                    modifier = Modifier.size(70.dp))
+              }
+        },
+        content = { paddingValues ->
+          LazyColumn(
+              contentPadding = paddingValues, // Apply Scaffold padding
+              modifier =
+                  Modifier.fillMaxSize()
+                      .padding(horizontal = horizontalPadding) // Apply screen-specific padding
+                      .testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
+                // ----------------Discover Section-----------------
+                item { SectionHeader(title = "Discover") }
+                item {
+                  LazyRow(
+                      horizontalArrangement = Arrangement.spacedBy(spacing),
+                      modifier = Modifier.fillMaxWidth()) {
+                        // As this element is horizontally scrollable, we can let 2
+                        val columns = discoverSamples.chunked(2)
+
+                        items(columns) { samplesColumn ->
+                          Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
+                            samplesColumn.forEach { sample ->
+                              LaunchedEffect(sample.id, sample.storagePreviewSamplePath) {
+                                mainViewModel.loadSampleResources(sample)
                               }
+                              val resources = sampleResources[sample.id] ?: SampleResourceState()
+                              val clickHandlers =
+                                  onClickFunctions(
+                                      onDownloadClick = { mainViewModel.onDownloadSample(sample) },
+                                      onLikeClick = { isLiked ->
+                                        mainViewModel.onLikeClicked(sample, isLiked)
+                                      },
+                                      onCommentClick = { onCommentClicked(sample) },
+                                      onProfileClick = { handleProfileNavigation(sample.ownerId) },
+                                  )
+                              SampleItem(
+                                  sample = sample,
+                                  width = cardWidth,
+                                  isLiked = likedSamples[sample.id] == true,
+                                  clickHandlers = clickHandlers,
+                                  resourceState = resources)
                             }
                           }
-                    }
-                    // ----------------Followed Section-----------------
-                    item { SectionHeader(title = "Followed") }
-                    // If the screen is too small, it will display 1 Card instead of 2
-                    items(followedSamples.chunked(maxColumns)) { samples ->
-                      SampleCardRow(
-                          samples = samples,
-                          cardWidth = cardWidth,
-                          likedSamples = likedSamples,
-                          onProfileClick = { sample ->
-                            if (sample.ownerId.isNotBlank())
-                                navigateToOtherUserProfile(sample.ownerId)
-                          },
-                          onLikeClick = { sample, isLiked ->
-                            mainViewModel.onLikeClicked(sample, isLiked)
-                          },
-                          onCommentClick = { sample -> onCommentClicked(sample) },
-                          onDownloadClick = { sample -> mainViewModel.onDownloadSample(sample) },
-                          sampleResources = sampleResources,
-                          onLoadResources = { s -> mainViewModel.loadSampleResources(s) })
-                    }
-                  }
-            },
-            containerColor = NepTuneTheme.colors.background)
-        PullToRefreshContainer(
-            state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter),
-            containerColor = NepTuneTheme.colors.background,
-            contentColor = NepTuneTheme.colors.onBackground)
-        // Comment Overlay (Outside Scaffold content, but inside Box to float over everything)
-        if (activeCommentSampleId != null) {
-          CommentDialog(
-              sampleId = activeCommentSampleId!!,
-              comments = comments,
-              onDismiss = { activeCommentSampleId = null },
-              onAddComment = { id, text -> onAddComment(id, text) })
-        }
+                        }
+                      }
+                }
+                // ----------------Followed Section-----------------
+                item { SectionHeader(title = "Followed") }
+                // If the screen is too small, it will display 1 Card instead of 2
+                items(followedSamples.chunked(maxColumns)) { samples ->
+                  SampleCardRow(
+                      samples = samples,
+                      cardWidth = cardWidth,
+                      likedSamples = likedSamples,
+                      onProfileClick = { sample -> handleProfileNavigation(sample.ownerId) },
+                      onLikeClick = { sample, isLiked ->
+                        mainViewModel.onLikeClicked(sample, isLiked)
+                      },
+                      onCommentClick = { sample -> onCommentClicked(sample) },
+                      onDownloadClick = { sample -> mainViewModel.onDownloadSample(sample) },
+                      sampleResources = sampleResources,
+                      onLoadResources = { s -> mainViewModel.loadSampleResources(s) })
+                }
+              }
+        },
+        containerColor = NepTuneTheme.colors.background)
+      PullToRefreshContainer(
+          state = pullRefreshState,
+          modifier = Modifier.align(Alignment.TopCenter),
+          containerColor = NepTuneTheme.colors.background,
+          contentColor = NepTuneTheme.colors.onBackground)
+    // Comment Overlay (Outside Scaffold content, but inside Box to float over everything)
+    if (activeCommentSampleId != null) {
+      CommentDialog(
+          sampleId = activeCommentSampleId!!,
+          comments = comments,
+          onDismiss = { activeCommentSampleId = null },
+          onAddComment = { id, text -> onAddComment(id, text) })
+    }
 
         if (downloadProgress != null && downloadProgress != 0) {
           DownloadProgressBar(
