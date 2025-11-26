@@ -111,7 +111,7 @@ class MainViewModel(
   private fun loadSamplesFromFirebase() {
     viewModelScope.launch {
       // Get current user's profile
-      val profile = profileRepo.getProfile()
+      val profile = profileRepo.getCurrentProfile()
       val following = profile?.following.orEmpty()
       repo.observeSamples().collectLatest { samples ->
         val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
@@ -134,7 +134,7 @@ class MainViewModel(
       return
     }
     viewModelScope.launch {
-      profileRepo.observeProfile().collectLatest { profile ->
+      profileRepo.observeCurrentProfile().collectLatest { profile ->
         // Update the user avatar
         val newAvatarUrl = profile?.avatarUrl
         _userAvatar.value = newAvatarUrl
@@ -155,6 +155,12 @@ class MainViewModel(
         }
       }
     }
+  }
+
+  /** True when [ownerId] matches the currently signed-in Firebase user. */
+  fun isCurrentUser(ownerId: String?): Boolean {
+    val currentUserId = auth.currentUser?.uid ?: return false
+    return !ownerId.isNullOrBlank() && ownerId == currentUserId
   }
 
   fun onDownloadSample(sample: Sample) {
@@ -196,7 +202,7 @@ class MainViewModel(
 
   fun addComment(sampleId: String, text: String) {
     viewModelScope.launch {
-      val profile = profileRepo.getProfile()
+      val profile = profileRepo.getCurrentProfile()
       val username = profile?.username ?: defaultName
       repo.addComment(sampleId, username, text.trim())
     }

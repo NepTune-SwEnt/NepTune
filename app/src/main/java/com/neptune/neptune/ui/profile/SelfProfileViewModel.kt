@@ -68,7 +68,7 @@ class SelfProfileViewModel(
 
   init {
     viewModelScope.launch {
-      repo.observeProfile().collectLatest { p ->
+      repo.observeCurrentProfile().collectLatest { p ->
         snapshot = p
 
         if (p != null && _uiState.value.mode == ProfileMode.VIEW) {
@@ -78,21 +78,23 @@ class SelfProfileViewModel(
                   username = p.username,
                   bio = p.bio.orEmpty(),
                   avatarUrl = p.avatarUrl,
-                  followers = p.subscribers.toInt(),
-                  following = p.subscriptions.toInt(),
+                  subscribers = p.subscribers.toInt(),
+                  subscriptions = p.subscriptions.toInt(),
                   likes = p.likes.toInt(),
                   posts = p.posts.toInt(),
                   tags = p.tags,
+                  isAnonymousUser = p.isAnonymous,
                   error = null)
         } else if (p != null && _uiState.value.mode == ProfileMode.EDIT) {
           _uiState.value =
               _uiState.value.copy(
-                  followers = p.subscribers.toInt(),
-                  following = p.subscriptions.toInt(),
+                  subscribers = p.subscribers.toInt(),
+                  subscriptions = p.subscriptions.toInt(),
                   likes = p.likes.toInt(),
                   posts = p.posts.toInt(),
                   tags = p.tags,
                   avatarUrl = p.avatarUrl,
+                  isAnonymousUser = p.isAnonymous,
               )
         }
         loadInitialLocalAvatar()
@@ -167,11 +169,12 @@ class SelfProfileViewModel(
                 username = prof.username,
                 bio = prof.bio.orEmpty(),
                 avatarUrl = prof.avatarUrl,
-                followers = prof.subscribers.toInt(),
-                following = prof.subscriptions.toInt(),
+                subscribers = prof.subscribers.toInt(),
+                subscriptions = prof.subscriptions.toInt(),
                 likes = prof.likes.toInt(),
                 posts = prof.posts.toInt(),
                 tags = prof.tags,
+                isAnonymousUser = prof.isAnonymous || auth.currentUser?.isAnonymous == true,
                 isSaving = false,
                 error = null)
       } catch (t: Throwable) {
@@ -182,6 +185,7 @@ class SelfProfileViewModel(
 
   /** Enters edit mode and restores current saved profile data for editing. */
   fun onEditClick() {
+    if (_uiState.value.isAnonymousUser) return
     _uiState.value =
         _uiState.value
             .copy(
@@ -315,6 +319,7 @@ class SelfProfileViewModel(
    */
   fun onSaveClick() {
     val currentState = _uiState.value
+    if (currentState.isAnonymousUser) return
     if (currentState.mode != ProfileMode.EDIT || currentState.isSaving) return
 
     val validated = currentState.validated()

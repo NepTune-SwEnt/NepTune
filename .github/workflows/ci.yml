@@ -121,6 +121,13 @@ jobs:
         run: |
           npm i -g firebase-tools
 
+      # Install functions dependencies and build them
+      - name: Install and build Cloud Functions
+        run: |
+          cd functions
+          npm ci
+          npm run build
+
       # Run connected tests with emulators up
       - name: Run connected tests against Firebase emulators
         uses: reactivecircus/android-emulator-runner@v2

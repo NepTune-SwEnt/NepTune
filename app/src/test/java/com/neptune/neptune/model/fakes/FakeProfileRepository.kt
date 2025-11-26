@@ -20,9 +20,25 @@ class FakeProfileRepository(
 
   private val state = MutableStateFlow(initial)
 
-  override suspend fun getProfile(): Profile? = state.value
+  override suspend fun getCurrentProfile(): Profile? {
+    throw UnsupportedOperationException("Not needed in this test")
+  }
 
-  override fun observeProfile(): Flow<Profile?> = state.asStateFlow()
+  override suspend fun getProfile(uid: String): Profile? = state.value
+
+  override fun observeCurrentProfile(): Flow<Profile?> = state.asStateFlow()
+
+  override fun observeProfile(uid: String): Flow<Profile?> {
+    throw UnsupportedOperationException("Not needed in this test")
+  }
+
+  override suspend fun unfollowUser(uid: String) {
+    throw UnsupportedOperationException("Not needed in this test")
+  }
+
+  override suspend fun followUser(uid: String) {
+    throw UnsupportedOperationException("Not needed in this test")
+  }
 
   override suspend fun ensureProfile(
       suggestedUsernameBase: String?,

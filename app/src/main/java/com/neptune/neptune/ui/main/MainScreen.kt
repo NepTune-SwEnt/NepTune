@@ -197,6 +197,15 @@ fun MainScreen(
     mainViewModel.addComment(sampleId, text)
     mainViewModel.observeCommentsForSample(sampleId)
   }
+
+  fun handleProfileNavigation(ownerId: String) {
+    if (ownerId.isBlank()) return
+    if (mainViewModel.isCurrentUser(ownerId)) {
+      navigateToProfile()
+    } else {
+      navigateToOtherUserProfile(ownerId)
+    }
+  }
   Box(modifier = Modifier.fillMaxSize().testTag(MainScreenTestTags.MAIN_SCREEN)) {
     Scaffold(
         topBar = {
@@ -296,9 +305,7 @@ fun MainScreen(
                                         mainViewModel.onLikeClicked(sample, isLiked)
                                       },
                                       onCommentClick = { onCommentClicked(sample) },
-                                      onProfileClick = {
-                                        navigateToOtherUserProfile(sample.ownerId)
-                                      },
+                                      onProfileClick = { handleProfileNavigation(sample.ownerId) },
                                   )
                               SampleItem(
                                   sample = sample,
@@ -319,9 +326,7 @@ fun MainScreen(
                       samples = samples,
                       cardWidth = cardWidth,
                       likedSamples = likedSamples,
-                      onProfileClick = { sample ->
-                        if (sample.ownerId.isNotBlank()) navigateToOtherUserProfile(sample.ownerId)
-                      },
+                      onProfileClick = { sample -> handleProfileNavigation(sample.ownerId) },
                       onLikeClick = { sample, isLiked ->
                         mainViewModel.onLikeClicked(sample, isLiked)
                       },

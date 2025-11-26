@@ -51,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -173,48 +174,66 @@ sealed interface ProfileViewConfig {
   val bottomScreenButton: (@Composable (modifier: Modifier) -> Unit)?
   val samplesSection: (@Composable () -> Unit)?
 
-  data class SelfProfileConfig(private val onEdit: () -> Unit, private val settings: () -> Unit) :
-      ProfileViewConfig {
+  data class SelfProfileConfig(
+      private val onEdit: () -> Unit,
+      private val settings: () -> Unit,
+      val canEditProfile: Boolean = true,
+  ) : ProfileViewConfig {
     override val topBarContent = @Composable { SettingsButton(settings) }
     override val belowStatsButton = null
     override val bottomScreenButton =
         @Composable { modifier: Modifier ->
-          Button(
-              onClick = onEdit,
-              enabled = true,
-              modifier =
-                  modifier
-                      .padding(bottom = BottomButtonBottomPadding)
-                      .testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
-                Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
-                Spacer(Modifier.width(ButtonIconSpacing))
-                Text("Edit")
-              }
+          if (canEditProfile) {
+            Button(
+                onClick = onEdit,
+                enabled = true,
+                modifier =
+                    modifier
+                        .padding(bottom = BottomButtonBottomPadding)
+                        .testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
+                  Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
+                  Spacer(Modifier.width(ButtonIconSpacing))
+                  Text("Edit")
+                }
+          }
         }
     override val samplesSection = null
   }
 
   data class OtherProfileConfig(
       val isFollowing: Boolean,
+      val isFollowActionInProgress: Boolean = false,
+      val canFollowTarget: Boolean = true,
       private val onFollow: () -> Unit,
+      private val errorMessage: String?,
   ) : ProfileViewConfig {
     override val topBarContent = null
-    override val belowStatsButton =
-        @Composable {
-          val label = if (isFollowing) "Unfollow" else "Follow"
-          val icon = if (isFollowing) Icons.Default.Clear else Icons.Default.Add
+    override val belowStatsButton: @Composable () -> Unit = composable@{
+      if (!canFollowTarget) return@composable
+      val label = if (isFollowing) "Unfollow" else "Follow"
+      val icon = if (isFollowing) Icons.Default.Clear else Icons.Default.Add
 
-          Button(
-              onClick = onFollow,
-              enabled = true,
-              modifier =
-                  Modifier.padding(bottom = BottomButtonBottomPadding)
-                      .testTag(ProfileScreenTestTags.FOLLOW_BUTTON)) {
-                Icon(imageVector = icon, contentDescription = "Follow")
-                Spacer(Modifier.width(ButtonIconSpacing))
-                Text(label)
-              }
-        }
+      Column(
+          modifier = Modifier.padding(bottom = BottomButtonBottomPadding),
+          horizontalAlignment = Alignment.CenterHorizontally) {
+            Button(
+                onClick = onFollow,
+                enabled = !isFollowActionInProgress,
+                modifier = Modifier.testTag(ProfileScreenTestTags.FOLLOW_BUTTON)) {
+                  Icon(imageVector = icon, contentDescription = "Follow")
+                  Spacer(Modifier.width(ButtonIconSpacing))
+                  Text(label)
+                }
+            if (!errorMessage.isNullOrBlank()) {
+              Spacer(Modifier.height(8.dp))
+              Text(
+                  text = errorMessage,
+                  color = Color.Red,
+                  style = MaterialTheme.typography.bodySmall,
+                  modifier = Modifier.testTag("profile/follow_error"))
+            }
+          }
+    }
     override val bottomScreenButton = null
     override val samplesSection = null // FIXME: implement samples section
   }
@@ -576,12 +595,12 @@ private fun StatRow(state: SelfProfileUiState) {
         testTag = ProfileScreenTestTags.LIKES_BLOCK)
     StatBlock(
         label = "Followers",
-        value = state.followers,
+        value = state.subscribers,
         modifier = Modifier.weight(1f),
         testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
     StatBlock(
         label = "Following",
-        value = state.following,
+        value = state.subscriptions,
         modifier = Modifier.weight(1f),
         testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
   }
@@ -703,7 +722,10 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
           })
 
   val viewConfig =
-      ProfileViewConfig.SelfProfileConfig(onEdit = viewModel::onEditClick, settings = settings)
+      ProfileViewConfig.SelfProfileConfig(
+          onEdit = viewModel::onEditClick,
+          settings = settings,
+          canEditProfile = !state.isAnonymousUser)
 
   ProfileScreen(
       uiState = state,
@@ -737,7 +759,10 @@ fun OtherUserProfileRoute(
       object : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
           if (modelClass.isAssignableFrom(OtherProfileViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST") return OtherProfileViewModel(userId) as T
+            @Suppress("UNCHECKED_CAST")
+            return OtherProfileViewModel(
+                repo = ProfileRepositoryProvider.repository, userId = userId)
+                as T
           }
           throw IllegalArgumentException("Unknown ViewModel class")
         }
@@ -748,7 +773,11 @@ fun OtherUserProfileRoute(
 
   val viewConfig =
       ProfileViewConfig.OtherProfileConfig(
-          isFollowing = state.isFollowing, onFollow = viewModel::onFollow)
+          isFollowing = state.isCurrentUserFollowing,
+          isFollowActionInProgress = state.isFollowActionInProgress,
+          canFollowTarget = !state.profile.isAnonymousUser && !state.isCurrentUserAnonymous,
+          onFollow = viewModel::onFollow,
+          errorMessage = state.errorMessage)
 
   ProfileScreen(
       uiState = state.profile,
