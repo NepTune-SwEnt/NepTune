@@ -1,6 +1,5 @@
 package com.neptune.neptune.ui.settings
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -85,7 +84,7 @@ private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel, goCustomT
   Column {
     Text(
         text = "Theme",
-        style =
+        style = 
             TextStyle(
                 fontSize = 37.sp,
                 fontFamily = FontFamily(Font(R.font.markazi_text)),
@@ -100,7 +99,12 @@ private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel, goCustomT
             Modifier.fillMaxWidth()
                 .selectable(
                     selected = (selectedTheme == theme),
-                    onClick = { settingsViewModel.updateTheme(theme) },
+                    onClick = { 
+                        settingsViewModel.updateTheme(theme)
+                        if (theme == ThemeSetting.CUSTOM) {
+                            goCustomTheme()
+                        }
+                    },
                     role = Role.RadioButton)
                 .padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically) {
@@ -115,10 +119,10 @@ private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel, goCustomT
                           ThemeSetting.SYSTEM -> "System Default"
                           ThemeSetting.LIGHT -> "Light"
                           ThemeSetting.DARK -> "Dark"
-                            ThemeSetting.CUSTOM -> "Custom"
+                          ThemeSetting.CUSTOM -> "Custom"
                         }
                       }(),
-                  style =
+                  style = 
                       TextStyle(
                           fontSize = 24.sp,
                           fontFamily = FontFamily(Font(R.font.markazi_text)),
@@ -129,25 +133,6 @@ private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel, goCustomT
                   modifier = Modifier.padding(start = 16.dp))
             }
       }
-
-      // New row that navigates to the Custom Theme editor
-      Row(
-          Modifier.fillMaxWidth()
-              .clickable { goCustomTheme() }
-              .padding(vertical = 12.dp),
-          verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "Custom Theme",
-                style =
-                    TextStyle(
-                        fontSize = 24.sp,
-                        fontFamily = FontFamily(Font(R.font.markazi_text)),
-                        fontWeight = FontWeight(400),
-                        color = NepTuneTheme.colors.onBackground,
-                    ),
-                color = NepTuneTheme.colors.onBackground,
-                modifier = Modifier.padding(start = 16.dp))
-          }
     }
   }
 }
