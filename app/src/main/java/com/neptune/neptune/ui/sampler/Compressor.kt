@@ -32,7 +32,8 @@ internal class Compressor(
   private var knee: Float
 
   companion object {
-    private const val EPS = 1e-12f
+    private const val EPS = 1e-5f
+    private const val MIN_DB = -100f
   }
 
   init {
@@ -45,6 +46,15 @@ internal class Compressor(
     knee = kneeDb.coerceAtLeast(0f)
   }
 
+  fun ampToDb(x: Float): Float {
+    val absX = abs(x).coerceAtLeast(EPS)
+    return (20f * log10(absX)).coerceAtLeast(MIN_DB)
+  }
+
+  fun dbToAmp(db: Float): Float {
+    return 10f.pow(db / 20f)
+  }
+
   /** Map input sample array to compressed samples */
   fun process(input: FloatArray): FloatArray {
     if (input.isEmpty()) return input
@@ -53,15 +63,11 @@ internal class Compressor(
 
     for (i in input.indices) {
       val x = input[i]
-      val absX = abs(x).coerceAtLeast(EPS)
-
-      // convert to dB
       // the audio sample level before compression
-      val inputDb = 20f * log10(absX)
+      val inputDb = ampToDb(x)
       // compressed level we want based on threshold, ration, knee
       val outputDb = mapInputDbToOutputDb(inputDb)
       // required gain in dB to go from inputDb to outputDb (+makeup)
-      val gainDb = outputDb - inputDb
       val targetGainDb = (outputDb - inputDb) + makeUpDb
 
       // Attack when gain needs to drop (more negative)
@@ -72,7 +78,7 @@ internal class Compressor(
           } else {
             releaseCoeff * currentGainDb + (1 - releaseCoeff) * targetGainDb
           }
-      val linearGain = 10f.pow(currentGainDb / 20f)
+      val linearGain = dbToAmp(currentGainDb)
       output[i] = x * linearGain
     }
     return output
