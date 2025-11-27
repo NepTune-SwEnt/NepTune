@@ -9,25 +9,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -41,18 +32,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.godaddy.android.colorpicker.HsvColor
 import com.godaddy.android.colorpicker.harmony.ColorHarmonyMode
 import com.godaddy.android.colorpicker.harmony.HarmonyColorPicker
-import com.neptune.neptune.R
 import com.neptune.neptune.ui.theme.DarkExtendedColors
 import com.neptune.neptune.ui.theme.LightExtendedColors
 import com.neptune.neptune.ui.theme.NepTuneTheme
@@ -70,10 +54,7 @@ object CustomThemeScreenTestTags {
   const val CONTRAST_WARNING_DIALOG = "contrast_warning_dialog"
 }
 
-const val MIN_CONTRAST_RATIO = 1.2f
-
 /** Custom theme editor: save colorpicker output as custom colors and set ThemeSetting.CUSTOM. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsCustomThemeScreen(
     settingsViewModel: SettingsViewModel = viewModel(),
@@ -113,40 +94,10 @@ fun SettingsCustomThemeScreen(
 
   Scaffold(
       topBar = {
-        Column(
-            modifier =
-                Modifier.padding(vertical = 8.dp)
-                    .testTag(CustomThemeScreenTestTags.CUSTOM_THEME_TOP_BAR)) {
-              CenterAlignedTopAppBar(
-                  title = {
-                    Text(
-                        text = "Custom Theme Editor",
-                        style =
-                            TextStyle(
-                                fontSize = 35.sp,
-                                fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                fontWeight = FontWeight(149),
-                                color = NepTuneTheme.colors.onBackground,
-                            ),
-                        modifier = Modifier.padding(25.dp),
-                        textAlign = TextAlign.Center)
-                  },
-                  navigationIcon = {
-                    IconButton(onClick = goBack, modifier = Modifier.padding(horizontal = 12.dp)) {
-                      Icon(
-                          imageVector = Icons.Default.ArrowBackIosNew,
-                          contentDescription = "Go Back",
-                          tint = NepTuneTheme.colors.onBackground)
-                    }
-                  },
-                  colors =
-                      TopAppBarDefaults.centerAlignedTopAppBarColors(
-                          containerColor = NepTuneTheme.colors.background))
-              HorizontalDivider(
-                  modifier = Modifier.fillMaxWidth(),
-                  thickness = 0.75.dp,
-                  color = NepTuneTheme.colors.onBackground)
-            }
+        SettingsTopBar(
+            title = "Custom Theme",
+            goBack = goBack,
+            modifier = Modifier.testTag(CustomThemeScreenTestTags.CUSTOM_THEME_TOP_BAR))
       },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
@@ -242,13 +193,13 @@ fun SettingsCustomThemeScreen(
                       calculateContrastRatio(primaryColor, backgroundColor)
 
                   val messages = mutableListOf<String>()
-                  if (onBackgroundContrast < MIN_CONTRAST_RATIO) {
+                  if (onBackgroundContrast < 1.2f) {
                     messages.add("The text color has low contrast with the background color.")
                   }
-                  if (onPrimaryContrast < MIN_CONTRAST_RATIO) {
+                  if (onPrimaryContrast < 1.2f) {
                     messages.add("The text color has low contrast with the primary color.")
                   }
-                  if (primaryBackgroundContrast < MIN_CONTRAST_RATIO) {
+                  if (primaryBackgroundContrast < 1.2f) {
                     messages.add("The primary and background colors are too similar.")
                   }
 
