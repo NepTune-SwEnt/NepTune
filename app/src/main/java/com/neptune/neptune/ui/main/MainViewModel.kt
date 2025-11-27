@@ -115,25 +115,46 @@ class MainViewModel(
 
   private fun loadSamplesFromFirebase() {
     viewModelScope.launch {
-      _isRefreshing.value = true
       try {
         val profile = profileRepo.getCurrentProfile()
         val following = profile?.following.orEmpty()
+        repo.observeSamples().collectLatest { updatedSamples ->
+          if (allSamplesCache.isEmpty()) {
+            allSamplesCache = updatedSamples
+            val readySamples = updatedSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
+            updateLists(readySamples, following)
 
-        val allSamples = repo.getSamples()
-        allSamplesCache = allSamples
+            val pendingSamples = updatedSamples.filter { it.storagePreviewSamplePath.isBlank() }
+            pendingSamples.forEach { pendingSample ->
+              watchPendingSample(pendingSample.id, following)
+            }
+          } else {
+            val existingIds = allSamplesCache.map { it.id }.toSet()
+            val currentUserId = auth.currentUser?.uid
 
-        val readySamples = allSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
+            val samplesToDisplay =
+                updatedSamples.filter { sample ->
+                  val isExisting = sample.id in existingIds
+                  val isMine = sample.ownerId == currentUserId
 
-        val pendingSamples = allSamples.filter { it.storagePreviewSamplePath.isBlank() }
+                  isExisting || isMine
+                }
 
-        updateLists(readySamples, following)
-        pendingSamples.forEach { pendingSample -> watchPendingSample(pendingSample.id, following) }
+            allSamplesCache = samplesToDisplay
 
-        refreshLikeStates()
+            val readySamples = allSamplesCache.filter { it.storagePreviewSamplePath.isNotBlank() }
+            updateLists(readySamples, following)
+
+            val newAddedSamples = allSamplesCache.filter { it.id !in existingIds }
+            newAddedSamples.forEach { loadSampleResources(it) }
+          }
+          refreshLikeStates()
+          if (_isRefreshing.value) {
+            _isRefreshing.value = false
+          }
+        }
       } catch (e: Exception) {
         Log.e("MainViewModel", "Error loading samples", e)
-      } finally {
         _isRefreshing.value = false
       }
     }
@@ -395,6 +416,8 @@ class MainViewModel(
 
   /** Function to be called when a refresh is triggered. */
   fun refresh() {
+    _isRefreshing.value = true
+    allSamplesCache = emptyList()
     loadSamplesFromFirebase()
   }
 
