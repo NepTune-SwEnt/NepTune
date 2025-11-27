@@ -7,15 +7,16 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasAnyChild
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
-import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.test.espresso.Espresso
@@ -183,12 +184,31 @@ class MainScreenTest {
 
   @Test
   fun canScrollToLastSampleCard() {
+    val discoverSamples = viewModel.discoverSamples.value
+    if (discoverSamples.isEmpty()) {
+      return
+    }
+    val lastSample = discoverSamples.last()
+
+    val itemsPerColumn = 2
+
+    val columnCount = (discoverSamples.size + itemsPerColumn - 1) / itemsPerColumn
+    val lastColumnIndex = if (columnCount > 0) columnCount - 1 else 0
+
     composeTestRule
         .onNodeWithTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)
-        .performScrollToNode(hasTestTag(MainScreenTestTags.SAMPLE_CARD))
+        .performScrollToNode(hasText("Discover"))
+    composeTestRule.waitForIdle()
 
-    // When scrolling the last card should be visible
-    composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_CARD).onLast().assertIsDisplayed()
+    val discoverLazyRow =
+        composeTestRule
+            .onAllNodes(hasAnyChild(hasTestTag(MainScreenTestTags.SAMPLE_CARD)))
+            .onFirst()
+
+    discoverLazyRow.performScrollToIndex(lastColumnIndex)
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithText(lastSample.name, substring = true).assertIsDisplayed()
   }
 
   /** Test that like button is clickable */
