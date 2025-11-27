@@ -24,6 +24,7 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -118,6 +119,20 @@ open class SamplerViewModel() : ViewModel() {
       }
     }
   }
+
+  internal interface DispatcherProvider {
+    val default: CoroutineDispatcher
+    val io: CoroutineDispatcher
+    val main: CoroutineDispatcher
+  }
+
+  internal object DefaultDispatcherProvider : DispatcherProvider {
+    override val default = Dispatchers.Default
+    override val io = Dispatchers.IO
+    override val main = Dispatchers.Main
+  }
+
+  internal var dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider
 
   private var playbackTickerJob: Job? = null
 
@@ -758,7 +773,7 @@ open class SamplerViewModel() : ViewModel() {
       try {
         // Execute the synchronous DSP pipeline on a background thread (Dispatchers.Default)
         val newUri =
-            withContext(Dispatchers.Default) {
+            withContext(dispatcherProvider.default) {
               processAudio(
                   currentAudioUri = originalUri, // Source is the original file (non-destructive)
                   eqBands = state.eqBands,
@@ -902,7 +917,10 @@ open class SamplerViewModel() : ViewModel() {
         i++
       }
 
-      if (trackIndex == -1) throw IllegalArgumentException("No audio track")
+      if (trackIndex == -1) {
+        Log.e("SamplerViewModel", "No audio track found")
+        return null
+      }
 
       // Setup MediaCodec decoder
       val format = extractor.getTrackFormat(trackIndex)
