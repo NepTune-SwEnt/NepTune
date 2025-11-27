@@ -6,20 +6,21 @@ import androidx.compose.ui.graphics.Color
 
 @Immutable
 data class ExtendedColors(
-    val background: Color,      // main background color
-    val indicatorColor: Color,  // buttons and selected tab indicator, slightly different from background
-    val cardBackground: Color,  // cards background color
-    val listBackground: Color,  // background of selected project in lists
-    val searchBar: Color,       // search bar background color
-    val accentPrimary: Color,   // primary accent color for highlights
-    val onBackground: Color,    // text, icons and cards color on background
-    val onPrimary: Color,       // text color used on primary (buttons)
-    val smallText: Color,       // secondary text color
-    val loginText: Color,       // text color for login screen
-    val soundWave: Color,       // sound wave color in the player
-    val postButton: Color,      // post button background color
-    val shadow: Color,          // shadow color for elevated elements
-    val animation: Color,       // color used in animations
+    val background: Color, // main background color
+    val indicatorColor:
+        Color, // buttons and selected tab indicator, slightly different from background
+    val cardBackground: Color, // cards background color
+    val listBackground: Color, // background of selected project in lists
+    val searchBar: Color, // search bar background color
+    val accentPrimary: Color, // primary accent color for highlights
+    val onBackground: Color, // text, icons and cards color on background
+    val onPrimary: Color, // text color used on primary (buttons)
+    val smallText: Color, // secondary text color
+    val loginText: Color, // text color for login screen
+    val soundWave: Color, // sound wave color in the player
+    val postButton: Color, // post button background color
+    val shadow: Color, // shadow color for elevated elements
+    val animation: Color, // color used in animations
 )
 
 val DarkExtendedColors =

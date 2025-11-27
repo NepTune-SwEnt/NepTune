@@ -1,6 +1,9 @@
 package com.neptune.neptune.ui.settings
 
 import android.content.Context
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.core.graphics.toColorInt
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -8,15 +11,10 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import androidx.core.graphics.toColorInt
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-/**
- * Manages saving and retrieving the user's selected theme preference using Jetpack DataStore.
- */
+/** Manages saving and retrieving the user's selected theme preference using Jetpack DataStore. */
 class ThemeDataStore(private val context: Context) {
 
   private val THEME_KEY = stringPreferencesKey("theme_setting")
@@ -34,9 +32,7 @@ class ThemeDataStore(private val context: Context) {
     val DEFAULT_ONBACKGROUND_COLOR = Color(DEFAULT_ONBACKGROUND_HEX.toColorInt())
   }
 
-  /**
-   * A [Flow] that emits the currently saved [ThemeSetting].
-   */
+  /** A [Flow] that emits the currently saved [ThemeSetting]. */
   val theme: Flow<ThemeSetting> =
       context.dataStore.data.map { preferences ->
         val themeName = preferences[THEME_KEY] ?: ThemeSetting.SYSTEM.name
@@ -47,32 +43,47 @@ class ThemeDataStore(private val context: Context) {
   val customPrimaryColor: Flow<Color> =
       context.dataStore.data.map { prefs ->
         val hex = prefs[CUSTOM_PRIMARY_KEY] ?: DEFAULT_PRIMARY_HEX
-        try { Color(hex.toColorInt()) } catch (_: Exception) { DEFAULT_PRIMARY_COLOR }
+        try {
+          Color(hex.toColorInt())
+        } catch (_: Exception) {
+          DEFAULT_PRIMARY_COLOR
+        }
       }
 
   /** Flow emitting the saved custom background Color. */
   val customBackgroundColor: Flow<Color> =
       context.dataStore.data.map { prefs ->
         val hex = prefs[CUSTOM_BACKGROUND_KEY] ?: DEFAULT_BACKGROUND_HEX
-        try { Color(hex.toColorInt()) } catch (_: Exception) { DEFAULT_BACKGROUND_COLOR }
+        try {
+          Color(hex.toColorInt())
+        } catch (_: Exception) {
+          DEFAULT_BACKGROUND_COLOR
+        }
       }
 
   /** Flow emitting the saved custom onBackground Color. */
   val customOnBackgroundColor: Flow<Color> =
       context.dataStore.data.map { prefs ->
         val hex = prefs[CUSTOM_ONBACKGROUND_KEY] ?: DEFAULT_ONBACKGROUND_HEX
-        try { Color(hex.toColorInt()) } catch (_: Exception) { DEFAULT_ONBACKGROUND_COLOR }
+        try {
+          Color(hex.toColorInt())
+        } catch (_: Exception) {
+          DEFAULT_ONBACKGROUND_COLOR
+        }
       }
 
-  /**
-   * Suspended function to persist the user's selected [ThemeSetting] to DataStore.
-   */
+  /** Suspended function to persist the user's selected [ThemeSetting] to DataStore. */
   suspend fun setTheme(theme: ThemeSetting) {
     context.dataStore.edit { settings -> settings[THEME_KEY] = theme.name }
   }
 
   /** Save custom colors as hex strings (e.g. #RRGGBB). */
-  suspend fun setCustomColors(primary: Color, background: Color, onBackground: Color, onPrimary: Color) {
+  suspend fun setCustomColors(
+      primary: Color,
+      background: Color,
+      onBackground: Color,
+      onPrimary: Color
+  ) {
     val primaryHex = String.format("#%06X", 0xFFFFFF and primary.toArgb())
     val backgroundHex = String.format("#%06X", 0xFFFFFF and background.toArgb())
     val onBackgroundHex = String.format("#%06X", 0xFFFFFF and onBackground.toArgb())
@@ -82,13 +93,13 @@ class ThemeDataStore(private val context: Context) {
       settings[CUSTOM_ONBACKGROUND_KEY] = onBackgroundHex
     }
   }
-  
+
   /** Reset all custom colors to their default values. */
   suspend fun resetCustomColors() {
-      context.dataStore.edit { settings ->
-          settings.remove(CUSTOM_PRIMARY_KEY)
-          settings.remove(CUSTOM_BACKGROUND_KEY)
-          settings.remove(CUSTOM_ONBACKGROUND_KEY)
-      }
+    context.dataStore.edit { settings ->
+      settings.remove(CUSTOM_PRIMARY_KEY)
+      settings.remove(CUSTOM_BACKGROUND_KEY)
+      settings.remove(CUSTOM_ONBACKGROUND_KEY)
+    }
   }
 }

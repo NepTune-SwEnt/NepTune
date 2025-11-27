@@ -84,7 +84,7 @@ private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel, goCustomT
   Column {
     Text(
         text = "Theme",
-        style = 
+        style =
             TextStyle(
                 fontSize = 37.sp,
                 fontFamily = FontFamily(Font(R.font.markazi_text)),
@@ -99,11 +99,11 @@ private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel, goCustomT
             Modifier.fillMaxWidth()
                 .selectable(
                     selected = (selectedTheme == theme),
-                    onClick = { 
-                        settingsViewModel.updateTheme(theme)
-                        if (theme == ThemeSetting.CUSTOM) {
-                            goCustomTheme()
-                        }
+                    onClick = {
+                      settingsViewModel.updateTheme(theme)
+                      if (theme == ThemeSetting.CUSTOM) {
+                        goCustomTheme()
+                      }
                     },
                     role = Role.RadioButton)
                 .padding(vertical = 12.dp),
@@ -122,7 +122,7 @@ private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel, goCustomT
                           ThemeSetting.CUSTOM -> "Custom"
                         }
                       }(),
-                  style = 
+                  style =
                       TextStyle(
                           fontSize = 24.sp,
                           fontFamily = FontFamily(Font(R.font.markazi_text)),

@@ -8,21 +8,19 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
-import com.neptune.neptune.ui.settings.ThemeSetting
 import com.neptune.neptune.ui.settings.ThemeDataStore
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
+import com.neptune.neptune.ui.settings.ThemeSetting
 
 private val DarkColorScheme =
     darkColorScheme(primary = LightPurple, secondary = PurpleGrey80, tertiary = Pink80)
 
 private val LightColorScheme =
-    lightColorScheme(
-        primary = Purple40, secondary = PurpleGrey40, tertiary = Pink40
-        )
+    lightColorScheme(primary = Purple40, secondary = PurpleGrey40, tertiary = Pink40)
 
 object NepTuneTheme {
   val colors: ExtendedColors
@@ -52,61 +50,70 @@ fun SampleAppTheme(
         }
       }
 
-  val extendedColors = when (themeSetting) {
-    ThemeSetting.CUSTOM -> {
-      val primary = customPrimary ?: ThemeDataStore.DEFAULT_PRIMARY_COLOR
-      val background = customBackground ?: ThemeDataStore.DEFAULT_BACKGROUND_COLOR
-      val accentPrimary = customAccent ?: primary
-      val onBackground = customOnBackground ?: if (background.luminance() > 0.5f) Black else White
-      val onPrimary = onBackground
+  val extendedColors =
+      when (themeSetting) {
+        ThemeSetting.CUSTOM -> {
+          val primary = customPrimary ?: ThemeDataStore.DEFAULT_PRIMARY_COLOR
+          val background = customBackground ?: ThemeDataStore.DEFAULT_BACKGROUND_COLOR
+          val accentPrimary = customAccent ?: primary
+          val onBackground =
+              customOnBackground ?: if (background.luminance() > 0.5f) Black else White
+          val onPrimary = onBackground
 
-      // Derive other colors from these inputs with simple heuristics
-      val cardBackground = if (darkTheme) background.copy(alpha = 0.95f) else background.copy(alpha = 0.98f)
-      val listBackground = cardBackground
-        // Search bar should be slightly brighter if background is dark, slightly darker if background is light
-      val searchBar =
-          if (darkTheme) {
-            background.copy(
-                red = background.red * 0.9f + 0.1f,
-                green = background.green * 0.9f + 0.1f,
-                blue = background.blue * 0.9f + 0.1f)
-          } else {
-            background.copy(
-                red = background.red * 0.95f,
-                green = background.green * 0.95f,
-                blue = background.blue * 0.95f)
-          }
-      val smallText = if (darkTheme) Black else White
-      val loginText = if (accentPrimary.luminance() > 0.5f) Black else White
-      val soundWave = accentPrimary
-      val postButton = accentPrimary
-      val shadow = ShadowColor
-      val animation = accentPrimary
+          // Derive other colors from these inputs with simple heuristics
+          val cardBackground =
+              if (darkTheme) background.copy(alpha = 0.95f) else background.copy(alpha = 0.98f)
+          val listBackground = cardBackground
+          // Search bar should be slightly brighter if background is dark, slightly darker if
+          // background is light
+          val searchBar =
+              if (darkTheme) {
+                background.copy(
+                    red = background.red * 0.9f + 0.1f,
+                    green = background.green * 0.9f + 0.1f,
+                    blue = background.blue * 0.9f + 0.1f)
+              } else {
+                background.copy(
+                    red = background.red * 0.95f,
+                    green = background.green * 0.95f,
+                    blue = background.blue * 0.95f)
+              }
+          val smallText = if (darkTheme) Black else White
+          val loginText = if (accentPrimary.luminance() > 0.5f) Black else White
+          val soundWave = accentPrimary
+          val postButton = accentPrimary
+          val shadow = ShadowColor
+          val animation = accentPrimary
 
-      ExtendedColors(
-          background = background,
-          indicatorColor = accentPrimary,
-          cardBackground = cardBackground,
-          listBackground = listBackground,
-          searchBar = searchBar,
-          accentPrimary = accentPrimary,
-          onBackground = onBackground,
-          onPrimary = onPrimary,
-          smallText = smallText,
-          loginText = loginText,
-          soundWave = soundWave,
-          postButton = postButton,
-          shadow = shadow,
-          animation = animation)
-    }
-    else -> if (darkTheme) DarkExtendedColors else LightExtendedColors
-  }
+          ExtendedColors(
+              background = background,
+              indicatorColor = accentPrimary,
+              cardBackground = cardBackground,
+              listBackground = listBackground,
+              searchBar = searchBar,
+              accentPrimary = accentPrimary,
+              onBackground = onBackground,
+              onPrimary = onPrimary,
+              smallText = smallText,
+              loginText = loginText,
+              soundWave = soundWave,
+              postButton = postButton,
+              shadow = shadow,
+              animation = animation)
+        }
+        else -> if (darkTheme) DarkExtendedColors else LightExtendedColors
+      }
 
   val colorScheme =
       if (themeSetting == ThemeSetting.CUSTOM) {
         val primary = customPrimary ?: ThemeDataStore.DEFAULT_PRIMARY_COLOR
-        val onPrimary = customOnBackground ?: if ((customPrimary ?: ThemeDataStore.DEFAULT_PRIMARY_COLOR).luminance() > 0.5f) Black else White
-        if (darkTheme) darkColorScheme(primary = primary, onPrimary = onPrimary) else lightColorScheme(primary = primary, onPrimary = onPrimary)
+        val onPrimary =
+            customOnBackground
+                ?: if ((customPrimary ?: ThemeDataStore.DEFAULT_PRIMARY_COLOR).luminance() > 0.5f)
+                    Black
+                else White
+        if (darkTheme) darkColorScheme(primary = primary, onPrimary = onPrimary)
+        else lightColorScheme(primary = primary, onPrimary = onPrimary)
       } else {
         if (darkTheme) DarkColorScheme else LightColorScheme
       }

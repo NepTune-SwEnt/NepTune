@@ -86,12 +86,13 @@ class MainActivity : ComponentActivity() {
           customPrimary = customPrimary,
           customBackground = customBackground,
           customOnBackground = customOnBackground) {
-        Surface(
-            modifier = Modifier.fillMaxSize().semantics { testTag = C.Tag.main_screen_container },
-            color = MaterialTheme.colorScheme.background) {
-              NeptuneApp(settingsViewModel = settingsViewModel)
-            }
-      }
+            Surface(
+                modifier =
+                    Modifier.fillMaxSize().semantics { testTag = C.Tag.main_screen_container },
+                color = MaterialTheme.colorScheme.background) {
+                  NeptuneApp(settingsViewModel = settingsViewModel)
+                }
+          }
     }
   }
 }
@@ -222,13 +223,11 @@ fun NeptuneApp(
                       goBack = { navigationActions.goBack() },
                       goCustomTheme = { navigationActions.navigateTo(Screen.SettingsCustomTheme) })
                 }
-              composable(Screen.SettingsCustomTheme.route) {
+                composable(Screen.SettingsCustomTheme.route) {
                   SettingsCustomThemeScreen(
                       settingsViewModel = settingsViewModel,
-                      goBack = { navigationActions.goBack() }
-
-                  )
-              }
+                      goBack = { navigationActions.goBack() })
+                }
                 composable(Screen.SettingsAccount.route) {
                   SettingsAccountScreen(
                       goBack = { navigationActions.goBack() },
