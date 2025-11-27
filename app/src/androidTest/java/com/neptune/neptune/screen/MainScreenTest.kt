@@ -160,12 +160,9 @@ class MainScreenTest {
     }
     val lastSample = discoverSamples.last()
 
-    val screenWidth =
-        composeTestRule.activity.resources.displayMetrics.widthPixels /
-            composeTestRule.activity.resources.displayMetrics.density
-    val maxColumns = if (screenWidth < 360) 1 else 2
+    val itemsPerColumn = 2
 
-    val columnCount = (discoverSamples.size + maxColumns - 1) / maxColumns
+    val columnCount = (discoverSamples.size + itemsPerColumn - 1) / itemsPerColumn
     val lastColumnIndex = if (columnCount > 0) columnCount - 1 else 0
 
     composeTestRule
