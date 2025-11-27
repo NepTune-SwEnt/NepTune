@@ -41,7 +41,7 @@ fun SettingsAccountScreen(
   Scaffold(
       topBar = {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp, horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically) {
               IconButton(onClick = goBack) {
                 Icon(
