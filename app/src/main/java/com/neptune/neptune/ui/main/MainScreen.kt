@@ -382,7 +382,7 @@ fun MainScreen(
                           modifier = Modifier.fillMaxWidth()) {
                             // We want to show only the sample whom have a sound.
                             val validFollowedSamples =
-                              followedSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
+                                followedSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
                             items(validFollowedSamples.chunked(maxColumns)) { samplesColumn ->
                               Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
                                 samplesColumn.forEach { sample ->
