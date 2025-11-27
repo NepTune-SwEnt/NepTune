@@ -22,6 +22,13 @@ private val DarkColorScheme =
 private val LightColorScheme =
     lightColorScheme(primary = Purple40, secondary = PurpleGrey40, tertiary = Pink40)
 
+private const val LUMINANCE_THRESHOLD = 0.5f
+private const val DARK_THEME_CARD_ALPHA = 0.95f
+private const val LIGHT_THEME_CARD_ALPHA = 0.98f
+private const val DARK_THEME_SEARCH_BRIGHTNESS_FACTOR = 0.9f
+private const val DARK_THEME_SEARCH_BRIGHTNESS_OFFSET = 0.1f
+private const val LIGHT_THEME_SEARCH_DARKNESS_FACTOR = 0.95f
+
 object NepTuneTheme {
   val colors: ExtendedColors
     @Composable get() = LocalExtendedColors.current
@@ -46,7 +53,7 @@ fun SampleAppTheme(
         ThemeSetting.CUSTOM -> {
           // infer dark/light from the chosen background luminance
           val bg = customBackground ?: ThemeDataStore.DEFAULT_BACKGROUND_COLOR
-          bg.luminance() < 0.5f
+          bg.luminance() < LUMINANCE_THRESHOLD
         }
       }
 
@@ -57,29 +64,37 @@ fun SampleAppTheme(
           val background = customBackground ?: ThemeDataStore.DEFAULT_BACKGROUND_COLOR
           val accentPrimary = customAccent ?: primary
           val onBackground =
-              customOnBackground ?: if (background.luminance() > 0.5f) Black else White
+              customOnBackground
+                  ?: if (background.luminance() > LUMINANCE_THRESHOLD) Black else White
           val onPrimary = onBackground
 
           // Derive other colors from these inputs with simple heuristics
           val cardBackground =
-              if (darkTheme) background.copy(alpha = 0.95f) else background.copy(alpha = 0.98f)
+              if (darkTheme) background.copy(alpha = DARK_THEME_CARD_ALPHA)
+              else background.copy(alpha = LIGHT_THEME_CARD_ALPHA)
           val listBackground = cardBackground
           // Search bar should be slightly brighter if background is dark, slightly darker if
           // background is light
           val searchBar =
               if (darkTheme) {
                 background.copy(
-                    red = background.red * 0.9f + 0.1f,
-                    green = background.green * 0.9f + 0.1f,
-                    blue = background.blue * 0.9f + 0.1f)
+                    red =
+                        background.red * DARK_THEME_SEARCH_BRIGHTNESS_FACTOR +
+                            DARK_THEME_SEARCH_BRIGHTNESS_OFFSET,
+                    green =
+                        background.green * DARK_THEME_SEARCH_BRIGHTNESS_FACTOR +
+                            DARK_THEME_SEARCH_BRIGHTNESS_OFFSET,
+                    blue =
+                        background.blue * DARK_THEME_SEARCH_BRIGHTNESS_FACTOR +
+                            DARK_THEME_SEARCH_BRIGHTNESS_OFFSET)
               } else {
                 background.copy(
-                    red = background.red * 0.95f,
-                    green = background.green * 0.95f,
-                    blue = background.blue * 0.95f)
+                    red = background.red * LIGHT_THEME_SEARCH_DARKNESS_FACTOR,
+                    green = background.green * LIGHT_THEME_SEARCH_DARKNESS_FACTOR,
+                    blue = background.blue * LIGHT_THEME_SEARCH_DARKNESS_FACTOR)
               }
           val smallText = if (darkTheme) Black else White
-          val loginText = if (accentPrimary.luminance() > 0.5f) Black else White
+          val loginText = if (accentPrimary.luminance() > LUMINANCE_THRESHOLD) Black else White
           val soundWave = accentPrimary
           val postButton = accentPrimary
           val shadow = ShadowColor
@@ -111,7 +126,8 @@ fun SampleAppTheme(
         val primary = customPrimary ?: ThemeDataStore.DEFAULT_PRIMARY_COLOR
         val onPrimary =
             customOnBackground
-                ?: if ((customPrimary ?: ThemeDataStore.DEFAULT_PRIMARY_COLOR).luminance() > 0.5f)
+                ?: if ((customPrimary ?: ThemeDataStore.DEFAULT_PRIMARY_COLOR).luminance() >
+                    LUMINANCE_THRESHOLD)
                     Black
                 else White
         if (darkTheme) darkColorScheme(primary = primary, onPrimary = onPrimary)

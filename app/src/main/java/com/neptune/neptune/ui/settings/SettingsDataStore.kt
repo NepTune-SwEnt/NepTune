@@ -23,6 +23,8 @@ class ThemeDataStore(private val context: Context) {
   private val CUSTOM_ONBACKGROUND_KEY = stringPreferencesKey("custom_onbackground_hex")
 
   companion object {
+    private const val RGB_MASK = 0xFFFFFF
+    private const val HEX_FORMAT = "#%06X"
     // sensible defaults (match existing app colors)
     const val DEFAULT_PRIMARY_HEX = "#6650A4" // Purple40
     const val DEFAULT_BACKGROUND_HEX = "#F1F3FF" // GhostWhite
@@ -72,7 +74,6 @@ class ThemeDataStore(private val context: Context) {
         }
       }
 
-  /** Suspended function to persist the user's selected [ThemeSetting] to DataStore. */
   /**
    * Suspended function to persist the user's selected [ThemeSetting] to DataStore.
    *
@@ -84,15 +85,10 @@ class ThemeDataStore(private val context: Context) {
   }
 
   /** Save custom colors as hex strings (e.g. #RRGGBB). */
-  suspend fun setCustomColors(
-      primary: Color,
-      background: Color,
-      onBackground: Color,
-      onPrimary: Color
-  ) {
-    val primaryHex = String.format("#%06X", 0xFFFFFF and primary.toArgb())
-    val backgroundHex = String.format("#%06X", 0xFFFFFF and background.toArgb())
-    val onBackgroundHex = String.format("#%06X", 0xFFFFFF and onBackground.toArgb())
+  suspend fun setCustomColors(primary: Color, background: Color, onBackground: Color) {
+    val primaryHex = String.format(HEX_FORMAT, RGB_MASK and primary.toArgb())
+    val backgroundHex = String.format(HEX_FORMAT, RGB_MASK and background.toArgb())
+    val onBackgroundHex = String.format(HEX_FORMAT, RGB_MASK and onBackground.toArgb())
     context.dataStore.edit { settings ->
       settings[CUSTOM_PRIMARY_KEY] = primaryHex
       settings[CUSTOM_BACKGROUND_KEY] = backgroundHex
