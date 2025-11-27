@@ -20,9 +20,8 @@ data class ExtendedColors(
     val postButton: Color, // post button background color
     val shadow: Color, // shadow color for elevated elements
     val animation: Color, // color used in animations
-    val inverse: Color,
-    val online: Color,
-    val offline: Color
+    val online: Color, // color indicating online status
+    val offline: Color // color indicating offline status
 )
 
 val DarkExtendedColors =
@@ -41,7 +40,6 @@ val DarkExtendedColors =
         postButton = PurpleBlue,
         shadow = ShadowColor,
         animation = DarkPurple,
-        inverse = White,
         online = Green,
         offline = Gray)
 
@@ -61,7 +59,6 @@ val LightExtendedColors =
         postButton = LightPurple,
         shadow = ShadowColor,
         animation = Purple,
-        inverse = DarkBlue3,
         online = Green,
         offline = Gray)
 

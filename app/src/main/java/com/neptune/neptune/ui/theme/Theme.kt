@@ -99,7 +99,9 @@ fun SampleAppTheme(
               soundWave = soundWave,
               postButton = postButton,
               shadow = shadow,
-              animation = animation)
+              animation = animation,
+              online = Green,
+              offline = Gray)
         }
         else -> if (darkTheme) DarkExtendedColors else LightExtendedColors
       }
