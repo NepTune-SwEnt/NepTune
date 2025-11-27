@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -78,10 +79,11 @@ class MainViewModel(
   val userAvatar: StateFlow<String?> = _userAvatar.asStateFlow()
 
   private val _currentUserFlow = MutableStateFlow(auth.currentUser)
+  private val observingSampleIds = mutableSetOf<String>()
   private val authListener =
       FirebaseAuth.AuthStateListener { firebaseAuth ->
         _currentUserFlow.value = firebaseAuth.currentUser
-        loadAvatar()
+        observeUserProfile()
       }
 
   private val _comments = MutableStateFlow<List<Comment>>(emptyList())
@@ -94,6 +96,7 @@ class MainViewModel(
   val usernames: StateFlow<Map<String, String>> = _usernames.asStateFlow()
   private val coverImageCache = mutableMapOf<String, String?>()
   private val audioUrlCache = mutableMapOf<String, String?>()
+  private var allSamplesCache: List<Sample> = emptyList()
   private val waveformCache = mutableMapOf<String, List<Float>>()
   private val _sampleResources = MutableStateFlow<Map<String, SampleResourceState>>(emptyMap())
   val sampleResources = _sampleResources.asStateFlow()
@@ -108,37 +111,98 @@ class MainViewModel(
       loadSamplesFromFirebase()
     }
     auth.addAuthStateListener(authListener)
-    loadAvatar()
+    observeUserProfile()
   }
 
   private fun loadSamplesFromFirebase() {
     viewModelScope.launch {
-      _isRefreshing.value = true
-      // clear old data
-      _discoverSamples.value = emptyList()
-      _followedSamples.value = emptyList()
-      _sampleResources.value = emptyMap()
-      avatarCache.clear()
-      _usernames.value = emptyMap()
-      coverImageCache.clear()
-      audioUrlCache.clear()
-      waveformCache.clear()
       try {
-        // Get current user's profile
         val profile = profileRepo.getCurrentProfile()
         val following = profile?.following.orEmpty()
-        val samples = repo.getSamples()
-        val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
-        _discoverSamples.value = readySamples.filter { it.ownerId !in following }
-        _followedSamples.value = readySamples.filter { it.ownerId in following }
+        repo.observeSamples().collectLatest { updatedSamples ->
+          if (allSamplesCache.isEmpty()) {
+            allSamplesCache = updatedSamples
+            val readySamples = updatedSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
+            updateLists(readySamples, following)
 
-        refreshLikeStates()
+            val pendingSamples = updatedSamples.filter { it.storagePreviewSamplePath.isBlank() }
+            pendingSamples.forEach { pendingSample ->
+              watchPendingSample(pendingSample.id, following)
+            }
+          } else {
+            val existingIds = allSamplesCache.map { it.id }.toSet()
+            val currentUserId = auth.currentUser?.uid
+
+            val samplesToDisplay =
+                updatedSamples.filter { sample ->
+                  val isExisting = sample.id in existingIds
+                  val isMine = sample.ownerId == currentUserId
+
+                  isExisting || isMine
+                }
+
+            allSamplesCache = samplesToDisplay
+
+            val readySamples = allSamplesCache.filter { it.storagePreviewSamplePath.isNotBlank() }
+            updateLists(readySamples, following)
+
+            val newAddedSamples = allSamplesCache.filter { it.id !in existingIds }
+            newAddedSamples.forEach { loadSampleResources(it) }
+          }
+          refreshLikeStates()
+          if (_isRefreshing.value) {
+            _isRefreshing.value = false
+          }
+        }
       } catch (e: Exception) {
-        Log.e("MainViewModel", "Error refreshing samples", e)
-      } finally {
+        Log.e("MainViewModel", "Error loading samples", e)
         _isRefreshing.value = false
       }
     }
+  }
+
+  private fun watchPendingSample(sampleId: String, following: List<String>) {
+    if (observingSampleIds.contains(sampleId)) return
+    viewModelScope.launch {
+      try {
+        observingSampleIds.add(sampleId)
+        repo
+            .observeSample(sampleId)
+            .first { updatedSample ->
+              updatedSample != null && updatedSample.storagePreviewSamplePath.isNotBlank()
+            }
+            ?.let { finishedSample ->
+              allSamplesCache =
+                  allSamplesCache.map { if (it.id == finishedSample.id) finishedSample else it }
+              addSampleToList(finishedSample, following)
+            }
+      } catch (e: Exception) {
+        Log.w("MainViewModel", "Stop watching sample $sampleId", e)
+      } finally {
+        observingSampleIds.remove(sampleId)
+      }
+    }
+  }
+
+  private fun updateLists(samples: List<Sample>, following: List<String>) {
+    _discoverSamples.value = samples.filter { it.ownerId !in following }
+    _followedSamples.value = samples.filter { it.ownerId in following }
+  }
+
+  private fun addSampleToList(newSample: Sample, following: List<String>) {
+    if (newSample.ownerId !in following) {
+      _discoverSamples.update { currentList ->
+        if (currentList.any { it.id == newSample.id }) currentList
+        else listOf(newSample) + currentList
+      }
+    } else {
+      _followedSamples.update { currentList ->
+        if (currentList.any { it.id == newSample.id }) currentList
+        else listOf(newSample) + currentList
+      }
+    }
+
+    loadSampleResources(newSample)
   }
 
   override fun onCleared() {
@@ -146,7 +210,7 @@ class MainViewModel(
     auth.removeAuthStateListener(authListener)
   }
 
-  private fun loadAvatar() {
+  private fun observeUserProfile() {
     val currentUser = auth.currentUser
     if (currentUser == null) {
       _userAvatar.value = null
@@ -181,6 +245,11 @@ class MainViewModel(
             }
           }
           updatedResources
+        }
+        val following = profile?.following.orEmpty()
+        if (allSamplesCache.isNotEmpty()) {
+          val readySamples = allSamplesCache.filter { it.storagePreviewSamplePath.isNotBlank() }
+          updateLists(readySamples, following)
         }
       }
     }
@@ -381,6 +450,8 @@ class MainViewModel(
 
   /** Function to be called when a refresh is triggered. */
   fun refresh() {
+    _isRefreshing.value = true
+    allSamplesCache = emptyList()
     loadSamplesFromFirebase()
   }
 

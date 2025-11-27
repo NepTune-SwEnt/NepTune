@@ -150,7 +150,7 @@ object MainScreenTestTags : BaseSampleTestTags {
   const val COMMENT_LIST = "commentList"
 }
 
-private fun factory(application: Application) =
+fun factory(application: Application) =
     object : ViewModelProvider.Factory {
       override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
@@ -331,8 +331,11 @@ fun MainScreen(
                           horizontalArrangement = Arrangement.spacedBy(spacing),
                           contentPadding = PaddingValues(horizontal = horizontalPadding),
                           modifier = Modifier.fillMaxWidth()) {
+                            // We want to show only the sample whom have a sound.
+                            val validDiscoverSamples =
+                                discoverSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
                             // As this element is horizontally scrollable, we can let 2
-                            val columns = discoverSamples.chunked(2)
+                            val columns = validDiscoverSamples.chunked(2)
 
                             items(columns) { samplesColumn ->
                               Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
@@ -377,7 +380,10 @@ fun MainScreen(
                           horizontalArrangement = Arrangement.spacedBy(spacing),
                           contentPadding = PaddingValues(horizontal = horizontalPadding),
                           modifier = Modifier.fillMaxWidth()) {
-                            items(followedSamples.chunked(maxColumns)) { samplesColumn ->
+                            // We want to show only the sample whom have a sound.
+                            val validFollowedSamples =
+                              followedSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
+                            items(validFollowedSamples.chunked(maxColumns)) { samplesColumn ->
                               Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
                                 samplesColumn.forEach { sample ->
                                   LaunchedEffect(sample.id, sample.storagePreviewSamplePath) {
