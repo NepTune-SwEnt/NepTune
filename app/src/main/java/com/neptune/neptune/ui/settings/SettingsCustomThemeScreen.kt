@@ -3,6 +3,7 @@ package com.neptune.neptune.ui.settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,6 +40,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.godaddy.android.colorpicker.HsvColor
 import com.godaddy.android.colorpicker.harmony.ColorHarmonyMode
 import com.godaddy.android.colorpicker.harmony.HarmonyColorPicker
+import com.neptune.neptune.ui.theme.DarkExtendedColors
+import com.neptune.neptune.ui.theme.LightExtendedColors
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import kotlin.math.max
 import kotlin.math.min
@@ -204,11 +207,16 @@ fun SettingsCustomThemeScreen(
               Text("Apply")
             }
             Spacer(Modifier.width(16.dp))
+            val isSystemDark = isSystemInDarkTheme()
             Button(
                 onClick = {
-                  settingsViewModel.resetCustomColors()
-                  settingsViewModel.updateTheme(ThemeSetting.SYSTEM)
-                  goBack()
+                  val defaultColors = if (isSystemDark) DarkExtendedColors else LightExtendedColors
+                  settingsViewModel.updateCustomColors(
+                      primary = defaultColors.accentPrimary,
+                      background = defaultColors.background,
+                      onBackground = defaultColors.onBackground,
+                  )
+                  settingsViewModel.updateTheme(ThemeSetting.CUSTOM)
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Red)) {
                   Text("Reset", color = Color.White)
