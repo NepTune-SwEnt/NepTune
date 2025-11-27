@@ -319,14 +319,17 @@ fun MainScreen(
               LazyColumn(
                   contentPadding = paddingValues, // Apply Scaffold padding
                   modifier =
-                      Modifier.fillMaxSize()
-                          .padding(horizontal = horizontalPadding) // Apply screen-specific padding
-                          .testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
+                      Modifier.fillMaxSize().testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
                     // ----------------Discover Section-----------------
-                    item { SectionHeader(title = "Discover") }
+                    item {
+                      Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+                        SectionHeader(title = "Discover")
+                      }
+                    }
                     item {
                       LazyRow(
                           horizontalArrangement = Arrangement.spacedBy(spacing),
+                          contentPadding = PaddingValues(horizontal = horizontalPadding),
                           modifier = Modifier.fillMaxWidth()) {
                             // As this element is horizontally scrollable, we can let 2
                             val columns = discoverSamples.chunked(2)
@@ -364,21 +367,47 @@ fun MainScreen(
                           }
                     }
                     // ----------------Followed Section-----------------
-                    item { SectionHeader(title = "Followed") }
-                    // If the screen is too small, it will display 1 Card instead of 2
-                    items(followedSamples.chunked(maxColumns)) { samples ->
-                      SampleCardRow(
-                          samples = samples,
-                          cardWidth = cardWidth,
-                          likedSamples = likedSamples,
-                          onProfileClick = { sample -> handleProfileNavigation(sample.ownerId) },
-                          onLikeClick = { sample, isLiked ->
-                            mainViewModel.onLikeClicked(sample, isLiked)
-                          },
-                          onCommentClick = { sample -> onCommentClicked(sample) },
-                          onDownloadClick = { sample -> mainViewModel.onDownloadSample(sample) },
-                          sampleResources = sampleResources,
-                          onLoadResources = { s -> mainViewModel.loadSampleResources(s) })
+                    item {
+                      Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+                        SectionHeader(title = "Followed")
+                      }
+                    }
+                    item {
+                      LazyRow(
+                          horizontalArrangement = Arrangement.spacedBy(spacing),
+                          contentPadding = PaddingValues(horizontal = horizontalPadding),
+                          modifier = Modifier.fillMaxWidth()) {
+                            items(followedSamples.chunked(maxColumns)) { samplesColumn ->
+                              Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
+                                samplesColumn.forEach { sample ->
+                                  LaunchedEffect(sample.id, sample.storagePreviewSamplePath) {
+                                    mainViewModel.loadSampleResources(sample)
+                                  }
+                                  val resources =
+                                      sampleResources[sample.id] ?: SampleResourceState()
+                                  val clickHandlers =
+                                      onClickFunctions(
+                                          onDownloadClick = {
+                                            mainViewModel.onDownloadSample(sample)
+                                          },
+                                          onLikeClick = { isLiked ->
+                                            mainViewModel.onLikeClicked(sample, isLiked)
+                                          },
+                                          onCommentClick = { onCommentClicked(sample) },
+                                          onProfileClick = {
+                                            handleProfileNavigation(sample.ownerId)
+                                          },
+                                      )
+                                  SampleItem(
+                                      sample = sample,
+                                      width = cardWidth,
+                                      isLiked = likedSamples[sample.id] == true,
+                                      clickHandlers = clickHandlers,
+                                      resourceState = resources)
+                                }
+                              }
+                            }
+                          }
                     }
                   }
             },
@@ -503,41 +532,6 @@ fun SectionHeader(title: String) {
       }
 }
 
-// ----------------Sample Card in Row (2 per row)-----------------
-@Composable
-fun SampleCardRow(
-    samples: List<Sample>,
-    cardWidth: Dp,
-    likedSamples: Map<String, Boolean> = emptyMap(),
-    onProfileClick: (Sample) -> Unit = {},
-    onLikeClick: (Sample, Boolean) -> Unit = { _, _ -> },
-    onCommentClick: (Sample) -> Unit = {},
-    onDownloadClick: (Sample) -> Unit = {},
-    sampleResources: Map<String, SampleResourceState> = emptyMap(),
-    onLoadResources: (Sample) -> Unit = {},
-) {
-  Row(
-      modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-      horizontalArrangement = Arrangement.spacedBy(25.dp)) {
-        samples.forEach { sample ->
-          LaunchedEffect(sample.id, sample.storagePreviewSamplePath) { onLoadResources(sample) }
-          val resources = sampleResources[sample.id] ?: SampleResourceState()
-          val isLiked = likedSamples[sample.id] == true
-          val clickHandlers =
-              onClickFunctions(
-                  onProfileClick = { onProfileClick(sample) },
-                  onLikeClick = { isLiked -> onLikeClick(sample, isLiked) },
-                  onCommentClick = { onCommentClick(sample) },
-                  onDownloadClick = { onDownloadClick(sample) })
-          SampleItem(
-              sample = sample,
-              width = cardWidth,
-              isLiked = isLiked,
-              clickHandlers = clickHandlers,
-              resourceState = resources)
-        }
-      }
-}
 // ----------------Click Handlers for Sample Card-----------------
 // Placeholder for click handlers
 data class ClickHandlers(
