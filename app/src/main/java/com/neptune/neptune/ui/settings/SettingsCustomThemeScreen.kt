@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,10 +20,14 @@ import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton as M3IconButton
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,18 +40,38 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.godaddy.android.colorpicker.HsvColor
 import com.godaddy.android.colorpicker.harmony.ColorHarmonyMode
 import com.godaddy.android.colorpicker.harmony.HarmonyColorPicker
+import com.neptune.neptune.R
 import com.neptune.neptune.ui.theme.DarkExtendedColors
 import com.neptune.neptune.ui.theme.LightExtendedColors
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import kotlin.math.max
 import kotlin.math.min
 
+object CustomThemeScreenTestTags {
+  const val CUSTOM_THEME_TOP_BAR = "custom_theme_top_bar"
+  const val COLOR_PREVIEW_BOX_PRIMARY = "color_preview_box_primary"
+  const val COLOR_PREVIEW_BOX_BACKGROUND = "color_preview_box_background"
+  const val COLOR_PREVIEW_BOX_ON_BACKGROUND = "color_preview_box_on_background"
+  const val COLOR_PICKER = "color_picker"
+  const val APPLY_BUTTON = "apply_button"
+  const val RESET_BUTTON = "reset_button"
+  const val CONTRAST_WARNING_DIALOG = "contrast_warning_dialog"
+}
+
 /** Custom theme editor: save colorpicker output as custom colors and set ThemeSetting.CUSTOM. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsCustomThemeScreen(
     settingsViewModel: SettingsViewModel = viewModel(),
@@ -70,6 +95,7 @@ fun SettingsCustomThemeScreen(
 
   if (showContrastWarning) {
     AlertDialog(
+        modifier = Modifier.testTag(CustomThemeScreenTestTags.CONTRAST_WARNING_DIALOG),
         onDismissRequest = { showContrastWarning = false },
         title = { Text("Low Contrast Warning") },
         text = { Text(contrastWarningMessage) },
@@ -85,12 +111,40 @@ fun SettingsCustomThemeScreen(
 
   Scaffold(
       topBar = {
-        M3IconButton(onClick = goBack, modifier = Modifier.padding(16.dp)) {
-          Icon(
-              imageVector = Icons.Default.ArrowBackIosNew,
-              contentDescription = "Back",
-              tint = NepTuneTheme.colors.onBackground)
-        }
+        Column(
+            modifier =
+                Modifier.padding(vertical = 8.dp)
+                    .testTag(CustomThemeScreenTestTags.CUSTOM_THEME_TOP_BAR)) {
+              CenterAlignedTopAppBar(
+                  title = {
+                    Text(
+                        text = "Custom Theme Editor",
+                        style =
+                            TextStyle(
+                                fontSize = 35.sp,
+                                fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                fontWeight = FontWeight(149),
+                                color = NepTuneTheme.colors.onBackground,
+                            ),
+                        modifier = Modifier.padding(25.dp),
+                        textAlign = TextAlign.Center)
+                  },
+                  navigationIcon = {
+                    IconButton(onClick = goBack, modifier = Modifier.padding(horizontal = 12.dp)) {
+                      Icon(
+                          imageVector = Icons.Default.ArrowBackIosNew,
+                          contentDescription = "Go Back",
+                          tint = NepTuneTheme.colors.onBackground)
+                    }
+                  },
+                  colors =
+                      TopAppBarDefaults.centerAlignedTopAppBarColors(
+                          containerColor = NepTuneTheme.colors.background))
+              HorizontalDivider(
+                  modifier = Modifier.fillMaxWidth(),
+                  thickness = 0.75.dp,
+                  color = NepTuneTheme.colors.onBackground)
+            }
       },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
@@ -109,7 +163,8 @@ fun SettingsCustomThemeScreen(
                         .border(
                             width = if (editingIndex == 0) 2.dp else 0.dp,
                             color = Color.Gray,
-                            shape = RoundedCornerShape(6.dp)),
+                            shape = RoundedCornerShape(6.dp))
+                        .testTag(CustomThemeScreenTestTags.COLOR_PREVIEW_BOX_PRIMARY),
                 contentAlignment = Alignment.Center) {
                   Text("Primary", color = onBackgroundColor)
                 }
@@ -122,7 +177,8 @@ fun SettingsCustomThemeScreen(
                         .border(
                             width = if (editingIndex == 1) 2.dp else 0.dp,
                             color = Color.Gray,
-                            shape = RoundedCornerShape(6.dp)),
+                            shape = RoundedCornerShape(6.dp))
+                        .testTag(CustomThemeScreenTestTags.COLOR_PREVIEW_BOX_BACKGROUND),
                 contentAlignment = Alignment.Center) {
                   Text("Background", color = onBackgroundColor)
                 }
@@ -135,7 +191,8 @@ fun SettingsCustomThemeScreen(
                         .border(
                             width = if (editingIndex == 2) 2.dp else 0.dp,
                             color = Color.Gray,
-                            shape = RoundedCornerShape(6.dp)),
+                            shape = RoundedCornerShape(6.dp))
+                        .testTag(CustomThemeScreenTestTags.COLOR_PREVIEW_BOX_ON_BACKGROUND),
                 contentAlignment = Alignment.Center) {
                   Text("Text", color = backgroundColor)
                 }
@@ -144,7 +201,10 @@ fun SettingsCustomThemeScreen(
           Spacer(Modifier.height(12.dp))
 
           HarmonyColorPicker(
-              modifier = Modifier.size(340.dp).align(Alignment.CenterHorizontally),
+              modifier =
+                  Modifier.size(340.dp)
+                      .align(Alignment.CenterHorizontally)
+                      .testTag(CustomThemeScreenTestTags.COLOR_PICKER),
               harmonyMode = ColorHarmonyMode.NONE,
               color =
                   when (editingIndex) {
@@ -165,6 +225,7 @@ fun SettingsCustomThemeScreen(
 
           Row(modifier = Modifier.align(Alignment.CenterHorizontally)) {
             Button(
+                modifier = Modifier.testTag(CustomThemeScreenTestTags.APPLY_BUTTON),
                 onClick = {
                   val primaryColor = tempPrimary.toColor()
                   val backgroundColor = tempBackground.toColor()
@@ -209,6 +270,7 @@ fun SettingsCustomThemeScreen(
             Spacer(Modifier.width(16.dp))
             val isSystemDark = isSystemInDarkTheme()
             Button(
+                modifier = Modifier.testTag(CustomThemeScreenTestTags.RESET_BUTTON),
                 onClick = {
                   val defaultColors = if (isSystemDark) DarkExtendedColors else LightExtendedColors
                   settingsViewModel.updateCustomColors(
