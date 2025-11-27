@@ -70,6 +70,8 @@ object CustomThemeScreenTestTags {
   const val CONTRAST_WARNING_DIALOG = "contrast_warning_dialog"
 }
 
+const val MIN_CONTRAST_RATIO = 1.2f
+
 /** Custom theme editor: save colorpicker output as custom colors and set ThemeSetting.CUSTOM. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -240,13 +242,13 @@ fun SettingsCustomThemeScreen(
                       calculateContrastRatio(primaryColor, backgroundColor)
 
                   val messages = mutableListOf<String>()
-                  if (onBackgroundContrast < 1.2f) {
+                  if (onBackgroundContrast < MIN_CONTRAST_RATIO) {
                     messages.add("The text color has low contrast with the background color.")
                   }
-                  if (onPrimaryContrast < 1.2f) {
+                  if (onPrimaryContrast < MIN_CONTRAST_RATIO) {
                     messages.add("The text color has low contrast with the primary color.")
                   }
-                  if (primaryBackgroundContrast < 1.2f) {
+                  if (primaryBackgroundContrast < MIN_CONTRAST_RATIO) {
                     messages.add("The primary and background colors are too similar.")
                   }
 
