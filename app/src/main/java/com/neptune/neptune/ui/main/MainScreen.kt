@@ -179,19 +179,15 @@ fun MainScreen(
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
   val userAvatar by mainViewModel.userAvatar.collectAsState()
-  val likedSamples by mainViewModel.likedSamples.collectAsState()
   val comments by mainViewModel.comments.collectAsState()
   val usernames by mainViewModel.usernames.collectAsState()
   var activeCommentSampleId by remember { mutableStateOf<String?>(null) }
 
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
   val horizontalPadding = 30.dp
-  val spacing = 25.dp
   // Depends on the size of the screen
   val maxColumns = if (screenWidth < 360.dp) 1 else 2
-  val cardWidth = (screenWidth - horizontalPadding * 2 - spacing) / 2
   val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
-  val sampleResources by mainViewModel.sampleResources.collectAsState()
   val isRefreshing by mainViewModel.isRefreshing.collectAsState()
   val pullRefreshState = rememberPullToRefreshState()
 
@@ -327,47 +323,12 @@ fun MainScreen(
                       }
                     }
                     item {
-                      LazyRow(
-                          horizontalArrangement = Arrangement.spacedBy(spacing),
-                          contentPadding = PaddingValues(horizontal = horizontalPadding),
-                          modifier = Modifier.fillMaxWidth()) {
-                            // We want to show only the sample whom have a sound.
-                            val validDiscoverSamples =
-                                discoverSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
-                            // As this element is horizontally scrollable, we can let 2
-                            val columns = validDiscoverSamples.chunked(2)
-
-                            items(columns) { samplesColumn ->
-                              Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
-                                samplesColumn.forEach { sample ->
-                                  LaunchedEffect(sample.id, sample.storagePreviewSamplePath) {
-                                    mainViewModel.loadSampleResources(sample)
-                                  }
-                                  val resources =
-                                      sampleResources[sample.id] ?: SampleResourceState()
-                                  val clickHandlers =
-                                      onClickFunctions(
-                                          onDownloadClick = {
-                                            mainViewModel.onDownloadSample(sample)
-                                          },
-                                          onLikeClick = { isLiked ->
-                                            mainViewModel.onLikeClicked(sample, isLiked)
-                                          },
-                                          onCommentClick = { onCommentClicked(sample) },
-                                          onProfileClick = {
-                                            handleProfileNavigation(sample.ownerId)
-                                          },
-                                      )
-                                  SampleItem(
-                                      sample = sample,
-                                      width = cardWidth,
-                                      isLiked = likedSamples[sample.id] == true,
-                                      clickHandlers = clickHandlers,
-                                      resourceState = resources)
-                                }
-                              }
-                            }
-                          }
+                      SampleSectionLazyRow(
+                          mainViewModel = mainViewModel,
+                          samples = discoverSamples,
+                          rowsPerColumn = 2,
+                          onCommentClick = { onCommentClicked(it) },
+                          onProfileClick = { handleProfileNavigation(it) })
                     }
                     // ----------------Followed Section-----------------
                     item {
@@ -376,44 +337,12 @@ fun MainScreen(
                       }
                     }
                     item {
-                      LazyRow(
-                          horizontalArrangement = Arrangement.spacedBy(spacing),
-                          contentPadding = PaddingValues(horizontal = horizontalPadding),
-                          modifier = Modifier.fillMaxWidth()) {
-                            // We want to show only the sample whom have a sound.
-                            val validFollowedSamples =
-                                followedSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
-                            items(validFollowedSamples.chunked(maxColumns)) { samplesColumn ->
-                              Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
-                                samplesColumn.forEach { sample ->
-                                  LaunchedEffect(sample.id, sample.storagePreviewSamplePath) {
-                                    mainViewModel.loadSampleResources(sample)
-                                  }
-                                  val resources =
-                                      sampleResources[sample.id] ?: SampleResourceState()
-                                  val clickHandlers =
-                                      onClickFunctions(
-                                          onDownloadClick = {
-                                            mainViewModel.onDownloadSample(sample)
-                                          },
-                                          onLikeClick = { isLiked ->
-                                            mainViewModel.onLikeClicked(sample, isLiked)
-                                          },
-                                          onCommentClick = { onCommentClicked(sample) },
-                                          onProfileClick = {
-                                            handleProfileNavigation(sample.ownerId)
-                                          },
-                                      )
-                                  SampleItem(
-                                      sample = sample,
-                                      width = cardWidth,
-                                      isLiked = likedSamples[sample.id] == true,
-                                      clickHandlers = clickHandlers,
-                                      resourceState = resources)
-                                }
-                              }
-                            }
-                          }
+                      SampleSectionLazyRow(
+                          mainViewModel = mainViewModel,
+                          samples = followedSamples,
+                          rowsPerColumn = maxColumns,
+                          onCommentClick = { onCommentClicked(it) },
+                          onProfileClick = { handleProfileNavigation(it) })
                       Spacer(modifier = Modifier.height(50.dp))
                     }
                   }
@@ -437,6 +366,59 @@ fun MainScreen(
         if (downloadProgress != null && downloadProgress != 0) {
           DownloadProgressBar(
               downloadProgress = downloadProgress!!, MainScreenTestTags.DOWNlOAD_PROGRESS)
+        }
+      }
+}
+
+@Composable
+private fun SampleSectionLazyRow(
+    mainViewModel: MainViewModel,
+    samples: List<Sample>,
+    rowsPerColumn: Int,
+    onCommentClick: (Sample) -> Unit,
+    onProfileClick: (String) -> Unit
+) {
+  val configuration = LocalConfiguration.current
+  val screenWidth = configuration.screenWidthDp.dp
+  val horizontalPadding = 30.dp
+  val spacing = 25.dp
+  val cardWidth = (screenWidth - horizontalPadding * 2 - spacing) / 2
+
+  val sampleResources by mainViewModel.sampleResources.collectAsState()
+  val likedSamples by mainViewModel.likedSamples.collectAsState()
+
+  LazyRow(
+      horizontalArrangement = Arrangement.spacedBy(spacing),
+      contentPadding = PaddingValues(horizontal = horizontalPadding),
+      modifier = Modifier.fillMaxWidth()) {
+        val validSamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
+        val columns = validSamples.chunked(rowsPerColumn)
+
+        items(columns) { samplesColumn ->
+          Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
+            samplesColumn.forEach { sample ->
+              LaunchedEffect(sample.id, sample.storagePreviewSamplePath) {
+                mainViewModel.loadSampleResources(sample)
+              }
+
+              val resources = sampleResources[sample.id] ?: SampleResourceState()
+
+              val clickHandlers =
+                  onClickFunctions(
+                      onDownloadClick = { mainViewModel.onDownloadSample(sample) },
+                      onLikeClick = { isLiked -> mainViewModel.onLikeClicked(sample, isLiked) },
+                      onCommentClick = { onCommentClick(sample) },
+                      onProfileClick = { onProfileClick(sample.ownerId) },
+                  )
+
+              SampleItem(
+                  sample = sample,
+                  width = cardWidth,
+                  isLiked = likedSamples[sample.id] == true,
+                  clickHandlers = clickHandlers,
+                  resourceState = resources)
+            }
+          }
         }
       }
 }
