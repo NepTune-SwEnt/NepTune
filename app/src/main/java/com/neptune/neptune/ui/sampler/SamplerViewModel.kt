@@ -661,6 +661,7 @@ open class SamplerViewModel() : ViewModel() {
                 projectLoadError = null)
           }
         }
+        audioBuilding()
       } catch (e: Exception) {
         Log.e("SamplerViewModel", "ZIP project loading has failed: ${e.message}", e)
 
@@ -678,6 +679,7 @@ open class SamplerViewModel() : ViewModel() {
       }
 
       saveProjectDataSync(zipFilePath)
+      audioBuilding()
     }
   }
 
