@@ -53,7 +53,7 @@ class SettingsViewModel(private val themeDataStore: ThemeDataStore) : ViewModel(
 
   fun updateCustomColors(primary: Color, background: Color, onBackground: Color) {
     viewModelScope.launch {
-      themeDataStore.setCustomColors(primary, background, onBackground, onBackground)
+      themeDataStore.setCustomColors(primary, background, onBackground)
     }
   }
 
