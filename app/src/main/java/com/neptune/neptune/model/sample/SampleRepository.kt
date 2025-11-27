@@ -20,6 +20,14 @@ interface SampleRepository {
   suspend fun getSamples(): List<Sample>
 
   /**
+   * Returns a flow of a sample available in the Firestore database.
+   *
+   * @param sampleId the Id of the sample we want to observe.
+   * @return list of sample
+   */
+  fun observeSample(sampleId: String): Flow<Sample?>
+
+  /**
    * Returns the corresponding sample from the Firestore database.
    *
    * @param sampleId the ID of the sample

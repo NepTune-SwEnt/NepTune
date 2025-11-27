@@ -37,6 +37,33 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+private val testSamples =
+    listOf(
+        Sample(
+            id = "sample1",
+            name = "Discover Sample",
+            description = "A sample for discover feed",
+            durationSeconds = 60,
+            tags = listOf("test", "discover"),
+            ownerId = "user1",
+            storagePreviewSamplePath = "not_blank", // Important for the new logic
+            likes = 2,
+            usersLike = emptyList(),
+            comments = 3,
+            downloads = 2),
+        Sample(
+            id = "sample2",
+            name = "Followed Sample",
+            description = "A sample from a followed user",
+            durationSeconds = 120,
+            tags = listOf("test", "followed"),
+            ownerId = "user2",
+            storagePreviewSamplePath = "not_blank", // Important for the new logic
+            likes = 2,
+            usersLike = emptyList(),
+            comments = 3,
+            downloads = 2))
+
 /**
  * Tests for the MainScreen.This has been written with the help of LLMs.
  *
@@ -59,15 +86,16 @@ class MainScreenTest {
     context = composeTestRule.activity.applicationContext
     mediaPlayer = NeptuneMediaPlayer()
 
-    // Use fake repo
-    fakeSampleRepo = FakeSampleRepository()
+    // Use fake repo with initial data
+    fakeSampleRepo = FakeSampleRepository(initialSamples = testSamples)
     val fakeProfileRepo = FakeProfileRepository()
     viewModel =
         MainViewModel(
             repo = fakeSampleRepo,
             profileRepo = fakeProfileRepo,
             context = appContext,
-            useMockData = true)
+            useMockData = false // Set to false to use the real logic with our fake repo
+            )
     composeTestRule.setContent {
       CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
         MainScreen(
@@ -75,6 +103,8 @@ class MainScreenTest {
             navigateToOtherUserProfile = { id -> navigateToOtherUserProfileCallback?.invoke(id) })
       }
     }
+    // Wait for the initial data to be loaded and UI to be ready
+    composeTestRule.waitForIdle()
   }
 
   @Test
@@ -261,7 +291,7 @@ class MainScreenTest {
             Comment("5", "E", "a5", oneYearAgo),
             Comment("6", "F", "a6", now))
 
-    composeTestRule.runOnUiThread {
+    composeTestRule.runOnIdle {
       testComments.forEach { comment ->
         fakeSampleRepo.addComment(
             sampleId, comment.authorId, comment.authorName, comment.text, comment.timestamp!!)
@@ -292,7 +322,7 @@ class MainScreenTest {
         .assertHasClickAction()
         .performClick()
 
-    composeTestRule.runOnIdle { assert(navigatedTo == "artist-discover") }
+    composeTestRule.runOnIdle { Assert.assertEquals("artist-discover", navigatedTo) }
   }
 
   @Test
@@ -311,21 +341,37 @@ class MainScreenTest {
             usersLike = emptyList(),
             comments = 1,
             downloads = 7,
-            ownerId = "artist-followed")
+            ownerId = "artist-followed",
+            storagePreviewSamplePath = "not_blank")
     composeTestRule.runOnIdle {
-      viewModel.discoverSamples.value = emptyList()
-      (viewModel.followedSamples as MutableStateFlow<List<Sample>>).value = listOf(followedSample)
+      try {
+        val followedSamplesField = MainViewModel::class.java.getDeclaredField("_followedSamples")
+        followedSamplesField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val followedSamplesFlow =
+            followedSamplesField.get(viewModel) as MutableStateFlow<List<Sample>>
+        followedSamplesFlow.value = listOf(followedSample)
+
+        viewModel.discoverSamples.value = emptyList()
+      } catch (e: Exception) {
+        Assert.fail("Failed to set _followedSamples via reflection: ${e.message}")
+      }
     }
+
+    composeTestRule.waitForIdle()
 
     composeTestRule
         .onNodeWithTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)
         .performScrollToNode(hasText("Followed"))
+
+    composeTestRule.onNodeWithText("Followed Pad").assertIsDisplayed()
+
     composeTestRule
-        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_PROFILE_ICON, true)
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_PROFILE_ICON, useUnmergedTree = true)
         .onFirst()
         .assertHasClickAction()
         .performClick()
 
-    composeTestRule.runOnIdle { assert(navigatedTo == "artist-followed") }
+    composeTestRule.runOnIdle { Assert.assertEquals("artist-followed", navigatedTo) }
   }
 }

@@ -7,6 +7,7 @@ import com.neptune.neptune.model.sample.SampleRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 
 /**
  * Fake Sample Repository for testing purposes. This has been written with the help of LLMs.
@@ -21,6 +22,10 @@ class FakeSampleRepository(initialSamples: List<Sample> = emptyList()) : SampleR
   private val likedSamples = mutableSetOf<String>()
 
   override suspend fun getSamples(): List<Sample> = samples.toList()
+
+  override fun observeSample(sampleId: String): Flow<Sample?> {
+    return observeSamples().map { samples -> samples.find { it.id == sampleId } }
+  }
 
   override suspend fun getSample(sampleId: String): Sample {
     return getSamples().first()
