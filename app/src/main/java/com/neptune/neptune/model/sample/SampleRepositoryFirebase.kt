@@ -119,7 +119,12 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
   }
 
   /** Add a new comment */
-  override suspend fun addComment(sampleId: String, author: String, text: String) {
+  override suspend fun addComment(
+      sampleId: String,
+      authorId: String,
+      authorName: String,
+      text: String
+  ) {
     val sampleDoc = samples.document(sampleId)
     val snapshot = sampleDoc.get().await()
 
@@ -128,7 +133,12 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
       "SampleRepositoryFirebase.toggleLike: Sample with id=$sampleId doesn't exist"
     }
 
-    val comment = mapOf("author" to author, "text" to text, "timestamp" to Timestamp.now())
+    val comment =
+        mapOf(
+            "authorId" to authorId,
+            "authorName" to authorName,
+            "text" to text,
+            "timestamp" to Timestamp.now())
 
     sampleDoc.collection("comments").add(comment).await()
 
@@ -149,7 +159,17 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
                 return@addSnapshotListener
               }
               val comments =
-                  snap?.documents?.mapNotNull { it.toObject(Comment::class.java) }.orEmpty()
+                  snap?.documents?.mapNotNull { doc ->
+                    val authorId = doc.getString("authorId") ?: return@mapNotNull null
+                    val authorName = doc.getString("authorName") ?: ""
+                    val text = doc.getString("text") ?: ""
+                    val timestamp = doc.getTimestamp("timestamp")
+                    Comment(
+                        authorId = authorId,
+                        authorName = authorName,
+                        text = text,
+                        timestamp = timestamp)
+                  } ?: emptyList()
               trySend(comments)
             }
     awaitClose { listener.remove() }

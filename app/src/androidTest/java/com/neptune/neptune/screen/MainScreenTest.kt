@@ -284,16 +284,17 @@ class MainScreenTest {
 
     val testComments =
         listOf(
-            Comment("A", "a1", oneMinuteAgo),
-            Comment("B", "a2", oneHourAgo),
-            Comment("C", "a3", oneDayAgo),
-            Comment("D", "a4", oneMonthAgo),
-            Comment("E", "a5", oneYearAgo),
-            Comment("F", "a6", now))
+            Comment("1", "A", "a1", oneMinuteAgo),
+            Comment("2", "B", "a2", oneHourAgo),
+            Comment("3", "C", "a3", oneDayAgo),
+            Comment("4", "D", "a4", oneMonthAgo),
+            Comment("5", "E", "a5", oneYearAgo),
+            Comment("6", "F", "a6", now))
 
     composeTestRule.runOnIdle {
       testComments.forEach { comment ->
-        fakeSampleRepo.addComment(sampleId, comment.author, comment.text, comment.timestamp!!)
+        fakeSampleRepo.addComment(
+            sampleId, comment.authorId, comment.authorName, comment.text, comment.timestamp!!)
       }
       viewModel.observeCommentsForSample(sampleId)
     }

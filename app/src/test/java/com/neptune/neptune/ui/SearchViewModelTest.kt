@@ -1,10 +1,13 @@
-package com.neptune.neptune.ui.search
+package com.neptune.neptune.ui
 
 import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.google.firebase.Timestamp
 import com.neptune.neptune.model.fakes.FakeProfileRepository
 import com.neptune.neptune.model.fakes.FakeSampleRepository
+import com.neptune.neptune.ui.search.SearchViewModel
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -166,5 +169,80 @@ class SearchViewModelTest {
             context = appContext,
             useMockData = true)
     assertEquals("abc", vm.normalize("  abc  "))
+  }
+
+  @Test
+  fun observeCommentsLoadsCommentsIntoViewModel() {
+    val vm =
+        SearchViewModel(
+            repo = fakeSampleRepo,
+            profileRepo = fakeProfileRepo,
+            context = appContext,
+            useMockData = true)
+
+    val sampleId = "21"
+
+    val now = Timestamp.now()
+    val yesterday = Timestamp(now.seconds - 86400, 0)
+
+    // Insert fake comments in repo
+    fakeSampleRepo.addComment(sampleId, "u1", "Alice", "Nice!", now)
+    fakeSampleRepo.addComment(sampleId, "u2", "Bob", "Wow!", yesterday)
+
+    vm.observeCommentsForSample(sampleId)
+
+    val comments = vm.comments.value
+    val usernames = vm.usernames.value
+    assertEquals(2, comments.size)
+
+    assertEquals("Alice", comments[0].authorName)
+    assertEquals("Nice!", comments[0].text)
+
+    assertEquals("Bob", comments[1].authorName)
+    assertEquals("Wow!", comments[1].text)
+
+    assertEquals("anonymous", usernames["u1"])
+    assertEquals("anonymous", usernames["u2"])
+  }
+
+  @Test
+  fun loadUsernameUpdatesUsername() = runTest {
+    val vm =
+        SearchViewModel(
+            repo = fakeSampleRepo,
+            profileRepo = fakeProfileRepo,
+            context = appContext,
+            useMockData = true)
+
+    val userId = "u1"
+
+    vm.loadUsername(userId)
+
+    // The fake repo returns the ID as username
+    assertEquals("anonymous", vm.usernames.value[userId])
+  }
+
+  @Test
+  fun addCommentAddsCommentAndUpdatesUsernames() = runTest {
+    val vm =
+        SearchViewModel(
+            repo = fakeSampleRepo,
+            profileRepo = fakeProfileRepo,
+            context = appContext,
+            useMockData = true)
+
+    val sampleId = "21"
+
+    // Add a new comment
+    vm.addComment(sampleId, "Hello world")
+
+    val comments = vm.comments.value
+    val usernames = vm.usernames.value
+
+    // There should be one comment
+    assertEquals(1, comments.size)
+    assertEquals("testUid", comments[0].authorId)
+    assertEquals("johndoe", comments[0].authorName)
+    assertEquals("johndoe", usernames["testUid"])
   }
 }

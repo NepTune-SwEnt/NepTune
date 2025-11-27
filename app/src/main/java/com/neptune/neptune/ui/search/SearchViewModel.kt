@@ -42,8 +42,9 @@ open class SearchViewModel(
     private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
     explicitStorageService: StorageService? = null,
     explicitDownloadsFolder: File? = null,
-    auth: FirebaseAuth? = null
+    private val auth: FirebaseAuth? = null
 ) : ViewModel() {
+  private val defaultName = "anonymous"
 
   // ---------- Firebase auth (disabled in tests when useMockData = true) ----------
 
@@ -76,6 +77,9 @@ open class SearchViewModel(
   val activeCommentSampleId: StateFlow<String?> = _activeCommentSampleId.asStateFlow()
   private val _sampleResources = MutableStateFlow<Map<String, SampleResourceState>>(emptyMap())
   val sampleResources = _sampleResources.asStateFlow()
+
+  private val _usernames = MutableStateFlow<Map<String, String>>(emptyMap())
+  val usernames: StateFlow<Map<String, String>> = _usernames.asStateFlow()
 
   fun onCommentClicked(sample: Sample) {
     observeCommentsForSample(sample.id)
@@ -333,7 +337,29 @@ open class SearchViewModel(
   }
 
   fun observeCommentsForSample(sampleId: String) {
-    viewModelScope.launch { repo.observeComments(sampleId).collectLatest { _comments.value = it } }
+    viewModelScope.launch {
+      repo.observeComments(sampleId).collectLatest { list ->
+        // Ensure usernames are loaded for each author
+        list.forEach { comment -> loadUsername(comment.authorId) }
+        _comments.value = list
+      }
+    }
+  }
+
+  /*
+   * Function to load the user name.
+   */
+  fun loadUsername(userId: String) {
+    viewModelScope.launch {
+      // Check cache first
+      val cached = _usernames.value[userId]
+      if (cached != null && cached != defaultName) return@launch
+
+      // Fetch latest username
+      val userName = profileRepo.getUserNameByUserId(userId) ?: defaultName
+
+      _usernames.update { it + (userId to userName) }
+    }
   }
 
   fun resetCommentSampleId() {
@@ -343,9 +369,10 @@ open class SearchViewModel(
   fun addComment(sampleId: String, text: String) {
     viewModelScope.launch {
       val profile = profileRepo.getCurrentProfile()
-      val username = profile?.username ?: "Anonymous"
-      repo.addComment(sampleId, username, text.trim())
-      load(useMockData)
+      val authorId = profile?.uid ?: auth?.currentUser?.uid ?: "unknown"
+      val authorName = profile?.username ?: defaultName
+      repo.addComment(sampleId, authorId, authorName, text.trim())
+      observeCommentsForSample(sampleId)
     }
   }
 

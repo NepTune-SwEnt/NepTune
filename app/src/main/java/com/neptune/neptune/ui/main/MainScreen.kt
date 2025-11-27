@@ -181,6 +181,7 @@ fun MainScreen(
   val userAvatar by mainViewModel.userAvatar.collectAsState()
   val likedSamples by mainViewModel.likedSamples.collectAsState()
   val comments by mainViewModel.comments.collectAsState()
+  val usernames by mainViewModel.usernames.collectAsState()
   var activeCommentSampleId by remember { mutableStateOf<String?>(null) }
 
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
@@ -398,6 +399,7 @@ fun MainScreen(
         if (activeCommentSampleId != null) {
           CommentDialog(
               sampleId = activeCommentSampleId!!,
+              usernames = usernames,
               comments = comments,
               onDismiss = { activeCommentSampleId = null },
               onAddComment = { id, text -> onAddComment(id, text) })
@@ -735,8 +737,9 @@ fun SampleCard(
 fun CommentDialog(
     sampleId: String,
     comments: List<Comment>,
+    usernames: Map<String, String>,
     onDismiss: () -> Unit,
-    onAddComment: (sampleId: String, commentText: String) -> Unit
+    onAddComment: (sampleId: String, commentText: String) -> Unit,
 ) {
   var commentText by remember { mutableStateOf("") }
   val listScrollingState = rememberLazyListState()
@@ -781,12 +784,13 @@ fun CommentDialog(
                             .testTag(MainScreenTestTags.COMMENT_LIST),
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                       items(comments) { comment ->
+                        val username = usernames[comment.authorId] ?: comment.authorName
                         Column {
                           Row(
                               verticalAlignment = Alignment.CenterVertically,
                               horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(
-                                    text = "${comment.author}:",
+                                    text = "${username}:",
                                     style =
                                         TextStyle(
                                             fontSize = 18.sp,

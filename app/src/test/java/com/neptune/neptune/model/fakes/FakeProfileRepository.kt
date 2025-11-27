@@ -21,7 +21,7 @@ class FakeProfileRepository(
   private val state = MutableStateFlow(initial)
 
   override suspend fun getCurrentProfile(): Profile? {
-    throw UnsupportedOperationException("Not needed in this test")
+    return state.value
   }
 
   override suspend fun getProfile(uid: String): Profile? = state.value
@@ -129,6 +129,7 @@ class FakeProfileRepository(
   }
 
   override suspend fun getUserNameByUserId(userId: String): String? {
-    return userId
+    val current = state.value
+    return if (current?.uid == userId) current.username else null
   }
 }

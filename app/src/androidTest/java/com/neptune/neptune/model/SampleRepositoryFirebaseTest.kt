@@ -137,7 +137,7 @@ class SampleRepositoryFirebaseTest {
     repository.addSample(sample)
 
     // Add a comment
-    repository.addComment("3", "Alice", "Hello world!")
+    repository.addComment("3", "1", "Alice", "Hello world!")
 
     // Observe the comments in real time
     val commentsFlow = repository.observeComments("3")
@@ -145,7 +145,8 @@ class SampleRepositoryFirebaseTest {
 
     // Adding a comment should increment by 1
     assertEquals(1, firstEmission.size)
-    assertEquals("Alice", firstEmission.first().author)
+    assertEquals("1", firstEmission.first().authorId)
+    assertEquals("Alice", firstEmission.first().authorName)
     assertEquals("Hello world!", firstEmission.first().text)
   }
 
