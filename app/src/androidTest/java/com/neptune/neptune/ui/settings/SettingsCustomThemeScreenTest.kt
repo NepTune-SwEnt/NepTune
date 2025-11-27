@@ -10,6 +10,7 @@ import com.neptune.neptune.ui.theme.SampleAppTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -63,7 +64,14 @@ class SettingsCustomThemeScreenTest {
       }
     }
 
-    runBlocking { settingsViewModel.updateCustomColors(Color.Black, Color.Black, Color.White) }
+    // Set colors that will trigger a contrast warning.
+    // This is async, so we need to wait for the change to apply.
+    settingsViewModel.updateCustomColors(Color.Black, Color.Black, Color.White)
+
+    // Wait until the view model/data store has processed the update
+    composeTestRule.waitUntil(5000) {
+      runBlocking { themeDataStore.customPrimaryColor.first() == Color.Black }
+    }
 
     composeTestRule.onNodeWithTag(CustomThemeScreenTestTags.APPLY_BUTTON).performClick()
 
@@ -77,14 +85,22 @@ class SettingsCustomThemeScreenTest {
         SettingsCustomThemeScreen(settingsViewModel = settingsViewModel)
       }
     }
+
+    // Change the color to something custom
+    settingsViewModel.updateCustomColors(Color.Red, Color.Green, Color.Blue)
+    composeTestRule.waitUntil(5000) {
+      runBlocking { themeDataStore.customPrimaryColor.first() == Color.Red }
+    }
+
+    // Click the reset button
     composeTestRule.onNodeWithTag(CustomThemeScreenTestTags.RESET_BUTTON).performClick()
 
-    runBlocking {
-      val initialPrimary = ThemeDataStore.DEFAULT_PRIMARY_COLOR
-      settingsViewModel.updateCustomColors(Color.Red, Color.Green, Color.Blue)
-      composeTestRule.onNodeWithTag(CustomThemeScreenTestTags.RESET_BUTTON).performClick()
-      val resetPrimary = themeDataStore.customPrimaryColor.first()
-      assert(initialPrimary != resetPrimary)
+    // The reset operation is also async, so wait for it to complete.
+    composeTestRule.waitUntil(5000) {
+      runBlocking { themeDataStore.customPrimaryColor.first() != Color.Red }
     }
+
+    val resetPrimary = runBlocking { themeDataStore.customPrimaryColor.first() }
+    assertNotEquals(Color.Red, resetPrimary)
   }
 }
