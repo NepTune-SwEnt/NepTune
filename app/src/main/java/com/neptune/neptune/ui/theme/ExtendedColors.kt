@@ -6,23 +6,22 @@ import androidx.compose.ui.graphics.Color
 
 @Immutable
 data class ExtendedColors(
-    val background: Color,
-    val indicatorColor: Color,
-    val cardBackground: Color,
-    val listBackground: Color,
-    val searchBar: Color,
-    val accentPrimary: Color,
-    val onBackground: Color,
-    val smallText: Color,
-    val loginText: Color,
-    val soundWave: Color,
-    val profileIcon: Color,
-    val postButton: Color,
-    val shadow: Color,
-    val animation: Color,
-    val inverse: Color,
-    val online: Color,
-    val offline: Color
+    val background: Color, // main background color
+    val indicatorColor: Color, // buttons and selected tab indicator
+    val cardBackground: Color, // cards background color
+    val listBackground: Color, // background of selected project in lists
+    val searchBar: Color, // search bar background color
+    val accentPrimary: Color, // primary accent color for highlights
+    val onBackground: Color, // text, icons and cards color on background
+    val onPrimary: Color, // text color used on primary (buttons)
+    val smallText: Color, // secondary text color
+    val loginText: Color, // text color for login screen
+    val soundWave: Color, // sound wave color in the player
+    val postButton: Color, // post button background color
+    val shadow: Color, // shadow color for elevated elements
+    val animation: Color, // color used in animations
+    val online: Color, // color indicating online status
+    val offline: Color // color indicating offline status
 )
 
 val DarkExtendedColors =
@@ -31,17 +30,16 @@ val DarkExtendedColors =
         indicatorColor = DarkBlue2,
         cardBackground = DarkBlueGray,
         listBackground = DarkBlueGray,
-        searchBar = FadedDarkBlue,
+        searchBar = DarkBlueGray,
         accentPrimary = LightPurpleBlue,
         onBackground = LightTurquoise,
+        onPrimary = White,
         smallText = LightLavender,
         loginText = Black,
         soundWave = LightSkyBlue,
-        profileIcon = Color.Unspecified,
         postButton = PurpleBlue,
         shadow = ShadowColor,
         animation = DarkPurple,
-        inverse = White,
         online = Green,
         offline = Gray)
 
@@ -51,17 +49,16 @@ val LightExtendedColors =
         indicatorColor = Purple,
         cardBackground = LightLavenderBlue,
         listBackground = DarkBlue3,
-        searchBar = LightLavenderBlue,
+        searchBar = PurpleGrey80,
         accentPrimary = LightPurpleBlue,
         onBackground = DarkBlue3,
+        onPrimary = White,
         smallText = Black,
         loginText = White,
         soundWave = DarkBlue3,
-        profileIcon = DarkBlue3,
         postButton = LightPurple,
         shadow = ShadowColor,
         animation = Purple,
-        inverse = DarkBlue3,
         online = Green,
         offline = Gray)
 

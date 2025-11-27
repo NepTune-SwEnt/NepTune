@@ -154,12 +154,13 @@ fun ProjectList(
     projectListViewModel: ProjectListViewModel,
     onProjectClick: (ProjectItem) -> Unit = {},
 ) {
-  val colorSearchBar = NepTuneTheme.colors.searchBar
+
+  val lineColor = NepTuneTheme.colors.onBackground
   Column(
       modifier =
           modifier.drawBehind {
             drawLine(
-                color = colorSearchBar,
+                color = lineColor,
                 start = Offset(0f, 0f),
                 end = Offset(size.width, 0f),
                 strokeWidth = 2.dp.toPx())
@@ -199,7 +200,7 @@ fun ProjectListItem(
   val backGroundColor =
       if (project.uid == selectedProject) NepTuneTheme.colors.listBackground
       else NepTuneTheme.colors.background
-  val lineColor = NepTuneTheme.colors.searchBar
+  val lineColor = NepTuneTheme.colors.onBackground
   Card(
       modifier =
           Modifier.fillMaxWidth()
@@ -491,7 +492,7 @@ fun SearchBar(
             placeholder = {
               Text(
                   text = "Search for $whatToSearchFor",
-                  color = NepTuneTheme.colors.searchBar,
+                  color = NepTuneTheme.colors.onBackground,
                   style =
                       TextStyle(
                           fontSize = SEARCHBAR_FONT_SIZE.sp,
@@ -507,20 +508,20 @@ fun SearchBar(
             singleLine = true,
             colors =
                 TextFieldDefaults.colors(
-                    focusedContainerColor = NepTuneTheme.colors.listBackground,
-                    unfocusedContainerColor = NepTuneTheme.colors.listBackground,
-                    disabledContainerColor = NepTuneTheme.colors.listBackground,
-                    cursorColor = NepTuneTheme.colors.onBackground,
+                    focusedContainerColor = NepTuneTheme.colors.searchBar,
+                    unfocusedContainerColor = NepTuneTheme.colors.searchBar,
+                    disabledContainerColor = NepTuneTheme.colors.searchBar,
+                    cursorColor = Color.Unspecified,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
                     disabledIndicatorColor = Color.Transparent,
-                    focusedTextColor = NepTuneTheme.colors.searchBar,
-                    unfocusedTextColor = NepTuneTheme.colors.searchBar),
+                    focusedTextColor = NepTuneTheme.colors.onBackground,
+                    unfocusedTextColor = NepTuneTheme.colors.onBackground),
             leadingIcon = {
               Icon(
                   imageVector = Icons.Default.Search,
                   contentDescription = "Search Icon",
-                  tint = NepTuneTheme.colors.searchBar,
+                  tint = NepTuneTheme.colors.onBackground,
                   modifier = Modifier.size(30.dp))
             },
         )

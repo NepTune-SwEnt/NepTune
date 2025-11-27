@@ -633,7 +633,7 @@ fun SampleCard(
                       contentAlignment = Alignment.Center) {
                         SampleWaveform(
                             amplitudes = resourceState.waveform,
-                            color = NepTuneTheme.colors.inverse,
+                            color = NepTuneTheme.colors.onBackground,
                             modifier = Modifier.fillMaxWidth(0.95f).height(70.dp))
                       }
 
@@ -644,7 +644,7 @@ fun SampleCard(
                       verticalAlignment = Alignment.Bottom) {
                         Text(
                             sample.name,
-                            color = NepTuneTheme.colors.inverse,
+                            color = NepTuneTheme.colors.onBackground,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f).testTag(testTags.SAMPLE_NAME),
@@ -658,7 +658,7 @@ fun SampleCard(
                         val seconds = sample.durationSeconds % 60
                         Text(
                             "%02d:%02d".format(minutes, seconds),
-                            color = NepTuneTheme.colors.inverse,
+                            color = NepTuneTheme.colors.onBackground,
                             modifier =
                                 Modifier.padding(start = 8.dp).testTag(testTags.SAMPLE_DURATION),
                             style =
