@@ -11,7 +11,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,6 +50,12 @@ enum class SignInStatus {
    */
   IN_PROGRESS_FIREBASE_AUTH,
 
+  /** Email/password authentication in progress (sign in or sign up). */
+  IN_PROGRESS_EMAIL_AUTH,
+
+  /** Anonymous (guest) authentication in progress. */
+  IN_PROGRESS_ANONYMOUS_AUTH,
+
   /**
    * The final state indicating that the user has been successfully authenticated with Firebase and
    * their session is active.
@@ -76,6 +87,25 @@ class DefaultGoogleIdOptionFactory : GoogleIdOptionFactory {
   }
 }
 
+/** Email/password authentication UI state. */
+data class EmailAuthUiState(
+    val email: String = "",
+    val password: String = "",
+    val confirmPassword: String = "",
+    val registerMode: Boolean = false,
+    val emailError: String? = null,
+    val passwordError: String? = null,
+    val confirmPasswordError: String? = null,
+    val generalError: String? = null,
+    val loading: Boolean = false,
+) {
+  val canSubmit: Boolean =
+      !loading &&
+          email.isNotBlank() &&
+          password.isNotBlank() &&
+          (!registerMode || confirmPassword.isNotBlank())
+}
+
 /**
  * ViewModel for the SignInScreen.
  *
@@ -103,6 +133,10 @@ class SignInViewModel(
   val currentUser: StateFlow<FirebaseUser?> = _currentUser.asStateFlow()
   private var navigateMain: () -> Unit = {}
   private lateinit var clientId: String
+
+  /** Email/password form UI state. */
+  private val _emailAuthUiState = MutableStateFlow(EmailAuthUiState())
+  val emailAuthUiState: StateFlow<EmailAuthUiState> = _emailAuthUiState.asStateFlow()
 
   /**
    * Initializes the ViewModel.
@@ -192,6 +226,129 @@ class SignInViewModel(
     }
   }
 
+  // region Email/Password Authentication -------------------------------------------------------
+  fun setEmail(value: String) {
+    _emailAuthUiState.value = _emailAuthUiState.value.copy(email = value.trim())
+  }
+
+  fun setPassword(value: String) {
+    _emailAuthUiState.value = _emailAuthUiState.value.copy(password = value)
+  }
+
+  fun setConfirmPassword(value: String) {
+    _emailAuthUiState.value = _emailAuthUiState.value.copy(confirmPassword = value)
+  }
+
+  fun toggleRegisterMode() {
+    val current = _emailAuthUiState.value
+    _emailAuthUiState.value =
+        current.copy(
+            registerMode = !current.registerMode,
+            // clear errors & confirm when switching modes
+            confirmPassword = if (!current.registerMode) "" else current.confirmPassword,
+            passwordError = null,
+            emailError = null,
+            confirmPasswordError = null,
+            generalError = null)
+  }
+
+  private fun validateEmailPassword(): Boolean {
+    val state = _emailAuthUiState.value
+    var emailError: String? = null
+    var passwordError: String? = null
+    var confirmError: String? = null
+
+    if (state.email.isBlank()) emailError = "Email required"
+    else if (!state.email.matches(EMAIL_REGEX)) emailError = "Invalid email"
+
+    if (state.password.length < 6) passwordError = "Min 6 characters"
+
+    if (state.registerMode) {
+      if (state.confirmPassword.isBlank()) confirmError = "Confirm password"
+      else if (state.password != state.confirmPassword) confirmError = "Passwords don't match"
+    }
+
+    _emailAuthUiState.value =
+        state.copy(
+            emailError = emailError,
+            passwordError = passwordError,
+            confirmPasswordError = confirmError,
+            generalError = null)
+    return emailError == null && passwordError == null && confirmError == null
+  }
+
+  fun submitEmailAuth() {
+    if (!validateEmailPassword()) return
+    if (_emailAuthUiState.value.registerMode) registerWithEmailPassword()
+    else signInWithEmailPassword()
+  }
+
+  private fun signInWithEmailPassword() {
+    val state = _emailAuthUiState.value
+    _signInStatus.value = SignInStatus.IN_PROGRESS_EMAIL_AUTH
+    _emailAuthUiState.value = state.copy(loading = true, generalError = null)
+    viewModelScope.launch {
+      try {
+        val result = firebaseAuth.signInWithEmailAndPassword(state.email, state.password).await()
+        _currentUser.value = result.user
+        _signInStatus.value = SignInStatus.SUCCESS
+        _emailAuthUiState.value = EmailAuthUiState() // reset form
+        navigateMain()
+      } catch (e: Exception) {
+        handleEmailAuthException(e)
+      }
+    }
+  }
+
+  private fun registerWithEmailPassword() {
+    val state = _emailAuthUiState.value
+    _signInStatus.value = SignInStatus.IN_PROGRESS_EMAIL_AUTH
+    _emailAuthUiState.value = state.copy(loading = true, generalError = null)
+    viewModelScope.launch {
+      try {
+        val result =
+            firebaseAuth.createUserWithEmailAndPassword(state.email, state.password).await()
+        _currentUser.value = result.user
+        _signInStatus.value = SignInStatus.SUCCESS
+        _emailAuthUiState.value = EmailAuthUiState()
+        navigateMain()
+      } catch (e: Exception) {
+        handleEmailAuthException(e)
+      }
+    }
+  }
+
+  fun signInAnonymously() {
+    _signInStatus.value = SignInStatus.IN_PROGRESS_ANONYMOUS_AUTH
+    _emailAuthUiState.value = _emailAuthUiState.value.copy(loading = true, generalError = null)
+    viewModelScope.launch {
+      try {
+        val result = firebaseAuth.signInAnonymously().await()
+        _currentUser.value = result.user
+        _signInStatus.value = SignInStatus.SUCCESS
+        _emailAuthUiState.value = EmailAuthUiState()
+        navigateMain()
+      } catch (e: Exception) {
+        handleEmailAuthException(e)
+      }
+    }
+  }
+
+  private fun handleEmailAuthException(e: Exception) {
+    val msg =
+        when (e) {
+          is FirebaseAuthInvalidUserException -> "User not found"
+          is FirebaseAuthInvalidCredentialsException -> "Invalid credentials"
+          is FirebaseAuthUserCollisionException -> "Email already in use"
+          is FirebaseAuthWeakPasswordException -> "Weak password"
+          is FirebaseNetworkException -> "Network error"
+          else -> "Authentication error"
+        }
+    _signInStatus.value = SignInStatus.ERROR
+    _emailAuthUiState.value = _emailAuthUiState.value.copy(loading = false, generalError = msg)
+  }
+  // endregion -------------------------------------------------------------------------------
+
   /**
    * Signs the current user out of Firebase.
    *
@@ -204,6 +361,12 @@ class SignInViewModel(
       firebaseAuth.signOut()
       _currentUser.value = null
       _signInStatus.value = SignInStatus.SIGNED_OUT
+      _emailAuthUiState.value = EmailAuthUiState()
     }
+  }
+
+  companion object {
+    private val EMAIL_REGEX =
+        Regex("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$", RegexOption.IGNORE_CASE)
   }
 }

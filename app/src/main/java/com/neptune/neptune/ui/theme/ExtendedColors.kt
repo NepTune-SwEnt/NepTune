@@ -7,8 +7,7 @@ import androidx.compose.ui.graphics.Color
 @Immutable
 data class ExtendedColors(
     val background: Color, // main background color
-    val indicatorColor:
-        Color, // buttons and selected tab indicator, slightly different from background
+    val indicatorColor: Color, // buttons and selected tab indicator
     val cardBackground: Color, // cards background color
     val listBackground: Color, // background of selected project in lists
     val searchBar: Color, // search bar background color
@@ -21,6 +20,9 @@ data class ExtendedColors(
     val postButton: Color, // post button background color
     val shadow: Color, // shadow color for elevated elements
     val animation: Color, // color used in animations
+    val inverse: Color,
+    val online: Color,
+    val offline: Color
 )
 
 val DarkExtendedColors =
@@ -38,7 +40,10 @@ val DarkExtendedColors =
         soundWave = LightSkyBlue,
         postButton = PurpleBlue,
         shadow = ShadowColor,
-        animation = DarkPurple)
+        animation = DarkPurple,
+        inverse = White,
+        online = Green,
+        offline = Gray)
 
 val LightExtendedColors =
     ExtendedColors(
@@ -55,7 +60,10 @@ val LightExtendedColors =
         soundWave = DarkBlue3,
         postButton = LightPurple,
         shadow = ShadowColor,
-        animation = Purple)
+        animation = Purple,
+        inverse = DarkBlue3,
+        online = Green,
+        offline = Gray)
 
 val LocalExtendedColors = staticCompositionLocalOf {
   // default value

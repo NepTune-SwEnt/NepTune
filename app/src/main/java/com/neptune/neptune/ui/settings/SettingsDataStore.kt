@@ -35,7 +35,7 @@ class ThemeDataStore(private val context: Context) {
   /** A [Flow] that emits the currently saved [ThemeSetting]. */
   val theme: Flow<ThemeSetting> =
       context.dataStore.data.map { preferences ->
-        val themeName = preferences[THEME_KEY] ?: ThemeSetting.SYSTEM.name
+        val themeName = preferences[THEME_KEY] ?: ThemeSetting.DARK.name
         ThemeSetting.valueOf(themeName)
       }
 
@@ -73,6 +73,12 @@ class ThemeDataStore(private val context: Context) {
       }
 
   /** Suspended function to persist the user's selected [ThemeSetting] to DataStore. */
+  /**
+   * Suspended function to persist the user's selected [ThemeSetting] to DataStore.
+   *
+   * @param theme The [ThemeSetting] to save (e.g., LIGHT, DARK, or SYSTEM). This enum's name will
+   *   be stored as a string.
+   */
   suspend fun setTheme(theme: ThemeSetting) {
     context.dataStore.edit { settings -> settings[THEME_KEY] = theme.name }
   }

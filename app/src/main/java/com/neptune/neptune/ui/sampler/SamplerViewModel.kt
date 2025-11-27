@@ -76,6 +76,7 @@ data class SamplerUiState(
     val compGain: Float = 0.0f,
     val compAttack: Float = 0.010f,
     val compDecay: Float = 0.100f,
+    val originalAudioUri: Uri? = null,
     val currentAudioUri: Uri? = null,
     val audioDurationMillis: Int = 4000,
     val showInitialSetupDialog: Boolean = false,
@@ -580,6 +581,7 @@ open class SamplerViewModel() : ViewModel() {
                 inputTempo = current.tempo,
                 inputPitchNote = current.pitchNote,
                 inputPitchOctave = current.pitchOctave,
+                originalAudioUri = audioUri,
                 currentAudioUri = audioUri,
                 audioDurationMillis =
                     if (sampleDuration > 0) sampleDuration else DEFAULT_SAMPLE_TIME,
@@ -632,6 +634,7 @@ open class SamplerViewModel() : ViewModel() {
                 projectLoadError = null)
           }
         }
+        audioBuilding()
       } catch (e: Exception) {
         Log.e("SamplerViewModel", "ZIP project loading has failed: ${e.message}", e)
 
@@ -642,8 +645,8 @@ open class SamplerViewModel() : ViewModel() {
 
   open fun saveProjectData(zipFilePath: String): Job {
     return viewModelScope.launch {
-      audioBuilding()
       saveProjectDataSync(zipFilePath)
+      audioBuilding()
     }
   }
 
@@ -712,12 +715,12 @@ open class SamplerViewModel() : ViewModel() {
 
   fun audioBuilding() {
     Log.d("SamplerViewModel", "Audio building")
-    val currentUri = _uiState.value.currentAudioUri
+    val originalUri = _uiState.value.originalAudioUri
     val eqBands = _uiState.value.eqBands
 
     viewModelScope.launch(Dispatchers.Default) {
       try {
-        equalizeAudio(currentUri, eqBands)
+        equalizeAudio(originalUri, eqBands)
       } catch (e: Exception) {
         Log.e("SamplerViewModel", "audioBuilding failed: ${e.message}", e)
       }
@@ -746,7 +749,20 @@ open class SamplerViewModel() : ViewModel() {
           "Decoded ${samples.size} samples at $sampleRate Hz, $channelCount channel(s)")
 
       // Apply EQ filters to the samples
-      val equalizedSamples = applyEQFilters(samples, sampleRate, eqBands)
+      var processedSamples = applyEQFilters(samples, sampleRate, eqBands)
+
+      // Apply Compression
+      val state = _uiState.value
+      val compressor =
+          Compressor(
+              sampleRate = sampleRate,
+              thresholdDb = state.compThreshold,
+              ratio = state.compRatio.toFloat(),
+              kneeDb = state.compKnee,
+              makeUpDb = state.compGain,
+              attackSeconds = state.compAttack,
+              releaseSeconds = state.compDecay)
+      processedSamples = compressor.process(processedSamples)
 
       // Determine output file name and path in app cache directory
       val originalName = audioUri.lastPathSegment ?: "sample_audio"
@@ -755,7 +771,7 @@ open class SamplerViewModel() : ViewModel() {
       val outFile = File(context.cacheDir, "${baseName}_equalized.wav")
 
       // Encode equalized samples back to WAV file
-      encodePCMToWAV(equalizedSamples, sampleRate, channelCount, outFile)
+      encodePCMToWAV(processedSamples, sampleRate, channelCount, outFile)
 
       // Update UI state with the new audio Uri
       val newUri = Uri.fromFile(outFile)
