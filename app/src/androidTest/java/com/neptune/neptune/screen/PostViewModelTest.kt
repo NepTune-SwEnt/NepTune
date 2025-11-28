@@ -95,56 +95,62 @@ class PostViewModelTest {
 
   @Test
   fun submitPostUploadsAndCompletes() = runBlocking {
-    // --- DATA ---
-    val projectId = "proj_integration_test"
-    val userId = Firebase.auth.currentUser?.uid ?: ""
-    val zipUri = createDummyFile("project.zip", "FAKE ZIP CONTENT")
+    fun submitPostUploadsAndCompletes() = runBlocking {
+      Firebase.auth.signOut()
+      Firebase.auth.createUserWithEmailAndPassword("post-test@example.com", "password").await()
 
-    // --- MOCK: Stub Repository response ---
-    val dummyProject =
-        ProjectItem(
-            uid = projectId,
-            name = "Integration Project",
-            description = "Desc",
-            projectFileLocalPath = "file:${zipUri.path}",
-            tags = listOf("test"),
-            ownerId = userId)
-    `when`(mockProjectRepo.getProject(projectId)).thenReturn(dummyProject)
+      // --- DATA ---
+      val projectId = "proj_integration_test"
+      val userId = Firebase.auth.currentUser?.uid ?: ""
+      val zipUri = createDummyFile("project.zip", "FAKE ZIP CONTENT")
 
-    // --- ACTION: Load ---
-    viewModel.loadProject(projectId)
+      // --- MOCK: Stub Repository response ---
+      val dummyProject =
+          ProjectItem(
+              uid = projectId,
+              name = "Integration Project",
+              description = "Desc",
+              projectFileLocalPath = "file:${zipUri.path}",
+              tags = listOf("test"),
+              ownerId = userId)
+      `when`(mockProjectRepo.getProject(projectId)).thenReturn(dummyProject)
 
-    // --- ASSERT: Verify loading ---
-    waitForState(timeout = 2000) { it.sample.name == "Integration Project" }
-    assertEquals(projectId, viewModel.uiState.value.sample.id)
+      // --- ACTION: Load ---
+      viewModel.loadProject(projectId)
 
-    // --- ACTION: Add Image ---
-    val imageUri = createDummyFile("cover.jpg", "FAKE IMAGE CONTENT")
-    viewModel.onImageChanged(imageUri)
-    waitForState { viewModel.localImageUri.value != null }
+      // --- ASSERT: Verify loading ---
+      waitForState(timeout = 2000) { it.sample.name == "Integration Project" }
+      assertEquals(projectId, viewModel.uiState.value.sample.id)
 
-    // --- ACTION: Upload (Uses real Storage Emulator) ---
-    viewModel.submitPost()
+      // --- ACTION: Add Image ---
+      val imageUri = createDummyFile("cover.jpg", "FAKE IMAGE CONTENT")
+      viewModel.onImageChanged(imageUri)
+      waitForState { viewModel.localImageUri.value != null }
 
-    assertTrue("Should be uploading", viewModel.uiState.value.isUploading)
+      // --- ACTION: Upload (Uses real Storage Emulator) ---
+      viewModel.submitPost()
 
-    // --- FINAL ASSERT: Wait for real upload to finish ---
-    try {
-      // Increase timeout for Storage Emulator
-      waitForState(timeout = 8000) { it.postComplete }
-    } catch (_: TimeoutException) {
+      assertTrue("Should be uploading", viewModel.uiState.value.isUploading)
+
+      // --- FINAL ASSERT: Wait for real upload to finish ---
+      try {
+        // Increase timeout for Storage Emulator
+        waitForState(timeout = 8000) { it.postComplete }
+      } catch (_: TimeoutException) {
+        assertFalse(
+            "Timeout Upload. State: ${viewModel.uiState.value}",
+            viewModel.uiState.value.isUploading)
+      }
+
+      assertTrue(viewModel.uiState.value.postComplete)
+      assertFalse(viewModel.uiState.value.isUploading)
+
+      // Check: Is the file really in Storage?
+      val list = Firebase.storage.reference.child("sample_image").listAll().await()
       assertFalse(
-          "Timeout Upload. State: ${viewModel.uiState.value}", viewModel.uiState.value.isUploading)
+          "The sample_image folder should not be empty",
+          list.items.isEmpty() && list.prefixes.isEmpty())
     }
-
-    assertTrue(viewModel.uiState.value.postComplete)
-    assertFalse(viewModel.uiState.value.isUploading)
-
-    // Check: Is the file really in Storage?
-    val list = Firebase.storage.reference.child("sample_image").listAll().await()
-    assertFalse(
-        "The sample_image folder should not be empty",
-        list.items.isEmpty() && list.prefixes.isEmpty())
   }
 
   private suspend fun waitForState(timeout: Long = 3000, condition: (PostUiState) -> Boolean) {
