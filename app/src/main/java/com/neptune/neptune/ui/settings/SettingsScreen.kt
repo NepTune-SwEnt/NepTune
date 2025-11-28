@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.neptune.neptune.ui.theme.NepTuneTheme
+import com.neptune.neptune.ui.util.NeptuneTopBar
 
 /**
  * Displays the settings screen.
@@ -30,7 +31,7 @@ fun SettingsScreen(
     goAccount: () -> Unit = {},
 ) {
   Scaffold(
-      topBar = { SettingsTopBar(title = "Settings", goBack = goBack) },
+      topBar = { NeptuneTopBar(title = "Settings", goBack = goBack) },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp),
