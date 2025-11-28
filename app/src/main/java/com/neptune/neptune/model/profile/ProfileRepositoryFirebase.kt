@@ -17,6 +17,7 @@ import kotlinx.coroutines.tasks.await
 
 const val PROFILES_COLLECTION_PATH = "profiles"
 const val USERNAMES_COLLECTION_PATH = "usernames"
+const val GUEST_NAME = "anonymous"
 private const val DEFAULT_BIO = "Hello! New NepTune user here!"
 
 /**
@@ -124,6 +125,7 @@ class ProfileRepositoryFirebase(
    */
   override suspend fun ensureProfile(suggestedUsernameBase: String?, name: String?): Profile {
     val uid = requireCurrentUid()
+    val currentUser = auth.currentUser!!
     // Transaction: if profile missing, create it with a free username
     return db.runTransaction<Profile> { tx ->
           val profile = profiles.document(uid)
@@ -132,9 +134,17 @@ class ProfileRepositoryFirebase(
             // Return the profile; if malformed, fail loudly
             snap.toProfileOrNull() ?: throw IllegalStateException("Corrupted profile for uid=$uid")
           } else {
+            val isAnonymous = currentUser.isAnonymous
             val base = toUsernameBase(suggestedUsernameBase?.takeIf { it.isNotBlank() } ?: "user")
-            val username = claimFreeUsername(tx, base, uid)
-            val initialName = name?.takeIf { it.isNotBlank() } ?: username
+            val username: String
+            val initialName: String
+            if (isAnonymous) {
+              username = GUEST_NAME
+              initialName = GUEST_NAME
+            } else {
+              username = claimFreeUsername(tx, base, uid)
+              initialName = name?.takeIf { it.isNotBlank() } ?: username
+            }
 
             // Build the object that will persist and return
             val created =

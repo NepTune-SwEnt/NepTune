@@ -234,6 +234,7 @@ class NavigationTest {
     every { mockViewModel.downloadProgress } returns MutableStateFlow<Int?>(null)
     every { mockViewModel.sampleResources } returns MutableStateFlow(emptyMap())
     every { mockViewModel.isRefreshing } returns MutableStateFlow(false)
+    every { mockViewModel.isAnonymous } returns MutableStateFlow(false)
     composeTestRule.setContent {
       MainScreen(navigateToProjectList = navigateToProjectListMock, mainViewModel = mockViewModel)
     }

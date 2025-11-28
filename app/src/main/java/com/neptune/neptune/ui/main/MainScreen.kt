@@ -182,6 +182,7 @@ fun MainScreen(
   val comments by mainViewModel.comments.collectAsState()
   val usernames by mainViewModel.usernames.collectAsState()
   var activeCommentSampleId by remember { mutableStateOf<String?>(null) }
+  val isAnonymous by mainViewModel.isAnonymous.collectAsState()
 
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
   val horizontalPadding = 30.dp
@@ -328,7 +329,8 @@ fun MainScreen(
                           samples = discoverSamples,
                           rowsPerColumn = 2,
                           onCommentClick = { onCommentClicked(it) },
-                          onProfileClick = { handleProfileNavigation(it) })
+                          onProfileClick = { handleProfileNavigation(it) },
+                          isAnonymous = isAnonymous)
                     }
                     // ----------------Followed Section-----------------
                     item {
@@ -342,7 +344,8 @@ fun MainScreen(
                           samples = followedSamples,
                           rowsPerColumn = maxColumns,
                           onCommentClick = { onCommentClicked(it) },
-                          onProfileClick = { handleProfileNavigation(it) })
+                          onProfileClick = { handleProfileNavigation(it) },
+                          isAnonymous = isAnonymous)
                       Spacer(modifier = Modifier.height(50.dp))
                     }
                   }
@@ -360,7 +363,8 @@ fun MainScreen(
               usernames = usernames,
               comments = comments,
               onDismiss = { activeCommentSampleId = null },
-              onAddComment = { id, text -> onAddComment(id, text) })
+              onAddComment = { id, text -> onAddComment(id, text) },
+              isAnonymous = isAnonymous)
         }
 
         if (downloadProgress != null && downloadProgress != 0) {
@@ -376,7 +380,8 @@ private fun SampleSectionLazyRow(
     samples: List<Sample>,
     rowsPerColumn: Int,
     onCommentClick: (Sample) -> Unit,
-    onProfileClick: (String) -> Unit
+    onProfileClick: (String) -> Unit,
+    isAnonymous: Boolean = false
 ) {
   val configuration = LocalConfiguration.current
   val screenWidth = configuration.screenWidthDp.dp
@@ -406,7 +411,9 @@ private fun SampleSectionLazyRow(
               val clickHandlers =
                   onClickFunctions(
                       onDownloadClick = { mainViewModel.onDownloadSample(sample) },
-                      onLikeClick = { isLiked -> mainViewModel.onLikeClicked(sample, isLiked) },
+                      onLikeClick = { isLiked ->
+                        if (!isAnonymous) mainViewModel.onLikeClicked(sample, isLiked)
+                      },
                       onCommentClick = { onCommentClick(sample) },
                       onProfileClick = { onProfileClick(sample.ownerId) },
                   )
@@ -716,6 +723,7 @@ fun CommentDialog(
     usernames: Map<String, String>,
     onDismiss: () -> Unit,
     onAddComment: (sampleId: String, commentText: String) -> Unit,
+    isAnonymous: Boolean = false
 ) {
   var commentText by remember { mutableStateOf("") }
   val listScrollingState = rememberLazyListState()
@@ -801,10 +809,10 @@ fun CommentDialog(
                     verticalAlignment = Alignment.CenterVertically) {
                       TextField(
                           value = commentText,
-                          onValueChange = { commentText = it },
+                          onValueChange = { if (!isAnonymous) commentText = it },
                           placeholder = {
                             Text(
-                                "Add a comment…",
+                                if (isAnonymous) "Cannot comment" else "Add a comment…",
                                 style =
                                     TextStyle(
                                         fontSize = 25.sp,
@@ -836,6 +844,7 @@ fun CommentDialog(
                               commentText = ""
                             }
                           },
+                          enabled = !isAnonymous,
                           shape = RoundedCornerShape(15.dp),
                           colors =
                               ButtonDefaults.buttonColors(

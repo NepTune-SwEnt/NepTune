@@ -102,6 +102,8 @@ class MainViewModel(
   val sampleResources = _sampleResources.asStateFlow()
   private val _isRefreshing = MutableStateFlow(false)
   val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+  private val _isAnonymous = MutableStateFlow(auth.currentUser?.isAnonymous ?: true)
+  val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
 
   init {
     if (useMockData) {
@@ -221,6 +223,7 @@ class MainViewModel(
         // Update the user avatar
         val newAvatarUrl = profile?.avatarUrl
         _userAvatar.value = newAvatarUrl
+        _isAnonymous.value = profile?.isAnonymous ?: auth.currentUser?.isAnonymous ?: true
 
         // Update username
         val newUsername = profile?.username
@@ -288,6 +291,7 @@ class MainViewModel(
   }
 
   fun onLikeClicked(sample: Sample, isLiked: Boolean) {
+    if (_isAnonymous.value) return
     viewModelScope.launch {
       val newState = actions?.onLikeClicked(sample.id, isLiked)
       if (newState != null) {
@@ -320,6 +324,7 @@ class MainViewModel(
   }
 
   fun addComment(sampleId: String, text: String) {
+    if (_isAnonymous.value) return
     viewModelScope.launch {
       val profile = profileRepo.getCurrentProfile()
       val authorId = profile?.uid ?: auth.currentUser?.uid ?: "unknown"
