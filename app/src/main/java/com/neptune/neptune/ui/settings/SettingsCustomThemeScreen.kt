@@ -40,6 +40,7 @@ import com.godaddy.android.colorpicker.harmony.HarmonyColorPicker
 import com.neptune.neptune.ui.theme.DarkExtendedColors
 import com.neptune.neptune.ui.theme.LightExtendedColors
 import com.neptune.neptune.ui.theme.NepTuneTheme
+import com.neptune.neptune.ui.util.NeptuneTopBar
 import kotlin.math.max
 import kotlin.math.min
 
@@ -96,7 +97,7 @@ fun SettingsCustomThemeScreen(
 
   Scaffold(
       topBar = {
-        SettingsTopBar(
+        NeptuneTopBar(
             title = "Custom Theme",
             goBack = goBack,
             modifier = Modifier.testTag(CustomThemeScreenTestTags.CUSTOM_THEME_TOP_BAR))

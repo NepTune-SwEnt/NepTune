@@ -99,6 +99,7 @@ import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.formatTime
+import kotlinx.coroutines.delay
 
 object MainScreenTestTags : BaseSampleTestTags {
   override val prefix = "MainScreen"
@@ -106,7 +107,7 @@ object MainScreenTestTags : BaseSampleTestTags {
   // General
   const val MAIN_SCREEN = "mainScreen"
   const val POST_BUTTON = "postButton"
-  const val DOWNlOAD_PROGRESS = "downloadProgressBar"
+  const val DOWNLOAD_PROGRESS = "downloadProgressBar"
 
   // Top Bar
   const val TOP_BAR = "topBar"
@@ -173,18 +174,17 @@ fun MainScreen(
     navigateToProjectList: () -> Unit = {},
     navigateToOtherUserProfile: (String) -> Unit = {},
     navigateToSelectMessages: () -> Unit = {},
+    navigateToSampleList: (String) -> Unit = {},
     mainViewModel: MainViewModel =
         viewModel(factory = factory(LocalContext.current.applicationContext as Application))
 ) {
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
   val userAvatar by mainViewModel.userAvatar.collectAsState()
-  val comments by mainViewModel.comments.collectAsState()
-  val usernames by mainViewModel.usernames.collectAsState()
-  var activeCommentSampleId by remember { mutableStateOf<String?>(null) }
 
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
   val horizontalPadding = 30.dp
+  val wait: Long = 300
   // Depends on the size of the screen
   val maxColumns = if (screenWidth < 360.dp) 1 else 2
   val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
@@ -198,18 +198,15 @@ fun MainScreen(
     if (isRefreshing) {
       pullRefreshState.startRefresh()
     } else {
-      pullRefreshState.endRefresh()
+      if (pullRefreshState.isRefreshing) {
+        delay(wait)
+        pullRefreshState.endRefresh()
+      }
     }
   }
 
   fun onCommentClicked(sample: Sample) {
-    mainViewModel.observeCommentsForSample(sample.id)
-    activeCommentSampleId = sample.id
-  }
-
-  fun onAddComment(sampleId: String, text: String) {
-    mainViewModel.addComment(sampleId, text)
-    mainViewModel.observeCommentsForSample(sampleId)
+    mainViewModel.openCommentSection(sample)
   }
 
   fun handleProfileNavigation(ownerId: String) {
@@ -312,60 +309,60 @@ fun MainScreen(
                   }
             },
             content = { paddingValues ->
-              LazyColumn(
-                  contentPadding = paddingValues, // Apply Scaffold padding
-                  modifier =
-                      Modifier.fillMaxSize().testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
-                    // ----------------Discover Section-----------------
-                    item {
-                      Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-                        SectionHeader(title = "Discover")
+              Box(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    contentPadding = paddingValues, // Apply Scaffold padding
+                    modifier =
+                        Modifier.fillMaxSize()
+                            .testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
+                      // ----------------Discover Section-----------------
+                      item {
+                        Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+                          SectionHeader(
+                              title = "Discover", onClick = { navigateToSampleList("Discover") })
+                        }
+                      }
+                      item {
+                        SampleSectionLazyRow(
+                            mainViewModel = mainViewModel,
+                            samples = discoverSamples,
+                            rowsPerColumn = 2,
+                            onCommentClick = { onCommentClicked(it) },
+                            onProfileClick = { handleProfileNavigation(it) })
+                      }
+                      // ----------------Followed Section-----------------
+                      item {
+                        Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+                          SectionHeader(
+                              title = "Followed", onClick = { navigateToSampleList("Followed") })
+                        }
+                      }
+                      item {
+                        SampleSectionLazyRow(
+                            mainViewModel = mainViewModel,
+                            samples = followedSamples,
+                            rowsPerColumn = maxColumns,
+                            onCommentClick = { onCommentClicked(it) },
+                            onProfileClick = { handleProfileNavigation(it) })
+                        Spacer(modifier = Modifier.height(50.dp))
                       }
                     }
-                    item {
-                      SampleSectionLazyRow(
-                          mainViewModel = mainViewModel,
-                          samples = discoverSamples,
-                          rowsPerColumn = 2,
-                          onCommentClick = { onCommentClicked(it) },
-                          onProfileClick = { handleProfileNavigation(it) })
-                    }
-                    // ----------------Followed Section-----------------
-                    item {
-                      Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-                        SectionHeader(title = "Followed")
-                      }
-                    }
-                    item {
-                      SampleSectionLazyRow(
-                          mainViewModel = mainViewModel,
-                          samples = followedSamples,
-                          rowsPerColumn = maxColumns,
-                          onCommentClick = { onCommentClicked(it) },
-                          onProfileClick = { handleProfileNavigation(it) })
-                      Spacer(modifier = Modifier.height(50.dp))
-                    }
-                  }
+                PullToRefreshContainer(
+                    state = pullRefreshState,
+                    modifier =
+                        Modifier.align(Alignment.TopCenter)
+                            .padding(top = paddingValues.calculateTopPadding()),
+                    containerColor = NepTuneTheme.colors.background,
+                    contentColor = NepTuneTheme.colors.onBackground)
+              }
             },
             containerColor = NepTuneTheme.colors.background)
-        PullToRefreshContainer(
-            state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter),
-            containerColor = NepTuneTheme.colors.background,
-            contentColor = NepTuneTheme.colors.onBackground)
         // Comment Overlay (Outside Scaffold content, but inside Box to float over everything)
-        if (activeCommentSampleId != null) {
-          CommentDialog(
-              sampleId = activeCommentSampleId!!,
-              usernames = usernames,
-              comments = comments,
-              onDismiss = { activeCommentSampleId = null },
-              onAddComment = { id, text -> onAddComment(id, text) })
-        }
+        SampleCommentManager(mainViewModel = mainViewModel)
 
         if (downloadProgress != null && downloadProgress != 0) {
           DownloadProgressBar(
-              downloadProgress = downloadProgress!!, MainScreenTestTags.DOWNlOAD_PROGRESS)
+              downloadProgress = downloadProgress!!, MainScreenTestTags.DOWNLOAD_PROGRESS)
         }
       }
 }
@@ -498,9 +495,10 @@ fun SampleCardHeader(
 
 // ----------------Section Header-----------------
 @Composable
-fun SectionHeader(title: String) {
+fun SectionHeader(title: String, onClick: () -> Unit) {
   Row(
-      modifier = Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 12.dp),
+      modifier =
+          Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 12.dp).clickable { onClick() },
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically) {
         Text(
@@ -511,7 +509,7 @@ fun SectionHeader(title: String) {
                     fontSize = 37.sp,
                     fontFamily = FontFamily(Font(R.font.markazi_text)),
                     fontWeight = FontWeight(400)))
-        IconButton(onClick = { /*Does nothing for now, Todo: Add an action with the click*/}) {
+        IconButton(onClick = onClick) {
           Icon(
               imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
               contentDescription = "See More",

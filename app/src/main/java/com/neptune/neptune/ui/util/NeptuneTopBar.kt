@@ -1,6 +1,7 @@
-package com.neptune.neptune.ui.settings
+package com.neptune.neptune.ui.util
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -26,7 +27,13 @@ import com.neptune.neptune.ui.theme.NepTuneTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsTopBar(title: String, goBack: () -> Unit, modifier: Modifier = Modifier) {
+fun NeptuneTopBar(
+    title: String,
+    goBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    actions: @Composable (RowScope.() -> Unit) = {},
+    divider: Boolean = true
+) {
   Column(modifier = modifier.padding(vertical = 8.dp)) {
     CenterAlignedTopAppBar(
         title = {
@@ -50,12 +57,15 @@ fun SettingsTopBar(title: String, goBack: () -> Unit, modifier: Modifier = Modif
                 tint = NepTuneTheme.colors.onBackground)
           }
         },
+        actions = actions,
         colors =
             TopAppBarDefaults.centerAlignedTopAppBarColors(
                 containerColor = NepTuneTheme.colors.background))
-    HorizontalDivider(
-        modifier = Modifier.fillMaxWidth(),
-        thickness = 0.75.dp,
-        color = NepTuneTheme.colors.onBackground)
+    if (divider) {
+      HorizontalDivider(
+          modifier = Modifier.fillMaxWidth(),
+          thickness = 0.75.dp,
+          color = NepTuneTheme.colors.onBackground)
+    }
   }
 }
