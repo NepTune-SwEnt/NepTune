@@ -181,9 +181,6 @@ fun MainScreen(
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
   val userAvatar by mainViewModel.userAvatar.collectAsState()
-  val comments by mainViewModel.comments.collectAsState()
-  val usernames by mainViewModel.usernames.collectAsState()
-  var activeCommentSampleId by remember { mutableStateOf<String?>(null) }
 
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
   val horizontalPadding = 30.dp
@@ -209,13 +206,7 @@ fun MainScreen(
   }
 
   fun onCommentClicked(sample: Sample) {
-    mainViewModel.observeCommentsForSample(sample.id)
-    activeCommentSampleId = sample.id
-  }
-
-  fun onAddComment(sampleId: String, text: String) {
-    mainViewModel.addComment(sampleId, text)
-    mainViewModel.observeCommentsForSample(sampleId)
+    mainViewModel.openCommentSection(sample)
   }
 
   fun handleProfileNavigation(ownerId: String) {
@@ -367,14 +358,7 @@ fun MainScreen(
             },
             containerColor = NepTuneTheme.colors.background)
         // Comment Overlay (Outside Scaffold content, but inside Box to float over everything)
-        if (activeCommentSampleId != null) {
-          CommentDialog(
-              sampleId = activeCommentSampleId!!,
-              usernames = usernames,
-              comments = comments,
-              onDismiss = { activeCommentSampleId = null },
-              onAddComment = { id, text -> onAddComment(id, text) })
-        }
+        SampleCommentManager(mainViewModel = mainViewModel)
 
         if (downloadProgress != null && downloadProgress != 0) {
           DownloadProgressBar(

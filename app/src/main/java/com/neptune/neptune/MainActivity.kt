@@ -31,7 +31,7 @@ import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.resources.C
 import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInViewModel
-import com.neptune.neptune.ui.feed.SampleListScreen
+import com.neptune.neptune.ui.feed.FeedScreen
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.main.factory
@@ -281,7 +281,7 @@ fun NeptuneApp(
                     arguments = listOf(navArgument("type") { type = NavType.StringType })) {
                         backStackEntry ->
                       val type = backStackEntry.arguments?.getString("type") ?: "Discover"
-                      SampleListScreen(
+                      FeedScreen(
                           mainViewModel = mainViewModel,
                           initialType = type,
                           goBack = { navigationActions.goBack() },
