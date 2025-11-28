@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -55,8 +56,12 @@ fun FeedScreen(
     navigateToOtherUserProfile: (String) -> Unit = {}
 ) {
   var currentType by remember { mutableStateOf(initialType) }
+  val discoverListState = rememberLazyListState()
+  val followedListState = rememberLazyListState()
 
   val isDiscover = currentType == "Discover"
+
+  val activeListState = if (isDiscover) discoverListState else followedListState
   val switchButtonText = if (isDiscover) "See Followed" else "See Discover"
 
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
@@ -114,6 +119,7 @@ fun FeedScreen(
                   Modifier.nestedScroll(pullRefreshState.nestedScrollConnection)
                       .background(NepTuneTheme.colors.background)) {
                 LazyColumn(
+                    state = activeListState,
                     modifier =
                         Modifier.padding(paddingValues)
                             .fillMaxSize()
