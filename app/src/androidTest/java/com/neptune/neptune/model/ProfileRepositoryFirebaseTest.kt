@@ -56,13 +56,13 @@ class ProfileRepositoryFirebaseTest {
       auth = FirebaseAuth.getInstance()
       try {
         db.useEmulator(host, firestorePort)
-      } catch (e: IllegalStateException) {
+      } catch (_: IllegalStateException) {
         "database emulator not running?"
       }
 
       try {
         auth.useEmulator(host, authPort)
-      } catch (e: IllegalStateException) {
+      } catch (_: IllegalStateException) {
         "auth emulator not running?"
       }
 
