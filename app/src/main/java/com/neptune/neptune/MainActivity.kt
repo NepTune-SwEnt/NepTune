@@ -31,6 +31,7 @@ import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.resources.C
 import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInViewModel
+import com.neptune.neptune.ui.feed.SampleListScreen
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.main.factory
@@ -147,6 +148,9 @@ fun NeptuneApp(
                       },
                       navigateToSelectMessages = {
                         navigationActions.navigateTo(Screen.SelectMessages)
+                      },
+                      navigateToSampleList = { type ->
+                        navigationActions.navigateTo(Screen.Feed.createRoute(type))
                       },
                       mainViewModel = mainViewModel)
                 }
@@ -272,6 +276,21 @@ fun NeptuneApp(
                       onSelectUser = {} // TODO: Add the Message Screen
                       )
                 }
+                composable(
+                    route = Screen.Feed.route,
+                    arguments = listOf(navArgument("type") { type = NavType.StringType })) {
+                        backStackEntry ->
+                      val type = backStackEntry.arguments?.getString("type") ?: "Discover"
+                      SampleListScreen(
+                          mainViewModel = mainViewModel,
+                          initialType = type,
+                          goBack = { navigationActions.goBack() },
+                          navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
+                          navigateToOtherUserProfile = { userId ->
+                            navigationActions.navigateTo(
+                                Screen.OtherUserProfile.createRoute(userId))
+                          })
+                    }
               }
         })
   }

@@ -18,6 +18,10 @@ sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
     }
   }
 
+  object Feed : Screen("feed/{type}") {
+    fun createRoute(type: String): String = "feed/$type"
+  }
+
   object Search : Screen(route = "search")
 
   object Post : Screen(route = "post/{projectId}") {
