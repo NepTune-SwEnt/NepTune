@@ -4,6 +4,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 
+/**
+ * Composable function is used to manage the comments. This has been written with the help of LLMs.
+ *
+ * @author Grégory Blanc
+ */
 @Composable
 fun SampleCommentManager(mainViewModel: MainViewModel) {
   val activeCommentSampleId by mainViewModel.activeCommentSampleId.collectAsState()

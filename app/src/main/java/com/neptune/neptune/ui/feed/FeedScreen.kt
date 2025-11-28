@@ -39,6 +39,11 @@ object FeedScreenTestTag : BaseSampleTestTags {
   const val DOWNLOAD_PROGRESS = "feedDownloadProgressBar"
 }
 
+/**
+ * Composable function representing the feed Screen. This has been written with the help of LLMs.
+ *
+ * @author Grégory Blanc
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeedScreen(
