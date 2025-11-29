@@ -4,7 +4,6 @@ import android.content.Context
 import android.os.Environment
 import android.util.Log
 import androidx.core.net.toUri
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
@@ -12,17 +11,17 @@ import com.neptune.neptune.R
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
-import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
+import com.neptune.neptune.ui.feed.BaseSampleFeedViewModel
+import com.neptune.neptune.ui.feed.SampleFeedController
 import com.neptune.neptune.ui.main.SampleResourceState
 import com.neptune.neptune.ui.main.SampleUiActions
 import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -36,15 +35,14 @@ const val NATURE_TAG = "#nature"
  * written with assistance from ChatGPT
  */
 open class SearchViewModel(
-    private val repo: SampleRepository = SampleRepositoryProvider.repository,
+    repo: SampleRepository = SampleRepositoryProvider.repository,
     private val context: Context,
     private val useMockData: Boolean = false,
-    private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
+    profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
     explicitStorageService: StorageService? = null,
     explicitDownloadsFolder: File? = null,
     private val auth: FirebaseAuth? = null
-) : ViewModel() {
-  private val defaultName = "anonymous"
+) : BaseSampleFeedViewModel(sampleRepo = repo, profileRepo = profileRepo), SampleFeedController {
 
   // ---------- Firebase auth (disabled in tests when useMockData = true) ----------
 
@@ -67,33 +65,11 @@ open class SearchViewModel(
   private val _samples = MutableStateFlow<List<Sample>>(emptyList())
   val samples: StateFlow<List<Sample>> = _samples
 
-  private val _comments = MutableStateFlow<List<Comment>>(emptyList())
-  val comments: StateFlow<List<Comment>> = _comments
   private var query = ""
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
   private val allSamples = MutableStateFlow<List<Sample>>(emptyList())
-  private var allSamplesCache: List<Sample> = emptyList()
-  private val _activeCommentSampleId = MutableStateFlow<String?>(null)
-  val activeCommentSampleId: StateFlow<String?> = _activeCommentSampleId.asStateFlow()
-  private val _sampleResources = MutableStateFlow<Map<String, SampleResourceState>>(emptyMap())
-  val sampleResources = _sampleResources.asStateFlow()
 
-  private val _isAnonymous = MutableStateFlow(auth?.currentUser?.isAnonymous ?: true)
-  val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
-
-  private val _usernames = MutableStateFlow<Map<String, String>>(emptyMap())
-  val usernames: StateFlow<Map<String, String>> = _usernames.asStateFlow()
-
-  fun onCommentClicked(sample: Sample) {
-    observeCommentsForSample(sample.id)
-    _activeCommentSampleId.value = sample.id
-  }
-
-  fun onAddComment(sampleId: String, text: String) {
-    addComment(sampleId, text)
-    observeCommentsForSample(sampleId)
-  }
   // ---------- Actions (download, etc.) – disabled in tests ----------
   val downloadProgress = MutableStateFlow<Int?>(null)
 
@@ -185,7 +161,7 @@ open class SearchViewModel(
   }
 
   /** Function to trigger loading */
-  fun loadSampleResources(sample: Sample) {
+  override fun loadSampleResources(sample: Sample) {
     val currentResources = _sampleResources.value[sample.id]
     if (currentResources != null &&
         currentResources.loadedSamplePath == sample.storagePreviewSamplePath) {
@@ -285,21 +261,9 @@ open class SearchViewModel(
 
   fun loadSamplesFromFirebase() {
     viewModelScope.launch {
-      repo.observeSamples().collectLatest { remoteSamples ->
-        if (allSamplesCache.isEmpty()) {
-          allSamplesCache = remoteSamples
-          val readySamples = remoteSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
-          readySamples.forEach { loadSampleResources(it) }
-        } else {
-          val existingIds = allSamplesCache.map { it.id }.toSet()
-          val newSamples = remoteSamples.filter { it.id !in existingIds }
-          allSamplesCache = remoteSamples
-          newSamples
-              .filter { it.storagePreviewSamplePath.isNotBlank() }
-              .forEach { loadSampleResources(it) }
-        }
-        val validSamples = allSamplesCache.filter { it.storagePreviewSamplePath.isNotBlank() }
-        allSamples.value = validSamples
+      sampleRepo.observeSamples().collectLatest { samples ->
+        val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
+        allSamples.value = readySamples
         applyFilter(query)
         refreshLikeStates()
       }
@@ -308,7 +272,7 @@ open class SearchViewModel(
 
   // ---------- Public API used by UI ----------
 
-  fun onDownloadSample(sample: Sample) {
+  override fun onDownloadSample(sample: Sample) {
     val safeActions = actions ?: return // no-op in tests
     viewModelScope.launch {
       try {
@@ -321,10 +285,10 @@ open class SearchViewModel(
     }
   }
 
-  fun onLikeClick(sample: Sample, isLikedNow: Boolean) {
+  override fun onLikeClick(sample: Sample, isLikedNow: Boolean) {
     val sampleId = sample.id
     viewModelScope.launch {
-      repo.toggleLike(sample.id, isLikedNow)
+      sampleRepo.toggleLike(sample.id, isLikedNow)
       val delta = if (isLikedNow) 1 else -1
       val updatedSamples =
           allSamples.value.map { current ->
@@ -345,50 +309,10 @@ open class SearchViewModel(
       val allSamples = _samples.value
       val updatedStates = mutableMapOf<String, Boolean>()
       for (sample in allSamples) {
-        val liked = repo.hasUserLiked(sample.id)
+        val liked = sampleRepo.hasUserLiked(sample.id)
         updatedStates[sample.id] = liked
       }
       _likedSamples.value = updatedStates
-    }
-  }
-
-  fun observeCommentsForSample(sampleId: String) {
-    viewModelScope.launch {
-      repo.observeComments(sampleId).collectLatest { list ->
-        // Ensure usernames are loaded for each author
-        list.forEach { comment -> loadUsername(comment.authorId) }
-        _comments.value = list
-      }
-    }
-  }
-
-  /*
-   * Function to load the user name.
-   */
-  fun loadUsername(userId: String) {
-    viewModelScope.launch {
-      // Check cache first
-      val cached = _usernames.value[userId]
-      if (cached != null && cached != defaultName) return@launch
-
-      // Fetch latest username
-      val userName = profileRepo.getUserNameByUserId(userId) ?: defaultName
-
-      _usernames.update { it + (userId to userName) }
-    }
-  }
-
-  fun resetCommentSampleId() {
-    _activeCommentSampleId.value = null
-  }
-
-  fun addComment(sampleId: String, text: String) {
-    viewModelScope.launch {
-      val profile = profileRepo.getCurrentProfile()
-      val authorId = profile?.uid ?: auth?.currentUser?.uid ?: "unknown"
-      val authorName = profile?.username ?: defaultName
-      repo.addComment(sampleId, authorId, authorName, text.trim())
-      observeCommentsForSample(sampleId)
     }
   }
 
@@ -425,7 +349,7 @@ open class SearchViewModel(
   }
 
   /** True when [ownerId] refers to the currently signed-in Firebase user. */
-  open fun isCurrentUser(ownerId: String?): Boolean {
+  override fun isCurrentUser(ownerId: String): Boolean {
     val currentUserId = firebaseAuth?.currentUser?.uid ?: return false
     return !ownerId.isNullOrBlank() && ownerId == currentUserId
   }
