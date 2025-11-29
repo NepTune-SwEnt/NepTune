@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -74,8 +75,11 @@ fun FeedScreen(
   val mediaPlayer = LocalMediaPlayer.current
   val isRefreshing by mainViewModel.isRefreshing.collectAsState()
   val pullRefreshState = rememberPullToRefreshState()
+  val configuration = LocalConfiguration.current
+  val screenWidth = configuration.screenWidthDp.dp
   val wait: Long = 300
-  val width = 300.dp
+  val width = screenWidth - 20.dp
+  val height = width * (150f / 166f) // the same ratio than in the mainScreen
   val fontWeight = 400
   val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
 
@@ -147,6 +151,7 @@ fun FeedScreen(
                         SampleItem(
                             sample = sample,
                             width = width,
+                            height = height,
                             isLiked = likedSamples[sample.id] == true,
                             clickHandlers = clickHandlers,
                             resourceState = resources,

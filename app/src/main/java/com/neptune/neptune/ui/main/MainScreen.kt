@@ -1,6 +1,7 @@
 package com.neptune.neptune.ui.main
 
 import android.app.Application
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -424,6 +425,7 @@ private fun SampleSectionLazyRow(
 fun SampleItem(
     sample: Sample,
     width: Dp,
+    height: Dp = 166.dp,
     isLiked: Boolean,
     clickHandlers: ClickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
@@ -443,6 +445,7 @@ fun SampleItem(
     SampleCard(
         sample = sample,
         width = width,
+        height = height,
         isLiked = isLiked,
         clickHandlers = clickHandlers,
         testTags = testTags,
@@ -557,11 +560,14 @@ fun SampleCard(
   val likeDescription = if (isLiked) "liked" else "not liked"
   val heartColor = if (isLiked) Color.Red else NepTuneTheme.colors.background
   val heartIcon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder
+  var isExpanded by remember { mutableStateOf(false) }
+  val bottomPartHeight = 60.dp
+  val imagePartHeight = height - bottomPartHeight
 
   Card(
       modifier =
           Modifier.width(width)
-              .height(height)
+              .animateContentSize()
               .clickable(
                   onClick = {
                     if (resourceState.audioUrl != null) {
@@ -574,8 +580,8 @@ fun SampleCard(
       colors = CardDefaults.cardColors(containerColor = NepTuneTheme.colors.cardBackground),
       shape = RoundedCornerShape(12.dp),
       border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground)) {
-        Column(modifier = Modifier.fillMaxSize()) {
-          Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+          Box(modifier = Modifier.fillMaxWidth().height(imagePartHeight)) {
             if (resourceState.coverImageUrl != null) {
               AsyncImage(
                   model =
@@ -608,7 +614,7 @@ fun SampleCard(
                         SampleWaveform(
                             amplitudes = resourceState.waveform,
                             color = NepTuneTheme.colors.onBackground,
-                            modifier = Modifier.fillMaxWidth(0.95f).height(70.dp))
+                            modifier = Modifier.fillMaxWidth(0.95f).height(imagePartHeight * 0.7f))
                       }
 
                   // Sample name and duration
@@ -655,23 +661,39 @@ fun SampleCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween) {
                       Text(
-                          sample.tags.joinToString(", "),
+                          text = sample.tags.joinToString(" ") { "#$it" },
                           color = NepTuneTheme.colors.background,
-                          modifier = Modifier.testTag(testTags.SAMPLE_TAGS),
+                          modifier = Modifier.testTag(testTags.SAMPLE_TAGS).weight(1f),
+                          maxLines = 1,
+                          overflow = TextOverflow.Ellipsis,
                           style =
                               TextStyle(
                                   fontSize = 10.sp,
                                   fontFamily = FontFamily(Font(R.font.markazi_text)),
                                   fontWeight = FontWeight(400)))
                       Text(
-                          text = "see more…",
+                          text = if (isExpanded) "see less…" else "see more…",
                           color = NepTuneTheme.colors.background,
+                          modifier = Modifier.clickable { isExpanded = !isExpanded },
                           style =
                               TextStyle(
                                   fontSize = 10.sp,
                                   fontFamily = FontFamily(Font(R.font.markazi_text)),
                                   fontWeight = FontWeight(400)))
                     }
+                if (isExpanded) {
+                  Spacer(Modifier.height(4.dp))
+                  Text(
+                      text = sample.description,
+                      color = NepTuneTheme.colors.background,
+                      maxLines = 5,
+                      overflow = TextOverflow.Ellipsis,
+                      style =
+                          TextStyle(
+                              fontSize = 12.sp,
+                              fontFamily = FontFamily(Font(R.font.markazi_text)),
+                              fontWeight = FontWeight(400)))
+                }
                 Spacer(Modifier.height(4.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -924,8 +946,8 @@ fun SampleWaveform(amplitudes: List<Float>, color: Color, modifier: Modifier = M
     Image(
         painter = painterResource(R.drawable.waveform),
         contentDescription = "Waveform",
-        modifier = modifier,
-        contentScale = ContentScale.FillBounds,
+        modifier = modifier.padding(vertical = 12.dp, horizontal = 20.dp),
+        contentScale = ContentScale.Fit,
         colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(color))
   }
 }
