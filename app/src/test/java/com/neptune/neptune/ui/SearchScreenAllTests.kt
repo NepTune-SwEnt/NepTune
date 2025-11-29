@@ -296,7 +296,7 @@ class SearchScreenAllTests {
     composeRule.setContent {
       ScrollableColumnOfSamples(
           samples = listOf(sample),
-          searchViewModel = vm,
+          controller = vm,
           mediaPlayer = fakeMediaPlayer,
           navigateToOtherUserProfile = { navigatedTo = it })
     }
@@ -318,7 +318,7 @@ class SearchScreenAllTests {
                 context = appContext,
                 useMockData = true,
                 profileRepo = fakeProfileRepo) {
-          override fun isCurrentUser(ownerId: String?): Boolean = ownerId == "current-user"
+          override fun isCurrentUser(ownerId: String): Boolean = ownerId == "current-user"
         }
     val sample =
         Sample(
@@ -339,7 +339,7 @@ class SearchScreenAllTests {
     composeRule.setContent {
       ScrollableColumnOfSamples(
           samples = listOf(sample),
-          searchViewModel = vm,
+          controller = vm,
           mediaPlayer = fakeMediaPlayer,
           navigateToProfile = { navigatedToSelf = true },
           navigateToOtherUserProfile = { navigatedToOther = it })

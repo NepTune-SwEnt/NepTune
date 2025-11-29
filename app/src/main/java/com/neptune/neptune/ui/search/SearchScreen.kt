@@ -32,6 +32,7 @@ import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
+import com.neptune.neptune.ui.feed.SampleFeedController
 import com.neptune.neptune.ui.main.CommentDialog
 import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.main.SampleItem
