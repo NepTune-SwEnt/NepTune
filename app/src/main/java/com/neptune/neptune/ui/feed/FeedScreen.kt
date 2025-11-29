@@ -130,7 +130,7 @@ fun FeedScreen(
                             .background(NepTuneTheme.colors.background),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally) {
-                      items(samples) { sample ->
+                      items(samples, key = { sample -> sample.id }) { sample ->
                         LaunchedEffect(sample.id) { mainViewModel.loadSampleResources(sample) }
 
                         val resources = sampleResources[sample.id] ?: SampleResourceState()
