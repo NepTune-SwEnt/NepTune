@@ -71,6 +71,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
@@ -82,6 +83,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -431,6 +433,7 @@ fun SampleItem(
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
     testTags: BaseSampleTestTags = MainScreenTestTags,
     resourceState: SampleResourceState = SampleResourceState(),
+    iconSize: Dp = 16.dp
 ) {
 
   Column(modifier = Modifier.width(width)) {
@@ -450,7 +453,8 @@ fun SampleItem(
         clickHandlers = clickHandlers,
         testTags = testTags,
         mediaPlayer = mediaPlayer,
-        resourceState = resourceState)
+        resourceState = resourceState,
+        iconSize = iconSize)
   }
 }
 
@@ -556,13 +560,17 @@ fun SampleCard(
     clickHandlers: ClickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
     resourceState: SampleResourceState = SampleResourceState(),
+    iconSize: Dp = 16.dp
 ) {
   val likeDescription = if (isLiked) "liked" else "not liked"
   val heartColor = if (isLiked) Color.Red else NepTuneTheme.colors.background
   val heartIcon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder
   var isExpanded by remember { mutableStateOf(false) }
-  val bottomPartHeight = 60.dp
+  val bottomPartHeight = height * 0.36f
   val imagePartHeight = height - bottomPartHeight
+  val density = LocalDensity.current
+  val smallFontSize = with(density) { (height * 0.06f).toSp() }
+  val regularFontSize = with(density) { (height * 0.072f).toSp() }
 
   Card(
       modifier =
@@ -630,7 +638,7 @@ fun SampleCard(
                             modifier = Modifier.weight(1f).testTag(testTags.SAMPLE_NAME),
                             style =
                                 TextStyle(
-                                    fontSize = 12.sp,
+                                    fontSize = regularFontSize,
                                     fontFamily = FontFamily(Font(R.font.markazi_text)),
                                     fontWeight = FontWeight(400)))
 
@@ -643,7 +651,7 @@ fun SampleCard(
                                 Modifier.padding(start = 8.dp).testTag(testTags.SAMPLE_DURATION),
                             style =
                                 TextStyle(
-                                    fontSize = 12.sp,
+                                    fontSize = regularFontSize,
                                     fontFamily = FontFamily(Font(R.font.markazi_text)),
                                     fontWeight = FontWeight(400),
                                 ))
@@ -668,7 +676,7 @@ fun SampleCard(
                           overflow = TextOverflow.Ellipsis,
                           style =
                               TextStyle(
-                                  fontSize = 10.sp,
+                                  fontSize = smallFontSize,
                                   fontFamily = FontFamily(Font(R.font.markazi_text)),
                                   fontWeight = FontWeight(400)))
                       Text(
@@ -677,7 +685,7 @@ fun SampleCard(
                           modifier = Modifier.clickable { isExpanded = !isExpanded },
                           style =
                               TextStyle(
-                                  fontSize = 10.sp,
+                                  fontSize = smallFontSize,
                                   fontFamily = FontFamily(Font(R.font.markazi_text)),
                                   fontWeight = FontWeight(400)))
                     }
@@ -690,7 +698,7 @@ fun SampleCard(
                       overflow = TextOverflow.Ellipsis,
                       style =
                           TextStyle(
-                              fontSize = 12.sp,
+                              fontSize = regularFontSize,
                               fontFamily = FontFamily(Font(R.font.markazi_text)),
                               fontWeight = FontWeight(400)))
                 }
@@ -706,7 +714,9 @@ fun SampleCard(
                               Modifier.testTag(testTags.SAMPLE_LIKES)
                                   .semantics { stateDescription = likeDescription }
                                   .clickable { clickHandlers.onLikeClick(!isLiked) },
-                          tint = heartColor)
+                          tint = heartColor,
+                          iconSize = iconSize,
+                          fontSize = smallFontSize)
                       IconWithTextPainter(
                           icon = painterResource(R.drawable.comments),
                           iconDescription = "Comments",
@@ -714,14 +724,18 @@ fun SampleCard(
                           modifier =
                               Modifier.testTag(testTags.SAMPLE_COMMENTS).clickable {
                                 clickHandlers.onCommentClick()
-                              })
+                              },
+                          iconSize = iconSize,
+                          fontSize = smallFontSize)
                       IconWithTextPainter(
                           icon = painterResource(R.drawable.download),
                           iconDescription = "Downloads",
                           text = sample.downloads.toString(),
                           modifier =
                               Modifier.testTag(testTags.SAMPLE_DOWNLOADS)
-                                  .clickable(onClick = clickHandlers.onDownloadClick))
+                                  .clickable(onClick = clickHandlers.onDownloadClick),
+                          iconSize = iconSize,
+                          fontSize = smallFontSize)
                     }
               }
         }
@@ -886,12 +900,15 @@ fun IconWithText(
     iconDescription: String,
     text: String,
     modifier: Modifier = Modifier,
-    tint: Color = NepTuneTheme.colors.background
+    tint: Color = NepTuneTheme.colors.background,
+    iconSize: Dp = 16.dp,
+    fontSize: TextUnit = 10.sp
 ) {
   Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
-    Icon(icon, contentDescription = iconDescription, tint = tint, modifier = Modifier.size(16.dp))
+    Icon(
+        icon, contentDescription = iconDescription, tint = tint, modifier = Modifier.size(iconSize))
     Spacer(Modifier.width(3.dp))
-    Text(text, color = NepTuneTheme.colors.background, fontSize = 10.sp)
+    Text(text, color = NepTuneTheme.colors.background, fontSize = fontSize)
   }
 }
 
@@ -901,16 +918,18 @@ fun IconWithTextPainter(
     icon: Painter,
     iconDescription: String,
     text: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    iconSize: Dp = 16.dp,
+    fontSize: TextUnit = 10.sp
 ) {
   Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
     Icon(
         icon,
         contentDescription = iconDescription,
         tint = NepTuneTheme.colors.background,
-        modifier = Modifier.size(16.dp))
+        modifier = Modifier.size(iconSize))
     Spacer(Modifier.width(3.dp))
-    Text(text, color = NepTuneTheme.colors.background, fontSize = 10.sp)
+    Text(text, color = NepTuneTheme.colors.background, fontSize = fontSize)
   }
 }
 

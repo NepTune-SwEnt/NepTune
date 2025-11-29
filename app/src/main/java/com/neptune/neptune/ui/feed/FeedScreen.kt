@@ -155,7 +155,8 @@ fun FeedScreen(
                             isLiked = likedSamples[sample.id] == true,
                             clickHandlers = clickHandlers,
                             resourceState = resources,
-                            mediaPlayer = mediaPlayer)
+                            mediaPlayer = mediaPlayer,
+                            iconSize = 20.dp)
                       }
 
                       item { Spacer(modifier = Modifier.height(20.dp)) }
