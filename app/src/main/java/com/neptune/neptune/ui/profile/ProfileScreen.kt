@@ -351,6 +351,13 @@ private fun ProfileViewContent(
                                   borderWidth = 0.dp, enabled = false, selected = false))
                     }
                   }
+
+              Spacer(Modifier.height(LargeSectionSpacing))
+
+              Text(
+                  text = "My projects",
+                  color = NepTuneTheme.colors.onBackground,
+                  style = MaterialTheme.typography.headlineSmall,
             }
 
             Spacer(Modifier.height(50.dp))
