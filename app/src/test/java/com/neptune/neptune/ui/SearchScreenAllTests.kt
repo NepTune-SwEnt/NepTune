@@ -57,7 +57,7 @@ class SearchScreenAllTests {
     val fakeSampleRepo = FakeSampleRepository()
     val fakeProfileRepo = FakeProfileRepository()
     return SearchViewModel(
-        repo = fakeSampleRepo,
+        sampleRepo = fakeSampleRepo,
         context = appContext,
         useMockData = true,
         profileRepo = fakeProfileRepo)
@@ -77,7 +77,7 @@ class SearchScreenAllTests {
    */
   class SpySearchViewModel(repo: SampleRepository, profileRepo: ProfileRepository) :
       SearchViewModel(
-          repo = repo, context = appContext, useMockData = true, profileRepo = profileRepo) {
+          sampleRepo = repo, context = appContext, useMockData = true, profileRepo = profileRepo) {
     val calls = mutableListOf<String>()
 
     override fun search(query: String) {
@@ -314,7 +314,7 @@ class SearchScreenAllTests {
     val vm =
         object :
             SearchViewModel(
-                repo = fakeSampleRepo,
+                sampleRepo = fakeSampleRepo,
                 context = appContext,
                 useMockData = true,
                 profileRepo = fakeProfileRepo) {

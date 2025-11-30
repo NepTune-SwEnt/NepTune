@@ -35,14 +35,14 @@ const val NATURE_TAG = "#nature"
  * written with assistance from ChatGPT
  */
 open class SearchViewModel(
-    repo: SampleRepository = SampleRepositoryProvider.repository,
+    sampleRepo: SampleRepository = SampleRepositoryProvider.repository,
     private val context: Context,
     private val useMockData: Boolean = false,
     profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
     explicitStorageService: StorageService? = null,
     explicitDownloadsFolder: File? = null,
-    private val auth: FirebaseAuth? = null
-) : BaseSampleFeedViewModel(sampleRepo = repo, profileRepo = profileRepo), SampleFeedController {
+    auth: FirebaseAuth? = null
+) : BaseSampleFeedViewModel(sampleRepo = sampleRepo, profileRepo = profileRepo), SampleFeedController {
 
   // ---------- Firebase auth (disabled in tests when useMockData = true) ----------
 
@@ -90,7 +90,7 @@ open class SearchViewModel(
                 ?: Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
 
         SampleUiActions(
-            repo, storageService, downloadsFolder, context, downloadProgress = downloadProgress)
+            sampleRepo, storageService, downloadsFolder, context, downloadProgress = downloadProgress)
       }
 
   private val avatarCache = mutableMapOf<String, String?>()
@@ -261,7 +261,7 @@ open class SearchViewModel(
 
   fun loadSamplesFromFirebase() {
     viewModelScope.launch {
-      sampleRepo.observeSamples().collectLatest { samples ->
+      this@SearchViewModel.sampleRepo.observeSamples().collectLatest { samples ->
         val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
         allSamples.value = readySamples
         applyFilter(query)
@@ -288,7 +288,7 @@ open class SearchViewModel(
   override fun onLikeClick(sample: Sample, isLikedNow: Boolean) {
     val sampleId = sample.id
     viewModelScope.launch {
-      sampleRepo.toggleLike(sample.id, isLikedNow)
+      this@SearchViewModel.sampleRepo.toggleLike(sample.id, isLikedNow)
       val delta = if (isLikedNow) 1 else -1
       val updatedSamples =
           allSamples.value.map { current ->
@@ -309,7 +309,7 @@ open class SearchViewModel(
       val allSamples = _samples.value
       val updatedStates = mutableMapOf<String, Boolean>()
       for (sample in allSamples) {
-        val liked = sampleRepo.hasUserLiked(sample.id)
+        val liked = this@SearchViewModel.sampleRepo.hasUserLiked(sample.id)
         updatedStates[sample.id] = liked
       }
       _likedSamples.value = updatedStates

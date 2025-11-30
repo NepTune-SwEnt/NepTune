@@ -90,7 +90,7 @@ class MainScreenTest {
     val fakeProfileRepo = FakeProfileRepository()
     viewModel =
         MainViewModel(
-            repo = fakeSampleRepo,
+            sampleRepo = fakeSampleRepo,
             profileRepo = fakeProfileRepo,
             context = appContext,
             useMockData = false // Set to false to use the real logic with our fake repo

@@ -60,7 +60,7 @@ class MainViewModelTest {
 
     viewModel =
         MainViewModel(
-            repo = fakeRepository,
+            sampleRepo = fakeRepository,
             profileRepo = fakeProfileRepository,
             useMockData = true,
             context = appContext,

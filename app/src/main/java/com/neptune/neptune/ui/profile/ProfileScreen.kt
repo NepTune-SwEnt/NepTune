@@ -358,6 +358,7 @@ private fun ProfileViewContent(
                   text = "My projects",
                   color = NepTuneTheme.colors.onBackground,
                   style = MaterialTheme.typography.headlineSmall,
+              )
             }
 
             Spacer(Modifier.height(50.dp))

@@ -1,7 +1,9 @@
 package com.neptune.neptune.ui.feed
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
@@ -15,12 +17,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Shared feed logic for listing samples (likes, comments, usernames, resource cache). Subclasses
- * provide feed-specific behaviors (e.g., download/like impl, resource loading).
+ * Shared feed logic for listing samples (likes, comments, usernames, resource cache).
+ * Subclasses provide feed-specific behaviors (download/like impl, resource loading).
  */
 abstract class BaseSampleFeedViewModel(
     protected val sampleRepo: SampleRepository,
     protected val profileRepo: ProfileRepository,
+    protected val auth: FirebaseAuth? = null
 ) : ViewModel(), SampleFeedController {
 
   protected val defaultName = "anonymous"
@@ -57,6 +60,11 @@ abstract class BaseSampleFeedViewModel(
     }
   }
 
+  @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+  internal fun onAddCommentPublic(sampleId: String, text: String) {
+    onAddComment(sampleId, text)
+  }
+
   protected open fun observeCommentsForSample(sampleId: String) {
     viewModelScope.launch {
       sampleRepo.observeComments(sampleId).collectLatest { list ->
@@ -64,6 +72,11 @@ abstract class BaseSampleFeedViewModel(
         _comments.value = list
       }
     }
+  }
+
+  @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+  internal fun observeCommentsForSamplePublic(sampleId: String) {
+    observeCommentsForSample(sampleId)
   }
 
   protected open fun loadUsername(userId: String) {
@@ -74,5 +87,10 @@ abstract class BaseSampleFeedViewModel(
       val userName = profileRepo.getUserNameByUserId(userId) ?: defaultName
       _usernames.update { it + (userId to userName) }
     }
+  }
+
+  @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+  internal fun loadUsernamePublic(userId: String) {
+    loadUsername(userId)
   }
 }

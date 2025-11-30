@@ -65,7 +65,7 @@ class MainViewModelAudioTest {
 
     viewModel =
         MainViewModel(
-            repo = mockSampleRepo,
+            sampleRepo = mockSampleRepo,
             context = appContext,
             profileRepo = mockProfileRepo,
             storageService = mockStorageService,

@@ -48,7 +48,7 @@ data class SampleResourceState(
  * @author Angéline Bignens
  */
 class MainViewModel(
-    private val repo: SampleRepository = SampleRepositoryProvider.repository,
+    private val sampleRepo: SampleRepository = SampleRepositoryProvider.repository,
     context: Context,
     private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
     private var storageService: StorageService =
@@ -68,7 +68,7 @@ class MainViewModel(
         null
       } else {
         SampleUiActions(
-            repo, storageService, downloadsFolder, context, downloadProgress = downloadProgress)
+            sampleRepo, storageService, downloadsFolder, context, downloadProgress = downloadProgress)
       }
 
   val discoverSamples: MutableStateFlow<List<Sample>> = _discoverSamples
@@ -123,7 +123,7 @@ class MainViewModel(
       try {
         val profile = profileRepo.getCurrentProfile()
         val following = profile?.following.orEmpty()
-        repo.observeSamples().collectLatest { updatedSamples ->
+        sampleRepo.observeSamples().collectLatest { updatedSamples ->
           if (allSamplesCache.isEmpty()) {
             allSamplesCache = updatedSamples
             val readySamples = updatedSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
@@ -170,7 +170,7 @@ class MainViewModel(
     viewModelScope.launch {
       try {
         observingSampleIds.add(sampleId)
-        repo
+        sampleRepo
             .observeSample(sampleId)
             .first { updatedSample ->
               updatedSample != null && updatedSample.storagePreviewSamplePath.isNotBlank()
@@ -308,7 +308,7 @@ class MainViewModel(
 
       val updatedStates = mutableMapOf<String, Boolean>()
       for (sample in allSamples) {
-        val liked = repo.hasUserLiked(sample.id)
+        val liked = sampleRepo.hasUserLiked(sample.id)
         updatedStates[sample.id] = liked
       }
       _likedSamples.value = updatedStates
@@ -317,7 +317,7 @@ class MainViewModel(
 
   fun observeCommentsForSample(sampleId: String) {
     viewModelScope.launch {
-      repo.observeComments(sampleId).collectLatest { list ->
+      sampleRepo.observeComments(sampleId).collectLatest { list ->
         // Ensure usernames are loaded for each author
         list.forEach { comment -> loadUsername(comment.authorId) }
         _comments.value = list
@@ -331,7 +331,7 @@ class MainViewModel(
       val profile = profileRepo.getCurrentProfile()
       val authorId = profile?.uid ?: auth.currentUser?.uid ?: "unknown"
       val authorName = profile?.username ?: defaultName
-      repo.addComment(sampleId, authorId, authorName, text.trim())
+      sampleRepo.addComment(sampleId, authorId, authorName, text.trim())
     }
   }
 
