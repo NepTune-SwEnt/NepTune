@@ -13,9 +13,12 @@ import kotlinx.coroutines.flow.asStateFlow
  *
  * @author Angéline Bignens
  */
-class MessagesViewModel(private val otherUserId: String) : ViewModel() {
+class MessagesViewModel(
+    private val otherUserId: String,
+    private val initialMessages: List<Messages> = emptyList() /*For testing only*/
+) : ViewModel() {
 
-  private val _messages = MutableStateFlow<List<Messages>>(emptyList())
+  private val _messages = MutableStateFlow(initialMessages)
   val messages: StateFlow<List<Messages>> = _messages.asStateFlow()
 
   // TODO Replace with repo calls

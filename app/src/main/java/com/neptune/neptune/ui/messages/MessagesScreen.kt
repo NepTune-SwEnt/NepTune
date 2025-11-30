@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -33,10 +34,24 @@ import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.formatTime
 import kotlinx.coroutines.launch
 
+object MessagesScreenTestTags {
+  const val MESSAGES_SCREEN = "MessagesScreen"
+  const val TOP_BAR = "TopBarMessages"
+  const val BACK_BUTTON = "BackButton"
+  const val AVATAR = "Avatar"
+  const val USERNAME = "Username"
+  const val ONLINE_INDICATOR = "OnlineIndicator"
+
+  const val MESSAGE_LIST = "MessageList"
+  const val MESSAGE_BUBBLE = "MessageBubble"
+
+  const val INPUT_BAR = "MessageInputBar"
+  const val INPUT_FIELD = "MessageInputField"
+  const val SEND_BUTTON = "SendButton"
+}
 /**
  * Factory used to create a [MessagesViewModel] instance with a specific user ID. This has been
- * written with the help
- * * of LLMs.
+ * written with the help of LLMs.
  *
  * @param uid The ID of the user whose conversation should be loaded.
  * @author Angéline Bignens
@@ -63,7 +78,8 @@ class MessagesViewModelFactory(private val uid: String) : ViewModelProvider.Fact
 fun MessagesScreen(
     uid: String,
     goBack: () -> Unit,
-    messagesViewModel: MessagesViewModel = viewModel(factory = MessagesViewModelFactory(uid))
+    messagesViewModel: MessagesViewModel = viewModel(factory = MessagesViewModelFactory(uid)),
+    autoScroll: Boolean = true // false when testing
 ) {
   val messages by messagesViewModel.messages.collectAsState()
   val otherUsername by messagesViewModel.otherUsername.collectAsState()
@@ -75,26 +91,39 @@ fun MessagesScreen(
 
   // Scroll to latest message when list changes
   LaunchedEffect(messages.size) {
-    if (messages.isNotEmpty()) {
+    if (autoScroll && messages.isNotEmpty()) {
       coroutine.launch { listState.animateScrollToItem(messages.lastIndex) }
     }
   }
 
-  Column(modifier = Modifier.fillMaxSize().background(NepTuneTheme.colors.background)) {
-    TopBarMessages(
-        username = otherUsername, avatarUrl = otherAvatar, isOnline = isOnline, onBack = goBack)
+  Column(
+      modifier =
+          Modifier.fillMaxSize()
+              .background(NepTuneTheme.colors.background)
+              .testTag(MessagesScreenTestTags.MESSAGES_SCREEN)) {
+        TopBarMessages(
+            username = otherUsername, avatarUrl = otherAvatar, isOnline = isOnline, onBack = goBack)
 
-    HorizontalDivider(thickness = 1.dp, color = NepTuneTheme.colors.onBackground.copy(alpha = 0.1f))
+        HorizontalDivider(
+            thickness = 1.dp, color = NepTuneTheme.colors.onBackground.copy(alpha = 0.1f))
 
-    LazyColumn(modifier = Modifier.weight(1f).padding(horizontal = 10.dp), state = listState) {
-      items(messages) { msg ->
-        MessageBubble(
-            isMe = msg.authorId == currentUserId, text = msg.text, timestamp = msg.timestamp)
+        LazyColumn(
+            modifier =
+                Modifier.weight(1f)
+                    .padding(horizontal = 10.dp)
+                    .testTag(MessagesScreenTestTags.MESSAGE_LIST),
+            state = listState) {
+              items(messages) { msg ->
+                MessageBubble(
+                    isMe = msg.authorId == currentUserId,
+                    text = msg.text,
+                    timestamp = msg.timestamp,
+                    testTag = MessagesScreenTestTags.MESSAGE_BUBBLE)
+              }
+            }
+
+        MessageInputBar(onSend = { text -> messagesViewModel.sendMessage(text) })
       }
-    }
-
-    MessageInputBar(onSend = { text -> messagesViewModel.sendMessage(text) })
-  }
 }
 
 /** Composable for the Top Bar */
@@ -104,22 +133,25 @@ fun TopBarMessages(username: String, avatarUrl: String?, isOnline: Boolean, onBa
       modifier =
           Modifier.fillMaxWidth()
               .background(NepTuneTheme.colors.background)
-              .padding(horizontal = 10.dp, vertical = 10.dp),
+              .padding(horizontal = 10.dp, vertical = 10.dp)
+              .testTag(MessagesScreenTestTags.TOP_BAR),
       verticalAlignment = Alignment.CenterVertically) {
         // Back Button
-        IconButton(onClick = onBack) {
-          Icon(
-              imageVector = Icons.Filled.ArrowBackIosNew,
-              contentDescription = "Back",
-              tint = NepTuneTheme.colors.onBackground,
-              modifier = Modifier.size(32.dp))
-        }
+        IconButton(
+            onClick = onBack, modifier = Modifier.testTag(MessagesScreenTestTags.BACK_BUTTON)) {
+              Icon(
+                  imageVector = Icons.Filled.ArrowBackIosNew,
+                  contentDescription = "Back",
+                  tint = NepTuneTheme.colors.onBackground,
+                  modifier = Modifier.size(32.dp))
+            }
 
         // Avatar
         AsyncImage(
             model = avatarUrl ?: R.drawable.profile,
             contentDescription = "Avatar",
-            modifier = Modifier.size(40.dp).clip(CircleShape))
+            modifier =
+                Modifier.size(40.dp).clip(CircleShape).testTag(MessagesScreenTestTags.AVATAR))
 
         // Online / Offline dot
         Box(
@@ -127,6 +159,7 @@ fun TopBarMessages(username: String, avatarUrl: String?, isOnline: Boolean, onBa
                 Modifier.offset(x = (-12).dp, y = 14.dp)
                     .size(10.dp)
                     .clip(CircleShape)
+                    .testTag(MessagesScreenTestTags.ONLINE_INDICATOR)
                     .background(
                         color =
                             if (isOnline) NepTuneTheme.colors.online
@@ -137,6 +170,7 @@ fun TopBarMessages(username: String, avatarUrl: String?, isOnline: Boolean, onBa
         // Username
         Text(
             text = username,
+            modifier = Modifier.testTag(MessagesScreenTestTags.USERNAME),
             color = NepTuneTheme.colors.onBackground,
             style = TextStyle(fontSize = 37.sp, fontFamily = FontFamily(Font(R.font.markazi_text))),
             maxLines = 1,
@@ -146,16 +180,12 @@ fun TopBarMessages(username: String, avatarUrl: String?, isOnline: Boolean, onBa
 
 /** Composable to represent the text that a user writes */
 @Composable
-fun MessageBubble(
-    isMe: Boolean,
-    text: String,
-    timestamp: Timestamp?,
-) {
+fun MessageBubble(isMe: Boolean, text: String, timestamp: Timestamp?, testTag: String) {
   val bubbleColor = if (isMe) NepTuneTheme.colors.animation else NepTuneTheme.colors.postButton
   val alignment = if (isMe) Arrangement.End else Arrangement.Start
 
   Row(
-      modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+      modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).testTag(testTag),
       horizontalArrangement = alignment) {
         Column(horizontalAlignment = if (isMe) Alignment.End else Alignment.Start) {
           Text(
@@ -196,7 +226,10 @@ fun MessageInputBar(onSend: (String) -> Unit) {
   var text by remember { mutableStateOf("") }
 
   Row(
-      modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+      modifier =
+          Modifier.fillMaxWidth()
+              .padding(horizontal = 12.dp, vertical = 10.dp)
+              .testTag(MessagesScreenTestTags.INPUT_BAR),
       verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier =
@@ -218,7 +251,7 @@ fun MessageInputBar(onSend: (String) -> Unit) {
                                 fontWeight = FontWeight(500),
                                 fontFamily = FontFamily(Font(R.font.markazi_text))))
                   },
-                  modifier = Modifier.fillMaxSize(),
+                  modifier = Modifier.fillMaxSize().testTag(MessagesScreenTestTags.INPUT_FIELD),
                   colors =
                       TextFieldDefaults.colors(
                           focusedContainerColor = Color.Transparent,
@@ -247,7 +280,8 @@ fun MessageInputBar(onSend: (String) -> Unit) {
               }
             },
             modifier =
-                Modifier.size(57.dp)
+                Modifier.testTag(MessagesScreenTestTags.SEND_BUTTON)
+                    .size(57.dp)
                     .background(
                         color = NepTuneTheme.colors.postButton,
                         shape = RoundedCornerShape(16.dp))) {
