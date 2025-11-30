@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -77,25 +78,15 @@ fun FeedScreen(
   val pullRefreshState = rememberPullToRefreshState()
   val configuration = LocalConfiguration.current
   val screenWidth = configuration.screenWidthDp.dp
-  val wait: Long = 300
   val width = screenWidth - 20.dp
   val height = width * (150f / 166f) // the same ratio than in the mainScreen
   val fontWeight = 400
   val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
 
-  if (pullRefreshState.isRefreshing) {
-    LaunchedEffect(true) { mainViewModel.refresh() }
-  }
-  LaunchedEffect(isRefreshing) {
-    if (isRefreshing) {
-      pullRefreshState.startRefresh()
-    } else {
-      if (pullRefreshState.isRefreshing) {
-        delay(wait)
-        pullRefreshState.endRefresh()
-      }
-    }
-  }
+  PullToRefreshHandler(
+      isRefreshing = isRefreshing,
+      pullRefreshState = pullRefreshState,
+      onRefresh = { mainViewModel.refresh() })
 
   Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
@@ -175,6 +166,30 @@ fun FeedScreen(
     if (downloadProgress != null && downloadProgress != 0) {
       DownloadProgressBar(
           downloadProgress = downloadProgress!!, testTag = FeedScreenTestTag.DOWNLOAD_PROGRESS)
+    }
+  }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PullToRefreshHandler(
+    isRefreshing: Boolean,
+    pullRefreshState: PullToRefreshState,
+    onRefresh: () -> Unit,
+    wait: Long = 300
+) {
+  if (pullRefreshState.isRefreshing) {
+    LaunchedEffect(true) { onRefresh() }
+  }
+
+  LaunchedEffect(isRefreshing) {
+    if (isRefreshing) {
+      pullRefreshState.startRefresh()
+    } else {
+      if (pullRefreshState.isRefreshing) {
+        delay(wait)
+        pullRefreshState.endRefresh()
+      }
     }
   }
 }
