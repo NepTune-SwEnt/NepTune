@@ -1,6 +1,7 @@
 package com.neptune.neptune.ui.navigation
 
 import androidx.navigation.NavHostController
+import com.neptune.neptune.ui.feed.FeedType
 
 /**
  * Screens used in the app. Each screen is a destination in the navigation graph. Bottom bar and
@@ -19,7 +20,7 @@ sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
   }
 
   object Feed : Screen("feed/{type}") {
-    fun createRoute(type: String): String = "feed/$type"
+    fun createRoute(type: FeedType): String = "feed/${type.name}"
   }
 
   object Search : Screen(route = "search")

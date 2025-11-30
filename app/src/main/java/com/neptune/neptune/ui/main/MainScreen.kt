@@ -99,6 +99,7 @@ import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
+import com.neptune.neptune.ui.feed.FeedType
 import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.formatTime
@@ -177,7 +178,7 @@ fun MainScreen(
     navigateToProjectList: () -> Unit = {},
     navigateToOtherUserProfile: (String) -> Unit = {},
     navigateToSelectMessages: () -> Unit = {},
-    navigateToSampleList: (String) -> Unit = {},
+    navigateToSampleList: (FeedType) -> Unit = {},
     mainViewModel: MainViewModel =
         viewModel(factory = factory(LocalContext.current.applicationContext as Application))
 ) {
@@ -322,7 +323,8 @@ fun MainScreen(
                       item {
                         Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
                           SectionHeader(
-                              title = "Discover", onClick = { navigateToSampleList("Discover") })
+                              title = FeedType.DISCOVER.title,
+                              onClick = { navigateToSampleList(FeedType.DISCOVER) })
                         }
                       }
                       item {
@@ -337,7 +339,8 @@ fun MainScreen(
                       item {
                         Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
                           SectionHeader(
-                              title = "Followed", onClick = { navigateToSampleList("Followed") })
+                              title = FeedType.FOLLOWED.title,
+                              onClick = { navigateToSampleList(FeedType.FOLLOWED) })
                         }
                       }
                       item {

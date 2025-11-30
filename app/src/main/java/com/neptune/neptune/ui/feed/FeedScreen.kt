@@ -51,7 +51,7 @@ object FeedScreenTestTag : BaseSampleTestTags {
 fun FeedScreen(
     mainViewModel: MainViewModel =
         viewModel(factory = factory(LocalContext.current.applicationContext as Application)),
-    initialType: String = "Discover",
+    initialType: FeedType = FeedType.DISCOVER,
     goBack: () -> Unit = {},
     navigateToProfile: () -> Unit = {},
     navigateToOtherUserProfile: (String) -> Unit = {}
@@ -60,10 +60,10 @@ fun FeedScreen(
   val discoverListState = rememberLazyListState()
   val followedListState = rememberLazyListState()
 
-  val isDiscover = currentType == "Discover"
+  val isDiscover = currentType == FeedType.DISCOVER
 
   val activeListState = if (isDiscover) discoverListState else followedListState
-  val switchButtonText = if (isDiscover) "See Followed" else "See Discover"
+  val switchButtonText = "See ${currentType.toggle().title}"
 
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
@@ -101,10 +101,10 @@ fun FeedScreen(
     Scaffold(
         topBar = {
           NeptuneTopBar(
-              title = currentType,
+              title = currentType.title,
               goBack = goBack,
               actions = {
-                TextButton(onClick = { currentType = if (isDiscover) "Followed" else "Discover" }) {
+                TextButton(onClick = { currentType = currentType.toggle() }) {
                   Text(
                       text = switchButtonText,
                       color = NepTuneTheme.colors.onBackground,
