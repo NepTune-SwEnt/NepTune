@@ -10,6 +10,7 @@ import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.feed.FeedScreen
 import com.neptune.neptune.ui.feed.FeedScreenTestTag
+import com.neptune.neptune.ui.feed.FeedType
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.main.SampleResourceState
@@ -19,6 +20,8 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -72,7 +75,7 @@ class FeedScreenTest {
   }
 
   private fun setContent(
-      initialType: String = "Discover",
+      initialType: FeedType = FeedType.DISCOVER,
       navigateToProfile: () -> Unit = {},
       navigateToOtherUserProfile: (String) -> Unit = {}
   ) {
@@ -106,7 +109,7 @@ class FeedScreenTest {
             storagePreviewSamplePath = "path")
     discoverFlow.value = listOf(sample)
 
-    setContent(initialType = "Discover")
+    setContent(initialType = FeedType.DISCOVER)
 
     // Check Header Title
     composeTestRule.onNodeWithText("Discover").assertIsDisplayed()
@@ -133,7 +136,7 @@ class FeedScreenTest {
             storagePreviewSamplePath = "path")
     followedFlow.value = listOf(sample)
 
-    setContent(initialType = "Followed")
+    setContent(initialType = FeedType.FOLLOWED)
 
     // Check Header Title
     composeTestRule.onNodeWithText("Followed").assertIsDisplayed()
@@ -175,7 +178,7 @@ class FeedScreenTest {
     discoverFlow.value = listOf(discoverSample)
     followedFlow.value = listOf(followedSample)
 
-    setContent(initialType = "Discover")
+    setContent(initialType = FeedType.DISCOVER)
 
     // Initially shows Discover
     composeTestRule.onNodeWithText("Disc Sample").assertIsDisplayed()
@@ -218,7 +221,7 @@ class FeedScreenTest {
         .onFirst()
         .performClick()
 
-    assert(navigatedToSelf)
+    assertTrue(navigatedToSelf)
   }
 
   @Test
@@ -250,7 +253,7 @@ class FeedScreenTest {
         .onFirst()
         .performClick()
 
-    assert(navigatedToId == "other")
+    assertEquals("other", navigatedToId)
   }
 
   @Test
