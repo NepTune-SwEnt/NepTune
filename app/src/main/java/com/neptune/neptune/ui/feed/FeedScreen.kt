@@ -1,11 +1,13 @@
 package com.neptune.neptune.ui.feed
 
 import android.app.Application
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.PullToRefreshState
@@ -80,7 +82,6 @@ fun FeedScreen(
   val screenWidth = configuration.screenWidthDp.dp
   val width = screenWidth - 20.dp
   val height = width * (150f / 166f) // the same ratio than in the mainScreen
-  val fontWeight = 400
   val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
 
   PullToRefreshHandler(
@@ -95,16 +96,23 @@ fun FeedScreen(
               title = currentType.title,
               goBack = goBack,
               actions = {
-                TextButton(onClick = { currentType = currentType.toggle() }) {
-                  Text(
-                      text = switchButtonText,
-                      color = NepTuneTheme.colors.onBackground,
-                      style =
-                          TextStyle(
-                              fontSize = 18.sp,
-                              fontFamily = FontFamily(Font(R.font.markazi_text)),
-                              fontWeight = FontWeight(fontWeight)))
-                }
+                OutlinedButton(
+                    onClick = { currentType = currentType.toggle() },
+                    border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground),
+                    shape = RoundedCornerShape(50),
+                    colors =
+                        ButtonDefaults.outlinedButtonColors(
+                            contentColor = NepTuneTheme.colors.onBackground),
+                    modifier = Modifier.height(36.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp)) {
+                      Text(
+                          text = switchButtonText,
+                          style =
+                              TextStyle(
+                                  fontSize = 16.sp,
+                                  fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                  fontWeight = FontWeight.Bold))
+                    }
               },
               divider = false)
         },
