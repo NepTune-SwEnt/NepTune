@@ -12,10 +12,10 @@ import androidx.compose.runtime.getValue
 @Composable
 fun SampleCommentManager(mainViewModel: MainViewModel) {
   val activeCommentSampleId by mainViewModel.activeCommentSampleId.collectAsState()
-  val comments by mainViewModel.comments.collectAsState()
-  val usernames by mainViewModel.usernames.collectAsState()
 
   if (activeCommentSampleId != null) {
+    val comments by mainViewModel.comments.collectAsState()
+    val usernames by mainViewModel.usernames.collectAsState()
     CommentDialog(
         sampleId = activeCommentSampleId!!,
         comments = comments,

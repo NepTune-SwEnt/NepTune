@@ -1,6 +1,8 @@
 package com.neptune.neptune.ui.feed
 
 import android.app.Application
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -63,15 +65,10 @@ fun FeedScreen(
   val discoverListState = rememberLazyListState()
   val followedListState = rememberLazyListState()
 
-  val isDiscover = currentType == FeedType.DISCOVER
-
-  val activeListState = if (isDiscover) discoverListState else followedListState
   val switchButtonText = "See ${currentType.toggle().title}"
 
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
-
-  val samples = if (isDiscover) discoverSamples else followedSamples
 
   val likedSamples by mainViewModel.likedSamples.collectAsState()
   val sampleResources by mainViewModel.sampleResources.collectAsState()
@@ -83,6 +80,8 @@ fun FeedScreen(
   val width = screenWidth - 20.dp
   val height = width * (150f / 166f) // the same ratio than in the mainScreen
   val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
+  val effectDuration = 400
+  val roundShape = 50
 
   PullToRefreshHandler(
       isRefreshing = isRefreshing,
@@ -99,7 +98,7 @@ fun FeedScreen(
                 OutlinedButton(
                     onClick = { currentType = currentType.toggle() },
                     border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground),
-                    shape = RoundedCornerShape(50),
+                    shape = RoundedCornerShape(roundShape),
                     colors =
                         ButtonDefaults.outlinedButtonColors(
                             contentColor = NepTuneTheme.colors.onBackground),
@@ -121,53 +120,65 @@ fun FeedScreen(
               modifier =
                   Modifier.nestedScroll(pullRefreshState.nestedScrollConnection)
                       .background(NepTuneTheme.colors.background)) {
-                LazyColumn(
-                    state = activeListState,
-                    modifier =
-                        Modifier.padding(paddingValues)
-                            .fillMaxSize()
-                            .background(NepTuneTheme.colors.background),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally) {
-                      items(samples, key = { sample -> sample.id }) { sample ->
-                        LaunchedEffect(sample.id) { mainViewModel.loadSampleResources(sample) }
+                Crossfade(
+                    targetState = currentType,
+                    label = "ListTransition",
+                    animationSpec = tween(durationMillis = effectDuration)) { type ->
+                      val (currentSamples, currentState) =
+                          when (type) {
+                            FeedType.DISCOVER -> discoverSamples to discoverListState
+                            FeedType.FOLLOWED -> followedSamples to followedListState
+                          }
+                      LazyColumn(
+                          state = currentState,
+                          modifier =
+                              Modifier.padding(paddingValues)
+                                  .fillMaxSize()
+                                  .background(NepTuneTheme.colors.background),
+                          verticalArrangement = Arrangement.spacedBy(12.dp),
+                          horizontalAlignment = Alignment.CenterHorizontally) {
+                            items(currentSamples, key = { sample -> sample.id }) { sample ->
+                              LaunchedEffect(sample.id) {
+                                mainViewModel.loadSampleResources(sample)
+                              }
 
-                        val resources = sampleResources[sample.id] ?: SampleResourceState()
+                              val resources = sampleResources[sample.id] ?: SampleResourceState()
 
-                        val clickHandlers =
-                            onClickFunctions(
-                                onDownloadClick = { mainViewModel.onDownloadSample(sample) },
-                                onLikeClick = { isLiked ->
-                                  mainViewModel.onLikeClicked(sample, isLiked)
-                                },
-                                onCommentClick = { mainViewModel.openCommentSection(sample) },
-                                onProfileClick = {
-                                  if (mainViewModel.isCurrentUser(sample.ownerId))
-                                      navigateToProfile()
-                                  else navigateToOtherUserProfile(sample.ownerId)
-                                })
+                              val clickHandlers =
+                                  onClickFunctions(
+                                      onDownloadClick = { mainViewModel.onDownloadSample(sample) },
+                                      onLikeClick = { isLiked ->
+                                        mainViewModel.onLikeClicked(sample, isLiked)
+                                      },
+                                      onCommentClick = { mainViewModel.openCommentSection(sample) },
+                                      onProfileClick = {
+                                        if (mainViewModel.isCurrentUser(sample.ownerId))
+                                            navigateToProfile()
+                                        else navigateToOtherUserProfile(sample.ownerId)
+                                      })
 
-                        SampleItem(
-                            sample = sample,
-                            width = width,
-                            height = height,
-                            isLiked = likedSamples[sample.id] == true,
-                            clickHandlers = clickHandlers,
-                            resourceState = resources,
-                            mediaPlayer = mediaPlayer,
-                            iconSize = 20.dp)
-                      }
+                              SampleItem(
+                                  sample = sample,
+                                  width = width,
+                                  height = height,
+                                  isLiked = likedSamples[sample.id] == true,
+                                  clickHandlers = clickHandlers,
+                                  resourceState = resources,
+                                  mediaPlayer = mediaPlayer,
+                                  iconSize = 20.dp)
+                            }
 
-                      item { Spacer(modifier = Modifier.height(20.dp)) }
+                            item { Spacer(modifier = Modifier.height(20.dp)) }
+                          }
+
+                      PullToRefreshContainer(
+                          state = pullRefreshState,
+                          modifier =
+                              Modifier.align(Alignment.TopCenter)
+                                  .padding(top = paddingValues.calculateTopPadding()),
+                          containerColor = NepTuneTheme.colors.background,
+                          contentColor = NepTuneTheme.colors.onBackground)
                     }
-
-                PullToRefreshContainer(
-                    state = pullRefreshState,
-                    modifier =
-                        Modifier.align(Alignment.TopCenter)
-                            .padding(top = paddingValues.calculateTopPadding()),
-                    containerColor = NepTuneTheme.colors.background,
-                    contentColor = NepTuneTheme.colors.onBackground)
               }
         }
     SampleCommentManager(mainViewModel = mainViewModel)
