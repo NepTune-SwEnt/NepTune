@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -161,6 +162,10 @@ fun ScrollableColumnOfSamples(
     navigateToOtherUserProfile: (String) -> Unit = {},
     sampleResources: Map<String, SampleResourceState> = emptyMap(),
 ) {
+  val configuration = LocalConfiguration.current
+  val screenWidth = configuration.screenWidthDp.dp
+  val width = screenWidth - 20.dp
+  val height = width * (150f / 166f) // the same ratio than in the feedScreen
   // Ensure the possibility to like in local
   LazyColumn(
       modifier =
@@ -170,7 +175,6 @@ fun ScrollableColumnOfSamples(
               .background(NepTuneTheme.colors.background),
       verticalArrangement = Arrangement.spacedBy(12.dp),
       horizontalAlignment = Alignment.CenterHorizontally) {
-        val width = 300.dp
         items(samples) { sample ->
           LaunchedEffect(sample.id, sample.storagePreviewSamplePath) {
             searchViewModel.loadSampleResources(sample)
@@ -201,11 +205,13 @@ fun ScrollableColumnOfSamples(
           SampleItem(
               sample = sample,
               width = width,
+              height = height,
               clickHandlers = actions,
               isLiked = likedSamples[sample.id] == true,
               testTags = testTags,
               mediaPlayer = mediaPlayer,
-              resourceState = resources)
+              resourceState = resources,
+              iconSize = 20.dp)
         }
       } // Comment Overlay
   if (activeCommentSampleId != null) {
