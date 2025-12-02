@@ -790,7 +790,9 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
 
   val viewConfig =
       ProfileViewConfig.SelfProfileConfig(
-          onEdit = viewModel::onEditClick, settings = settings, canEditProfile = !state.isAnonymousUser)
+          onEdit = viewModel::onEditClick,
+          settings = settings,
+          canEditProfile = !state.isAnonymousUser)
 
   ProfileScreen(
       uiState = state,

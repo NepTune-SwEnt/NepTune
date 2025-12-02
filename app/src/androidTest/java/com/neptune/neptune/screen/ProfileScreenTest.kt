@@ -27,18 +27,18 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
+import com.neptune.neptune.model.FakeProfileRepository
+import com.neptune.neptune.model.FakeSampleRepository
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
-import com.neptune.neptune.model.FakeProfileRepository
-import com.neptune.neptune.model.FakeSampleRepository
 import com.neptune.neptune.ui.profile.OtherUserProfileRoute
 import com.neptune.neptune.ui.profile.ProfileMode
+import com.neptune.neptune.ui.profile.ProfileSamplesViewModel
 import com.neptune.neptune.ui.profile.ProfileScreen
 import com.neptune.neptune.ui.profile.ProfileScreenTestTags
 import com.neptune.neptune.ui.profile.ProfileViewConfig
 import com.neptune.neptune.ui.profile.SelfProfileUiState
-import com.neptune.neptune.ui.profile.ProfileSamplesViewModel
 import com.neptune.neptune.ui.profile.profileScreenCallbacks
 import com.neptune.neptune.ui.theme.SampleAppTheme
 import kotlinx.coroutines.flow.Flow
@@ -454,7 +454,7 @@ class ProfileScreenTest {
                             state.value.copy(
                                 tags = state.value.tags + normalized,
                                 inputTag = "",
-                        tagError = null)
+                                tagError = null)
                       }
                     },
                     onRemoveTag = { t ->
@@ -499,7 +499,7 @@ class ProfileScreenTest {
                     onTagSubmit = {
                       val n = state.value.inputTag.trim().lowercase()
                       if (n.isNotEmpty())
-                        state.value = state.value.copy(tags = state.value.tags + n, inputTag = "")
+                          state.value = state.value.copy(tags = state.value.tags + n, inputTag = "")
                     },
                     onRemoveTag = { t ->
                       state.value = state.value.copy(tags = state.value.tags.filterNot { it == t })
