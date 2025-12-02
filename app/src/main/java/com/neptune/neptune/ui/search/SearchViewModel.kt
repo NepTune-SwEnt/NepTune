@@ -204,15 +204,7 @@ open class SearchViewModel(
   }
 
   fun refreshLikeStates() {
-    viewModelScope.launch {
-      val allSamples = _samples.value
-      val updatedStates = mutableMapOf<String, Boolean>()
-      for (sample in allSamples) {
-        val liked = this@SearchViewModel.sampleRepo.hasUserLiked(sample.id)
-        updatedStates[sample.id] = liked
-      }
-      _likedSamples.value = updatedStates
-    }
+    refreshLikeStates(_samples.value, _likedSamples)
   }
 
   open fun search(query: String) {

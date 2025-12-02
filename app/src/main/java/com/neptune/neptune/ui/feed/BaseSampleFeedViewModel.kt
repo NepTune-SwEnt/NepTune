@@ -187,6 +187,24 @@ abstract class BaseSampleFeedViewModel(
     }
   }
 
+  /**
+   * Refreshes the liked-state map for the provided [samples] and pushes it into the given
+   * [likedSamplesState] flow. Keeps like-state handling reusable across feed ViewModels.
+   */
+  protected fun refreshLikeStates(
+      samples: List<Sample>,
+      likedSamplesState: MutableStateFlow<Map<String, Boolean>>
+  ) {
+    viewModelScope.launch {
+      val updatedStates = mutableMapOf<String, Boolean>()
+      for (sample in samples) {
+        val liked = this@BaseSampleFeedViewModel.sampleRepo.hasUserLiked(sample.id)
+        updatedStates[sample.id] = liked
+      }
+      likedSamplesState.value = updatedStates
+    }
+  }
+
   // ================= TEST HELPERS ===================
 
   @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
