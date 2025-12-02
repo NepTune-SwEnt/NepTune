@@ -3,7 +3,6 @@ package com.neptune.neptune.ui.search
 import android.content.Context
 import android.os.Environment
 import android.util.Log
-import androidx.core.net.toUri
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
@@ -16,14 +15,11 @@ import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
 import com.neptune.neptune.ui.feed.BaseSampleFeedViewModel
 import com.neptune.neptune.ui.feed.SampleFeedController
-import com.neptune.neptune.ui.main.SampleResourceState
 import com.neptune.neptune.ui.main.SampleUiActions
-import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 const val NATURE_TAG = "#nature"
@@ -36,29 +32,27 @@ const val NATURE_TAG = "#nature"
  */
 open class SearchViewModel(
     sampleRepo: SampleRepository = SampleRepositoryProvider.repository,
-    private val context: Context,
+    context: Context,
     private val useMockData: Boolean = false,
     profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
     explicitStorageService: StorageService? = null,
     explicitDownloadsFolder: File? = null,
     auth: FirebaseAuth? = null
 ) :
-    BaseSampleFeedViewModel(sampleRepo = sampleRepo, profileRepo = profileRepo),
+    BaseSampleFeedViewModel(
+        sampleRepo = sampleRepo,
+        profileRepo = profileRepo,
+        context = context,
+        auth = if (useMockData) null else auth ?: FirebaseAuth.getInstance()
+    ),
     SampleFeedController {
 
   // ---------- Firebase auth (disabled in tests when useMockData = true) ----------
 
-  private val firebaseAuth: FirebaseAuth? =
-      if (useMockData) {
-        null
-      } else {
-        auth ?: FirebaseAuth.getInstance()
-      }
-
-  private val _currentUserFlow = MutableStateFlow(firebaseAuth?.currentUser)
+  private val _currentUserFlow = MutableStateFlow(auth?.currentUser)
 
   private val authListener: FirebaseAuth.AuthStateListener? =
-      firebaseAuth?.let {
+      auth?.let {
         FirebaseAuth.AuthStateListener { fbAuth -> _currentUserFlow.value = fbAuth.currentUser }
       }
 
@@ -75,7 +69,7 @@ open class SearchViewModel(
   // ---------- Actions (download, etc.) – disabled in tests ----------
   val downloadProgress = MutableStateFlow<Int?>(null)
 
-  val actions: SampleUiActions? =
+  override val actions: SampleUiActions? =
       if (useMockData) {
         null
       } else {
@@ -99,117 +93,17 @@ open class SearchViewModel(
             downloadProgress = downloadProgress)
       }
 
-  private val avatarCache = mutableMapOf<String, String?>()
-  private val userNameCache = mutableMapOf<String, String>()
-  private val coverImageCache = mutableMapOf<String, String?>()
-  private val audioUrlCache = mutableMapOf<String, String?>()
-  private val waveformCache = mutableMapOf<String, List<Float>>()
-
   init {
-    if (firebaseAuth != null && authListener != null) {
-      firebaseAuth.addAuthStateListener(authListener)
+    if (auth != null && authListener != null) {
+      auth.addAuthStateListener(authListener)
     }
     load(useMockData)
   }
 
-  private suspend fun getSampleOwnerAvatar(userId: String): String? {
-    if (avatarCache.containsKey(userId)) return avatarCache[userId]
-    val url = profileRepo.getAvatarUrlByUserId(userId)
-    avatarCache[userId] = url
-    return url
-  }
-
-  private suspend fun getUserName(userId: String): String {
-    if (userNameCache.containsKey(userId)) return userNameCache[userId] ?: "Anonymous"
-    val userName = profileRepo.getUserNameByUserId(userId) ?: "Anonymous"
-    userNameCache[userId] = userName
-    return userName
-  }
-
-  private suspend fun getSampleCoverUrl(storagePath: String): String? {
-    if (storagePath.isBlank()) return null
-    if (coverImageCache.containsKey(storagePath)) return coverImageCache[storagePath]
-    val url = actions?.getDownloadUrl(storagePath) ?: return null
-    coverImageCache[storagePath] = url
-    return url
-  }
-
-  private suspend fun getSampleAudioUrl(sample: Sample): String? {
-    val storagePath = sample.storagePreviewSamplePath
-    if (storagePath.isBlank()) return null
-    if (audioUrlCache.containsKey(storagePath)) return audioUrlCache[storagePath]
-
-    val url = actions?.getDownloadUrl(storagePath) ?: return null
-    audioUrlCache[storagePath] = url
-    return url
-  }
-
-  private suspend fun getSampleWaveform(sample: Sample): List<Float> {
-    if (waveformCache.containsKey(sample.id))
-        waveformCache[sample.id]?.let {
-          return it
-        }
-
-    val audioUrl = getSampleAudioUrl(sample) ?: return emptyList()
-
-    return try {
-      val waveform =
-          WaveformExtractor()
-              .extractWaveform(context = context, uri = audioUrl.toUri(), samplesCount = 100)
-      if (waveform.isNotEmpty()) {
-        waveformCache[sample.id] = waveform
-      }
-      waveform
-    } catch (e: Exception) {
-      Log.e("SearchViewModel", "Waveform error: ${e.message}")
-      emptyList()
-    }
-  }
-
-  /** Function to trigger loading */
-  override fun loadSampleResources(sample: Sample) {
-    val currentResources = _sampleResources.value[sample.id]
-    if (currentResources != null &&
-        currentResources.loadedSamplePath == sample.storagePreviewSamplePath) {
-      return
-    }
-
-    viewModelScope.launch {
-      _sampleResources.update { current ->
-        current +
-            (sample.id to
-                (current[sample.id]?.copy(isLoading = true)
-                    ?: SampleResourceState(isLoading = true)))
-      }
-
-      val avatarUrl = getSampleOwnerAvatar(sample.ownerId)
-      val userName = getUserName(sample.ownerId)
-      val coverUrl =
-          if (sample.storageImagePath.isNotBlank()) getSampleCoverUrl(sample.storageImagePath)
-          else null
-      val audioUrl =
-          if (sample.storagePreviewSamplePath.isNotBlank()) getSampleAudioUrl(sample) else null
-      val waveform = getSampleWaveform(sample)
-
-      _sampleResources.update { current ->
-        current +
-            (sample.id to
-                SampleResourceState(
-                    ownerName = userName,
-                    ownerAvatarUrl = avatarUrl,
-                    coverImageUrl = coverUrl,
-                    audioUrl = audioUrl,
-                    waveform = waveform,
-                    isLoading = false,
-                    loadedSamplePath = sample.storagePreviewSamplePath))
-      }
-    }
-  }
-
   override fun onCleared() {
     super.onCleared()
-    if (firebaseAuth != null && authListener != null) {
-      firebaseAuth.removeAuthStateListener(authListener)
+    if (auth != null && authListener != null) {
+      auth.removeAuthStateListener(authListener)
     }
   }
 
@@ -291,11 +185,11 @@ open class SearchViewModel(
     }
   }
 
-  override fun onLikeClick(sample: Sample, isLikedNow: Boolean) {
+  override fun onLikeClick(sample: Sample, isLiked: Boolean) {
     val sampleId = sample.id
     viewModelScope.launch {
-      this@SearchViewModel.sampleRepo.toggleLike(sample.id, isLikedNow)
-      val delta = if (isLikedNow) 1 else -1
+      this@SearchViewModel.sampleRepo.toggleLike(sample.id, isLiked)
+      val delta = if (isLiked) 1 else -1
       val updatedSamples =
           allSamples.value.map { current ->
             if (current.id == sampleId) {
@@ -306,7 +200,7 @@ open class SearchViewModel(
           }
       allSamples.value = updatedSamples
       applyFilter(query)
-      _likedSamples.value = _likedSamples.value + (sampleId to isLikedNow)
+      _likedSamples.value = _likedSamples.value + (sampleId to isLiked)
     }
   }
 
@@ -356,7 +250,7 @@ open class SearchViewModel(
 
   /** True when [ownerId] refers to the currently signed-in Firebase user. */
   override fun isCurrentUser(ownerId: String): Boolean {
-    val currentUserId = firebaseAuth?.currentUser?.uid ?: return false
-    return !ownerId.isNullOrBlank() && ownerId == currentUserId
+    val currentUserId = auth?.currentUser?.uid ?: return false
+    return ownerId.isNotBlank() && ownerId == currentUserId
   }
 }
