@@ -26,15 +26,19 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
+import androidx.test.core.app.ApplicationProvider
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import com.neptune.neptune.model.FakeProfileRepository
+import com.neptune.neptune.model.FakeSampleRepository
 import com.neptune.neptune.ui.profile.OtherUserProfileRoute
 import com.neptune.neptune.ui.profile.ProfileMode
 import com.neptune.neptune.ui.profile.ProfileScreen
 import com.neptune.neptune.ui.profile.ProfileScreenTestTags
 import com.neptune.neptune.ui.profile.ProfileViewConfig
 import com.neptune.neptune.ui.profile.SelfProfileUiState
+import com.neptune.neptune.ui.profile.ProfileSamplesViewModel
 import com.neptune.neptune.ui.profile.profileScreenCallbacks
 import com.neptune.neptune.ui.theme.SampleAppTheme
 import kotlinx.coroutines.flow.Flow
@@ -98,6 +102,17 @@ class ProfileScreenTest {
     }
   }
 
+  private fun createFakeSamplesViewModel(): ProfileSamplesViewModel {
+    val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+    return ProfileSamplesViewModel(
+        ownerId = "owner",
+        sampleRepo = FakeSampleRepository(),
+        profileRepo = FakeProfileRepository(),
+        context = context,
+        auth = null,
+        enableActions = false)
+  }
+
   private fun setContentViewMode(
       state: SelfProfileUiState =
           SelfProfileUiState(
@@ -112,6 +127,7 @@ class ProfileScreenTest {
       onEditClick: () -> Unit = {},
       goBack: () -> Unit = {},
       viewConfig: ProfileViewConfig? = null,
+      samplesViewModel: ProfileSamplesViewModel = createFakeSamplesViewModel(),
   ) {
     val config =
         viewConfig ?: ProfileViewConfig.SelfProfileConfig(onEdit = onEditClick, settings = {})
@@ -120,7 +136,8 @@ class ProfileScreenTest {
         ProfileScreen(
             uiState = state,
             callbacks = profileScreenCallbacks(onEditClick = onEditClick, goBackClick = goBack),
-            viewConfig = config)
+            viewConfig = config,
+            profileSamplesViewModel = samplesViewModel)
       }
     }
     composeTestRule.waitForIdle()
@@ -141,6 +158,7 @@ class ProfileScreenTest {
       onNameChange: (String) -> Unit = {},
       onUsernameChange: (String) -> Unit = {},
       onBioChange: (String) -> Unit = {},
+      samplesViewModel: ProfileSamplesViewModel = createFakeSamplesViewModel(),
   ) {
     composeTestRule.setContent {
       SampleAppTheme {
@@ -152,7 +170,8 @@ class ProfileScreenTest {
                     onNameChange = onNameChange,
                     onUsernameChange = onUsernameChange,
                     onBioChange = onBioChange),
-            viewConfig = ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = {}))
+            viewConfig = ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = {}),
+            profileSamplesViewModel = samplesViewModel)
       }
     }
     composeTestRule.waitForIdle()
@@ -419,6 +438,7 @@ class ProfileScreenTest {
     val state =
         mutableStateOf(
             SelfProfileUiState(name = "John", username = "john", bio = "", mode = ProfileMode.EDIT))
+    val samplesViewModel = createFakeSamplesViewModel()
 
     composeTestRule.setContent {
       SampleAppTheme {
@@ -434,13 +454,14 @@ class ProfileScreenTest {
                             state.value.copy(
                                 tags = state.value.tags + normalized,
                                 inputTag = "",
-                                tagError = null)
+                        tagError = null)
                       }
                     },
                     onRemoveTag = { t ->
                       state.value = state.value.copy(tags = state.value.tags.filterNot { it == t })
                     }),
-            viewConfig = ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = {}))
+            viewConfig = ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = {}),
+            profileSamplesViewModel = samplesViewModel)
       }
     }
 
@@ -466,6 +487,7 @@ class ProfileScreenTest {
                 bio = "",
                 mode = ProfileMode.EDIT,
                 tags = arrayListOf("rock", "edm")))
+    val samplesViewModel = createFakeSamplesViewModel()
 
     composeTestRule.setContent {
       SampleAppTheme {
@@ -477,12 +499,13 @@ class ProfileScreenTest {
                     onTagSubmit = {
                       val n = state.value.inputTag.trim().lowercase()
                       if (n.isNotEmpty())
-                          state.value = state.value.copy(tags = state.value.tags + n, inputTag = "")
+                        state.value = state.value.copy(tags = state.value.tags + n, inputTag = "")
                     },
                     onRemoveTag = { t ->
                       state.value = state.value.copy(tags = state.value.tags.filterNot { it == t })
                     }),
-            viewConfig = ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = {}))
+            viewConfig = ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = {}),
+            profileSamplesViewModel = samplesViewModel)
       }
     }
 
@@ -650,6 +673,7 @@ class ProfileScreenTest {
     val initialFollowers = 12
     var followRequests = 0
     var remoteUpdate: ((Boolean, Int) -> Unit)? = null
+    val samplesViewModel = createFakeSamplesViewModel()
 
     composeTestRule.setContent {
       var state by remember {
@@ -678,7 +702,8 @@ class ProfileScreenTest {
                     isFollowing = isFollowing,
                     onFollow = { followRequests++ },
                     errorMessage = null),
-            callbacks = profileScreenCallbacks(goBackClick = {}))
+            callbacks = profileScreenCallbacks(goBackClick = {}),
+            profileSamplesViewModel = samplesViewModel)
       }
     }
 
