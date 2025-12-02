@@ -298,6 +298,7 @@ class SearchScreenAllTests {
           samples = listOf(sample),
           controller = vm,
           mediaPlayer = fakeMediaPlayer,
+          testTagsForSample = { SearchScreenTestTagsPerSampleCard(it.id) },
           navigateToOtherUserProfile = { navigatedTo = it })
     }
 
@@ -341,6 +342,7 @@ class SearchScreenAllTests {
           samples = listOf(sample),
           controller = vm,
           mediaPlayer = fakeMediaPlayer,
+          testTagsForSample = { SearchScreenTestTagsPerSampleCard(it.id) },
           navigateToProfile = { navigatedToSelf = true },
           navigateToOtherUserProfile = { navigatedToOther = it })
     }
