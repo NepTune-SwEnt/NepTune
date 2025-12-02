@@ -42,7 +42,9 @@ open class SearchViewModel(
     explicitStorageService: StorageService? = null,
     explicitDownloadsFolder: File? = null,
     auth: FirebaseAuth? = null
-) : BaseSampleFeedViewModel(sampleRepo = sampleRepo, profileRepo = profileRepo), SampleFeedController {
+) :
+    BaseSampleFeedViewModel(sampleRepo = sampleRepo, profileRepo = profileRepo),
+    SampleFeedController {
 
   // ---------- Firebase auth (disabled in tests when useMockData = true) ----------
 
@@ -90,7 +92,11 @@ open class SearchViewModel(
                 ?: Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
 
         SampleUiActions(
-            sampleRepo, storageService, downloadsFolder, context, downloadProgress = downloadProgress)
+            sampleRepo,
+            storageService,
+            downloadsFolder,
+            context,
+            downloadProgress = downloadProgress)
       }
 
   private val avatarCache = mutableMapOf<String, String?>()

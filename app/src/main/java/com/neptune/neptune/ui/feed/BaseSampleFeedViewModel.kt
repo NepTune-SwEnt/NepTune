@@ -17,8 +17,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Shared feed logic for listing samples (likes, comments, usernames, resource cache).
- * Subclasses provide feed-specific behaviors (download/like impl, resource loading).
+ * Shared feed logic for listing samples (likes, comments, usernames, resource cache). Subclasses
+ * provide feed-specific behaviors (download/like impl, resource loading).
  */
 abstract class BaseSampleFeedViewModel(
     protected val sampleRepo: SampleRepository,
