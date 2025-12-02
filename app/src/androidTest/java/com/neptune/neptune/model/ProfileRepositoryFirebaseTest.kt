@@ -44,6 +44,11 @@ class ProfileRepositoryFirebaseTest {
   private lateinit var auth: FirebaseAuth
   private lateinit var repo: ProfileRepositoryFirebase
 
+  private suspend fun createUniqueUser(emailPrefix: String) {
+    val uniqueEmail = "$emailPrefix-${System.nanoTime()}@example.com"
+    auth.createUserWithEmailAndPassword(uniqueEmail, "password").await()
+  }
+
   @Before
   fun setUp() {
     runBlocking {
@@ -51,13 +56,13 @@ class ProfileRepositoryFirebaseTest {
       auth = FirebaseAuth.getInstance()
       try {
         db.useEmulator(host, firestorePort)
-      } catch (e: IllegalStateException) {
+      } catch (_: IllegalStateException) {
         "database emulator not running?"
       }
 
       try {
         auth.useEmulator(host, authPort)
-      } catch (e: IllegalStateException) {
+      } catch (_: IllegalStateException) {
         "auth emulator not running?"
       }
 
@@ -105,26 +110,37 @@ class ProfileRepositoryFirebaseTest {
       Tasks.await(db.collection(PROFILES_COLLECTION_PATH).document(currentUid()).get())
 
   @Test
-  fun ensureProfileCreatesWithDefaultsWhenMissing() = runBlocking {
+  fun ensureProfileCreatesWithDefaultsForRegisteredUser() = runBlocking {
+    auth.signOut()
+    createUniqueUser("defaults-test")
     val created = repo.ensureProfile(suggestedUsernameBase = "user", name = null)
 
     assertEquals(currentUid(), created.uid)
     assertTrue(created.username.startsWith("user"))
-    assertEquals(created.username, created.name) // name defaults to username
+    assertEquals(created.username, created.name)
     assertEquals("Hello! New NepTune user here!", created.bio)
-    assertEquals(0L, created.subscribers)
-    assertEquals(0L, created.subscriptions)
-    assertTrue("Following list should be empty by default", created.following.isEmpty())
+    assertFalse("A registered user should not be anonymous", created.isAnonymous)
 
     val snap = getProfileDoc()
     assertTrue(snap.exists())
     assertEquals(created.username, snap.getString("username"))
-    assertEquals(created.name, snap.getString("name"))
-    assertEquals(created.bio, snap.getString("bio"))
+    assertFalse("isAnonymous flag should be false in DB", snap.getBoolean("isAnonymous") ?: true)
+  }
 
-    val followingFromDb = snap.get("following") as? List<*> ?: emptyList<Any>()
-    assertTrue(
-        "Firestore 'following' field should by default be an empty list", followingFromDb.isEmpty())
+  @Test
+  fun ensureProfileCreatesWithDefaultsForAnonymousUser() = runBlocking {
+    val created = repo.ensureProfile(suggestedUsernameBase = "user", name = null)
+
+    assertEquals(currentUid(), created.uid)
+    assertEquals("anonymous", created.username)
+    assertEquals("anonymous", created.name)
+    assertEquals("Hello! New NepTune user here!", created.bio)
+    assertTrue("A guest user should be anonymous", created.isAnonymous)
+
+    val snap = getProfileDoc()
+    assertTrue(snap.exists())
+    assertEquals("anonymous", snap.getString("username"))
+    assertTrue("isAnonymous flag should be true in DB", snap.getBoolean("isAnonymous") ?: false)
   }
 
   @Test
@@ -141,32 +157,30 @@ class ProfileRepositoryFirebaseTest {
   fun isUsernameAvailableRespectsOwnershipAndConflict() = runBlocking {
     // Fresh user A
     auth.signOut()
-    auth.signInAnonymously().await()
-
+    createUniqueUser("conflict-a")
     // Make sure "neptune" starts clean
     val desired = "neptune"
     db.collection(USERNAMES_COLLECTION_PATH).document(desired).delete().await()
 
     assertTrue(repo.isUsernameAvailable(desired))
     repo.ensureProfile(desired, null)
-    assertTrue(repo.isUsernameAvailable(desired))
+    assertTrue(repo.isUsernameAvailable(desired)) // Still available to user A
 
     // Check that new user B cannot take it
     auth.signOut()
-    auth.signInAnonymously().await()
-    repo.ensureProfile("x", null)
+    createUniqueUser("conflict-b")
+    repo.ensureProfile("x", null) // User B needs a profile first
 
     val e = runCatching { repo.setUsername(desired) }.exceptionOrNull()
     assertTrue(e is UsernameTakenException)
-    assertFalse(repo.isUsernameAvailable(desired))
+    assertFalse(repo.isUsernameAvailable(desired)) // Not available to user B
   }
 
   @Test
   fun setUsernameReleasesOldAndAllowsOthersToClaim() = runBlocking {
     // User A claims a unique name
     auth.signOut()
-    auth.signInAnonymously().await()
-
+    createUniqueUser("release-a")
     val base = "abase_12345"
     val aProfile = repo.ensureProfile(base, null)
     val aOld = aProfile.username
@@ -182,7 +196,7 @@ class ProfileRepositoryFirebaseTest {
 
     // User B can claim A's old username
     auth.signOut()
-    auth.signInAnonymously().await()
+    createUniqueUser("release-b")
     repo.ensureProfile("bbase_12345", null)
 
     assertTrue(repo.isUsernameAvailable(aOld))
@@ -190,13 +204,16 @@ class ProfileRepositoryFirebaseTest {
 
     // User C sees it as taken
     auth.signOut()
-    auth.signInAnonymously().await()
+    createUniqueUser("release-c")
     repo.ensureProfile("cbase_12345", null)
     assertFalse(repo.isUsernameAvailable(aOld))
   }
 
   @Test
   fun setUsernameClaimsNewAndReleasesOldIfOwned() = runBlocking {
+    auth.signOut()
+    createUniqueUser("reclaim-test")
+
     val profile = repo.ensureProfile("tester", null)
     val original = profile.username
     val newDesired = "zz_${Random.nextInt(10000, 99999)}"
@@ -205,7 +222,7 @@ class ProfileRepositoryFirebaseTest {
     assertEquals(newDesired, after.username)
 
     val okToReclaim = runCatching { repo.setUsername(original) }.isSuccess
-    assertTrue(okToReclaim)
+    assertTrue("Should be able to reclaim original username", okToReclaim)
   }
 
   @Test
@@ -231,6 +248,9 @@ class ProfileRepositoryFirebaseTest {
 
   @Test
   fun updateNameAndBioOnlyChangeThoseFields() = runBlocking {
+    auth.signOut()
+    createUniqueUser("update-test")
+
     val profile = repo.ensureProfile("bob", null)
     val originalUsername = profile.username
     assertEquals(originalUsername, profile.name)
@@ -286,18 +306,16 @@ class ProfileRepositoryFirebaseTest {
 
   @Test
   fun ensureProfileUsesNumericSuffixWhenBaseAndFirstSuffixesTaken() = runBlocking {
-    runCatching { auth.signOut() }
-    auth.signInAnonymously().await()
+    auth.signOut()
+    createUniqueUser("suffix-test")
     val myUid = auth.currentUser!!.uid
 
     val base = "loopbase"
     val blocked = buildSet {
       add(base)
-      // Block a few early suffixes to force the loop to iterate
       addAll((1000..1003).map { "$base$it" })
     }
 
-    // Pre-reserve with a different uid so they count as taken
     val otherUid = "someone-else-${Random.nextInt(100000)}"
     val usernamesCol = db.collection(USERNAMES_COLLECTION_PATH)
     for (u in blocked) {
@@ -312,7 +330,6 @@ class ProfileRepositoryFirebaseTest {
     assertFalse(
         "Chosen username should not be one of the blocked ones", blocked.contains(profile.username))
 
-    // The reservation doc for the chosen username should exist and be owned by me
     val chosenDoc = usernamesCol.document(profile.username).get().await()
     assertTrue(chosenDoc.exists())
     assertEquals(myUid, chosenDoc.getString("uid"))

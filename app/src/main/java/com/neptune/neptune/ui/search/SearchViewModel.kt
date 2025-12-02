@@ -78,6 +78,9 @@ open class SearchViewModel(
   private val _sampleResources = MutableStateFlow<Map<String, SampleResourceState>>(emptyMap())
   val sampleResources = _sampleResources.asStateFlow()
 
+  private val _isAnonymous = MutableStateFlow(auth?.currentUser?.isAnonymous ?: true)
+  val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
+
   private val _usernames = MutableStateFlow<Map<String, String>>(emptyMap())
   val usernames: StateFlow<Map<String, String>> = _usernames.asStateFlow()
 
