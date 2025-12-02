@@ -123,8 +123,6 @@ fun DependencyHandlerScope.globalTestImplementation(dep: Any) {
 }
 
 dependencies {
-    implementation(libs.tarsos.dsp.core)
-    implementation(libs.tarsos.dsp.jvm)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -174,7 +172,9 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation("com.google.firebase:firebase-analytics")
     implementation(libs.firebase.functions.ktx)
-
+    implementation(fileTree("libs") {
+        include("TarsosDSPKit-release.aar")
+    })
     // ---------- Credential Manager ------------
     implementation(libs.credentials)
     implementation(libs.credentials.play.services.auth)
@@ -225,6 +225,8 @@ dependencies {
     androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
 
     implementation("com.airbnb.android:lottie-compose:6.7.1")
+
+
 }
 
 tasks.withType<Test> {

@@ -9,6 +9,13 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import be.tarsos.dsp.AudioDispatcher
+import be.tarsos.dsp.AudioEvent
+import be.tarsos.dsp.AudioProcessor
+import be.tarsos.dsp.PitchShifter
+import be.tarsos.dsp.io.TarsosDSPAudioFormat
+import be.tarsos.dsp.io.android.AndroidAudioInputStream
+import be.tarsos.dsp.io.android.AudioDispatcherFactory
 import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.project.AudioFileMetadata
@@ -18,6 +25,7 @@ import com.neptune.neptune.model.project.ProjectWriter
 import com.neptune.neptune.model.project.SamplerProjectData
 import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
+import kotlin.math.*
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.pow
@@ -33,8 +41,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayInputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 enum class SamplerTab {
   BASICS,
@@ -753,7 +763,7 @@ open class SamplerViewModel() : ViewModel() {
     }
   }
 
-  fun audioBuilding(): Uri? {
+  suspend fun audioBuilding(): Uri? {
     val state = _uiState.value
     val originalUri =
         state.originalAudioUri ?: return null // Guards against missing original file URI
@@ -770,6 +780,10 @@ open class SamplerViewModel() : ViewModel() {
               deferred.complete(null) // Complete the Deferred with null on failure
             }
 
+    val semitones =
+        computeSemitoneShift(
+            state.inputPitchNote, state.inputPitchOctave, state.pitchNote, state.pitchOctave)
+
     // Launch the main processing coroutine
     viewModelScope.launch(context) {
       try {
@@ -783,7 +797,8 @@ open class SamplerViewModel() : ViewModel() {
                   reverbSize = state.reverbSize,
                   reverbWidth = state.reverbWidth,
                   reverbDepth = state.reverbDepth,
-                  reverbPredelay = state.reverbPredelay)
+                  reverbPredelay = state.reverbPredelay,
+                  semitones = semitones)
             }
 
         // If processing succeeds, update the UI state with the new processed audio URI
@@ -798,7 +813,7 @@ open class SamplerViewModel() : ViewModel() {
     }
 
     // Blocks the caller thread until the processing coroutine completes and deferred has a value.
-    return runBlocking { deferred.await() }
+    return deferred.await()
   }
 
   private fun processAudio(
@@ -808,7 +823,8 @@ open class SamplerViewModel() : ViewModel() {
       reverbSize: Float,
       reverbWidth: Float,
       reverbDepth: Float,
-      reverbPredelay: Float
+      reverbPredelay: Float,
+      semitones: Int = 0
   ): Uri? {
 
     if (currentAudioUri == null) return null
@@ -819,6 +835,15 @@ open class SamplerViewModel() : ViewModel() {
 
     // 2. Apply EQ: Parametric equalization is applied non-destructively to the samples
     samples = applyEQFilters(samples, sampleRate, eqBands)
+
+    // 3. Apply pitch shift
+    if (semitones != 0) {
+      Log.d(
+          "SamplerViewModel",
+          "processAudio: semitones=$semitones sampleRate=$sampleRate inSamples=${samples.size} durationSec=${samples.size.toDouble()/sampleRate}")
+      samples = pitchShift(samples, sampleRate.toFloat(), semitones)
+      Log.d("SamplerViewModel", "after pitchShift: samples=${samples.size}")
+    }
 
     // 3. Apply Reverb: Reverb is applied on top of the EQ'd signal
     samples =
@@ -832,8 +857,13 @@ open class SamplerViewModel() : ViewModel() {
     // files)
     val out = File(context.cacheDir, "${base}_processed.wav")
 
+    Log.d(
+        "SamplerViewModel",
+        "Writing WAV: frames=${samples.size}, durationSec=${samples.size.toFloat() / sampleRate}")
+
     // Encode processed FloatArray back into a standard WAV file (PCM16 format)
     encodePCMToWAV(samples, sampleRate, channelCount, out)
+    Log.d("SamplerViewModel", "WAV file written: frames=${samples.size / channelCount}")
 
     return Uri.fromFile(out) // Return the URI of the newly processed file
   }
@@ -1103,53 +1133,41 @@ open class SamplerViewModel() : ViewModel() {
       outputFile: File
   ) {
     try {
-      // 1. Convert float samples (-1.0 to 1.0) back to 16-bit PCM (Short.MIN_VALUE to
-      // Short.MAX_VALUE)
-      val pcmData = ByteArray(samples.size * 2) // 16-bit = 2 bytes per sample
-
+      // convert to 16-bit PCM (interleaved samples assumed)
+      val pcmData = ByteArray(samples.size * 2)
       for (i in samples.indices) {
-        val sample =
-            (samples[i] * Short.MAX_VALUE) // Scale float to 16-bit range
-                .coerceIn(Short.MIN_VALUE.toFloat(), Short.MAX_VALUE.toFloat())
-                .toInt()
-                .toShort()
-
-        // Write lower byte (Little-endian format)
-        pcmData[i * 2] = (sample.toInt() and 0xFF).toByte()
-        // Write higher byte
-        pcmData[i * 2 + 1] = ((sample.toInt() shr 8) and 0xFF).toByte()
+        val s = (samples[i].coerceIn(-1f, 1f) * Short.MAX_VALUE).roundToInt().toShort()
+        pcmData[i * 2] = (s.toInt() and 0xFF).toByte()
+        pcmData[i * 2 + 1] = ((s.toInt() shr 8) and 0xFF).toByte()
       }
 
-      // 2. Write WAV header and data chunks
       outputFile.outputStream().use { out ->
-        // Calculate necessary header sizes
         val bitsPerSample = 16
         val byteRate = sampleRate * channelCount * bitsPerSample / 8
-        val blockAlign = channelCount * bitsPerSample / 8
+        val blockAlign = (channelCount * bitsPerSample / 8)
         val dataSize = pcmData.size
 
-        // RIFF chunk (Main container)
         out.write("RIFF".toByteArray())
-        out.write(intToBytes(36 + dataSize)) // Total file size - 8 bytes
+        out.write(intToBytes(36 + dataSize))
         out.write("WAVE".toByteArray())
 
-        // fmt chunk (Format information)
         out.write("fmt ".toByteArray())
-        out.write(intToBytes(16)) // Subchunk1Size (PCM is 16 bytes)
-        out.write(shortToBytes(1)) // AudioFormat (1 = PCM)
+        out.write(intToBytes(16))
+        out.write(shortToBytes(1)) // PCM
         out.write(shortToBytes(channelCount.toShort()))
         out.write(intToBytes(sampleRate))
-        out.write(intToBytes(byteRate)) // ByteRate: SampleRate * BlockAlign
+        out.write(intToBytes(byteRate))
         out.write(shortToBytes(blockAlign.toShort()))
         out.write(shortToBytes(bitsPerSample.toShort()))
 
-        // data chunk (The actual audio payload)
         out.write("data".toByteArray())
         out.write(intToBytes(dataSize))
-        out.write(pcmData) // Write raw PCM data
+        out.write(pcmData)
       }
 
-      Log.d("SamplerViewModel", "WAV file written: ${outputFile.absolutePath}")
+      Log.d(
+          "SamplerViewModel",
+          "WAV file written: ${outputFile.absolutePath} frames=${samples.size / channelCount}")
     } catch (e: Exception) {
       Log.e("SamplerViewModel", "Error encoding WAV: ${e.message}", e)
       throw e
@@ -1279,5 +1297,96 @@ open class SamplerViewModel() : ViewModel() {
 
       return out
     }
+  }
+
+  /**
+   * Time-stretch phase vocoder + pitch-shift (resample) without duration change. Very robust and
+   * not glitchy.
+   *
+   * @param input PCM float array
+   * @param pitchSemitones number of semitones (+/-)
+   */
+  fun pitchShift(samples: FloatArray, sampleRate: Float, semitones: Int): FloatArray {
+    if (semitones == 0) return samples
+
+    val pitchFactor = 2.0.pow(semitones / 12.0).toFloat()
+    val bufferSize = 2048
+    val overlap = 256
+
+    val shifter = PitchShifter(
+      pitchFactor.toDouble(),
+      sampleRate.toDouble(),
+      bufferSize,
+      overlap
+    )
+
+    val format = TarsosDSPAudioFormat(sampleRate, 32, 1, true, false)
+    val output = mutableListOf<Float>()
+    val eventBuffer = FloatArray(bufferSize)
+    val audioEvent = AudioEvent(format) // ⚠️ format obligatoire
+    audioEvent.floatBuffer = FloatArray(bufferSize)
+
+    var readPos = 0
+    while (readPos < samples.size) {
+      val toCopy = minOf(bufferSize, samples.size - readPos)
+      for (i in 0 until toCopy) {
+        audioEvent.floatBuffer[i] = samples[readPos + i]
+      }
+
+      shifter.process(audioEvent)
+
+      for (i in 0 until toCopy) {
+        output.add(audioEvent.floatBuffer[i])
+      }
+
+      readPos += toCopy
+    }
+
+    return output.toFloatArray()
+  }
+
+  private val NOTE_TO_SEMITONE =
+      mapOf(
+          "C" to 0,
+          "C#" to 1,
+          "Db" to 1,
+          "D" to 2,
+          "D#" to 3,
+          "Eb" to 3,
+          "E" to 4,
+          "F" to 5,
+          "F#" to 6,
+          "Gb" to 6,
+          "G" to 7,
+          "G#" to 8,
+          "Ab" to 8,
+          "A" to 9,
+          "A#" to 10,
+          "Bb" to 10,
+          "B" to 11)
+
+  /**
+   * Convert note + octave into an absolute semitone number (MIDI-like). C4 = 60, A4 = 69, etc.
+   * (standard MIDI)
+   */
+  fun noteToSemitone(note: String, octave: Int): Int {
+    val base = NOTE_TO_SEMITONE[note.uppercase()] ?: error("Invalid note name: $note")
+
+    return base + (octave + 1) * 12 // MIDI convention: C4 = 60
+  }
+
+  fun semitonesToPitchFactor(semitones: Int): Float {
+    return 2.0.pow(semitones / 12.0).toFloat()
+  }
+
+  fun computeSemitoneShift(
+      inputNote: String,
+      inputOctave: Int,
+      targetNote: String,
+      targetOctave: Int
+  ): Int {
+    val s1 = noteToSemitone(inputNote, inputOctave)
+    val s2 = noteToSemitone(targetNote, targetOctave)
+    return s2 - s1
   }
 }
