@@ -22,9 +22,12 @@ class MessagesViewModel(
   val messages: StateFlow<List<Messages>> = _messages.asStateFlow()
 
   // TODO Replace with repo calls
-  val otherUsername = MutableStateFlow("Test1")
-  val otherAvatar = MutableStateFlow<String?>(null)
-  val isOnline = MutableStateFlow(false)
+  private val _otherUsername = MutableStateFlow("Test1")
+  val otherUsername: StateFlow<String> = _otherUsername.asStateFlow()
+  private val _otherAvatar = MutableStateFlow<String?>(null)
+  val otherAvatar: StateFlow<String?> = _otherAvatar.asStateFlow()
+  private val _isOnline = MutableStateFlow(false)
+  val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
 
   val currentUserId = "ME" // TODO load from FirebaseAuth
 
@@ -51,10 +54,12 @@ class MessagesViewModel(
   }
 
   private fun loadFakeData(uid: String) {
+
+    val bleh = "BLEH\uD83D\uDE1D"
     when (uid) {
       "u1" -> {
-        otherUsername.value = "test1"
-        isOnline.value = true
+        _otherUsername.value = "test1"
+        _isOnline.value = true
 
         _messages.value =
             listOf(
@@ -63,18 +68,18 @@ class MessagesViewModel(
             )
       }
       "u2" -> {
-        otherUsername.value = "test2"
-        isOnline.value = false
+        _otherUsername.value = "test2"
+        _isOnline.value = false
 
         _messages.value =
             listOf(
-                Messages("10", uid, "BLEH\uD83D\uDE1D", Timestamp.now()),
-                Messages("11", currentUserId, "BLEH\uD83D\uDE1D", Timestamp.now()),
-                Messages("12", uid, "BLEH\uD83D\uDE1D", Timestamp.now()))
+                Messages("10", uid, bleh, Timestamp.now()),
+                Messages("11", currentUserId, bleh, Timestamp.now()),
+                Messages("12", uid, bleh, Timestamp.now()))
       }
       "u3" -> {
-        otherUsername.value = "test3"
-        isOnline.value = true
+        _otherUsername.value = "test3"
+        _isOnline.value = true
 
         _messages.value =
             listOf(
@@ -82,7 +87,7 @@ class MessagesViewModel(
                 Messages("21", uid, "Banana", Timestamp.now()))
       }
       else -> {
-        otherUsername.value = "Unknown"
+        _otherUsername.value = "Unknown"
         _messages.value = emptyList()
       }
     }
