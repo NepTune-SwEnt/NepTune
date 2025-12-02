@@ -22,7 +22,7 @@ import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.ui.projectlist.ProjectListScreenTestTags
-import com.neptune.neptune.ui.search.ScrollableColumnOfSamples
+import com.neptune.neptune.ui.feed.ScrollableColumnOfSamples
 import com.neptune.neptune.ui.search.SearchScreen
 import com.neptune.neptune.ui.search.SearchScreenTestTags
 import com.neptune.neptune.ui.search.SearchScreenTestTags.SAMPLE_LIST
