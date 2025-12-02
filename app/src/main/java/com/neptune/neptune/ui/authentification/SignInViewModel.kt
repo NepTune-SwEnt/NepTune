@@ -324,6 +324,14 @@ class SignInViewModel(
   }
 
   fun signInAnonymously() {
+    // offline mode
+    if (!_isOnline.value) {
+      _signInStatus.value = SignInStatus.SUCCESS
+      navigateMain()
+      return
+    }
+
+    // guest mode
     _signInStatus.value = SignInStatus.IN_PROGRESS_ANONYMOUS_AUTH
     _emailAuthUiState.value = _emailAuthUiState.value.copy(loading = true, generalError = null)
     viewModelScope.launch {

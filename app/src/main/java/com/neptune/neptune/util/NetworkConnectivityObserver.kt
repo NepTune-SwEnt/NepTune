@@ -11,10 +11,18 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
+/**
+ * Utility for observing the device's internet connectivity status in real time.
+ *
+ * This class relies on Android's [ConnectivityManager] to detect when the
+ * connection is established, lost, or unavailable.
+ *
+ * @author Grégory Blanc This class was made using AI assistance.
+ */
 class NetworkConnectivityObserver {
-  val context = NepTuneApplication.appContext
   private val connectivityManager =
-      context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+      NepTuneApplication.appContext.getSystemService(Context.CONNECTIVITY_SERVICE)
+          as ConnectivityManager
 
   val isOnline: Flow<Boolean> =
       callbackFlow {

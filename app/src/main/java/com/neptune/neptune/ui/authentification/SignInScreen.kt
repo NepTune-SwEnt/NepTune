@@ -153,29 +153,42 @@ fun SignInScreen(
 
           Spacer(modifier = Modifier.height(60.dp))
 
-          // Google Sign-In Button ------------------------------------------------------------
-          GoogleSignIn(context, signInStatus, emailState, signInViewModel)
+          if (isOnline) {
 
-          Spacer(modifier = Modifier.height(32.dp))
+            // Google Sign-In Button ------------------------------------------------------------
+            GoogleSignIn(context, signInStatus, emailState, signInViewModel)
 
-          Column(modifier = Modifier.fillMaxWidth()) {
-            AuthForm(emailState, signInViewModel)
+            Spacer(modifier = Modifier.height(32.dp))
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Column(modifier = Modifier.fillMaxWidth()) {
+              AuthForm(emailState, signInViewModel)
 
-            ToggleRegister(emailState, signInViewModel)
+              Spacer(modifier = Modifier.height(20.dp))
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            ElevatedButton(
-                onClick = { signInViewModel.signInAnonymously() },
-                enabled = !emailState.loading,
-                modifier = Modifier.fillMaxWidth().testTag(SignInScreenTags.ANONYMOUS_BUTTON)) {
-                  Text("Continue as Guest")
-                }
-
-            GeneralError(emailState)
+              ToggleRegister(emailState, signInViewModel)
+            }
+          } else {
+            Text(
+                text = "In offline mode you can only login as a guest",
+                style =
+                    TextStyle(
+                        fontSize = 18.sp,
+                        fontFamily = FontFamily(Font(R.font.markazi_text)),
+                        color = NepTuneTheme.colors.onBackground.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center),
+                modifier = Modifier.padding(bottom = 24.dp))
           }
+
+          Spacer(modifier = Modifier.height(12.dp))
+
+          ElevatedButton(
+              onClick = { signInViewModel.signInAnonymously() },
+              enabled = !emailState.loading,
+              modifier = Modifier.fillMaxWidth().testTag(SignInScreenTags.ANONYMOUS_BUTTON)) {
+                Text("Continue as Guest")
+              }
+
+          GeneralError(emailState)
         }
   }
 }
