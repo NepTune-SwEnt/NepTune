@@ -31,6 +31,8 @@ import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.resources.C
 import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInViewModel
+import com.neptune.neptune.ui.feed.FeedScreen
+import com.neptune.neptune.ui.feed.FeedType
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.main.factory
@@ -140,7 +142,6 @@ fun NeptuneApp(
               navController = navController,
               startDestination = startDestination,
               modifier = Modifier.padding(innerPadding)) {
-                // TODO: Replace mock screens with actual app screens
                 composable(Screen.Main.route) {
                   MainScreen(
                       navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
@@ -152,6 +153,9 @@ fun NeptuneApp(
                       },
                       navigateToSelectMessages = {
                         navigationActions.navigateTo(Screen.SelectMessages)
+                      },
+                      navigateToSampleList = { type ->
+                        navigationActions.navigateTo(Screen.Feed.createRoute(type))
                       },
                       mainViewModel = mainViewModel)
                 }
@@ -278,6 +282,27 @@ fun NeptuneApp(
                       onSelectUser = {} // TODO: Add the Message Screen
                       )
                 }
+                composable(
+                    route = Screen.Feed.route,
+                    arguments = listOf(navArgument("type") { type = NavType.StringType })) {
+                        backStackEntry ->
+                      val typeName = backStackEntry.arguments?.getString("type")
+                      val feedType =
+                          try {
+                            if (typeName != null) FeedType.valueOf(typeName) else FeedType.DISCOVER
+                          } catch (_: IllegalArgumentException) {
+                            FeedType.DISCOVER // default value
+                          }
+                      FeedScreen(
+                          mainViewModel = mainViewModel,
+                          initialType = feedType,
+                          goBack = { navigationActions.goBack() },
+                          navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
+                          navigateToOtherUserProfile = { userId ->
+                            navigationActions.navigateTo(
+                                Screen.OtherUserProfile.createRoute(userId))
+                          })
+                    }
               }
         })
   }
