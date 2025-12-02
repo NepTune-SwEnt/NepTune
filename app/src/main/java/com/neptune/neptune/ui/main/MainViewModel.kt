@@ -104,6 +104,8 @@ class MainViewModel(
   val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
   private val _isAnonymous = MutableStateFlow(auth.currentUser?.isAnonymous ?: true)
   val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
+  private val _activeCommentSampleId = MutableStateFlow<String?>(null)
+  val activeCommentSampleId: StateFlow<String?> = _activeCommentSampleId.asStateFlow()
 
   init {
     if (useMockData) {
@@ -458,6 +460,15 @@ class MainViewModel(
     _isRefreshing.value = true
     allSamplesCache = emptyList()
     loadSamplesFromFirebase()
+  }
+  /** Function to open the comment section. */
+  fun openCommentSection(sample: Sample) {
+    _activeCommentSampleId.value = sample.id
+    observeCommentsForSample(sample.id)
+  }
+  /** Function to close the comment section. */
+  fun closeCommentSection() {
+    _activeCommentSampleId.value = null
   }
 
   // Mock Data

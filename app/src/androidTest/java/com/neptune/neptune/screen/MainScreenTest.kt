@@ -226,7 +226,7 @@ class MainScreenTest {
     composeTestRule.waitForIdle()
 
     // Check that the bar is displayed
-    val barNode = composeTestRule.onNodeWithTag(MainScreenTestTags.DOWNlOAD_PROGRESS)
+    val barNode = composeTestRule.onNodeWithTag(MainScreenTestTags.DOWNLOAD_PROGRESS)
     barNode.assertIsDisplayed()
 
     // Optionally check the semantic progress value ≈ 0.4
@@ -240,12 +240,12 @@ class MainScreenTest {
     // Case 1: null
     viewModel.downloadProgress.value = null
     composeTestRule.waitForIdle()
-    composeTestRule.onAllNodesWithTag(MainScreenTestTags.DOWNlOAD_PROGRESS).assertCountEquals(0)
+    composeTestRule.onAllNodesWithTag(MainScreenTestTags.DOWNLOAD_PROGRESS).assertCountEquals(0)
 
     // Case 2: zero
     viewModel.downloadProgress.value = 0
     composeTestRule.waitForIdle()
-    composeTestRule.onAllNodesWithTag(MainScreenTestTags.DOWNlOAD_PROGRESS).assertCountEquals(0)
+    composeTestRule.onAllNodesWithTag(MainScreenTestTags.DOWNLOAD_PROGRESS).assertCountEquals(0)
     /** Test that different timestamps on different comments display correctly */
   }
 
