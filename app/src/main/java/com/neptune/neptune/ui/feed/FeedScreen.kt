@@ -62,25 +62,10 @@ fun FeedScreen(
     navigateToOtherUserProfile: (String) -> Unit = {}
 ) {
   var currentType by remember { mutableStateOf(initialType) }
-  val discoverListState = rememberLazyListState()
-  val followedListState = rememberLazyListState()
 
-  val switchButtonText = "See ${currentType.toggle().title}"
-
-  val discoverSamples by mainViewModel.discoverSamples.collectAsState()
-  val followedSamples by mainViewModel.followedSamples.collectAsState()
-
-  val likedSamples by mainViewModel.likedSamples.collectAsState()
-  val sampleResources by mainViewModel.sampleResources.collectAsState()
-  val mediaPlayer = LocalMediaPlayer.current
   val isRefreshing by mainViewModel.isRefreshing.collectAsState()
   val pullRefreshState = rememberPullToRefreshState()
-  val configuration = LocalConfiguration.current
-  val screenWidth = configuration.screenWidthDp.dp
-  val width = screenWidth - 20.dp
-  val height = width * (150f / 166f) // the same ratio than in the mainScreen
   val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
-  val effectDuration = 400
   val roundShape = 50
 
   PullToRefreshHandler(
@@ -105,7 +90,7 @@ fun FeedScreen(
                     modifier = Modifier.height(36.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp)) {
                       Text(
-                          text = switchButtonText,
+                          text = "See ${currentType.toggle().title}",
                           style =
                               TextStyle(
                                   fontSize = 16.sp,
@@ -116,77 +101,100 @@ fun FeedScreen(
               divider = false)
         },
         containerColor = NepTuneTheme.colors.background) { paddingValues ->
-          Box(
+          FeedContent(
               modifier =
-                  Modifier.nestedScroll(pullRefreshState.nestedScrollConnection)
-                      .background(NepTuneTheme.colors.background)) {
-                Crossfade(
-                    targetState = currentType,
-                    label = "ListTransition",
-                    animationSpec = tween(durationMillis = effectDuration)) { type ->
-                      val (currentSamples, currentState) =
-                          when (type) {
-                            FeedType.DISCOVER -> discoverSamples to discoverListState
-                            FeedType.FOLLOWED -> followedSamples to followedListState
-                          }
-                      LazyColumn(
-                          state = currentState,
-                          modifier =
-                              Modifier.padding(paddingValues)
-                                  .fillMaxSize()
-                                  .background(NepTuneTheme.colors.background),
-                          verticalArrangement = Arrangement.spacedBy(12.dp),
-                          horizontalAlignment = Alignment.CenterHorizontally) {
-                            items(currentSamples, key = { sample -> sample.id }) { sample ->
-                              LaunchedEffect(sample.id) {
-                                mainViewModel.loadSampleResources(sample)
-                              }
+                  Modifier.padding(paddingValues)
+                      .nestedScroll(pullRefreshState.nestedScrollConnection),
+              mainViewModel = mainViewModel,
+              currentType = currentType,
+              navigateToProfile = navigateToProfile,
+              navigateToOtherUserProfile = navigateToOtherUserProfile)
 
-                              val resources = sampleResources[sample.id] ?: SampleResourceState()
-
-                              val clickHandlers =
-                                  onClickFunctions(
-                                      onDownloadClick = { mainViewModel.onDownloadSample(sample) },
-                                      onLikeClick = { isLiked ->
-                                        mainViewModel.onLikeClicked(sample, isLiked)
-                                      },
-                                      onCommentClick = { mainViewModel.openCommentSection(sample) },
-                                      onProfileClick = {
-                                        if (mainViewModel.isCurrentUser(sample.ownerId))
-                                            navigateToProfile()
-                                        else navigateToOtherUserProfile(sample.ownerId)
-                                      })
-
-                              SampleItem(
-                                  sample = sample,
-                                  width = width,
-                                  height = height,
-                                  isLiked = likedSamples[sample.id] == true,
-                                  clickHandlers = clickHandlers,
-                                  resourceState = resources,
-                                  mediaPlayer = mediaPlayer,
-                                  iconSize = 20.dp)
-                            }
-
-                            item { Spacer(modifier = Modifier.height(20.dp)) }
-                          }
-
-                      PullToRefreshContainer(
-                          state = pullRefreshState,
-                          modifier =
-                              Modifier.align(Alignment.TopCenter)
-                                  .padding(top = paddingValues.calculateTopPadding()),
-                          containerColor = NepTuneTheme.colors.background,
-                          contentColor = NepTuneTheme.colors.onBackground)
-                    }
-              }
+          PullToRefreshContainer(
+              state = pullRefreshState,
+              modifier =
+                  Modifier.align(Alignment.TopCenter)
+                      .padding(top = paddingValues.calculateTopPadding()),
+              containerColor = NepTuneTheme.colors.background,
+              contentColor = NepTuneTheme.colors.onBackground)
         }
+
     SampleCommentManager(mainViewModel = mainViewModel)
     if (downloadProgress != null && downloadProgress != 0) {
       DownloadProgressBar(
           downloadProgress = downloadProgress!!, testTag = FeedScreenTestTag.DOWNLOAD_PROGRESS)
     }
   }
+}
+
+@Composable
+private fun FeedContent(
+    modifier: Modifier = Modifier,
+    mainViewModel: MainViewModel,
+    currentType: FeedType,
+    navigateToProfile: () -> Unit,
+    navigateToOtherUserProfile: (String) -> Unit
+) {
+  val discoverListState = rememberLazyListState()
+  val followedListState = rememberLazyListState()
+
+  val discoverSamples by mainViewModel.discoverSamples.collectAsState()
+  val followedSamples by mainViewModel.followedSamples.collectAsState()
+
+  val likedSamples by mainViewModel.likedSamples.collectAsState()
+  val sampleResources by mainViewModel.sampleResources.collectAsState()
+
+  val mediaPlayer = LocalMediaPlayer.current
+  val configuration = LocalConfiguration.current
+  val screenWidth = configuration.screenWidthDp.dp
+  val width = screenWidth - 20.dp
+  val height = width * (150f / 166f)
+  val effectDuration = 400
+
+  Crossfade(
+      targetState = currentType,
+      label = "ListTransition",
+      animationSpec = tween(durationMillis = effectDuration),
+      modifier = modifier.background(NepTuneTheme.colors.background)) { type ->
+        val (currentSamples, currentState) =
+            when (type) {
+              FeedType.DISCOVER -> discoverSamples to discoverListState
+              FeedType.FOLLOWED -> followedSamples to followedListState
+            }
+        LazyColumn(
+            state = currentState,
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+              items(currentSamples, key = { sample -> sample.id }) { sample ->
+                LaunchedEffect(sample.id) { mainViewModel.loadSampleResources(sample) }
+
+                val resources = sampleResources[sample.id] ?: SampleResourceState()
+
+                val clickHandlers =
+                    onClickFunctions(
+                        onDownloadClick = { mainViewModel.onDownloadSample(sample) },
+                        onLikeClick = { isLiked -> mainViewModel.onLikeClicked(sample, isLiked) },
+                        onCommentClick = { mainViewModel.openCommentSection(sample) },
+                        onProfileClick = {
+                          if (mainViewModel.isCurrentUser(sample.ownerId)) navigateToProfile()
+                          else navigateToOtherUserProfile(sample.ownerId)
+                        })
+
+                SampleItem(
+                    sample = sample,
+                    width = width,
+                    height = height,
+                    isLiked = likedSamples[sample.id] == true,
+                    clickHandlers = clickHandlers,
+                    resourceState = resources,
+                    mediaPlayer = mediaPlayer,
+                    iconSize = 20.dp)
+              }
+
+              item { Spacer(modifier = Modifier.height(20.dp)) }
+            }
+      }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
