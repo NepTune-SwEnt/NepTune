@@ -102,7 +102,7 @@ import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.feed.FeedType
 import com.neptune.neptune.ui.navigation.NavigationTestTags
-import com.neptune.neptune.ui.offline.offlineScreen
+import com.neptune.neptune.ui.offline.OfflineScreen
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.formatTime
 import kotlinx.coroutines.delay
@@ -196,7 +196,7 @@ fun MainScreen(
   val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
   val isRefreshing by mainViewModel.isRefreshing.collectAsState()
   val pullRefreshState = rememberPullToRefreshState()
-    val isOnline by mainViewModel.isOnline.collectAsState()
+  val isOnline by mainViewModel.isOnline.collectAsState()
 
   if (pullRefreshState.isRefreshing) {
     LaunchedEffect(true) { mainViewModel.refresh() }
@@ -238,29 +238,26 @@ fun MainScreen(
                   isOnline = isOnline)
             },
             floatingActionButton = {
-                if (isOnline) {
-                    FloatingActionButton(
-                        onClick = navigateToProjectList,
-                        containerColor = NepTuneTheme.colors.postButton,
-                        contentColor = NepTuneTheme.colors.onBackground,
-                        shape = CircleShape,
-                        modifier =
-                            Modifier.shadow(
+              if (isOnline) {
+                FloatingActionButton(
+                    onClick = navigateToProjectList,
+                    containerColor = NepTuneTheme.colors.postButton,
+                    contentColor = NepTuneTheme.colors.onBackground,
+                    shape = CircleShape,
+                    modifier =
+                        Modifier.shadow(
                                 elevation = 4.dp,
                                 spotColor = NepTuneTheme.colors.shadow,
                                 ambientColor = NepTuneTheme.colors.shadow,
-                                shape = CircleShape
-                            )
-                                .size(52.dp)
-                                .testTag(MainScreenTestTags.POST_BUTTON)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Create a Post",
-                            modifier = Modifier.size(70.dp)
-                        )
+                                shape = CircleShape)
+                            .size(52.dp)
+                            .testTag(MainScreenTestTags.POST_BUTTON)) {
+                      Icon(
+                          imageVector = Icons.Default.Add,
+                          contentDescription = "Create a Post",
+                          modifier = Modifier.size(70.dp))
                     }
-                }
+              }
             },
             content = { paddingValues ->
               MainContent(
@@ -304,60 +301,57 @@ private fun MainContent(
 ) {
   val horizontalPadding = 30.dp
   Box(modifier = Modifier.fillMaxSize()) {
-      // offline
-      if (!isOnline) {
-          offlineScreen(paddingValues)
-      } else {
-          // online
-          LazyColumn(
-              contentPadding = paddingValues, // Apply Scaffold padding
-              modifier = Modifier.fillMaxSize().testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)
-          ) {
-              // ----------------Discover Section-----------------
-              item {
-                  Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-                      SectionHeader(
-                          title = FeedType.DISCOVER.title,
-                          onClick = { navigateToSampleList(FeedType.DISCOVER) })
-                  }
+    // offline
+    if (!isOnline) {
+      OfflineScreen(Modifier.padding(paddingValues))
+    } else {
+      // online
+      LazyColumn(
+          contentPadding = paddingValues, // Apply Scaffold padding
+          modifier = Modifier.fillMaxSize().testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
+            // ----------------Discover Section-----------------
+            item {
+              Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+                SectionHeader(
+                    title = FeedType.DISCOVER.title,
+                    onClick = { navigateToSampleList(FeedType.DISCOVER) })
               }
-              item {
-                  SampleSectionLazyRow(
-                      mainViewModel = mainViewModel,
-                      samples = discoverSamples,
-                      rowsPerColumn = 2,
-                      onCommentClick = { onCommentClicked(it) },
-                      onProfileClick = { handleProfileNavigation(it) },
-                      isAnonymous = isAnonymous
-                  )
+            }
+            item {
+              SampleSectionLazyRow(
+                  mainViewModel = mainViewModel,
+                  samples = discoverSamples,
+                  rowsPerColumn = 2,
+                  onCommentClick = { onCommentClicked(it) },
+                  onProfileClick = { handleProfileNavigation(it) },
+                  isAnonymous = isAnonymous)
+            }
+            // ----------------Followed Section-----------------
+            item {
+              Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+                SectionHeader(
+                    title = FeedType.FOLLOWED.title,
+                    onClick = { navigateToSampleList(FeedType.FOLLOWED) })
               }
-              // ----------------Followed Section-----------------
-              item {
-                  Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-                      SectionHeader(
-                          title = FeedType.FOLLOWED.title,
-                          onClick = { navigateToSampleList(FeedType.FOLLOWED) })
-                  }
-              }
-              item {
-                  SampleSectionLazyRow(
-                      mainViewModel = mainViewModel,
-                      samples = followedSamples,
-                      rowsPerColumn = maxColumns,
-                      onCommentClick = { onCommentClicked(it) },
-                      onProfileClick = { handleProfileNavigation(it) })
-                  Spacer(modifier = Modifier.height(50.dp))
-              }
+            }
+            item {
+              SampleSectionLazyRow(
+                  mainViewModel = mainViewModel,
+                  samples = followedSamples,
+                  rowsPerColumn = maxColumns,
+                  onCommentClick = { onCommentClicked(it) },
+                  onProfileClick = { handleProfileNavigation(it) })
+              Spacer(modifier = Modifier.height(50.dp))
+            }
           }
-          PullToRefreshContainer(
-              state = pullRefreshState,
-              modifier =
-                  Modifier.align(Alignment.TopCenter)
-                      .padding(top = paddingValues.calculateTopPadding()),
-              containerColor = NepTuneTheme.colors.background,
-              contentColor = NepTuneTheme.colors.onBackground
-          )
-      }
+      PullToRefreshContainer(
+          state = pullRefreshState,
+          modifier =
+              Modifier.align(Alignment.TopCenter)
+                  .padding(top = paddingValues.calculateTopPadding()),
+          containerColor = NepTuneTheme.colors.background,
+          contentColor = NepTuneTheme.colors.onBackground)
+    }
   }
 }
 
@@ -428,23 +422,23 @@ private fun MainTopAppBar(
   Column {
     CenterAlignedTopAppBar(
         modifier = Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
-        navigationIcon = { if (isOnline) {
+        navigationIcon = {
+          if (isOnline) {
             // Message Button
             IconButton(
                 onClick = navigateToSelectMessages,
                 modifier =
                     Modifier.padding(vertical = 38.dp, horizontal = 25.dp)
                         .size(38.dp)
-                        .testTag(NavigationTestTags.MESSAGE_BUTTON)
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.messageicon),
-                    contentDescription = "Messages",
-                    modifier = Modifier.size(30.dp),
-                    tint = NepTuneTheme.colors.onBackground,
-                )
-            }
-        }
+                        .testTag(NavigationTestTags.MESSAGE_BUTTON)) {
+                  Icon(
+                      painter = painterResource(id = R.drawable.messageicon),
+                      contentDescription = "Messages",
+                      modifier = Modifier.size(30.dp),
+                      tint = NepTuneTheme.colors.onBackground,
+                  )
+                }
+          }
         },
         title = {
           Text(
@@ -459,29 +453,28 @@ private fun MainTopAppBar(
               modifier = Modifier.padding(25.dp).testTag(MainScreenTestTags.TOP_BAR_TITLE),
               textAlign = TextAlign.Center)
         },
-        actions = { if (isOnline) {
+        actions = {
+          if (isOnline) {
             // Profile Button
             IconButton(
                 onClick = navigateToProfile,
                 modifier =
                     Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
                         .size(57.dp)
-                        .testTag(NavigationTestTags.PROFILE_BUTTON)
-            ) {
-                AsyncImage(
-                    model =
-                        ImageRequest.Builder(LocalContext.current)
-                            .data(userAvatar ?: R.drawable.profile)
-                            .crossfade(true)
-                            .build(),
-                    contentDescription = "Profile",
-                    modifier = Modifier.fillMaxSize().clip(CircleShape),
-                    contentScale = ContentScale.Crop,
-                    placeholder = painterResource(R.drawable.profile),
-                    error = painterResource(R.drawable.profile)
-                )
-            }
-        }
+                        .testTag(NavigationTestTags.PROFILE_BUTTON)) {
+                  AsyncImage(
+                      model =
+                          ImageRequest.Builder(LocalContext.current)
+                              .data(userAvatar ?: R.drawable.profile)
+                              .crossfade(true)
+                              .build(),
+                      contentDescription = "Profile",
+                      modifier = Modifier.fillMaxSize().clip(CircleShape),
+                      contentScale = ContentScale.Crop,
+                      placeholder = painterResource(R.drawable.profile),
+                      error = painterResource(R.drawable.profile))
+                }
+          }
         },
         colors =
             TopAppBarDefaults.centerAlignedTopAppBarColors(

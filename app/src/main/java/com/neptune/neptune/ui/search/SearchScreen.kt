@@ -37,6 +37,7 @@ import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.main.SampleItem
 import com.neptune.neptune.ui.main.SampleResourceState
 import com.neptune.neptune.ui.main.onClickFunctions
+import com.neptune.neptune.ui.offline.OfflineScreen
 import com.neptune.neptune.ui.projectlist.SearchBar
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import kotlinx.coroutines.delay
@@ -124,28 +125,34 @@ fun SearchScreen(
   val likedSamples by searchViewModel.likedSamples.collectAsState()
   val activeCommentSampleId by searchViewModel.activeCommentSampleId.collectAsState()
   val comments by searchViewModel.comments.collectAsState()
+  val isOnline by searchViewModel.isOnline.collectAsState()
   Box(modifier = Modifier.fillMaxSize()) {
-    Scaffold(
-        containerColor = NepTuneTheme.colors.background,
-        modifier = Modifier.testTag(SearchScreenTestTags.SEARCH_SCREEN),
-        topBar = {
-          SearchBar(searchText, { searchText = it }, SearchScreenTestTags.SEARCH_BAR, samplesStr)
-        },
-        content = { pd ->
-          ScrollableColumnOfSamples(
-              samples = samples,
-              searchViewModel = searchViewModel,
-              modifier = Modifier.padding(pd),
-              mediaPlayer = mediaPlayer,
-              likedSamples = likedSamples,
-              activeCommentSampleId = activeCommentSampleId,
-              comments = comments,
-              navigateToProfile = navigateToProfile,
-              navigateToOtherUserProfile = navigateToOtherUserProfile,
-              sampleResources = sampleResources)
-        })
-    if (downloadProgress != null && downloadProgress != 0) {
-      DownloadProgressBar(downloadProgress = downloadProgress!!, SearchScreenTestTags.DOWNLOAD_BAR)
+    if (!isOnline) {
+      OfflineScreen()
+    } else {
+      Scaffold(
+          containerColor = NepTuneTheme.colors.background,
+          modifier = Modifier.testTag(SearchScreenTestTags.SEARCH_SCREEN),
+          topBar = {
+            SearchBar(searchText, { searchText = it }, SearchScreenTestTags.SEARCH_BAR, samplesStr)
+          },
+          content = { pd ->
+            ScrollableColumnOfSamples(
+                samples = samples,
+                searchViewModel = searchViewModel,
+                modifier = Modifier.padding(pd),
+                mediaPlayer = mediaPlayer,
+                likedSamples = likedSamples,
+                activeCommentSampleId = activeCommentSampleId,
+                comments = comments,
+                navigateToProfile = navigateToProfile,
+                navigateToOtherUserProfile = navigateToOtherUserProfile,
+                sampleResources = sampleResources)
+          })
+      if (downloadProgress != null && downloadProgress != 0) {
+        DownloadProgressBar(
+            downloadProgress = downloadProgress!!, SearchScreenTestTags.DOWNLOAD_BAR)
+      }
     }
   }
 }

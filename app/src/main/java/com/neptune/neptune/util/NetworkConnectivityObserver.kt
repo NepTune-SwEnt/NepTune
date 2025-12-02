@@ -14,8 +14,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 /**
  * Utility for observing the device's internet connectivity status in real time.
  *
- * This class relies on Android's [ConnectivityManager] to detect when the
- * connection is established, lost, or unavailable.
+ * This class relies on Android's [ConnectivityManager] to detect when the connection is
+ * established, lost, or unavailable.
  *
  * @author Grégory Blanc This class was made using AI assistance.
  */

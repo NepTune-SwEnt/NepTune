@@ -2,7 +2,6 @@ package com.neptune.neptune.ui.offline
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -26,48 +25,42 @@ import com.neptune.neptune.R
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
 @Composable
-fun offlineScreen(
-    paddingValues: PaddingValues,
-    ) {
-    Column(
-    modifier = Modifier
-    .fillMaxSize()
-    .padding(paddingValues)
-    .padding(horizontal = 24.dp),
-    horizontalAlignment = Alignment.CenterHorizontally,
-    verticalArrangement = Arrangement.Center
-    ) {
+fun OfflineScreen(
+    modifier: Modifier = Modifier,
+) {
+  Column(
+      modifier = modifier.fillMaxSize().padding(horizontal = 24.dp),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center) {
         Icon(
             imageVector = Icons.Default.WifiOff,
             contentDescription = "Offline",
             tint = NepTuneTheme.colors.onBackground.copy(alpha = 0.5f),
-            modifier = Modifier.size(80.dp)
-        )
+            modifier = Modifier.size(80.dp))
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
             text = "Offline Mode Active",
-            style = TextStyle(
-                fontSize = 32.sp,
-                fontFamily = FontFamily(Font(R.font.markazi_text)),
-                fontWeight = FontWeight.Bold,
-                color = NepTuneTheme.colors.onBackground
-            ),
-            textAlign = TextAlign.Center
-        )
+            style =
+                TextStyle(
+                    fontSize = 32.sp,
+                    fontFamily = FontFamily(Font(R.font.markazi_text)),
+                    fontWeight = FontWeight.Bold,
+                    color = NepTuneTheme.colors.onBackground),
+            textAlign = TextAlign.Center)
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "You can't see the feed right now, but you can still create and modify your local projects.",
-            style = TextStyle(
-                fontSize = 20.sp,
-                fontFamily = FontFamily(Font(R.font.markazi_text)),
-                fontWeight = FontWeight.Normal,
-                color = NepTuneTheme.colors.onBackground.copy(alpha = 0.8f)
-            ),
-            textAlign = TextAlign.Center
-        )
-    }
+            text =
+                "You can't see the feed right now, but you can still create and modify your local projects.",
+            style =
+                TextStyle(
+                    fontSize = 20.sp,
+                    fontFamily = FontFamily(Font(R.font.markazi_text)),
+                    fontWeight = FontWeight.Normal,
+                    color = NepTuneTheme.colors.onBackground.copy(alpha = 0.8f)),
+            textAlign = TextAlign.Center)
+      }
 }

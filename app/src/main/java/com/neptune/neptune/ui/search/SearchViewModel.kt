@@ -18,6 +18,7 @@ import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
 import com.neptune.neptune.ui.main.SampleResourceState
 import com.neptune.neptune.ui.main.SampleUiActions
+import com.neptune.neptune.util.NetworkConnectivityObserver
 import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -84,6 +85,13 @@ open class SearchViewModel(
 
   private val _usernames = MutableStateFlow<Map<String, String>>(emptyMap())
   val usernames: StateFlow<Map<String, String>> = _usernames.asStateFlow()
+  private val _isOnline = MutableStateFlow(true)
+  val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+
+  init {
+    val observer = NetworkConnectivityObserver()
+    viewModelScope.launch { observer.isOnline.collect { status -> _isOnline.value = status } }
+  }
 
   fun onCommentClicked(sample: Sample) {
     observeCommentsForSample(sample.id)
