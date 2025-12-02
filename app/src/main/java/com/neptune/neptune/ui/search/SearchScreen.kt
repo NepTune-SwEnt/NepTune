@@ -166,6 +166,7 @@ fun ScrollableColumnOfSamples(
   val screenWidth = configuration.screenWidthDp.dp
   val width = screenWidth - 20.dp
   val height = width * (150f / 166f) // the same ratio than in the feedScreen
+
   // Ensure the possibility to like in local
   LazyColumn(
       modifier =
@@ -216,11 +217,13 @@ fun ScrollableColumnOfSamples(
       } // Comment Overlay
   if (activeCommentSampleId != null) {
     val usernames by searchViewModel.usernames.collectAsState()
+    val isAnonymous by searchViewModel.isAnonymous.collectAsState()
     CommentDialog(
         sampleId = activeCommentSampleId,
         comments = comments,
         usernames = usernames,
         onDismiss = { searchViewModel.resetCommentSampleId() },
-        onAddComment = { id, text -> searchViewModel.onAddComment(id, text) })
+        onAddComment = { id, text -> searchViewModel.onAddComment(id, text) },
+        isAnonymous = isAnonymous)
   }
 }
