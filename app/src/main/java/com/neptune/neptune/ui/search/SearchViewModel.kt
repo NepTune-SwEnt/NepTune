@@ -87,10 +87,18 @@ open class SearchViewModel(
   val usernames: StateFlow<Map<String, String>> = _usernames.asStateFlow()
   private val _isOnline = MutableStateFlow(true)
   val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+  private var isActuallyConnected = true
 
   init {
     val observer = NetworkConnectivityObserver()
-    viewModelScope.launch { observer.isOnline.collect { status -> _isOnline.value = status } }
+    viewModelScope.launch { // sticky offline mode: if we regain connection ignore
+      observer.isOnline.collect { isConnected ->
+        isActuallyConnected = isConnected
+        if (!isConnected) {
+          _isOnline.value = false
+        }
+      }
+    }
   }
 
   fun onCommentClicked(sample: Sample) {
@@ -357,6 +365,12 @@ open class SearchViewModel(
         updatedStates[sample.id] = liked
       }
       _likedSamples.value = updatedStates
+    }
+  }
+
+  fun refresh() {
+    if (isActuallyConnected) {
+      _isOnline.value = true
     }
   }
 

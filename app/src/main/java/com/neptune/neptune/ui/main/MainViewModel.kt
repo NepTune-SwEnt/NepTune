@@ -109,6 +109,7 @@ class MainViewModel(
   val activeCommentSampleId: StateFlow<String?> = _activeCommentSampleId.asStateFlow()
   private val _isOnline = MutableStateFlow(true)
   val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+  private var isActuallyConnected = true
 
   init {
     if (useMockData) {
@@ -120,7 +121,15 @@ class MainViewModel(
     auth.addAuthStateListener(authListener)
     observeUserProfile()
     val observer = NetworkConnectivityObserver()
-    viewModelScope.launch { observer.isOnline.collect { status -> _isOnline.value = status } }
+    viewModelScope.launch {
+      // sticky offline mode: if we regain connection ignore
+      observer.isOnline.collect { isConnected ->
+        isActuallyConnected = isConnected
+        if (!isConnected) {
+          _isOnline.value = false
+        }
+      }
+    }
   }
 
   private fun loadSamplesFromFirebase() {
@@ -462,10 +471,22 @@ class MainViewModel(
 
   /** Function to be called when a refresh is triggered. */
   fun refresh() {
-    _isRefreshing.value = true
-    allSamplesCache = emptyList()
-    loadSamplesFromFirebase()
+    if (isActuallyConnected) {
+      _isOnline.value = true
+      _isRefreshing.value = true
+      allSamplesCache = emptyList()
+      loadSamplesFromFirebase()
+    } else {
+      _isRefreshing.value = false
+    }
   }
+
+  /** Disconnect the user */
+  fun signOut() {
+    auth.signOut()
+    _currentUserFlow.value = null
+  }
+
   /** Function to open the comment section. */
   fun openCommentSection(sample: Sample) {
     _activeCommentSampleId.value = sample.id

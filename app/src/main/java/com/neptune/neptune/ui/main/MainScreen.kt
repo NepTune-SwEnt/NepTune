@@ -43,6 +43,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -181,6 +182,7 @@ fun MainScreen(
     navigateToOtherUserProfile: (String) -> Unit = {},
     navigateToSelectMessages: () -> Unit = {},
     navigateToSampleList: (FeedType) -> Unit = {},
+    navigateToSignIn: () -> Unit = {},
     mainViewModel: MainViewModel =
         viewModel(factory = factory(LocalContext.current.applicationContext as Application))
 ) {
@@ -271,7 +273,8 @@ fun MainScreen(
                   navigateToSampleList = navigateToSampleList,
                   pullRefreshState = pullRefreshState,
                   isAnonymous = isAnonymous,
-                  isOnline = isOnline)
+                  isOnline = isOnline,
+                  navigateToSignIn = navigateToSignIn)
             },
             containerColor = NepTuneTheme.colors.background)
         // Comment Overlay (Outside Scaffold content, but inside Box to float over everything)
@@ -295,6 +298,7 @@ private fun MainContent(
     onCommentClicked: (Sample) -> Unit,
     handleProfileNavigation: (String) -> Unit,
     navigateToSampleList: (FeedType) -> Unit,
+    navigateToSignIn: () -> Unit = {},
     pullRefreshState: PullToRefreshState,
     isAnonymous: Boolean = false,
     isOnline: Boolean = true
@@ -303,7 +307,29 @@ private fun MainContent(
   Box(modifier = Modifier.fillMaxSize()) {
     // offline
     if (!isOnline) {
-      OfflineScreen(Modifier.padding(paddingValues))
+      Column(
+          modifier = Modifier.fillMaxSize().padding(paddingValues),
+          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalArrangement = Arrangement.Center) {
+            OfflineScreen()
+            Spacer(modifier = Modifier.height(32.dp))
+
+            OutlinedButton(
+                onClick = {
+                  mainViewModel.signOut()
+                  navigateToSignIn()
+                },
+                modifier = Modifier.height(50.dp).fillMaxWidth(0.8f),
+                border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground)) {
+                  Text(
+                      text = "Return to Login",
+                      style =
+                          TextStyle(
+                              fontSize = 22.sp,
+                              fontFamily = FontFamily(Font(R.font.markazi_text)),
+                              color = NepTuneTheme.colors.onBackground))
+                }
+          }
     } else {
       // online
       LazyColumn(
