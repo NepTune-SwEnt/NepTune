@@ -1,7 +1,9 @@
 package com.neptune.neptune.screen
 
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -80,7 +82,7 @@ class MessagesScreenTest {
     composeTestRule.onNodeWithTag(MessagesScreenTestTags.SEND_BUTTON).performClick()
 
     composeTestRule.waitUntil(
-        timeoutMillis = 5_000,
+        timeoutMillis = 5000,
     ) {
       composeTestRule.onAllNodesWithText("Banana").fetchSemanticsNodes().isNotEmpty()
     }
@@ -121,5 +123,51 @@ class MessagesScreenTest {
     setContent(goBack = { backClicked = true })
     composeTestRule.onNodeWithTag(SelectMessagesScreenTestTags.BACK_BUTTON).performClick()
     assertTrue(backClicked)
+  }
+
+  /** Tests that u2 fake data loads correctly */
+  @Test
+  fun messagesScreenLoadsFakeDataForU2() {
+    composeTestRule.setContent { MessagesScreen(uid = "u2", goBack = {}) }
+
+    // Username
+    composeTestRule
+        .onNodeWithTag(MessagesScreenTestTags.USERNAME)
+        .assertIsDisplayed()
+        .assertTextContains("test2")
+
+    // Online indicator
+    composeTestRule.onNodeWithTag(MessagesScreenTestTags.ONLINE_INDICATOR).assertIsDisplayed()
+
+    // Messages
+    composeTestRule.waitUntil(5000) {
+      composeTestRule.onAllNodesWithText("BLEH😝").fetchSemanticsNodes().size == 3
+    }
+
+    composeTestRule.onAllNodesWithText("BLEH😝").assertCountEquals(3)
+  }
+
+  /** Tests that u3 fake data loads correctly */
+  @Test
+  fun messagesScreenLoadsFakeDataForU3() {
+    composeTestRule.setContent { MessagesScreen(uid = "u3", goBack = {}) }
+
+    // Username
+    composeTestRule
+        .onNodeWithTag(MessagesScreenTestTags.USERNAME)
+        .assertIsDisplayed()
+        .assertTextContains("test3")
+
+    // Online indicator
+    composeTestRule.onNodeWithTag(MessagesScreenTestTags.ONLINE_INDICATOR).assertIsDisplayed()
+
+    // Messages
+    composeTestRule.waitUntil(5000) {
+      composeTestRule.onAllNodesWithText("Banana").fetchSemanticsNodes().isNotEmpty() &&
+          composeTestRule.onAllNodesWithText("21").fetchSemanticsNodes().isNotEmpty()
+    }
+
+    composeTestRule.onNodeWithText("Banana").assertIsDisplayed()
+    composeTestRule.onNodeWithText("21").assertIsDisplayed()
   }
 }
