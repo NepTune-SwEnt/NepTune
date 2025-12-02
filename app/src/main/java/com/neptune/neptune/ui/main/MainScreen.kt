@@ -49,6 +49,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -187,7 +188,6 @@ fun MainScreen(
   val userAvatar by mainViewModel.userAvatar.collectAsState()
 
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-  val horizontalPadding = 30.dp
   val wait: Long = 300
   // Depends on the size of the screen
   val maxColumns = if (screenWidth < 360.dp) 1 else 2
@@ -228,69 +228,10 @@ fun MainScreen(
               .testTag(MainScreenTestTags.MAIN_SCREEN)) {
         Scaffold(
             topBar = {
-              Column {
-                CenterAlignedTopAppBar(
-                    modifier =
-                        Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
-                    navigationIcon = {
-                      // Message Button
-                      IconButton(
-                          onClick = navigateToSelectMessages,
-                          modifier =
-                              Modifier.padding(vertical = 38.dp, horizontal = 25.dp)
-                                  .size(38.dp)
-                                  .testTag(NavigationTestTags.MESSAGE_BUTTON)) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.messageicon),
-                                contentDescription = "Messages",
-                                modifier = Modifier.size(30.dp),
-                                tint = NepTuneTheme.colors.onBackground,
-                            )
-                          }
-                    },
-                    title = {
-                      Text(
-                          text = "NepTune",
-                          style =
-                              TextStyle(
-                                  fontSize = 45.sp,
-                                  fontFamily = FontFamily(Font(R.font.lily_script_one)),
-                                  fontWeight = FontWeight(149),
-                                  color = NepTuneTheme.colors.onBackground,
-                              ),
-                          modifier =
-                              Modifier.padding(25.dp).testTag(MainScreenTestTags.TOP_BAR_TITLE),
-                          textAlign = TextAlign.Center)
-                    },
-                    actions = {
-                      // Profile Button
-                      IconButton(
-                          onClick = navigateToProfile,
-                          modifier =
-                              Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
-                                  .size(57.dp)
-                                  .testTag(NavigationTestTags.PROFILE_BUTTON)) {
-                            AsyncImage(
-                                model =
-                                    ImageRequest.Builder(LocalContext.current)
-                                        .data(userAvatar ?: R.drawable.profile)
-                                        .crossfade(true)
-                                        .build(),
-                                contentDescription = "Profile",
-                                modifier = Modifier.fillMaxSize().clip(CircleShape),
-                                contentScale = ContentScale.Crop,
-                                placeholder = painterResource(R.drawable.profile),
-                                error = painterResource(R.drawable.profile))
-                          }
-                    },
-                    colors =
-                        TopAppBarDefaults.centerAlignedTopAppBarColors(
-                            containerColor = NepTuneTheme.colors.background))
-                HorizontalDivider(
-                    modifier = Modifier.fillMaxWidth(),
-                    thickness = 0.75.dp,
-                    color = NepTuneTheme.colors.onBackground)
-              }
+              MainTopAppBar(
+                  userAvatar = userAvatar,
+                  navigateToSelectMessages = navigateToSelectMessages,
+                  navigateToProfile = navigateToProfile)
             },
             floatingActionButton = {
               FloatingActionButton(
@@ -313,54 +254,16 @@ fun MainScreen(
                   }
             },
             content = { paddingValues ->
-              Box(modifier = Modifier.fillMaxSize()) {
-                LazyColumn(
-                    contentPadding = paddingValues, // Apply Scaffold padding
-                    modifier =
-                        Modifier.fillMaxSize()
-                            .testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
-                      // ----------------Discover Section-----------------
-                      item {
-                        Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-                          SectionHeader(
-                              title = FeedType.DISCOVER.title,
-                              onClick = { navigateToSampleList(FeedType.DISCOVER) })
-                        }
-                      }
-                      item {
-                        SampleSectionLazyRow(
-                            mainViewModel = mainViewModel,
-                            samples = discoverSamples,
-                            rowsPerColumn = 2,
-                            onCommentClick = { onCommentClicked(it) },
-                            onProfileClick = { handleProfileNavigation(it) })
-                      }
-                      // ----------------Followed Section-----------------
-                      item {
-                        Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-                          SectionHeader(
-                              title = FeedType.FOLLOWED.title,
-                              onClick = { navigateToSampleList(FeedType.FOLLOWED) })
-                        }
-                      }
-                      item {
-                        SampleSectionLazyRow(
-                            mainViewModel = mainViewModel,
-                            samples = followedSamples,
-                            rowsPerColumn = maxColumns,
-                            onCommentClick = { onCommentClicked(it) },
-                            onProfileClick = { handleProfileNavigation(it) })
-                        Spacer(modifier = Modifier.height(50.dp))
-                      }
-                    }
-                PullToRefreshContainer(
-                    state = pullRefreshState,
-                    modifier =
-                        Modifier.align(Alignment.TopCenter)
-                            .padding(top = paddingValues.calculateTopPadding()),
-                    containerColor = NepTuneTheme.colors.background,
-                    contentColor = NepTuneTheme.colors.onBackground)
-              }
+              MainContent(
+                  paddingValues = paddingValues,
+                  mainViewModel = mainViewModel,
+                  discoverSamples = discoverSamples,
+                  followedSamples = followedSamples,
+                  maxColumns = maxColumns,
+                  onCommentClicked = { onCommentClicked(it) },
+                  handleProfileNavigation = { handleProfileNavigation(it) },
+                  navigateToSampleList = navigateToSampleList,
+                  pullRefreshState = pullRefreshState)
             },
             containerColor = NepTuneTheme.colors.background)
         // Comment Overlay (Outside Scaffold content, but inside Box to float over everything)
@@ -371,6 +274,67 @@ fun MainScreen(
               downloadProgress = downloadProgress!!, MainScreenTestTags.DOWNLOAD_PROGRESS)
         }
       }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MainContent(
+    paddingValues: PaddingValues,
+    mainViewModel: MainViewModel,
+    discoverSamples: List<Sample>,
+    followedSamples: List<Sample>,
+    maxColumns: Int,
+    onCommentClicked: (Sample) -> Unit,
+    handleProfileNavigation: (String) -> Unit,
+    navigateToSampleList: (FeedType) -> Unit,
+    pullRefreshState: PullToRefreshState
+) {
+  val horizontalPadding = 30.dp
+  Box(modifier = Modifier.fillMaxSize()) {
+    LazyColumn(
+        contentPadding = paddingValues, // Apply Scaffold padding
+        modifier = Modifier.fillMaxSize().testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
+          // ----------------Discover Section-----------------
+          item {
+            Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+              SectionHeader(
+                  title = FeedType.DISCOVER.title,
+                  onClick = { navigateToSampleList(FeedType.DISCOVER) })
+            }
+          }
+          item {
+            SampleSectionLazyRow(
+                mainViewModel = mainViewModel,
+                samples = discoverSamples,
+                rowsPerColumn = 2,
+                onCommentClick = { onCommentClicked(it) },
+                onProfileClick = { handleProfileNavigation(it) })
+          }
+          // ----------------Followed Section-----------------
+          item {
+            Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+              SectionHeader(
+                  title = FeedType.FOLLOWED.title,
+                  onClick = { navigateToSampleList(FeedType.FOLLOWED) })
+            }
+          }
+          item {
+            SampleSectionLazyRow(
+                mainViewModel = mainViewModel,
+                samples = followedSamples,
+                rowsPerColumn = maxColumns,
+                onCommentClick = { onCommentClicked(it) },
+                onProfileClick = { handleProfileNavigation(it) })
+            Spacer(modifier = Modifier.height(50.dp))
+          }
+        }
+    PullToRefreshContainer(
+        state = pullRefreshState,
+        modifier =
+            Modifier.align(Alignment.TopCenter).padding(top = paddingValues.calculateTopPadding()),
+        containerColor = NepTuneTheme.colors.background,
+        contentColor = NepTuneTheme.colors.onBackground)
+  }
 }
 
 @Composable
@@ -424,6 +388,76 @@ private fun SampleSectionLazyRow(
           }
         }
       }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MainTopAppBar(
+    userAvatar: String?,
+    navigateToSelectMessages: () -> Unit,
+    navigateToProfile: () -> Unit
+) {
+  Column {
+    CenterAlignedTopAppBar(
+        modifier = Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
+        navigationIcon = {
+          // Message Button
+          IconButton(
+              onClick = navigateToSelectMessages,
+              modifier =
+                  Modifier.padding(vertical = 38.dp, horizontal = 25.dp)
+                      .size(38.dp)
+                      .testTag(NavigationTestTags.MESSAGE_BUTTON)) {
+                Icon(
+                    painter = painterResource(id = R.drawable.messageicon),
+                    contentDescription = "Messages",
+                    modifier = Modifier.size(30.dp),
+                    tint = NepTuneTheme.colors.onBackground,
+                )
+              }
+        },
+        title = {
+          Text(
+              text = "NepTune",
+              style =
+                  TextStyle(
+                      fontSize = 45.sp,
+                      fontFamily = FontFamily(Font(R.font.lily_script_one)),
+                      fontWeight = FontWeight(149),
+                      color = NepTuneTheme.colors.onBackground,
+                  ),
+              modifier = Modifier.padding(25.dp).testTag(MainScreenTestTags.TOP_BAR_TITLE),
+              textAlign = TextAlign.Center)
+        },
+        actions = {
+          // Profile Button
+          IconButton(
+              onClick = navigateToProfile,
+              modifier =
+                  Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
+                      .size(57.dp)
+                      .testTag(NavigationTestTags.PROFILE_BUTTON)) {
+                AsyncImage(
+                    model =
+                        ImageRequest.Builder(LocalContext.current)
+                            .data(userAvatar ?: R.drawable.profile)
+                            .crossfade(true)
+                            .build(),
+                    contentDescription = "Profile",
+                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    contentScale = ContentScale.Crop,
+                    placeholder = painterResource(R.drawable.profile),
+                    error = painterResource(R.drawable.profile))
+              }
+        },
+        colors =
+            TopAppBarDefaults.centerAlignedTopAppBarColors(
+                containerColor = NepTuneTheme.colors.background))
+    HorizontalDivider(
+        modifier = Modifier.fillMaxWidth(),
+        thickness = 0.75.dp,
+        color = NepTuneTheme.colors.onBackground)
+  }
 }
 
 @Composable
