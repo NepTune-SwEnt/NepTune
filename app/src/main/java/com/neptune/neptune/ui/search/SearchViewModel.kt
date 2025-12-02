@@ -43,8 +43,7 @@ open class SearchViewModel(
         sampleRepo = sampleRepo,
         profileRepo = profileRepo,
         context = context,
-        auth = if (useMockData) null else auth ?: FirebaseAuth.getInstance()
-    ),
+        auth = if (useMockData) null else auth ?: FirebaseAuth.getInstance()),
     SampleFeedController {
 
   // ---------- Firebase auth (disabled in tests when useMockData = true) ----------

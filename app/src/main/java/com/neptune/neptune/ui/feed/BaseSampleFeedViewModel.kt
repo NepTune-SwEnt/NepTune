@@ -29,7 +29,7 @@ abstract class BaseSampleFeedViewModel(
     protected val sampleRepo: SampleRepository,
     protected val profileRepo: ProfileRepository,
     protected val auth: FirebaseAuth? = null,
-  protected val context: Context
+    protected val context: Context
 ) : ViewModel(), SampleFeedController {
   protected open val actions: SampleUiActions? = null
   protected val defaultName = "anonymous"
@@ -90,38 +90,38 @@ abstract class BaseSampleFeedViewModel(
   override fun loadSampleResources(sample: Sample) {
     val currentResources = _sampleResources.value[sample.id]
     if (currentResources != null &&
-      currentResources.loadedSamplePath == sample.storagePreviewSamplePath) {
+        currentResources.loadedSamplePath == sample.storagePreviewSamplePath) {
       return
     }
 
     viewModelScope.launch {
       _sampleResources.update { current ->
         current +
-                (sample.id to
-                        (current[sample.id]?.copy(isLoading = true)
-                          ?: SampleResourceState(isLoading = true)))
+            (sample.id to
+                (current[sample.id]?.copy(isLoading = true)
+                    ?: SampleResourceState(isLoading = true)))
       }
 
       val avatarUrl = getSampleOwnerAvatar(sample.ownerId)
       val userName = getUserName(sample.ownerId)
       val coverUrl =
-        if (sample.storageImagePath.isNotBlank()) getSampleCoverUrl(sample.storageImagePath)
-        else null
+          if (sample.storageImagePath.isNotBlank()) getSampleCoverUrl(sample.storageImagePath)
+          else null
       val audioUrl =
-        if (sample.storagePreviewSamplePath.isNotBlank()) getSampleAudioUrl(sample) else null
+          if (sample.storagePreviewSamplePath.isNotBlank()) getSampleAudioUrl(sample) else null
       val waveform = getSampleWaveform(sample)
 
       _sampleResources.update { current ->
         current +
-                (sample.id to
-                        SampleResourceState(
-                          ownerName = userName,
-                          ownerAvatarUrl = avatarUrl,
-                          coverImageUrl = coverUrl,
-                          audioUrl = audioUrl,
-                          waveform = waveform,
-                          isLoading = false,
-                          loadedSamplePath = sample.storagePreviewSamplePath))
+            (sample.id to
+                SampleResourceState(
+                    ownerName = userName,
+                    ownerAvatarUrl = avatarUrl,
+                    coverImageUrl = coverUrl,
+                    audioUrl = audioUrl,
+                    waveform = waveform,
+                    isLoading = false,
+                    loadedSamplePath = sample.storagePreviewSamplePath))
       }
     }
   }
@@ -167,16 +167,16 @@ abstract class BaseSampleFeedViewModel(
 
   private suspend fun getSampleWaveform(sample: Sample): List<Float> {
     if (waveformCache.containsKey(sample.id))
-      waveformCache[sample.id]?.let {
-        return it
-      }
+        waveformCache[sample.id]?.let {
+          return it
+        }
 
     val audioUrl = getSampleAudioUrl(sample) ?: return emptyList()
 
     return try {
       val waveform =
-        WaveformExtractor()
-          .extractWaveform(context = context, uri = audioUrl.toUri(), samplesCount = 100)
+          WaveformExtractor()
+              .extractWaveform(context = context, uri = audioUrl.toUri(), samplesCount = 100)
       if (waveform.isNotEmpty()) {
         waveformCache[sample.id] = waveform
       }
@@ -193,10 +193,12 @@ abstract class BaseSampleFeedViewModel(
   internal fun onAddCommentPublic(sampleId: String, text: String) {
     onAddComment(sampleId, text)
   }
+
   @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
   internal fun observeCommentsForSamplePublic(sampleId: String) {
     observeCommentsForSample(sampleId)
   }
+
   @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
   internal fun loadUsernamePublic(userId: String) {
     loadUsername(userId)

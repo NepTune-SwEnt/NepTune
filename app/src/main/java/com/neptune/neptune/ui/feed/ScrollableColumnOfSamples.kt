@@ -29,8 +29,8 @@ import com.neptune.neptune.ui.theme.NepTuneTheme
 /**
  * Shared scrolling list of sample cards used by search/profile feeds.
  *
- * The UI remains the same; test tags and navigation callbacks are injected to adapt to
- * different screens.
+ * The UI remains the same; test tags and navigation callbacks are injected to adapt to different
+ * screens.
  */
 @Composable
 fun ScrollableColumnOfSamples(
