@@ -18,6 +18,7 @@ import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
 import com.neptune.neptune.util.AudioWaveformExtractor
+import com.neptune.neptune.util.NetworkConnectivityObserver
 import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -106,6 +107,8 @@ class MainViewModel(
   val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
   private val _activeCommentSampleId = MutableStateFlow<String?>(null)
   val activeCommentSampleId: StateFlow<String?> = _activeCommentSampleId.asStateFlow()
+    private val _isOnline = MutableStateFlow(true)
+    val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
 
   init {
     if (useMockData) {
@@ -116,6 +119,12 @@ class MainViewModel(
     }
     auth.addAuthStateListener(authListener)
     observeUserProfile()
+      val observer = NetworkConnectivityObserver()
+      viewModelScope.launch {
+          observer.isOnline.collect { status ->
+              _isOnline.value = status
+          }
+      }
   }
 
   private fun loadSamplesFromFirebase() {
