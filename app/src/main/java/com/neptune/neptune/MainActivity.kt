@@ -49,6 +49,8 @@ import com.neptune.neptune.ui.profile.SelfProfileRoute
 import com.neptune.neptune.ui.projectlist.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.search.SearchScreen
+import com.neptune.neptune.ui.search.SearchViewModel
+import com.neptune.neptune.ui.search.searchScreenFactory
 import com.neptune.neptune.ui.settings.SettingsAccountScreen
 import com.neptune.neptune.ui.settings.SettingsCustomThemeScreen
 import com.neptune.neptune.ui.settings.SettingsScreen
@@ -111,6 +113,9 @@ fun NeptuneApp(
     startDestination: String = Screen.SignIn.route,
 ) {
   val signInViewModel: SignInViewModel = viewModel()
+  val searchViewModel: SearchViewModel =
+      viewModel(
+          factory = searchScreenFactory(LocalContext.current.applicationContext as Application))
   val navigationActions = NavigationActions(navController)
   val navBackStackEntry by navController.currentBackStackEntryAsState()
   val currentRoute = navBackStackEntry?.destination?.route
@@ -176,7 +181,8 @@ fun NeptuneApp(
                       navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
                       navigateToOtherUserProfile = { userId ->
                         navigationActions.navigateTo(Screen.OtherUserProfile.createRoute(userId))
-                      })
+                      },
+                      searchViewModel = searchViewModel)
                 }
                 composable(
                     route = Screen.Post.route,

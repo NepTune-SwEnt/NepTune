@@ -90,7 +90,7 @@ class SearchScreenTestTagsPerSampleCard(private val idInColumn: String = "0") : 
     get() = tag("sampleDownloads")
 }
 
-private fun factory(application: Application) =
+fun searchScreenFactory(application: Application) =
     object : ViewModelProvider.Factory {
       override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(SearchViewModel::class.java)) {
@@ -105,7 +105,8 @@ private fun factory(application: Application) =
 @Composable
 fun SearchScreen(
     searchViewModel: SearchViewModel =
-        viewModel(factory = factory(LocalContext.current.applicationContext as Application)),
+        viewModel(
+            factory = searchScreenFactory(LocalContext.current.applicationContext as Application)),
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
     navigateToProfile: () -> Unit = {},
     navigateToOtherUserProfile: (String) -> Unit = {},
