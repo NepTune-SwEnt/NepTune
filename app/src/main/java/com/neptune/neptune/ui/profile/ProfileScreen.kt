@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -53,6 +54,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -61,9 +64,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.google.firebase.auth.FirebaseAuth
 import com.neptune.neptune.R
 import com.neptune.neptune.data.rememberImagePickerLauncher
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import com.neptune.neptune.ui.feed.ScrollableColumnOfSamples
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
 private val ScreenPadding = 16.dp
@@ -178,6 +183,7 @@ sealed interface ProfileViewConfig {
       private val onEdit: () -> Unit,
       private val settings: () -> Unit,
       val canEditProfile: Boolean = true,
+      override val samplesSection: (@Composable () -> Unit)? = null,
   ) : ProfileViewConfig {
     override val topBarContent = @Composable { SettingsButton(settings) }
     override val belowStatsButton = null
@@ -197,7 +203,6 @@ sealed interface ProfileViewConfig {
                 }
           }
         }
-    override val samplesSection = null
   }
 
   data class OtherProfileConfig(
@@ -206,6 +211,7 @@ sealed interface ProfileViewConfig {
       val canFollowTarget: Boolean = true,
       private val onFollow: () -> Unit,
       private val errorMessage: String?,
+      override val samplesSection: (@Composable () -> Unit)? = null,
   ) : ProfileViewConfig {
     override val topBarContent = null
     override val belowStatsButton: @Composable () -> Unit = composable@{
@@ -235,7 +241,6 @@ sealed interface ProfileViewConfig {
           }
     }
     override val bottomScreenButton = null
-    override val samplesSection = null // FIXME: implement samples section
   }
 }
 
@@ -360,6 +365,9 @@ private fun ProfileViewContent(
                   style = MaterialTheme.typography.headlineSmall,
               )
             }
+
+            Spacer(Modifier.height(LargeSectionSpacing))
+            viewConfig.samplesSection?.invoke()
 
             Spacer(Modifier.height(50.dp))
           }
@@ -691,6 +699,41 @@ fun EditableTagChip(tagText: String, onRemove: (String) -> Unit, modifier: Modif
           ))
 }
 
+@Composable
+private fun ProfileSamplesSection(viewModel: ProfileSamplesViewModel) {
+  val samples by viewModel.samples.collectAsState()
+  val likedSamples by viewModel.likedSamples.collectAsState()
+  val activeCommentSampleId by viewModel.activeCommentSampleId.collectAsState()
+  val comments by viewModel.comments.collectAsState()
+  val sampleResources by viewModel.sampleResources.collectAsState()
+  val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+
+  Column(modifier = Modifier.fillMaxWidth()) {
+    Text(
+        text = "Posted samples",
+        style = MaterialTheme.typography.headlineSmall,
+        color = NepTuneTheme.colors.onBackground)
+    Spacer(Modifier.height(16.dp))
+
+    if (samples.isEmpty()) {
+      Text(
+          text = "No samples posted yet.",
+          style = MaterialTheme.typography.bodyMedium,
+          color = NepTuneTheme.colors.onBackground)
+    } else {
+      ScrollableColumnOfSamples(
+          samples = samples,
+          controller = viewModel,
+          likedSamples = likedSamples,
+          activeCommentSampleId = activeCommentSampleId,
+          comments = comments,
+          sampleResources = sampleResources,
+          listTestTag = "profile/samples/list",
+          modifier = Modifier.fillMaxWidth().heightIn(min = 200.dp, max = screenHeight))
+    }
+  }
+}
+
 /**
  * Composable route for the Profile feature.
  *
@@ -701,6 +744,10 @@ fun EditableTagChip(tagText: String, onRemove: (String) -> Unit, modifier: Modif
  */
 @Composable
 fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
+
+  val context = LocalContext.current.applicationContext
+  val auth = FirebaseAuth.getInstance()
+  val ownerId = auth.currentUser?.uid.orEmpty()
 
   val factory =
       object : ViewModelProvider.Factory {
@@ -713,7 +760,24 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
         }
       }
 
+  val samplesFactory =
+      object : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+          if (modelClass.isAssignableFrom(ProfileSamplesViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return ProfileSamplesViewModel(
+                ownerId = ownerId,
+                context = context,
+                auth = auth,
+            )
+                as T
+          }
+          throw IllegalArgumentException("Unknown ViewModel class")
+        }
+      }
+
   val viewModel: SelfProfileViewModel = viewModel(factory = factory)
+  val samplesViewModel: ProfileSamplesViewModel = viewModel(factory = samplesFactory)
   val state = viewModel.uiState.collectAsState().value
   val localAvatarUri by viewModel.localAvatarUri.collectAsState()
   val tempAvatarUri by viewModel.tempAvatarUri.collectAsState()
@@ -733,7 +797,8 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
       ProfileViewConfig.SelfProfileConfig(
           onEdit = viewModel::onEditClick,
           settings = settings,
-          canEditProfile = !state.isAnonymousUser)
+          canEditProfile = !state.isAnonymousUser,
+          samplesSection = { ProfileSamplesSection(viewModel = samplesViewModel) })
 
   ProfileScreen(
       uiState = state,
@@ -763,6 +828,9 @@ fun OtherUserProfileRoute(
     userId: String,
     goBack: () -> Unit = {},
 ) {
+  val context = LocalContext.current.applicationContext
+  val auth = FirebaseAuth.getInstance()
+
   val factory =
       object : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -776,7 +844,19 @@ fun OtherUserProfileRoute(
         }
       }
 
+  val samplesFactory =
+      object : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+          if (modelClass.isAssignableFrom(ProfileSamplesViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return ProfileSamplesViewModel(ownerId = userId, context = context, auth = auth) as T
+          }
+          throw IllegalArgumentException("Unknown ViewModel class")
+        }
+      }
+
   val viewModel: OtherProfileViewModel = viewModel(factory = factory)
+  val samplesViewModel: ProfileSamplesViewModel = viewModel(factory = samplesFactory)
   val state by viewModel.uiState.collectAsState()
 
   val viewConfig =
@@ -785,7 +865,8 @@ fun OtherUserProfileRoute(
           isFollowActionInProgress = state.isFollowActionInProgress,
           canFollowTarget = !state.profile.isAnonymousUser && !state.isCurrentUserAnonymous,
           onFollow = viewModel::onFollow,
-          errorMessage = state.errorMessage)
+          errorMessage = state.errorMessage,
+          samplesSection = { ProfileSamplesSection(viewModel = samplesViewModel) })
 
   ProfileScreen(
       uiState = state.profile,

@@ -44,21 +44,19 @@ class ProfileSamplesViewModel(
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples.asStateFlow()
 
-  override val actions: SampleUiActions? =
-      run {
-        val storageService =
-            explicitStorageService
-                ?: StorageService(
-                    FirebaseStorage.getInstance(context.getString(R.string.storage_path)))
-        val downloadsFolder =
-            explicitDownloadsFolder
-                ?: Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        SampleUiActions(
-            repo = sampleRepo,
-            storageService = storageService,
-            downloadsFolder = downloadsFolder,
-            context = context)
-      }
+  override val actions: SampleUiActions? = run {
+    val storageService =
+        explicitStorageService
+            ?: StorageService(FirebaseStorage.getInstance(context.getString(R.string.storage_path)))
+    val downloadsFolder =
+        explicitDownloadsFolder
+            ?: Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+    SampleUiActions(
+        repo = sampleRepo,
+        storageService = storageService,
+        downloadsFolder = downloadsFolder,
+        context = context)
+  }
 
   init {
     observeOwnerSamples()
