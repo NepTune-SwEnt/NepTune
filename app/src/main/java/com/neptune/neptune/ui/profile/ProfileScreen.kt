@@ -130,7 +130,8 @@ fun ProfileScreen(
     localAvatarUri: Uri? = null,
     callbacks: ProfileScreenCallbacks = ProfileScreenCallbacks.Empty,
     onAvatarEditClick: () -> Unit = {},
-    viewConfig: ProfileViewConfig
+    viewConfig: ProfileViewConfig,
+    profileSamplesViewModel: ProfileSamplesViewModel,
 ) {
   Column(modifier = Modifier.padding(ScreenPadding).testTag(ProfileScreenTestTags.ROOT)) {
     when (uiState.mode) {
@@ -140,7 +141,8 @@ fun ProfileScreen(
             state = uiState,
             localAvatarUri = localAvatarUri,
             viewConfig = viewConfig,
-            goBack = callbacks.goBackClick)
+            goBack = callbacks.goBackClick,
+            profileSamplesViewModel = profileSamplesViewModel)
       }
       // Create profile screen edit content
       ProfileMode.EDIT -> {
@@ -177,13 +179,11 @@ sealed interface ProfileViewConfig {
   val topBarContent: (@Composable () -> Unit)?
   val belowStatsButton: (@Composable () -> Unit)?
   val bottomScreenButton: (@Composable (modifier: Modifier) -> Unit)?
-  val samplesSection: (@Composable () -> Unit)?
 
   data class SelfProfileConfig(
       private val onEdit: () -> Unit,
       private val settings: () -> Unit,
       val canEditProfile: Boolean = true,
-      override val samplesSection: (@Composable () -> Unit)? = null,
   ) : ProfileViewConfig {
     override val topBarContent = @Composable { SettingsButton(settings) }
     override val belowStatsButton = null
@@ -211,7 +211,6 @@ sealed interface ProfileViewConfig {
       val canFollowTarget: Boolean = true,
       private val onFollow: () -> Unit,
       private val errorMessage: String?,
-      override val samplesSection: (@Composable () -> Unit)? = null,
   ) : ProfileViewConfig {
     override val topBarContent = null
     override val belowStatsButton: @Composable () -> Unit = composable@{
@@ -261,7 +260,8 @@ private fun ProfileViewContent(
     state: SelfProfileUiState,
     localAvatarUri: Uri?,
     goBack: () -> Unit,
-    viewConfig: ProfileViewConfig
+    viewConfig: ProfileViewConfig,
+    profileSamplesViewModel: ProfileSamplesViewModel
 ) {
   Scaffold(
       modifier = Modifier.testTag(ProfileScreenTestTags.ROOT),
@@ -358,16 +358,11 @@ private fun ProfileViewContent(
                   }
 
               Spacer(Modifier.height(LargeSectionSpacing))
-
-              Text(
-                  text = "My projects",
-                  color = NepTuneTheme.colors.onBackground,
-                  style = MaterialTheme.typography.headlineSmall,
-              )
             }
 
             Spacer(Modifier.height(LargeSectionSpacing))
-            viewConfig.samplesSection?.invoke()
+            ProfileSamplesSection(viewModel = profileSamplesViewModel)
+            Spacer(Modifier.height(LargeSectionSpacing))
 
             Spacer(Modifier.height(50.dp))
           }
@@ -795,10 +790,7 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
 
   val viewConfig =
       ProfileViewConfig.SelfProfileConfig(
-          onEdit = viewModel::onEditClick,
-          settings = settings,
-          canEditProfile = !state.isAnonymousUser,
-          samplesSection = { ProfileSamplesSection(viewModel = samplesViewModel) })
+          onEdit = viewModel::onEditClick, settings = settings, canEditProfile = !state.isAnonymousUser)
 
   ProfileScreen(
       uiState = state,
@@ -810,6 +802,7 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
           },
       onAvatarEditClick = { imagePickerLauncher.launch("image/*") }, // Launch the picker
       viewConfig = viewConfig,
+      profileSamplesViewModel = samplesViewModel,
       callbacks =
           profileScreenCallbacks(
               onEditClick = viewModel::onEditClick,
@@ -865,13 +858,13 @@ fun OtherUserProfileRoute(
           isFollowActionInProgress = state.isFollowActionInProgress,
           canFollowTarget = !state.profile.isAnonymousUser && !state.isCurrentUserAnonymous,
           onFollow = viewModel::onFollow,
-          errorMessage = state.errorMessage,
-          samplesSection = { ProfileSamplesSection(viewModel = samplesViewModel) })
+          errorMessage = state.errorMessage)
 
   ProfileScreen(
       uiState = state.profile,
       localAvatarUri = null, // No local avatar for others (only remote URL)
       viewConfig = viewConfig,
+      profileSamplesViewModel = samplesViewModel,
       callbacks = profileScreenCallbacks(goBackClick = goBack),
   )
 }
