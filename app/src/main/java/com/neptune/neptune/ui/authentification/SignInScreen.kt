@@ -98,6 +98,7 @@ fun SignInScreen(
 
   val signInStatus by signInViewModel.signInStatus.collectAsState()
   val emailState by signInViewModel.emailAuthUiState.collectAsState()
+  val isOnline by signInViewModel.isOnline.collectAsState()
 
   LaunchedEffect(credentialManager) {
     signInViewModel.initialize(

@@ -19,6 +19,7 @@ import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.neptune.neptune.util.NetworkConnectivityObserver
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -137,6 +138,8 @@ class SignInViewModel(
   /** Email/password form UI state. */
   private val _emailAuthUiState = MutableStateFlow(EmailAuthUiState())
   val emailAuthUiState: StateFlow<EmailAuthUiState> = _emailAuthUiState.asStateFlow()
+  private val _isOnline = MutableStateFlow(true)
+  val isOnline = _isOnline.asStateFlow()
 
   /**
    * Initializes the ViewModel.
@@ -163,6 +166,8 @@ class SignInViewModel(
     } else {
       _signInStatus.value = SignInStatus.SIGNED_OUT
     }
+    val observer = NetworkConnectivityObserver()
+    viewModelScope.launch { observer.isOnline.collect { status -> _isOnline.value = status } }
   }
 
   /**
