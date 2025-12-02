@@ -2,6 +2,7 @@
 
 package com.neptune.neptune.screen
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,6 +28,8 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
+import com.neptune.neptune.media.LocalMediaPlayer
+import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.FakeProfileRepository
 import com.neptune.neptune.model.FakeSampleRepository
 import com.neptune.neptune.model.profile.Profile
@@ -102,11 +105,13 @@ class ProfileScreenTest {
     }
   }
 
-  private fun createFakeSamplesViewModel(): ProfileSamplesViewModel {
+  private fun createFakeSamplesViewModel(
+      initialSamples: List<com.neptune.neptune.model.sample.Sample> = emptyList()
+  ): ProfileSamplesViewModel {
     val context = ApplicationProvider.getApplicationContext<android.content.Context>()
     return ProfileSamplesViewModel(
         ownerId = "owner",
-        sampleRepo = FakeSampleRepository(),
+        sampleRepo = FakeSampleRepository(initialSamples),
         profileRepo = FakeProfileRepository(),
         context = context,
         auth = null,
@@ -132,12 +137,14 @@ class ProfileScreenTest {
     val config =
         viewConfig ?: ProfileViewConfig.SelfProfileConfig(onEdit = onEditClick, settings = {})
     composeTestRule.setContent {
-      SampleAppTheme {
-        ProfileScreen(
-            uiState = state,
-            callbacks = profileScreenCallbacks(onEditClick = onEditClick, goBackClick = goBack),
-            viewConfig = config,
-            profileSamplesViewModel = samplesViewModel)
+      CompositionLocalProvider(LocalMediaPlayer provides NeptuneMediaPlayer()) {
+        SampleAppTheme {
+          ProfileScreen(
+              uiState = state,
+              callbacks = profileScreenCallbacks(onEditClick = onEditClick, goBackClick = goBack),
+              viewConfig = config,
+              profileSamplesViewModel = samplesViewModel)
+        }
       }
     }
     composeTestRule.waitForIdle()
@@ -161,17 +168,19 @@ class ProfileScreenTest {
       samplesViewModel: ProfileSamplesViewModel = createFakeSamplesViewModel(),
   ) {
     composeTestRule.setContent {
-      SampleAppTheme {
-        ProfileScreen(
-            uiState = state,
-            callbacks =
-                profileScreenCallbacks(
-                    onSaveClick = onSaveClick,
-                    onNameChange = onNameChange,
-                    onUsernameChange = onUsernameChange,
-                    onBioChange = onBioChange),
-            viewConfig = ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = {}),
-            profileSamplesViewModel = samplesViewModel)
+      CompositionLocalProvider(LocalMediaPlayer provides NeptuneMediaPlayer()) {
+        SampleAppTheme {
+          ProfileScreen(
+              uiState = state,
+              callbacks =
+                  profileScreenCallbacks(
+                      onSaveClick = onSaveClick,
+                      onNameChange = onNameChange,
+                      onUsernameChange = onUsernameChange,
+                      onBioChange = onBioChange),
+              viewConfig = ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = {}),
+              profileSamplesViewModel = samplesViewModel)
+        }
       }
     }
     composeTestRule.waitForIdle()
@@ -910,6 +919,66 @@ class ProfileScreenTest {
       composeTestRule.waitUntil(3_000) { goBackCalled }
       assert(goBackCalled)
     }
+  }
+
+  @Test
+  fun postedSamplesSectionShowsEmptyState() {
+    setContentViewMode(samplesViewModel = createFakeSamplesViewModel())
+
+    composeTestRule.scrollAnyScrollableTo(hasText("Posted samples"))
+    composeTestRule.onNode(hasText("Posted samples"), useUnmergedTree = true).assertExists()
+    composeTestRule.onNode(hasText("No samples posted yet."), useUnmergedTree = true).assertExists()
+    composeTestRule
+        .onAllNodes(hasTestTag("profile/samples/list"), useUnmergedTree = true)
+        .assertCountEquals(0)
+  }
+
+  @Test
+  fun postedSamplesSectionShowsOnlyOwnersSamples() {
+    val ownerSample =
+        com.neptune.neptune.model.sample.Sample(
+            id = "owner-1",
+            name = "Owner Track",
+            description = "Owned",
+            durationSeconds = 90,
+            tags = listOf("rock"),
+            likes = 1,
+            usersLike = emptyList(),
+            comments = 0,
+            downloads = 0,
+            isPublic = true,
+            ownerId = "owner",
+            storagePreviewSamplePath = "preview/owner.mp3")
+    val otherSample =
+        com.neptune.neptune.model.sample.Sample(
+            id = "other-1",
+            name = "Other Track",
+            description = "Not owned",
+            durationSeconds = 45,
+            tags = emptyList(),
+            likes = 0,
+            usersLike = emptyList(),
+            comments = 0,
+            downloads = 0,
+            isPublic = true,
+            ownerId = "other",
+            storagePreviewSamplePath = "preview/other.mp3")
+
+    setContentViewMode(
+        samplesViewModel = createFakeSamplesViewModel(listOf(ownerSample, otherSample)))
+
+    composeTestRule.waitUntil(5_000) {
+      composeTestRule
+          .onAllNodes(hasText("Owner Track"), useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+    composeTestRule
+        .onNodeWithTag("profile/samples/list", useUnmergedTree = true)
+        .assertExists()
+        .performScrollTo()
+    composeTestRule.onNode(hasText("Owner Track"), useUnmergedTree = true).assertIsDisplayed()
+    composeTestRule.onAllNodes(hasText("Other Track"), useUnmergedTree = true).assertCountEquals(0)
   }
 }
 
