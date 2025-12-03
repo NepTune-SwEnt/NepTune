@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.search
 
+import OfflineScreen
 import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -248,43 +249,4 @@ fun ScrollableColumnOfSamples(
         onAddComment = { id, text -> searchViewModel.onAddComment(id, text) },
         isAnonymous = isAnonymous)
   }
-}
-
-@Composable
-fun OfflineScreen() {
-  Column(
-      modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
-      horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.Center) {
-        Icon(
-            imageVector = Icons.Default.WifiOff,
-            contentDescription = "Offline",
-            tint = NepTuneTheme.colors.onBackground.copy(alpha = 0.5f),
-            modifier = Modifier.size(80.dp))
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(
-            text = "No connection",
-            style =
-                TextStyle(
-                    fontSize = 32.sp,
-                    fontFamily = FontFamily(Font(R.font.markazi_text)),
-                    fontWeight = FontWeight.Bold,
-                    color = NepTuneTheme.colors.onBackground),
-            textAlign = TextAlign.Center)
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text =
-                "You can't see the samples right now, but you can still create and modify your local projects.",
-            style =
-                TextStyle(
-                    fontSize = 20.sp,
-                    fontFamily = FontFamily(Font(R.font.markazi_text)),
-                    fontWeight = FontWeight.Normal,
-                    color = NepTuneTheme.colors.onBackground.copy(alpha = 0.8f)),
-            textAlign = TextAlign.Center)
-      }
 }
