@@ -22,6 +22,11 @@ import androidx.compose.ui.unit.sp
 import com.neptune.neptune.R
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
+/**
+ * A screen to show that the user has no connection.
+ *
+ * @author Grégory Blanc This function was made using AI assistance.
+ */
 @Composable
 fun OfflineScreen() {
   Column(

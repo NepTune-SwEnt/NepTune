@@ -23,6 +23,7 @@ import com.neptune.neptune.util.NetworkConnectivityObserver
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -158,16 +159,31 @@ class SignInViewModel(
     navigateMain = navigate
     clientId = serverClientId
 
-    val initialUser = firebaseAuth.currentUser
-    _currentUser.value = initialUser
-    if (initialUser != null) {
-      _signInStatus.value = SignInStatus.SUCCESS
-      navigateMain()
-    } else {
-      _signInStatus.value = SignInStatus.SIGNED_OUT
+    viewModelScope.launch {
+      val observer = NetworkConnectivityObserver()
+      val isNetworkAvailable =
+          try {
+            observer.isOnline.first()
+          } catch (_: Exception) {
+            false
+          }
+      val initialUser = firebaseAuth.currentUser
+      _currentUser.value = initialUser
+      if (initialUser != null) {
+        if (isNetworkAvailable) {
+          // logged and network
+          _signInStatus.value = SignInStatus.SUCCESS
+          navigateMain()
+        } else {
+          // logged but no network
+          signOut()
+        }
+      } else {
+        // not logged
+        _signInStatus.value = SignInStatus.SIGNED_OUT
+      }
+      viewModelScope.launch { observer.isOnline.collect { status -> _isOnline.value = status } }
     }
-    val observer = NetworkConnectivityObserver()
-    viewModelScope.launch { observer.isOnline.collect { status -> _isOnline.value = status } }
   }
 
   /**

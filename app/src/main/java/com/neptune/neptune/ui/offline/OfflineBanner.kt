@@ -22,6 +22,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * A banner to show that the user has no connection.
+ *
+ * @author Grégory Blanc This function was made using AI assistance.
+ */
 @Composable
 fun OfflineBanner() {
   Surface(
