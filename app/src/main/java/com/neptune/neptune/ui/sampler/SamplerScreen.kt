@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.media.LocalMediaPlayer
@@ -110,6 +111,10 @@ object SamplerTestTags {
   const val SETTINGS_CONFIRM_BUTTON = "settingsConfirmButton"
   const val SETTINGS_CANCEL_BUTTON = "settingsCancelButton"
   const val SETTINGS_PITCH_SELECTOR = "settingsPitchSelector"
+
+  // Help-related test tags
+  const val HELP_BUTTON = "helpButton"
+  const val HELP_DIALOG = "helpDialog"
 }
 
 val KnobBackground = Color.Black
@@ -156,6 +161,9 @@ fun SamplerScreen(
 
   // Local state to control visibility of the floating settings dialog
   var showSettingsDialog by remember { mutableStateOf(false) }
+  // Local state for the help dialog and selected tab
+  var showHelpDialog by remember { mutableStateOf(false) }
+  var helpTabIndex by remember { mutableStateOf(0) }
 
   LaunchedEffect(Unit) {
     if (decodedZipPath != null) {
@@ -181,41 +189,72 @@ fun SamplerScreen(
                   tint = Color.White)
             }
       }) { paddingValues ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp)) {
-              PlaybackAndWaveformControls(
-                  isPlaying = uiState.isPlaying,
-                  onTogglePlayPause = viewModel::togglePlayPause,
-                  onSave = {
-                    if (decodedZipPath != null) {
-                      viewModel.saveProjectData(decodedZipPath)
-                      Log.i("SamplerScreen", "Project saved in $decodedZipPath")
-                    } else {
-                      Log.w("SamplerScreen", "No project path found for saving")
-                    }
-                  },
-                  pitch = uiState.fullPitch,
-                  tempo = uiState.tempo,
-                  onPitchChange = viewModel::updatePitch,
-                  onTempoChange = viewModel::updateTempo,
-                  playbackPosition = uiState.playbackPosition,
-                  onPositionChange = viewModel::updatePlaybackPosition,
-                  onIncreasePitch = viewModel::increasePitch,
-                  onDecreasePitch = viewModel::decreasePitch,
-                  uiState = uiState,
-                  viewModel = viewModel)
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+          Column(
+              modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+            PlaybackAndWaveformControls(
+                isPlaying = uiState.isPlaying,
+                onTogglePlayPause = viewModel::togglePlayPause,
+                onSave = {
+                  if (decodedZipPath != null) {
+                    viewModel.saveProjectData(decodedZipPath)
+                    Log.i("SamplerScreen", "Project saved in $decodedZipPath")
+                  } else {
+                    Log.w("SamplerScreen", "No project path found for saving")
+                  }
+                },
+                pitch = uiState.fullPitch,
+                tempo = uiState.tempo,
+                onPitchChange = viewModel::updatePitch,
+                onTempoChange = viewModel::updateTempo,
+                playbackPosition = uiState.playbackPosition,
+                onPositionChange = viewModel::updatePlaybackPosition,
+                onIncreasePitch = viewModel::increasePitch,
+                onDecreasePitch = viewModel::decreasePitch,
+                uiState = uiState,
+                viewModel = viewModel)
 
-              Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-              SamplerTabs(currentTab = uiState.currentTab, onTabSelected = viewModel::selectTab)
+            SamplerTabs(currentTab = uiState.currentTab, onTabSelected = viewModel::selectTab)
 
-              TabContent(currentTab = uiState.currentTab, uiState = uiState, viewModel = viewModel)
+            TabContent(currentTab = uiState.currentTab, uiState = uiState, viewModel = viewModel)
+          }
+
+          // Bottom-left Help button
+          Box(modifier = Modifier.fillMaxSize()) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp)
+                    .size(48.dp),
+                shape = CircleShape,
+                color = NepTuneTheme.colors.accentPrimary,
+                tonalElevation = 4.dp) {
+              IconButton(
+                  onClick = { showHelpDialog = true },
+                  modifier = Modifier.testTag(SamplerTestTags.HELP_BUTTON)) {
+                Icon(
+                    imageVector = Icons.Default.Help,
+                    contentDescription = "Help",
+                    tint = Color.White)
+              }
             }
+          }
+        }
       }
 
   // Show a simple settings dialog when settings button is pressed
   if (showSettingsDialog) {
     SettingsDialog(viewModel = viewModel, onClose = { showSettingsDialog = false })
+  }
+
+  // Help dialog - multi-tab explanatory dialog
+  if (showHelpDialog) {
+    HelpDialog(
+        selectedTab = helpTabIndex,
+        onTabSelected = { helpTabIndex = it },
+        onClose = { showHelpDialog = false })
   }
 }
 
@@ -1711,4 +1750,71 @@ fun SettingsDialog(viewModel: SamplerViewModel, onClose: () -> Unit) {
               Text("Cancel")
             }
       })
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Unit) {
+  val tabs = listOf("Overview", "Controls", "Tips")
+
+  Dialog(onDismissRequest = onClose) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = NepTuneTheme.colors.background,
+        modifier = Modifier.testTag(SamplerTestTags.HELP_DIALOG)) {
+      Column(modifier = Modifier.padding(16.dp).widthIn(max = 520.dp)) {
+        Text("Sampler Help", style = MaterialTheme.typography.titleLarge, color = NepTuneTheme.colors.smallText)
+        Spacer(modifier = Modifier.height(12.dp))
+
+        TabRow(selectedTabIndex = selectedTab) {
+          tabs.forEachIndexed { index, title ->
+            Tab(selected = selectedTab == index, onClick = { onTabSelected(index) }, text = { Text(title) })
+          }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        when (selectedTab) {
+          0 -> HelpOverview()
+          1 -> HelpControls()
+          2 -> HelpTips()
+          else -> HelpOverview()
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+          TextButton(onClick = onClose) { Text("Close") }
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun HelpOverview() {
+  Column(modifier = Modifier.fillMaxWidth()) {
+    Text("Overview", fontWeight = FontWeight.Bold, color = NepTuneTheme.colors.smallText)
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(
+        "The sampler allows previewing audio, adjusting pitch and tempo, editing ADSR envelope, EQ and compression. Use the tabs to switch sections.",
+        color = NepTuneTheme.colors.smallText)
+  }
+}
+
+@Composable
+private fun HelpControls() {
+  Column(modifier = Modifier.fillMaxWidth()) {
+    Text("Controls", fontWeight = FontWeight.Bold, color = NepTuneTheme.colors.smallText)
+    Spacer(modifier = Modifier.height(8.dp))
+    Text("- Play / Pause: preview the sample\n- Save: persist project data\n- Pitch/Tempo selectors: adjust playback\n- ADSR: drag points on the curve to change envelope", color = NepTuneTheme.colors.smallText)
+  }
+}
+
+@Composable
+private fun HelpTips() {
+  Column(modifier = Modifier.fillMaxWidth()) {
+    Text("Tips", fontWeight = FontWeight.Bold, color = NepTuneTheme.colors.smallText)
+    Spacer(modifier = Modifier.height(8.dp))
+    Text("- Use the ADSR editor for shaping note dynamics.\n- Use EQ faders to cut/boost frequencies.\n- Try short preview loops to fine-tune parameters.", color = NepTuneTheme.colors.smallText)
+  }
 }
