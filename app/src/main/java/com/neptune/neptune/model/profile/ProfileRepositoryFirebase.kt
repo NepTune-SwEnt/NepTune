@@ -351,25 +351,28 @@ class ProfileRepositoryFirebase(
   private fun toUsernameBase(s: String) = s.lowercase().replace("[^a-z0-9_]".toRegex(), "")
 
   /**
-   * Searches for users whose username starts with the given query.
+   * Searches for users. If [query] is empty, returns a list of all users (limit applied).
+   * Otherwise, returns users whose username starts with the given query.
    *
-   * @param query the prefix to search for
+   * @param query the prefix to search for, or empty string for all users
    * @return a list of matching profiles
    */
   override suspend fun searchUsers(query: String): List<Profile> {
-    if (query.isBlank()) return emptyList()
-    // Normalize to match the storage format
-    val normalizedQuery = normalizeUsername(query)
-
-    // Use Firestore range query for prefix matching
     return try {
-      profiles
-          .whereGreaterThanOrEqualTo("username", normalizedQuery)
-          .whereLessThan("username", normalizedQuery + "\uf8ff")
-          .limit(20)
-          .get()
-          .await()
-          .mapNotNull { it.toProfileOrNull() }
+      if (query.isBlank()) {
+        // Return all users (limited) when query is empty
+        profiles.limit(50).get().await().mapNotNull { it.toProfileOrNull() }
+      } else {
+        val normalizedQuery = normalizeUsername(query)
+        // Use Firestore range query for prefix matching
+        profiles
+            .whereGreaterThanOrEqualTo("username", normalizedQuery)
+            .whereLessThan("username", normalizedQuery + "\uf8ff")
+            .limit(20)
+            .get()
+            .await()
+            .mapNotNull { it.toProfileOrNull() }
+      }
     } catch (e: Exception) {
       Log.e("ProfileRepository", "Error searching users", e)
       emptyList()
