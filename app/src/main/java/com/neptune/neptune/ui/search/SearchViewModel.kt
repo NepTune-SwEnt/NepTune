@@ -294,6 +294,7 @@ open class SearchViewModel(
   }
 
   fun loadSamplesFromFirebase() {
+    if (auth?.currentUser == null) return
     viewModelScope.launch {
       repo.observeSamples().collectLatest { remoteSamples ->
         if (allSamplesCache.isEmpty()) {

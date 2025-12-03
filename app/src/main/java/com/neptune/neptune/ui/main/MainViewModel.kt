@@ -124,12 +124,7 @@ class MainViewModel(
     observeUserProfile()
     val observer = NetworkConnectivityObserver()
     viewModelScope.launch {
-      observer.isOnline.collect { isConnected ->
-        _isOnline.value = isConnected
-        if (isConnected) {
-          refresh()
-        }
-      }
+      observer.isOnline.collect { isConnected -> _isOnline.value = isConnected }
     }
   }
 
