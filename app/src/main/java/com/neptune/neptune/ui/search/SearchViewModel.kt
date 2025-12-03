@@ -90,6 +90,16 @@ open class SearchViewModel(
   private val _usernames = MutableStateFlow<Map<String, String>>(emptyMap())
   val usernames: StateFlow<Map<String, String>> = _usernames.asStateFlow()
 
+  // Search Type State
+  private val _searchType = MutableStateFlow(SearchType.SAMPLES)
+  val searchType: StateFlow<SearchType> = _searchType.asStateFlow()
+
+  fun toggleSearchType() {
+    _searchType.update { it.toggle() }
+    // Re-apply filter or trigger new search when type changes
+    search(query)
+  }
+
   fun onCommentClicked(sample: Sample) {
     observeCommentsForSample(sample.id)
     _activeCommentSampleId.value = sample.id
