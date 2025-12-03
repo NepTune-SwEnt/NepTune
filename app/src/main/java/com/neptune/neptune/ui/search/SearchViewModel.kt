@@ -87,6 +87,8 @@ open class SearchViewModel(
   val usernames: StateFlow<Map<String, String>> = _usernames.asStateFlow()
   private val _isOnline = MutableStateFlow(true)
   val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+  val isUserLoggedIn: Boolean
+    get() = auth?.currentUser != null
 
   init {
     try {

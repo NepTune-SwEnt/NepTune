@@ -5,6 +5,7 @@ import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,6 +39,7 @@ import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.main.SampleItem
 import com.neptune.neptune.ui.main.SampleResourceState
 import com.neptune.neptune.ui.main.onClickFunctions
+import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.projectlist.SearchBar
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import kotlinx.coroutines.delay
@@ -126,8 +128,9 @@ fun SearchScreen(
   val activeCommentSampleId by searchViewModel.activeCommentSampleId.collectAsState()
   val comments by searchViewModel.comments.collectAsState()
   val isOnline by searchViewModel.isOnline.collectAsState()
+  val isUserLoggedIn = remember { searchViewModel.isUserLoggedIn }
   Box(modifier = Modifier.fillMaxSize()) {
-    if (!isOnline) {
+    if (!isUserLoggedIn) {
       OfflineScreen()
     } else {
       Scaffold(
@@ -137,17 +140,23 @@ fun SearchScreen(
             SearchBar(searchText, { searchText = it }, SearchScreenTestTags.SEARCH_BAR, samplesStr)
           },
           content = { pd ->
-            ScrollableColumnOfSamples(
-                samples = samples,
-                searchViewModel = searchViewModel,
-                modifier = Modifier.padding(pd),
-                mediaPlayer = mediaPlayer,
-                likedSamples = likedSamples,
-                activeCommentSampleId = activeCommentSampleId,
-                comments = comments,
-                navigateToProfile = navigateToProfile,
-                navigateToOtherUserProfile = navigateToOtherUserProfile,
-                sampleResources = sampleResources)
+            Column(modifier = Modifier.fillMaxSize().padding(pd)) {
+              if (!isOnline) {
+                OfflineBanner()
+              }
+              ScrollableColumnOfSamples(
+                  samples = samples,
+                  searchViewModel = searchViewModel,
+                  modifier = Modifier.weight(1f),
+                  mediaPlayer = mediaPlayer,
+                  likedSamples = likedSamples,
+                  activeCommentSampleId = activeCommentSampleId,
+                  comments = comments,
+                  navigateToProfile = navigateToProfile,
+                  navigateToOtherUserProfile = navigateToOtherUserProfile,
+                  sampleResources = sampleResources,
+              )
+            }
           })
       if (downloadProgress != null && downloadProgress != 0) {
         DownloadProgressBar(
