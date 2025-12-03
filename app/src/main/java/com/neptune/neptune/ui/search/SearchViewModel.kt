@@ -113,6 +113,8 @@ open class SearchViewModel(
   val followingIds: StateFlow<Set<String>> = _followingIds.asStateFlow()
   private val _isOnline = MutableStateFlow(true)
   val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+  val isUserLoggedIn: Boolean
+    get() = auth?.currentUser != null
 
   init {
     try {

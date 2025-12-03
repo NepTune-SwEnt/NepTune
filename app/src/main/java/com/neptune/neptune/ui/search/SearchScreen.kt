@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -68,6 +69,8 @@ import com.neptune.neptune.ui.feed.sampleFeedItems
 import com.neptune.neptune.ui.main.CommentDialog
 import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.main.SampleResourceState
+import com.neptune.neptune.ui.main.onClickFunctions
+import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.projectlist.SearchBar
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import kotlinx.coroutines.delay
@@ -179,8 +182,9 @@ fun SearchScreen(
   val activeCommentSampleId by searchViewModel.activeCommentSampleId.collectAsState()
   val comments by searchViewModel.comments.collectAsState()
   val isOnline by searchViewModel.isOnline.collectAsState()
+  val isUserLoggedIn = remember { searchViewModel.isUserLoggedIn }
   Box(modifier = Modifier.fillMaxSize()) {
-    if (!isOnline) {
+    if (!isUserLoggedIn) {
       OfflineScreen()
     } else {
       Scaffold(
@@ -225,6 +229,10 @@ fun SearchScreen(
                 }
           },
           content = { pd ->
+              Column(modifier = Modifier.fillMaxSize().padding(pd)) {
+                  if (!isOnline) {
+                      OfflineBanner()
+                  }
             if (searchType == SearchType.SAMPLES) {
               ScrollableColumnOfSamples(
                   samples = samples,
@@ -254,6 +262,7 @@ fun SearchScreen(
                   },
                   modifier = Modifier.padding(pd))
             }
+                  }
           })
       if (downloadProgress != null && downloadProgress != 0) {
         DownloadProgressBar(
