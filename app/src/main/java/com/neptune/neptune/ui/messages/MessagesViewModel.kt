@@ -32,7 +32,9 @@ class MessagesViewModel(
   val currentUserId = "ME" // TODO load from FirebaseAuth
 
   init {
-    loadFakeData(otherUserId)
+    if (initialMessages.isEmpty()) {
+      loadFakeData(otherUserId)
+    }
   }
 
   private fun loadConversation() {

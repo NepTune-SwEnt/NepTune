@@ -32,7 +32,6 @@ import com.google.firebase.Timestamp
 import com.neptune.neptune.R
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.formatTime
-import kotlinx.coroutines.launch
 
 object MessagesScreenTestTags {
   const val MESSAGES_SCREEN = "MessagesScreen"
@@ -87,12 +86,11 @@ fun MessagesScreen(
   val isOnline by messagesViewModel.isOnline.collectAsState()
   val currentUserId = messagesViewModel.currentUserId
   val listState = rememberLazyListState()
-  val coroutine = rememberCoroutineScope()
 
   // Scroll to latest message when list changes
   LaunchedEffect(messages.size) {
     if (autoScroll && messages.isNotEmpty()) {
-      coroutine.launch { listState.animateScrollToItem(messages.lastIndex) }
+      listState.animateScrollToItem(messages.lastIndex)
     }
   }
 

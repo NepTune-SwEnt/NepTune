@@ -15,7 +15,6 @@ import androidx.compose.ui.test.performTextInput
 import com.neptune.neptune.ui.messages.MessagesScreen
 import com.neptune.neptune.ui.messages.MessagesScreenTestTags
 import com.neptune.neptune.ui.messages.MessagesViewModel
-import com.neptune.neptune.ui.messages.SelectMessagesScreenTestTags
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -121,7 +120,7 @@ class MessagesScreenTest {
   fun testBackButtonTriggersCallback() {
     var backClicked = false
     setContent(goBack = { backClicked = true })
-    composeTestRule.onNodeWithTag(SelectMessagesScreenTestTags.BACK_BUTTON).performClick()
+    composeTestRule.onNodeWithTag(MessagesScreenTestTags.BACK_BUTTON).performClick()
     assertTrue(backClicked)
   }
 
