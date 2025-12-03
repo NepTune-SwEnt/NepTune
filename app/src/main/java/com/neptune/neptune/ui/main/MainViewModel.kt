@@ -109,7 +109,6 @@ class MainViewModel(
   val activeCommentSampleId: StateFlow<String?> = _activeCommentSampleId.asStateFlow()
   private val _isOnline = MutableStateFlow(true)
   val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
-  private var isActuallyConnected = true
 
   val isUserLoggedIn: Boolean
     get() = auth.currentUser != null
@@ -125,10 +124,8 @@ class MainViewModel(
     observeUserProfile()
     val observer = NetworkConnectivityObserver()
     viewModelScope.launch {
-      // sticky offline mode: if we regain connection ignore
       observer.isOnline.collect { isConnected ->
         _isOnline.value = isConnected
-        isActuallyConnected = isConnected
         if (isConnected) {
           refresh()
         }
@@ -476,12 +473,8 @@ class MainViewModel(
 
   /** Function to be called when a refresh is triggered. */
   fun refresh() {
-    if (isActuallyConnected) {
-      _isRefreshing.value = true
-      loadSamplesFromFirebase()
-    } else {
-      _isRefreshing.value = false
-    }
+    _isRefreshing.value = true
+    loadSamplesFromFirebase()
   }
 
   /** Disconnect the user */

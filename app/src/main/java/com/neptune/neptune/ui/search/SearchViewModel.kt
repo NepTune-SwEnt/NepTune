@@ -87,15 +87,11 @@ open class SearchViewModel(
   val usernames: StateFlow<Map<String, String>> = _usernames.asStateFlow()
   private val _isOnline = MutableStateFlow(true)
   val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
-  private var isActuallyConnected = true
 
   init {
     val observer = NetworkConnectivityObserver()
     viewModelScope.launch {
-      observer.isOnline.collect { isConnected ->
-        _isOnline.value = isConnected
-        isActuallyConnected = isConnected
-      }
+      observer.isOnline.collect { isConnected -> _isOnline.value = isConnected }
     }
   }
 
