@@ -14,6 +14,7 @@ import be.tarsos.dsp.AudioEvent
 import be.tarsos.dsp.AudioProcessor
 import be.tarsos.dsp.PitchShifter
 import be.tarsos.dsp.io.TarsosDSPAudioFormat
+import be.tarsos.dsp.io.TarsosDSPAudioInputStream
 import be.tarsos.dsp.io.android.AndroidAudioInputStream
 import be.tarsos.dsp.io.android.AudioDispatcherFactory
 import com.neptune.neptune.NepTuneApplication
@@ -841,7 +842,7 @@ open class SamplerViewModel() : ViewModel() {
       Log.d(
           "SamplerViewModel",
           "processAudio: semitones=$semitones sampleRate=$sampleRate inSamples=${samples.size} durationSec=${samples.size.toDouble()/sampleRate}")
-      samples = pitchShift(samples, sampleRate.toFloat(), semitones)
+      samples = pitchShift(samples, semitones)
       Log.d("SamplerViewModel", "after pitchShift: samples=${samples.size}")
     }
 
@@ -1298,52 +1299,24 @@ open class SamplerViewModel() : ViewModel() {
       return out
     }
   }
-
-  /**
-   * Time-stretch phase vocoder + pitch-shift (resample) without duration change. Very robust and
-   * not glitchy.
-   *
-   * @param input PCM float array
-   * @param pitchSemitones number of semitones (+/-)
-   */
-  fun pitchShift(samples: FloatArray, sampleRate: Float, semitones: Int): FloatArray {
+  fun pitchShift(samples: FloatArray, semitones: Int): FloatArray {
     if (semitones == 0) return samples
 
     val pitchFactor = 2.0.pow(semitones / 12.0).toFloat()
-    val bufferSize = 2048
-    val overlap = 256
 
-    val shifter = PitchShifter(
-      pitchFactor.toDouble(),
-      sampleRate.toDouble(),
-      bufferSize,
-      overlap
-    )
+    val out = FloatArray(samples.size)
 
-    val format = TarsosDSPAudioFormat(sampleRate, 32, 1, true, false)
-    val output = mutableListOf<Float>()
-    val eventBuffer = FloatArray(bufferSize)
-    val audioEvent = AudioEvent(format) // ⚠️ format obligatoire
-    audioEvent.floatBuffer = FloatArray(bufferSize)
-
-    var readPos = 0
-    while (readPos < samples.size) {
-      val toCopy = minOf(bufferSize, samples.size - readPos)
-      for (i in 0 until toCopy) {
-        audioEvent.floatBuffer[i] = samples[readPos + i]
-      }
-
-      shifter.process(audioEvent)
-
-      for (i in 0 until toCopy) {
-        output.add(audioEvent.floatBuffer[i])
-      }
-
-      readPos += toCopy
+    for (i in out.indices) {
+      val origIndex = i * pitchFactor
+      val idx0 = origIndex.toInt().coerceIn(0, samples.size - 1)
+      val idx1 = (idx0 + 1).coerceIn(0, samples.size - 1)
+      val frac = origIndex - idx0
+      out[i] = samples[idx0] * (1 - frac) + samples[idx1] * frac
     }
 
-    return output.toFloatArray()
+    return out
   }
+
 
   private val NOTE_TO_SEMITONE =
       mapOf(
