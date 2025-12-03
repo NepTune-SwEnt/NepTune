@@ -305,23 +305,27 @@ open class SearchViewModel(
   fun loadSamplesFromFirebase() {
     if (auth?.currentUser == null) return
     viewModelScope.launch {
-      repo.observeSamples().collectLatest { remoteSamples ->
-        if (allSamplesCache.isEmpty()) {
-          allSamplesCache = remoteSamples
-          val readySamples = remoteSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
-          readySamples.forEach { loadSampleResources(it) }
-        } else {
-          val existingIds = allSamplesCache.map { it.id }.toSet()
-          val newSamples = remoteSamples.filter { it.id !in existingIds }
-          allSamplesCache = remoteSamples
-          newSamples
-              .filter { it.storagePreviewSamplePath.isNotBlank() }
-              .forEach { loadSampleResources(it) }
+      try {
+        repo.observeSamples().collectLatest { remoteSamples ->
+          if (allSamplesCache.isEmpty()) {
+            allSamplesCache = remoteSamples
+            val readySamples = remoteSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
+            readySamples.forEach { loadSampleResources(it) }
+          } else {
+            val existingIds = allSamplesCache.map { it.id }.toSet()
+            val newSamples = remoteSamples.filter { it.id !in existingIds }
+            allSamplesCache = remoteSamples
+            newSamples
+                .filter { it.storagePreviewSamplePath.isNotBlank() }
+                .forEach { loadSampleResources(it) }
+          }
+          val validSamples = allSamplesCache.filter { it.storagePreviewSamplePath.isNotBlank() }
+          allSamples.value = validSamples
+          applyFilter(query)
+          refreshLikeStates()
         }
-        val validSamples = allSamplesCache.filter { it.storagePreviewSamplePath.isNotBlank() }
-        allSamples.value = validSamples
-        applyFilter(query)
-        refreshLikeStates()
+      } catch (e: Exception) {
+        Log.e("SearchViewModel", "Error loading samples (Offline?)", e)
       }
     }
   }
