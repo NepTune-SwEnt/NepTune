@@ -146,7 +146,7 @@ fun SearchScreen(
     delay(400L) // debounce time
     searchViewModel.search(searchText)
   }
-  val samplesStr = "Samples"
+  val whatToSearchFor = searchType.title
   val likedSamples by searchViewModel.likedSamples.collectAsState()
   val activeCommentSampleId by searchViewModel.activeCommentSampleId.collectAsState()
   val comments by searchViewModel.comments.collectAsState()
@@ -159,7 +159,7 @@ fun SearchScreen(
               modifier = Modifier.fillMaxWidth(),
               horizontalAlignment = Alignment.CenterHorizontally) {
                 SearchBar(
-                    searchText, { searchText = it }, SearchScreenTestTags.SEARCH_BAR, samplesStr)
+                    searchText, { searchText = it }, SearchScreenTestTags.SEARCH_BAR, whatToSearchFor)
 
                 val roundShape = 50
                 Box(modifier = Modifier.padding(bottom = 8.dp)) {
