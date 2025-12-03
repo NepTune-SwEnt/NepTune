@@ -349,4 +349,30 @@ class ProfileRepositoryFirebase(
 
   /** Converts an input string to a valid username base (lowercase, alphanumeric + underscores). */
   private fun toUsernameBase(s: String) = s.lowercase().replace("[^a-z0-9_]".toRegex(), "")
+
+  /**
+   * Searches for users whose username starts with the given query.
+   *
+   * @param query the prefix to search for
+   * @return a list of matching profiles
+   */
+  override suspend fun searchUsers(query: String): List<Profile> {
+    if (query.isBlank()) return emptyList()
+    // Normalize to match the storage format
+    val normalizedQuery = normalizeUsername(query)
+
+    // Use Firestore range query for prefix matching
+    return try {
+      profiles
+          .whereGreaterThanOrEqualTo("username", normalizedQuery)
+          .whereLessThan("username", normalizedQuery + "\uf8ff")
+          .limit(20)
+          .get()
+          .await()
+          .mapNotNull { it.toProfileOrNull() }
+    } catch (e: Exception) {
+      Log.e("ProfileRepository", "Error searching users", e)
+      emptyList()
+    }
+  }
 }

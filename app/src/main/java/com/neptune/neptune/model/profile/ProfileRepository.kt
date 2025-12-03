@@ -155,4 +155,12 @@ interface ProfileRepository {
 
   /** Retrieves the username of a specific user via their ID. */
   suspend fun getUserNameByUserId(userId: String): String?
+
+  /**
+   * Searches for users whose username starts with the given query.
+   *
+   * @param query the prefix to search for
+   * @return a list of matching profiles
+   */
+  suspend fun searchUsers(query: String): List<Profile>
 }
