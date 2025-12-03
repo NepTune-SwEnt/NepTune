@@ -1,6 +1,7 @@
 package com.neptune.neptune.ui.profile
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -81,37 +82,40 @@ class SelfProfileViewModel(
                 mode = ProfileMode.VIEW)
         return@launch
       }
+      try {
+        repo.observeCurrentProfile().collectLatest { p ->
+          snapshot = p
 
-      repo.observeCurrentProfile().collectLatest { p ->
-        snapshot = p
-
-        if (p != null && _uiState.value.mode == ProfileMode.VIEW) {
-          _uiState.value =
-              _uiState.value.copy(
-                  name = p.name.orEmpty(),
-                  username = p.username,
-                  bio = p.bio.orEmpty(),
-                  avatarUrl = p.avatarUrl,
-                  subscribers = p.subscribers.toInt(),
-                  subscriptions = p.subscriptions.toInt(),
-                  likes = p.likes.toInt(),
-                  posts = p.posts.toInt(),
-                  tags = p.tags,
-                  isAnonymousUser = p.isAnonymous,
-                  error = null)
-        } else if (p != null && _uiState.value.mode == ProfileMode.EDIT) {
-          _uiState.value =
-              _uiState.value.copy(
-                  subscribers = p.subscribers.toInt(),
-                  subscriptions = p.subscriptions.toInt(),
-                  likes = p.likes.toInt(),
-                  posts = p.posts.toInt(),
-                  tags = p.tags,
-                  avatarUrl = p.avatarUrl,
-                  isAnonymousUser = p.isAnonymous,
-              )
+          if (p != null && _uiState.value.mode == ProfileMode.VIEW) {
+            _uiState.value =
+                _uiState.value.copy(
+                    name = p.name.orEmpty(),
+                    username = p.username,
+                    bio = p.bio.orEmpty(),
+                    avatarUrl = p.avatarUrl,
+                    subscribers = p.subscribers.toInt(),
+                    subscriptions = p.subscriptions.toInt(),
+                    likes = p.likes.toInt(),
+                    posts = p.posts.toInt(),
+                    tags = p.tags,
+                    isAnonymousUser = p.isAnonymous,
+                    error = null)
+          } else if (p != null && _uiState.value.mode == ProfileMode.EDIT) {
+            _uiState.value =
+                _uiState.value.copy(
+                    subscribers = p.subscribers.toInt(),
+                    subscriptions = p.subscriptions.toInt(),
+                    likes = p.likes.toInt(),
+                    posts = p.posts.toInt(),
+                    tags = p.tags,
+                    avatarUrl = p.avatarUrl,
+                    isAnonymousUser = p.isAnonymous,
+                )
+          }
+          loadInitialLocalAvatar()
         }
-        loadInitialLocalAvatar()
+      } catch (e: Exception) {
+        Log.e("SelfProfileViewModel", "Failed to init: ${e.message}")
       }
     }
   }

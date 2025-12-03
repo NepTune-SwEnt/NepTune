@@ -128,20 +128,24 @@ class PostViewModel(
       return
     }
     viewModelScope.launch {
-      val sampleId = uiState.value.sample.id
-      val fileName = "post_image_for_sample_$sampleId.jpg"
+      try {
+        val sampleId = uiState.value.sample.id
+        val fileName = "post_image_for_sample_$sampleId.jpg"
 
-      imageRepo.saveImageFromUri(uri, fileName)
+        imageRepo.saveImageFromUri(uri, fileName)
 
-      // Get the new URI from our internal storage and update the UI
-      _localImageUri.value =
-          imageRepo
-              .getImageUri(fileName)
-              ?.buildUpon()
-              ?.appendQueryParameter(
-                  "t", System.currentTimeMillis().toString() // Cache buster
-                  )
-              ?.build()
+        // Get the new URI from our internal storage and update the UI
+        _localImageUri.value =
+            imageRepo
+                .getImageUri(fileName)
+                ?.buildUpon()
+                ?.appendQueryParameter(
+                    "t", System.currentTimeMillis().toString() // Cache buster
+                    )
+                ?.build()
+      } catch (e: Exception) {
+        Log.e("PostViewModel", "Failed to change image: ${e.message}")
+      }
     }
   }
 
