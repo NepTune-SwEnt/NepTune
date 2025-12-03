@@ -252,10 +252,10 @@ fun ScrollableColumnOfSamples(
 
 @Composable
 fun OfflineScreen() {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center) {
+  Column(
+      modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center) {
         Icon(
             imageVector = Icons.Default.WifiOff,
             contentDescription = "Offline",
@@ -265,7 +265,7 @@ fun OfflineScreen() {
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Offline Mode Active",
+            text = "No connection",
             style =
                 TextStyle(
                     fontSize = 32.sp,
@@ -278,7 +278,7 @@ fun OfflineScreen() {
 
         Text(
             text =
-                "You can't see the feed right now, but you can still create and modify your local projects.",
+                "You can't see the samples right now, but you can still create and modify your local projects.",
             style =
                 TextStyle(
                     fontSize = 20.sp,
@@ -286,6 +286,5 @@ fun OfflineScreen() {
                     fontWeight = FontWeight.Normal,
                     color = NepTuneTheme.colors.onBackground.copy(alpha = 0.8f)),
             textAlign = TextAlign.Center)
-    }
+      }
 }
-

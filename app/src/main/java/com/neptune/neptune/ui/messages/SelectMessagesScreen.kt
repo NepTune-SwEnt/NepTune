@@ -24,6 +24,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,7 +41,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.neptune.neptune.R
 import com.neptune.neptune.model.messages.UserMessagePreview
+import com.neptune.neptune.ui.main.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
+import com.neptune.neptune.util.NetworkConnectivityObserver
 import com.neptune.neptune.util.formatTime
 
 object SelectMessagesScreenTestTags {
@@ -72,6 +75,7 @@ fun SelectMessagesScreen(
     selectMessagesViewModel: SelectMessagesViewModel = viewModel()
 ) {
   val users by selectMessagesViewModel.users.collectAsState()
+  val isOnline by remember { NetworkConnectivityObserver().isOnline }.collectAsState(initial = true)
   Column(
       modifier =
           Modifier.fillMaxSize()
@@ -111,6 +115,10 @@ fun SelectMessagesScreen(
             thickness = 1.dp,
             color = NepTuneTheme.colors.onBackground.copy(alpha = 0.1f),
             modifier = Modifier.testTag(SelectMessagesScreenTestTags.TOP_DIVIDER))
+
+        if (!isOnline) {
+          OfflineBanner()
+        }
 
         // When no conversations
         if (users.isEmpty()) {

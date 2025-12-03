@@ -32,6 +32,7 @@ import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.main.MainViewModel
+import com.neptune.neptune.ui.main.OfflineBanner
 import com.neptune.neptune.ui.main.SampleCommentManager
 import com.neptune.neptune.ui.main.SampleItem
 import com.neptune.neptune.ui.main.SampleResourceState
@@ -67,6 +68,7 @@ fun FeedScreen(
   val pullRefreshState = rememberPullToRefreshState()
   val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
   val roundShape = 50
+  val isOnline by mainViewModel.isOnline.collectAsState()
 
   PullToRefreshHandler(
       isRefreshing = isRefreshing,
@@ -101,19 +103,26 @@ fun FeedScreen(
               divider = false)
         },
         containerColor = NepTuneTheme.colors.background) { paddingValues ->
-          Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            FeedContent(
-                modifier = Modifier.nestedScroll(pullRefreshState.nestedScrollConnection),
-                mainViewModel = mainViewModel,
-                currentType = currentType,
-                navigateToProfile = navigateToProfile,
-                navigateToOtherUserProfile = navigateToOtherUserProfile)
+          Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            if (!isOnline) {
+              OfflineBanner()
+            }
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+              FeedContent(
+                  modifier = Modifier.nestedScroll(pullRefreshState.nestedScrollConnection),
+                  mainViewModel = mainViewModel,
+                  currentType = currentType,
+                  navigateToProfile = navigateToProfile,
+                  navigateToOtherUserProfile = navigateToOtherUserProfile)
 
-            PullToRefreshContainer(
-                state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
-                containerColor = NepTuneTheme.colors.background,
-                contentColor = NepTuneTheme.colors.onBackground)
+              if (isOnline) {
+                PullToRefreshContainer(
+                    state = pullRefreshState,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    containerColor = NepTuneTheme.colors.background,
+                    contentColor = NepTuneTheme.colors.onBackground)
+              }
+            }
           }
         }
 
