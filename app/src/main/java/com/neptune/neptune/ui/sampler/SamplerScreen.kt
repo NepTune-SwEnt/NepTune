@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -36,6 +37,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -48,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.NepTuneApplication
+import com.neptune.neptune.R
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.ui.sampler.SamplerTestTags.CURVE_EDITOR_SCROLL_CONTAINER
 import com.neptune.neptune.ui.sampler.SamplerTestTags.FADER_60HZ_TAG
@@ -231,7 +234,7 @@ fun SamplerScreen(
                       onClick = { showHelpDialog = true },
                       modifier = Modifier.testTag(SamplerTestTags.HELP_BUTTON)) {
                         Icon(
-                            imageVector = Icons.Default.Help,
+                            imageVector = Icons.AutoMirrored.Filled.Help,
                             contentDescription = "Help",
                             tint = Color.White)
                       }
@@ -1751,7 +1754,11 @@ fun SettingsDialog(viewModel: SamplerViewModel, onClose: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Unit) {
-  val tabs = listOf("Overview", "Controls", "Tips")
+  val tabs =
+      listOf(
+          stringResource(id = R.string.tab_overview),
+          stringResource(id = R.string.tab_controls),
+          stringResource(id = R.string.tab_tips))
 
   Dialog(onDismissRequest = onClose) {
     Surface(
@@ -1760,7 +1767,7 @@ fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Un
         modifier = Modifier.testTag(SamplerTestTags.HELP_DIALOG)) {
           Column(modifier = Modifier.padding(16.dp).widthIn(max = 520.dp)) {
             Text(
-                "Sampler Help",
+                stringResource(id = R.string.sampler_help_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = NepTuneTheme.colors.smallText)
             Spacer(modifier = Modifier.height(12.dp))
@@ -1785,7 +1792,7 @@ fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Un
 
             Spacer(modifier = Modifier.height(16.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-              TextButton(onClick = onClose) { Text("Close") }
+              TextButton(onClick = onClose) { Text(stringResource(id = R.string.close)) }
             }
           }
         }
@@ -1795,32 +1802,35 @@ fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Un
 @Composable
 private fun HelpOverview() {
   Column(modifier = Modifier.fillMaxWidth()) {
-    Text("Overview", fontWeight = FontWeight.Bold, color = NepTuneTheme.colors.smallText)
-    Spacer(modifier = Modifier.height(8.dp))
     Text(
-        "The sampler allows previewing audio, adjusting pitch and tempo, editing ADSR envelope, EQ and compression. Use the tabs to switch sections.",
+        stringResource(id = R.string.tab_overview),
+        fontWeight = FontWeight.Bold,
         color = NepTuneTheme.colors.smallText)
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(stringResource(id = R.string.help_overview_text), color = NepTuneTheme.colors.smallText)
   }
 }
 
 @Composable
 private fun HelpControls() {
   Column(modifier = Modifier.fillMaxWidth()) {
-    Text("Controls", fontWeight = FontWeight.Bold, color = NepTuneTheme.colors.smallText)
-    Spacer(modifier = Modifier.height(8.dp))
     Text(
-        "- Play / Pause: preview the sample\n- Save: persist project data\n- Pitch/Tempo selectors: adjust playback\n- ADSR: drag points on the curve to change envelope",
+        stringResource(id = R.string.tab_controls),
+        fontWeight = FontWeight.Bold,
         color = NepTuneTheme.colors.smallText)
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(stringResource(id = R.string.help_controls_text), color = NepTuneTheme.colors.smallText)
   }
 }
 
 @Composable
 private fun HelpTips() {
   Column(modifier = Modifier.fillMaxWidth()) {
-    Text("Tips", fontWeight = FontWeight.Bold, color = NepTuneTheme.colors.smallText)
-    Spacer(modifier = Modifier.height(8.dp))
     Text(
-        "- Use the ADSR editor for shaping note dynamics.\n- Use EQ faders to cut/boost frequencies.\n- Try short preview loops to fine-tune parameters.",
+        stringResource(id = R.string.tab_tips),
+        fontWeight = FontWeight.Bold,
         color = NepTuneTheme.colors.smallText)
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(stringResource(id = R.string.help_tips_text), color = NepTuneTheme.colors.smallText)
   }
 }
