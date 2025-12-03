@@ -154,7 +154,8 @@ fun ProfileScreen(
             onTagInputFieldChange = callbacks.onTagInputFieldChange,
             onTagSubmit = callbacks.onTagSubmit,
             onRemoveTag = callbacks.onRemoveTag,
-            onAvatarEditClick = onAvatarEditClick)
+            onAvatarEditClick = onAvatarEditClick,
+            isOnline = isOnline)
       }
     }
   }
@@ -183,6 +184,7 @@ sealed interface ProfileViewConfig {
       private val onEdit: () -> Unit,
       private val settings: () -> Unit,
       val canEditProfile: Boolean = true,
+      val isOnline: Boolean = true
   ) : ProfileViewConfig {
     override val topBarContent = @Composable { SettingsButton(settings) }
     override val belowStatsButton = null
@@ -191,7 +193,7 @@ sealed interface ProfileViewConfig {
           if (canEditProfile) {
             Button(
                 onClick = onEdit,
-                enabled = true,
+                enabled = isOnline,
                 modifier =
                     modifier
                         .padding(bottom = BottomButtonBottomPadding)
@@ -211,6 +213,7 @@ sealed interface ProfileViewConfig {
       val canFollowTarget: Boolean = true,
       private val onFollow: () -> Unit,
       private val errorMessage: String?,
+      val isOnline: Boolean = true
   ) : ProfileViewConfig {
     override val topBarContent = null
     override val belowStatsButton: @Composable () -> Unit = composable@{
@@ -223,7 +226,7 @@ sealed interface ProfileViewConfig {
           horizontalAlignment = Alignment.CenterHorizontally) {
             Button(
                 onClick = onFollow,
-                enabled = !isFollowActionInProgress,
+                enabled = !isFollowActionInProgress && isOnline,
                 modifier = Modifier.testTag(ProfileScreenTestTags.FOLLOW_BUTTON)) {
                   Icon(imageVector = icon, contentDescription = "Follow")
                   Spacer(Modifier.width(ButtonIconSpacing))
@@ -414,7 +417,8 @@ private fun ProfileEditContent(
     onTagInputFieldChange: (String) -> Unit,
     onTagSubmit: () -> Unit,
     onRemoveTag: (String) -> Unit,
-    onAvatarEditClick: () -> Unit
+    onAvatarEditClick: () -> Unit,
+    isOnline: Boolean = true
 ) {
   Column(
       modifier =
@@ -558,7 +562,7 @@ private fun ProfileEditContent(
         // Save button
         Button(
             onClick = onSave,
-            enabled = !uiState.isSaving && uiState.isValid,
+            enabled = !uiState.isSaving && uiState.isValid && isOnline,
             modifier = Modifier.testTag(ProfileScreenTestTags.SAVE_BUTTON)) {
               Icon(imageVector = Icons.Default.Check, contentDescription = "Save")
               Spacer(Modifier.width(ButtonIconSpacing))
@@ -738,7 +742,8 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
       ProfileViewConfig.SelfProfileConfig(
           onEdit = viewModel::onEditClick,
           settings = settings,
-          canEditProfile = !state.isAnonymousUser)
+          canEditProfile = !state.isAnonymousUser,
+          isOnline = isOnline)
 
   ProfileScreen(
       uiState = state,
@@ -784,6 +789,7 @@ fun OtherUserProfileRoute(
 
   val viewModel: OtherProfileViewModel = viewModel(factory = factory)
   val state by viewModel.uiState.collectAsState()
+  val isOnline by remember { NetworkConnectivityObserver().isOnline }.collectAsState(initial = true)
 
   val viewConfig =
       ProfileViewConfig.OtherProfileConfig(
@@ -791,12 +797,13 @@ fun OtherUserProfileRoute(
           isFollowActionInProgress = state.isFollowActionInProgress,
           canFollowTarget = !state.profile.isAnonymousUser && !state.isCurrentUserAnonymous,
           onFollow = viewModel::onFollow,
-          errorMessage = state.errorMessage)
+          errorMessage = state.errorMessage,
+          isOnline = isOnline)
 
   ProfileScreen(
       uiState = state.profile,
       localAvatarUri = null, // No local avatar for others (only remote URL)
       viewConfig = viewConfig,
       callbacks = profileScreenCallbacks(goBackClick = goBack),
-  )
+      isOnline = isOnline)
 }
