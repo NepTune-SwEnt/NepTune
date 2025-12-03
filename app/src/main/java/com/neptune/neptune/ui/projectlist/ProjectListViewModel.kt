@@ -1,6 +1,5 @@
 package com.neptune.neptune.ui.projectlist
 
-import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -27,7 +26,6 @@ import kotlinx.coroutines.launch
 class ProjectListViewModelFactory(
     private val getLibraryUseCase: GetLibraryUseCase,
     private val mediaRepository: MediaRepository,
-    private val context: Context
 ) : ViewModelProvider.Factory {
   @Suppress("UNCHECKED_CAST")
   override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -62,9 +60,7 @@ class ProjectListViewModel(
 
   init {
     viewModelScope.launch {
-      connectivityObserver.isOnline.collectLatest { connected ->
-        _isOnline.value = connected
-      }
+      connectivityObserver.isOnline.collectLatest { connected -> _isOnline.value = connected }
       refreshProjects()
     }
   }
@@ -88,10 +84,6 @@ class ProjectListViewModel(
 
         // auto sync
         if (currentOnline && localItems.isNotEmpty()) {
-          Log.i(
-              "ProjectListVM",
-              "Online détecté : Synchronisation de ${localItems.size} projets locaux...")
-
           localItems.forEach { item -> importProjectInFirebase(item.id) }
         }
 
@@ -114,7 +106,7 @@ class ProjectListViewModel(
 
         _uiState.value = ProjectListUiState(projects = sortedProjects, isLoading = false)
       } catch (e: Exception) {
-        Log.e("ProjectListVM", "Erreur chargement", e)
+        Log.e("ProjectListVM", "Error downloading", e)
         _uiState.value = _uiState.value.copy(isLoading = false)
       }
     }
@@ -140,8 +132,27 @@ class ProjectListViewModel(
   fun deleteProject(projectId: String) {
     viewModelScope.launch {
       try {
-        projectRepository.deleteProject(projectId)
-        refreshProjects()
+        val projectToDelete = uiState.value.projects.find { it.uid == projectId }
+        if (projectId.startsWith("local_")) {
+          val realId = projectId.removePrefix("local_")
+          val localItems = getLibraryUseCase?.invoke()?.first() ?: emptyList()
+          val item = localItems.find { it.id == realId }
+          if (item != null && mediaRepository != null) {
+            mediaRepository.delete(item)
+          }
+        } else {
+          projectRepository.deleteProject(projectId)
+
+          if (projectToDelete?.projectFileLocalPath != null && mediaRepository != null) {
+            val path = projectToDelete.projectFileLocalPath
+            val localItems = getLibraryUseCase?.invoke()?.first() ?: emptyList()
+            val ghostItem = localItems.find { it.projectUri == path }
+            if (ghostItem != null) {
+              mediaRepository.delete(ghostItem)
+            }
+          }
+          refreshProjects()
+        }
       } catch (e: Exception) {
         Log.e("ProjectListViewModel", "Error deleting project", e)
       }
@@ -192,34 +203,29 @@ class ProjectListViewModel(
   private fun importProjectInFirebase(projectId: String) {
     viewModelScope.launch {
       try {
-        if (projectId.startsWith("local_")) {
-          // local project: put it in the firebase
-          val realId = projectId.removePrefix("local_")
+        val localItems = getLibraryUseCase?.invoke()?.first() ?: emptyList()
+        val mediaItem = localItems.find { it.id == projectId } ?: return@launch
+        val file = File(mediaItem.projectUri)
 
-          val localItems = getLibraryUseCase?.invoke()?.first() ?: emptyList()
-          val mediaItem = localItems.find { it.id == realId } ?: return@launch
-          val file = File(mediaItem.projectUri)
+        if (file.exists() && storageService != null && mediaRepository != null) {
+          val newCloudId = projectRepository.getNewIdCloud()
+          val storagePath = "projects/$newCloudId.zip"
+          storageService.uploadFile(Uri.fromFile(file), storagePath)
+          val downloadUrl = storageService.getDownloadUrl(storagePath)
 
-          if (file.exists() && storageService != null && mediaRepository != null) {
-            val newCloudId = projectRepository.getNewIdCloud()
-            val storagePath = "projects/$newCloudId.zip"
-            storageService.uploadFile(Uri.fromFile(file), storagePath)
-            val downloadUrl = storageService.getDownloadUrl(storagePath)
+          val newProject =
+              ProjectItem(
+                  uid = newCloudId,
+                  name = file.nameWithoutExtension,
+                  isStoredInCloud = true,
+                  projectFileCloudUri = downloadUrl,
+                  projectFileLocalPath = mediaItem.projectUri,
+                  lastUpdated = Timestamp.now())
+          projectRepository.addProject(newProject)
 
-            val newProject =
-                ProjectItem(
-                    uid = newCloudId,
-                    name = file.nameWithoutExtension,
-                    isStoredInCloud = true,
-                    projectFileCloudUri = downloadUrl,
-                    projectFileLocalPath = mediaItem.projectUri,
-                    lastUpdated = Timestamp.now())
-            projectRepository.addProject(newProject)
+          mediaRepository.delete(mediaItem)
 
-            mediaRepository.delete(mediaItem)
-
-            Log.i("ProjectListVM", "Projet local synchronisé avec succès : ${newProject.name}")
-          }
+          Log.i("ProjectListVM", "Projet local synchronisé avec succès : ${newProject.name}")
         }
         refreshProjects()
       } catch (e: Exception) {
