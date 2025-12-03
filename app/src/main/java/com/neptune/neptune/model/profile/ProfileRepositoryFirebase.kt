@@ -8,6 +8,7 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.Transaction
 import com.google.firebase.functions.FirebaseFunctions
 import kotlinx.coroutines.channels.awaitClose
@@ -351,8 +352,9 @@ class ProfileRepositoryFirebase(
   private fun toUsernameBase(s: String) = s.lowercase().replace("[^a-z0-9_]".toRegex(), "")
 
   /**
-   * Searches for users. If [query] is empty, returns a list of all users (limit applied).
-   * Otherwise, returns users whose username starts with the given query.
+   * Searches for users. If [query] is empty, returns a list of all users ordered by subscribers.
+   * Otherwise, returns users whose username starts with the given query, sorted by subscribers
+   * descending (client-side sort for best UX within Firestore limits).
    *
    * @param query the prefix to search for, or empty string for all users
    * @return a list of matching profiles
@@ -360,18 +362,27 @@ class ProfileRepositoryFirebase(
   override suspend fun searchUsers(query: String): List<Profile> {
     return try {
       if (query.isBlank()) {
-        // Return all users (limited) when query is empty
-        profiles.limit(50).get().await().mapNotNull { it.toProfileOrNull() }
-      } else {
-        val normalizedQuery = normalizeUsername(query)
-        // Use Firestore range query for prefix matching
+        // Return top 50 users by subscriber count
         profiles
-            .whereGreaterThanOrEqualTo("username", normalizedQuery)
-            .whereLessThan("username", normalizedQuery + "\uf8ff")
-            .limit(20)
+            .orderBy("subscribers", Query.Direction.DESCENDING)
+            .limit(50)
             .get()
             .await()
             .mapNotNull { it.toProfileOrNull() }
+      } else {
+        val normalizedQuery = normalizeUsername(query)
+        // Use Firestore range query for prefix matching on username
+        val results =
+            profiles
+                .whereGreaterThanOrEqualTo("username", normalizedQuery)
+                .whereLessThan("username", normalizedQuery + "\uf8ff")
+                .limit(50) // Fetch slightly more to sort client-side effectively
+                .get()
+                .await()
+                .mapNotNull { it.toProfileOrNull() }
+
+        // Client-side sort to show most popular matches first
+        results.sortedByDescending { it.subscribers }
       }
     } catch (e: Exception) {
       Log.e("ProfileRepository", "Error searching users", e)
