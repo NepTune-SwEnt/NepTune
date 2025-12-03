@@ -64,6 +64,7 @@ object SignInScreenTags {
   const val TOGGLE_REGISTER = "toggleRegisterButton"
   const val SUBMIT_EMAIL = "submitEmailButton"
   const val ANONYMOUS_BUTTON = "anonymousSignInButton"
+  const val OFFLINE_BUTON = "offlineSignInButton"
 
   // Top Bar
   const val TOP_BAR = "topBar"
@@ -166,10 +167,18 @@ fun SignInScreen(
               Spacer(modifier = Modifier.height(20.dp))
 
               ToggleRegister(emailState, signInViewModel)
+
+              Spacer(modifier = Modifier.height(12.dp))
+
+              ElevatedButton(
+                  onClick = { signInViewModel.signInAnonymously() },
+                  modifier = Modifier.fillMaxWidth().testTag(SignInScreenTags.ANONYMOUS_BUTTON)) {
+                    Text("Continue in Offline Mode")
+                  }
             }
           } else {
             Text(
-                text = "In offline mode you can only login as a guest",
+                text = "Without connection you can only login in offline mode",
                 style =
                     TextStyle(
                         fontSize = 18.sp,
@@ -177,16 +186,16 @@ fun SignInScreen(
                         color = NepTuneTheme.colors.onBackground.copy(alpha = 0.7f),
                         textAlign = TextAlign.Center),
                 modifier = Modifier.padding(bottom = 24.dp))
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            ElevatedButton(
+                onClick = { signInViewModel.signInOffline() },
+                enabled = !emailState.loading,
+                modifier = Modifier.fillMaxWidth().testTag(SignInScreenTags.OFFLINE_BUTON)) {
+                  Text("Continue in Offline Mode")
+                }
           }
-
-          Spacer(modifier = Modifier.height(12.dp))
-
-          ElevatedButton(
-              onClick = { signInViewModel.signInAnonymously() },
-              enabled = !emailState.loading,
-              modifier = Modifier.fillMaxWidth().testTag(SignInScreenTags.ANONYMOUS_BUTTON)) {
-                Text("Continue as Guest")
-              }
 
           GeneralError(emailState)
         }

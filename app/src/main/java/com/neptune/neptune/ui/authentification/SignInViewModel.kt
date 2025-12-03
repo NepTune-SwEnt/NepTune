@@ -244,6 +244,11 @@ class SignInViewModel(
     _emailAuthUiState.value = _emailAuthUiState.value.copy(confirmPassword = value)
   }
 
+  fun signInOffline() {
+    _signInStatus.value = SignInStatus.SUCCESS
+    navigateMain()
+  }
+
   fun toggleRegisterMode() {
     val current = _emailAuthUiState.value
     _emailAuthUiState.value =
@@ -324,14 +329,6 @@ class SignInViewModel(
   }
 
   fun signInAnonymously() {
-    // offline mode
-    if (!_isOnline.value) {
-      _signInStatus.value = SignInStatus.SUCCESS
-      navigateMain()
-      return
-    }
-
-    // guest mode
     _signInStatus.value = SignInStatus.IN_PROGRESS_ANONYMOUS_AUTH
     _emailAuthUiState.value = _emailAuthUiState.value.copy(loading = true, generalError = null)
     viewModelScope.launch {

@@ -124,9 +124,10 @@ class MainViewModel(
     viewModelScope.launch {
       // sticky offline mode: if we regain connection ignore
       observer.isOnline.collect { isConnected ->
+        _isOnline.value = isConnected
         isActuallyConnected = isConnected
-        if (!isConnected) {
-          _isOnline.value = false
+        if (isConnected) {
+          refresh()
         }
       }
     }
@@ -472,9 +473,7 @@ class MainViewModel(
   /** Function to be called when a refresh is triggered. */
   fun refresh() {
     if (isActuallyConnected) {
-      _isOnline.value = true
       _isRefreshing.value = true
-      allSamplesCache = emptyList()
       loadSamplesFromFirebase()
     } else {
       _isRefreshing.value = false

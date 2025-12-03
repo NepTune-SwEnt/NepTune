@@ -3,7 +3,7 @@ package com.neptune.neptune.ui.offline
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,7 +27,7 @@ import com.neptune.neptune.ui.theme.NepTuneTheme
 @Composable
 fun OfflineScreen() {
   Column(
-      modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+      modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.Center) {
         Icon(
