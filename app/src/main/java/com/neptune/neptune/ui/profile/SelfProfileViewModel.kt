@@ -65,6 +65,8 @@ class SelfProfileViewModel(
   private var snapshot: Profile? = null
   /** Cancelable job for username availability checks. */
   private var usernameCheckJob: Job? = null // suggested by ChatGPT
+  val isUserLoggedIn: Boolean
+    get() = auth.currentUser != null
 
   init {
     viewModelScope.launch {

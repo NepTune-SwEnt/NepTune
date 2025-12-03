@@ -173,7 +173,7 @@ fun SignInScreen(
               ElevatedButton(
                   onClick = { signInViewModel.signInAnonymously() },
                   modifier = Modifier.fillMaxWidth().testTag(SignInScreenTags.ANONYMOUS_BUTTON)) {
-                    Text("Continue in Offline Mode")
+                    Text("Continue as Guest")
                   }
             }
           } else {

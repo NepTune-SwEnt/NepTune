@@ -111,6 +111,9 @@ class MainViewModel(
   val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
   private var isActuallyConnected = true
 
+  val isUserLoggedIn: Boolean
+    get() = auth.currentUser != null
+
   init {
     if (useMockData) {
       // If we are testing we load mock data
@@ -134,6 +137,7 @@ class MainViewModel(
   }
 
   private fun loadSamplesFromFirebase() {
+    if (auth.currentUser == null) return
     viewModelScope.launch {
       try {
         val profile = profileRepo.getCurrentProfile()

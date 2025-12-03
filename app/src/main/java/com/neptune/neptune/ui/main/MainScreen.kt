@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.main
 
+import OfflineScreen
 import android.app.Application
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
@@ -33,7 +34,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -45,7 +45,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -104,6 +103,7 @@ import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.feed.FeedType
 import com.neptune.neptune.ui.navigation.NavigationTestTags
+import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.formatTime
 import kotlinx.coroutines.delay
@@ -182,7 +182,6 @@ fun MainScreen(
     navigateToOtherUserProfile: (String) -> Unit = {},
     navigateToSelectMessages: () -> Unit = {},
     navigateToSampleList: (FeedType) -> Unit = {},
-    navigateToSignIn: () -> Unit = {},
     mainViewModel: MainViewModel =
         viewModel(factory = factory(LocalContext.current.applicationContext as Application))
 ) {
@@ -199,6 +198,7 @@ fun MainScreen(
   val isRefreshing by mainViewModel.isRefreshing.collectAsState()
   val pullRefreshState = rememberPullToRefreshState()
   val isOnline by mainViewModel.isOnline.collectAsState()
+  val isUserLoggedIn = remember { mainViewModel.isUserLoggedIn }
   val nestedScrollModifier =
       if (isOnline) {
         Modifier.nestedScroll(pullRefreshState.nestedScrollConnection)
@@ -243,7 +243,7 @@ fun MainScreen(
                   userAvatar = userAvatar,
                   navigateToSelectMessages = navigateToSelectMessages,
                   navigateToProfile = navigateToProfile,
-              )
+                  isUserLoggedIn = isUserLoggedIn)
             },
             floatingActionButton = {
               if (isOnline) {
@@ -309,67 +309,71 @@ private fun MainContent(
     isOnline: Boolean = true
 ) {
   val horizontalPadding = 30.dp
+  val isUserLoggedIn = remember { mainViewModel.isUserLoggedIn }
   Box(modifier = Modifier.fillMaxSize()) {
-    // offline
-    Column(
-        modifier = Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top) {
-          if (!isOnline) {
-            OfflineBanner()
-          }
+    if (!isUserLoggedIn) {
+      OfflineScreen()
+    } else {
+      Column(
+          modifier = Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding()),
+          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalArrangement = Arrangement.Top) {
+            if (!isOnline) {
+              OfflineBanner()
+            }
 
-          // online
-          LazyColumn(
-              contentPadding =
-                  PaddingValues(
-                      bottom = paddingValues.calculateBottomPadding()), // Apply Scaffold padding
-              modifier =
-                  Modifier.fillMaxSize().testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
-                // ----------------Discover Section-----------------
-                item {
-                  Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-                    SectionHeader(
-                        title = FeedType.DISCOVER.title,
-                        onClick = { navigateToSampleList(FeedType.DISCOVER) })
+            // online
+            LazyColumn(
+                contentPadding =
+                    PaddingValues(
+                        bottom = paddingValues.calculateBottomPadding()), // Apply Scaffold padding
+                modifier =
+                    Modifier.fillMaxSize().testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
+                  // ----------------Discover Section-----------------
+                  item {
+                    Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+                      SectionHeader(
+                          title = FeedType.DISCOVER.title,
+                          onClick = { navigateToSampleList(FeedType.DISCOVER) })
+                    }
+                  }
+                  item {
+                    SampleSectionLazyRow(
+                        mainViewModel = mainViewModel,
+                        samples = discoverSamples,
+                        rowsPerColumn = 2,
+                        onCommentClick = { onCommentClicked(it) },
+                        onProfileClick = { handleProfileNavigation(it) },
+                        isAnonymous = isAnonymous)
+                  }
+                  // ----------------Followed Section-----------------
+                  item {
+                    Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+                      SectionHeader(
+                          title = FeedType.FOLLOWED.title,
+                          onClick = { navigateToSampleList(FeedType.FOLLOWED) })
+                    }
+                  }
+                  item {
+                    SampleSectionLazyRow(
+                        mainViewModel = mainViewModel,
+                        samples = followedSamples,
+                        rowsPerColumn = maxColumns,
+                        onCommentClick = { onCommentClicked(it) },
+                        onProfileClick = { handleProfileNavigation(it) })
+                    Spacer(modifier = Modifier.height(50.dp))
                   }
                 }
-                item {
-                  SampleSectionLazyRow(
-                      mainViewModel = mainViewModel,
-                      samples = discoverSamples,
-                      rowsPerColumn = 2,
-                      onCommentClick = { onCommentClicked(it) },
-                      onProfileClick = { handleProfileNavigation(it) },
-                      isAnonymous = isAnonymous)
-                }
-                // ----------------Followed Section-----------------
-                item {
-                  Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-                    SectionHeader(
-                        title = FeedType.FOLLOWED.title,
-                        onClick = { navigateToSampleList(FeedType.FOLLOWED) })
-                  }
-                }
-                item {
-                  SampleSectionLazyRow(
-                      mainViewModel = mainViewModel,
-                      samples = followedSamples,
-                      rowsPerColumn = maxColumns,
-                      onCommentClick = { onCommentClicked(it) },
-                      onProfileClick = { handleProfileNavigation(it) })
-                  Spacer(modifier = Modifier.height(50.dp))
-                }
-              }
-        }
-    if (isOnline) {
-      PullToRefreshContainer(
-          state = pullRefreshState,
-          modifier =
-              Modifier.align(Alignment.TopCenter)
-                  .padding(top = paddingValues.calculateTopPadding()),
-          containerColor = NepTuneTheme.colors.background,
-          contentColor = NepTuneTheme.colors.onBackground)
+          }
+      if (isOnline) {
+        PullToRefreshContainer(
+            state = pullRefreshState,
+            modifier =
+                Modifier.align(Alignment.TopCenter)
+                    .padding(top = paddingValues.calculateTopPadding()),
+            containerColor = NepTuneTheme.colors.background,
+            contentColor = NepTuneTheme.colors.onBackground)
+      }
     }
   }
 }
@@ -436,25 +440,28 @@ private fun MainTopAppBar(
     userAvatar: String?,
     navigateToSelectMessages: () -> Unit,
     navigateToProfile: () -> Unit,
+    isUserLoggedIn: Boolean = true
 ) {
   Column {
     CenterAlignedTopAppBar(
         modifier = Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
         navigationIcon = {
-          // Message Button
-          IconButton(
-              onClick = navigateToSelectMessages,
-              modifier =
-                  Modifier.padding(vertical = 38.dp, horizontal = 25.dp)
-                      .size(38.dp)
-                      .testTag(NavigationTestTags.MESSAGE_BUTTON)) {
-                Icon(
-                    painter = painterResource(id = R.drawable.messageicon),
-                    contentDescription = "Messages",
-                    modifier = Modifier.size(30.dp),
-                    tint = NepTuneTheme.colors.onBackground,
-                )
-              }
+          if (isUserLoggedIn) {
+            // Message Button
+            IconButton(
+                onClick = navigateToSelectMessages,
+                modifier =
+                    Modifier.padding(vertical = 38.dp, horizontal = 25.dp)
+                        .size(38.dp)
+                        .testTag(NavigationTestTags.MESSAGE_BUTTON)) {
+                  Icon(
+                      painter = painterResource(id = R.drawable.messageicon),
+                      contentDescription = "Messages",
+                      modifier = Modifier.size(30.dp),
+                      tint = NepTuneTheme.colors.onBackground,
+                  )
+                }
+          }
         },
         title = {
           Text(
@@ -816,33 +823,6 @@ fun SampleCard(
                     }
               }
         }
-      }
-}
-
-@Composable
-fun OfflineBanner() {
-  Surface(
-      modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-      color = Color.Red,
-      shape = RoundedCornerShape(12.dp),
-      tonalElevation = 4.dp,
-      shadowElevation = 4.dp) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start) {
-              Icon(
-                  imageVector = Icons.Default.WifiOff,
-                  contentDescription = null,
-                  tint = Color.White,
-                  modifier = Modifier.size(24.dp))
-              Spacer(modifier = Modifier.width(16.dp))
-              Text(
-                  text = "No connection. Showing offline data.",
-                  style =
-                      TextStyle(
-                          color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium))
-            }
       }
 }
 

@@ -64,7 +64,7 @@ import coil.compose.AsyncImage
 import com.neptune.neptune.R
 import com.neptune.neptune.data.rememberImagePickerLauncher
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
-import com.neptune.neptune.ui.main.OfflineBanner
+import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.NetworkConnectivityObserver
 
@@ -128,7 +128,8 @@ fun ProfileScreen(
     callbacks: ProfileScreenCallbacks = ProfileScreenCallbacks.Empty,
     onAvatarEditClick: () -> Unit = {},
     viewConfig: ProfileViewConfig,
-    isOnline: Boolean = true
+    isOnline: Boolean = true,
+    isUserLoggedIn: Boolean = true
 ) {
   Column(modifier = Modifier.padding(ScreenPadding).testTag(ProfileScreenTestTags.ROOT)) {
     when (uiState.mode) {
@@ -139,7 +140,8 @@ fun ProfileScreen(
             localAvatarUri = localAvatarUri,
             viewConfig = viewConfig,
             goBack = callbacks.goBackClick,
-            isOnline = isOnline)
+            isOnline = isOnline,
+            isUserLoggedIn = isUserLoggedIn)
       }
       // Create profile screen edit content
       ProfileMode.EDIT -> {
@@ -265,7 +267,8 @@ private fun ProfileViewContent(
     localAvatarUri: Uri?,
     goBack: () -> Unit,
     viewConfig: ProfileViewConfig,
-    isOnline: Boolean = true
+    isOnline: Boolean = true,
+    isUserLoggedIn: Boolean = true
 ) {
   Scaffold(
       modifier = Modifier.testTag(ProfileScreenTestTags.ROOT),
@@ -291,7 +294,7 @@ private fun ProfileViewContent(
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
         Box(Modifier.fillMaxSize().padding(innerPadding)) {
           Column(modifier = Modifier.fillMaxSize()) {
-            if (!isOnline) {
+            if (!isOnline && !isUserLoggedIn) {
               OfflineBanner()
             }
             Column(
@@ -726,6 +729,7 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
   val localAvatarUri by viewModel.localAvatarUri.collectAsState()
   val tempAvatarUri by viewModel.tempAvatarUri.collectAsState()
   val isOnline by remember { NetworkConnectivityObserver().isOnline }.collectAsState(initial = true)
+  val isUserLoggedIn = viewModel.isUserLoggedIn
 
   LaunchedEffect(Unit) { viewModel.loadOrEnsure() }
 
@@ -766,7 +770,8 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
               onTagSubmit = viewModel::onTagAddition,
               onRemoveTag = viewModel::onTagDeletion,
               goBackClick = goBack),
-      isOnline = isOnline)
+      isOnline = isOnline,
+      isUserLoggedIn = isUserLoggedIn)
 }
 
 @Composable

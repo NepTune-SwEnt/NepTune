@@ -32,12 +32,12 @@ import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.main.MainViewModel
-import com.neptune.neptune.ui.main.OfflineBanner
 import com.neptune.neptune.ui.main.SampleCommentManager
 import com.neptune.neptune.ui.main.SampleItem
 import com.neptune.neptune.ui.main.SampleResourceState
 import com.neptune.neptune.ui.main.factory
 import com.neptune.neptune.ui.main.onClickFunctions
+import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.ui.util.NeptuneTopBar
 import kotlinx.coroutines.delay

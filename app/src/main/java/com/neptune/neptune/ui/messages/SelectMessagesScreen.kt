@@ -41,7 +41,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.neptune.neptune.R
 import com.neptune.neptune.model.messages.UserMessagePreview
-import com.neptune.neptune.ui.main.OfflineBanner
+import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.NetworkConnectivityObserver
 import com.neptune.neptune.util.formatTime
