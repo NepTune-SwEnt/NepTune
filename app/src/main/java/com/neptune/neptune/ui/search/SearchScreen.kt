@@ -3,17 +3,24 @@ package com.neptune.neptune.ui.search
 import android.app.Application
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -29,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -42,6 +50,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.neptune.neptune.R
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
+import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
@@ -66,6 +75,7 @@ object SearchScreenTestTags {
   const val SEARCH_SCREEN = "searchScreen"
   const val SEARCH_BAR = "searchBar"
   const val SAMPLE_LIST = "sampleList"
+  const val USER_LIST = "userList"
   const val DOWNLOAD_BAR = "downloadBar"
 }
 
@@ -128,6 +138,10 @@ fun SearchScreen(
   val downloadProgress: Int? by searchViewModel.downloadProgress.collectAsState()
   val sampleResources by searchViewModel.sampleResources.collectAsState()
 
+  // Collect the search type and user results
+  val searchType by searchViewModel.searchType.collectAsState()
+  val userResults by searchViewModel.userResults.collectAsState()
+
   LaunchedEffect(searchText) {
     delay(400L) // debounce time
     searchViewModel.search(searchText)
@@ -141,42 +155,110 @@ fun SearchScreen(
         containerColor = NepTuneTheme.colors.background,
         modifier = Modifier.testTag(SearchScreenTestTags.SEARCH_SCREEN),
         topBar = {
-          SearchBar(searchText, { searchText = it }, SearchScreenTestTags.SEARCH_BAR, samplesStr)
-            OutlinedButton(
-                onClick = { currentType = currentType.toggle() },
-                border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground),
-                shape = RoundedCornerShape(roundShape),
-                colors =
-                    ButtonDefaults.outlinedButtonColors(
-                        contentColor = NepTuneTheme.colors.onBackground),
-                modifier = Modifier.height(36.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp)) {
-                Text(
-                    text = "See ${currentType.toggle().title}",
-                    style =
-                        TextStyle(
-                            fontSize = 16.sp,
-                            fontFamily = FontFamily(Font(R.font.markazi_text)),
-                            fontWeight = FontWeight.Bold))
-            }
+          Column(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalAlignment = Alignment.CenterHorizontally) {
+                SearchBar(
+                    searchText, { searchText = it }, SearchScreenTestTags.SEARCH_BAR, samplesStr)
+
+                val roundShape = 50
+                Box(modifier = Modifier.padding(bottom = 8.dp)) {
+                  OutlinedButton(
+                      onClick = { searchViewModel.toggleSearchType() },
+                      border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground),
+                      shape = RoundedCornerShape(roundShape),
+                      colors =
+                          ButtonDefaults.outlinedButtonColors(
+                              contentColor = NepTuneTheme.colors.onBackground),
+                      modifier = Modifier.height(36.dp),
+                      contentPadding = PaddingValues(horizontal = 12.dp)) {
+                        Text(
+                            text = "See ${searchType.toggle().title}",
+                            style =
+                                TextStyle(
+                                    fontSize = 16.sp,
+                                    fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                    fontWeight = FontWeight.Bold))
+                      }
+                }
+              }
         },
         content = { pd ->
-          ScrollableColumnOfSamples(
-              samples = samples,
-              searchViewModel = searchViewModel,
-              modifier = Modifier.padding(pd),
-              mediaPlayer = mediaPlayer,
-              likedSamples = likedSamples,
-              activeCommentSampleId = activeCommentSampleId,
-              comments = comments,
-              navigateToProfile = navigateToProfile,
-              navigateToOtherUserProfile = navigateToOtherUserProfile,
-              sampleResources = sampleResources)
+          if (searchType == SearchType.SAMPLES) {
+            ScrollableColumnOfSamples(
+                samples = samples,
+                searchViewModel = searchViewModel,
+                modifier = Modifier.padding(pd),
+                mediaPlayer = mediaPlayer,
+                likedSamples = likedSamples,
+                activeCommentSampleId = activeCommentSampleId,
+                comments = comments,
+                navigateToProfile = navigateToProfile,
+                navigateToOtherUserProfile = navigateToOtherUserProfile,
+                sampleResources = sampleResources)
+          } else {
+            ScrollableColumnOfUsers(
+                users = userResults,
+                navigateToOtherUserProfile = { uid ->
+                  if (searchViewModel.isCurrentUser(uid)) {
+                    navigateToProfile()
+                  } else {
+                    navigateToOtherUserProfile(uid)
+                  }
+                },
+                modifier = Modifier.padding(pd))
+          }
         })
     if (downloadProgress != null && downloadProgress != 0) {
       DownloadProgressBar(downloadProgress = downloadProgress!!, SearchScreenTestTags.DOWNLOAD_BAR)
     }
   }
+}
+
+@Composable
+fun ScrollableColumnOfUsers(
+    users: List<Profile>,
+    navigateToOtherUserProfile: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+  LazyColumn(
+      modifier =
+          modifier
+              .testTag(SearchScreenTestTags.USER_LIST)
+              .fillMaxSize()
+              .background(NepTuneTheme.colors.background),
+      verticalArrangement = Arrangement.spacedBy(8.dp),
+      contentPadding = PaddingValues(16.dp)) {
+        items(users) { profile ->
+          Row(
+              modifier =
+                  Modifier.fillMaxWidth()
+                      .clickable { navigateToOtherUserProfile(profile.uid) }
+                      .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
+                      .padding(16.dp),
+              verticalAlignment = Alignment.CenterVertically) {
+                // Placeholder for avatar
+                Icon(
+                    painter = painterResource(id = R.drawable.profile),
+                    contentDescription = "User Avatar",
+                    modifier = Modifier.size(40.dp),
+                    tint = MaterialTheme.colorScheme.onSurface)
+
+                Column(modifier = Modifier.padding(start = 16.dp)) {
+                  Text(
+                      text = profile.username.ifBlank { "User" },
+                      style = MaterialTheme.typography.titleMedium,
+                      color = MaterialTheme.colorScheme.onSurface)
+                  if (!profile.name.isNullOrBlank()) {
+                    Text(
+                        text = profile.name,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                  }
+                }
+              }
+        }
+      }
 }
 
 @Composable

@@ -10,6 +10,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
 import com.neptune.neptune.R
 import com.neptune.neptune.data.storage.StorageService
+import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.model.sample.Comment
@@ -94,9 +95,13 @@ open class SearchViewModel(
   private val _searchType = MutableStateFlow(SearchType.SAMPLES)
   val searchType: StateFlow<SearchType> = _searchType.asStateFlow()
 
+  // User search results
+  private val _userResults = MutableStateFlow<List<Profile>>(emptyList())
+  val userResults: StateFlow<List<Profile>> = _userResults.asStateFlow()
+
   fun toggleSearchType() {
     _searchType.update { it.toggle() }
-    // Re-apply filter or trigger new search when type changes
+    // Re-trigger search with the new type
     search(query)
   }
 
@@ -303,7 +308,9 @@ open class SearchViewModel(
       repo.observeSamples().collectLatest { samples ->
         val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
         allSamples.value = readySamples
-        applyFilter(query)
+        if (_searchType.value == SearchType.SAMPLES) {
+          applyFilter(query)
+        }
         refreshLikeStates()
       }
     }
@@ -338,7 +345,9 @@ open class SearchViewModel(
             }
           }
       allSamples.value = updatedSamples
-      applyFilter(query)
+      if (_searchType.value == SearchType.SAMPLES) {
+        applyFilter(query)
+      }
       _likedSamples.value = _likedSamples.value + (sampleId to isLikedNow)
     }
   }
@@ -397,7 +406,19 @@ open class SearchViewModel(
 
   open fun search(query: String) {
     this.query = query
-    applyFilter(query)
+    viewModelScope.launch {
+      if (_searchType.value == SearchType.SAMPLES) {
+        applyFilter(query)
+      } else {
+        // Perform user search via ProfileRepository
+        try {
+          _userResults.value = profileRepo.searchUsers(query)
+        } catch (e: Exception) {
+          Log.e("SearchViewModel", "User search failed", e)
+          _userResults.value = emptyList()
+        }
+      }
+    }
   }
 
   // Normalizes text by converting it to lowercase and removing non-alphanumeric characters.
