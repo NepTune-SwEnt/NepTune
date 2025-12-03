@@ -1,15 +1,22 @@
 package com.neptune.neptune.ui.search
 
 import android.app.Application
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -22,11 +29,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.neptune.neptune.R
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.sample.Comment
@@ -129,6 +142,23 @@ fun SearchScreen(
         modifier = Modifier.testTag(SearchScreenTestTags.SEARCH_SCREEN),
         topBar = {
           SearchBar(searchText, { searchText = it }, SearchScreenTestTags.SEARCH_BAR, samplesStr)
+            OutlinedButton(
+                onClick = { currentType = currentType.toggle() },
+                border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground),
+                shape = RoundedCornerShape(roundShape),
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        contentColor = NepTuneTheme.colors.onBackground),
+                modifier = Modifier.height(36.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp)) {
+                Text(
+                    text = "See ${currentType.toggle().title}",
+                    style =
+                        TextStyle(
+                            fontSize = 16.sp,
+                            fontFamily = FontFamily(Font(R.font.markazi_text)),
+                            fontWeight = FontWeight.Bold))
+            }
         },
         content = { pd ->
           ScrollableColumnOfSamples(

@@ -28,6 +28,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 const val NATURE_TAG = "#nature"
+
+enum class SearchType(val title: String) {
+  SAMPLES("Samples"),
+  USERS("Users");
+
+  fun toggle(): SearchType {
+    return if (this == SAMPLES) USERS else SAMPLES
+  }
+}
 /**
  * Search ViewModel Handles search logic, data loading, and user interactions for the Search Screen.
  * Uses: SampleRepository to fetch samples and manage likes/comments. Includes: Firebase
