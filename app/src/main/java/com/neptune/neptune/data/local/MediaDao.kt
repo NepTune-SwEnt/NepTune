@@ -19,4 +19,6 @@ interface MediaDao {
   fun observeAll(): Flow<List<MediaItemEntity>>
 
   @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsert(item: MediaItemEntity)
+
+  @Delete suspend fun delete(item: MediaItemEntity)
 }

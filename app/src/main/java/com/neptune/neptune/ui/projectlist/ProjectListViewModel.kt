@@ -1,16 +1,44 @@
 package com.neptune.neptune.ui.projectlist
 
+import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
+import com.google.firebase.storage.FirebaseStorage
+import com.neptune.neptune.data.storage.StorageService
+import com.neptune.neptune.domain.model.MediaItem
+import com.neptune.neptune.domain.port.MediaRepository
+import com.neptune.neptune.domain.usecase.GetLibraryUseCase
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.TotalProjectItemsRepository
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
+import com.neptune.neptune.util.NetworkConnectivityObserver
+import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+
+class ProjectListViewModelFactory(
+    private val getLibraryUseCase: GetLibraryUseCase,
+    private val mediaRepository: MediaRepository,
+    private val context: Context
+) : ViewModelProvider.Factory {
+  @Suppress("UNCHECKED_CAST")
+  override fun <T : ViewModel> create(modelClass: Class<T>): T {
+    return ProjectListViewModel(
+        projectRepository = TotalProjectItemsRepositoryProvider.repository,
+        getLibraryUseCase = getLibraryUseCase,
+        mediaRepository = mediaRepository,
+        storageService = StorageService(FirebaseStorage.getInstance()))
+        as T
+  }
+}
 
 /**
  * ViewModel for managing the state and operations related to the list of projects. This has been
@@ -22,12 +50,22 @@ import kotlinx.coroutines.launch
 class ProjectListViewModel(
     private val projectRepository: TotalProjectItemsRepository =
         TotalProjectItemsRepositoryProvider.repository,
+    private val getLibraryUseCase: GetLibraryUseCase? = null,
+    private val mediaRepository: MediaRepository? = null,
+    private val storageService: StorageService? = null,
 ) : ViewModel() {
   private var _uiState = MutableStateFlow(ProjectListUiState(projects = emptyList()))
   val uiState: StateFlow<ProjectListUiState> = _uiState.asStateFlow()
+  private val connectivityObserver = NetworkConnectivityObserver()
+  private var isOnline = false
 
   init {
-    getAllProjects()
+    viewModelScope.launch {
+      connectivityObserver.isOnline.collectLatest { connected ->
+        isOnline = connected
+        refreshProjects()
+      }
+    }
   }
 
   /** Refreshes the list of projects by fetching them from the repository. */
@@ -41,21 +79,54 @@ class ProjectListViewModel(
    */
   private fun getAllProjects() {
     _uiState.value = _uiState.value.copy(isLoading = true)
-    Log.i("ProjectListViewModel", "Loading projects")
+
     viewModelScope.launch {
       try {
-        val projects = projectRepository.getAllProjects()
+        val localItems = getLibraryUseCase?.invoke()?.first() ?: emptyList()
+
+        // auto sync
+        if (isOnline && localItems.isNotEmpty()) {
+          Log.i(
+              "ProjectListVM",
+              "Online détecté : Synchronisation de ${localItems.size} projets locaux...")
+
+          localItems.forEach { item -> addProjectToCloud("local_${item.id}") }
+        }
+
+        val projects =
+            if (isOnline) {
+              try {
+                projectRepository.getAllProjects()
+              } catch (_: Exception) {
+                Log.w("ProjectListViewModel", "Error on cloud pass in offline mode")
+                localItems.map { toLocalProjectItem(it) }
+              }
+            } else {
+              localItems.map { toLocalProjectItem(it) }
+            }
+
         val sortedProjects =
             projects.sortedWith(
                 compareByDescending<ProjectItem> { it.isFavorite }
                     .thenByDescending { it.lastUpdated })
+
         _uiState.value = ProjectListUiState(projects = sortedProjects, isLoading = false)
-        Log.i("ProjectListViewModel", "Loaded $sortedProjects")
       } catch (e: Exception) {
+        Log.e("ProjectListVM", "Erreur chargement", e)
         _uiState.value = _uiState.value.copy(isLoading = false)
-        Log.e("ProjectListViewModel", "Error loading projects", e)
       }
     }
+  }
+
+  private fun toLocalProjectItem(mediaItem: MediaItem): ProjectItem {
+    val file = File(mediaItem.projectUri)
+    val name = file.nameWithoutExtension.ifBlank { "Imported Project" }
+
+    return ProjectItem(
+        uid = "local_${mediaItem.id}",
+        name = name,
+        projectFileLocalPath = mediaItem.projectUri,
+    )
   }
 
   /**
@@ -116,12 +187,52 @@ class ProjectListViewModel(
     }
   }
 
+  private fun importProjectInFirebase(projectId: String) {
+    viewModelScope.launch {
+      try {
+        if (projectId.startsWith("local_")) {
+          // local project: put it in the firebase
+          val realId = projectId.removePrefix("local_")
+
+          val localItems = getLibraryUseCase?.invoke()?.first() ?: emptyList()
+          val mediaItem = localItems.find { it.id == realId } ?: return@launch
+          val file = File(mediaItem.projectUri)
+
+          if (file.exists() && storageService != null && mediaRepository != null) {
+            val newCloudId = projectRepository.getNewIdCloud()
+            val storagePath = "projects/$newCloudId.zip"
+            storageService.uploadFile(Uri.fromFile(file), storagePath)
+            val downloadUrl = storageService.getDownloadUrl(storagePath)
+
+            val newProject =
+                ProjectItem(
+                    uid = newCloudId,
+                    name = file.nameWithoutExtension,
+                    isStoredInCloud = true,
+                    projectFileCloudUri = downloadUrl,
+                    projectFileLocalPath = mediaItem.projectUri,
+                    lastUpdated = Timestamp.now())
+            projectRepository.addProject(newProject)
+
+            mediaRepository.delete(mediaItem)
+
+            Log.i("ProjectListVM", "Projet local synchronisé avec succès : ${newProject.name}")
+          }
+        }
+        refreshProjects()
+      } catch (e: Exception) {
+        Log.e("ProjectListViewModel", "Error adding project to cloud", e)
+      }
+    }
+  }
+
   /**
    * Adds a project to the cloud and refreshes the project list.
    *
    * @param projectId The ID of the project to add to the cloud.
    */
   fun addProjectToCloud(projectId: String) {
+    if (projectId.startsWith("local_")) return
     viewModelScope.launch {
       try {
         projectRepository.addProjectToCloud(projectId)
