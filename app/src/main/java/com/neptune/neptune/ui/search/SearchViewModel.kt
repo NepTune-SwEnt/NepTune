@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.collections.set
 
 const val NATURE_TAG = "#nature"
 
@@ -114,10 +115,18 @@ open class SearchViewModel(
   val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
 
   init {
-    val observer = NetworkConnectivityObserver()
-    viewModelScope.launch {
-      observer.isOnline.collect { isConnected -> _isOnline.value = isConnected }
+    try {
+      val observer = NetworkConnectivityObserver()
+      viewModelScope.launch {
+        observer.isOnline.collect { isConnected -> _isOnline.value = isConnected }
+      }
+    } catch (e: Exception) {
+      Log.e("SearchViewModel", "Network observer init failed", e)
     }
+    if (firebaseAuth != null && authListener != null) {
+      firebaseAuth.addAuthStateListener(authListener)
+    }
+    load(useMockData)
   }
 
   fun toggleSearchType() {
@@ -198,7 +207,8 @@ open class SearchViewModel(
     // Observe current user profile to keep following list in sync with server
     // FIX: Using flatMapLatest to safely handle the case where currentUser is null
     viewModelScope.launch {
-      _currentUserFlow
+        try {
+            _currentUserFlow
           .flatMapLatest { user ->
             if (user != null) {
               profileRepo.observeProfile(user.uid)
@@ -213,10 +223,34 @@ open class SearchViewModel(
               _followingIds.value = emptySet()
             }
           }
+    } catch (e: Exception) {
+            Log.e("SearchViewModel", "Failed to load resources for ${sample.name}", e)
     }
-
+    }
     load(useMockData)
   }
+
+private suspend fun getSampleOwnerAvatar(userId: String): String? {
+    if (avatarCache.containsKey(userId)) return avatarCache[userId]
+    val url = profileRepo.getAvatarUrlByUserId(userId)
+    avatarCache[userId] = url
+    return url
+}
+
+private suspend fun getUserName(userId: String): String {
+    if (userNameCache.containsKey(userId)) return userNameCache[userId] ?: "Anonymous"
+    val userName = profileRepo.getUserNameByUserId(userId) ?: "Anonymous"
+    userNameCache[userId] = userName
+    return userName
+}
+
+private suspend fun getSampleCoverUrl(storagePath: String): String? {
+    if (storagePath.isBlank()) return null
+    if (coverImageCache.containsKey(storagePath)) return coverImageCache[storagePath]
+    val url = actions?.getDownloadUrl(storagePath) ?: return null
+    coverImageCache[storagePath] = url
+    return url
+}
 
   override fun onCleared() {
     super.onCleared()
@@ -308,7 +342,8 @@ open class SearchViewModel(
   override fun onLikeClick(sample: Sample, isLiked: Boolean) {
     val sampleId = sample.id
     viewModelScope.launch {
-      this@SearchViewModel.sampleRepo.toggleLike(sample.id, isLiked)
+        try {
+            this@SearchViewModel.sampleRepo.toggleLike(sample.id, isLiked)
       val delta = if (isLiked) 1 else -1
       val updatedSamples =
           allSamples.value.map { current ->
@@ -321,11 +356,66 @@ open class SearchViewModel(
       allSamples.value = updatedSamples
       applyFilter(query)
       _likedSamples.value = _likedSamples.value + (sampleId to isLiked)
+    } catch (e: Exception) {
+            Log.e("SearchViewModel", "Error toggling like: ${e.message}")
+        }
+    }
+      }
+
+  fun refreshLikeStates() {
+      refreshLikeStates(_samples.value, _likedSamples)
+  }
+
+  fun observeCommentsForSample(sampleId: String) {
+    viewModelScope.launch {
+      try {
+        repo.observeComments(sampleId).collectLatest { list ->
+          // Ensure usernames are loaded for each author
+          list.forEach { comment -> loadUsername(comment.authorId) }
+          _comments.value = list
+        }
+      } catch (e: Exception) {
+        Log.e("SearchViewModel", "Error observing comments", e)
+      }
     }
   }
 
-  fun refreshLikeStates() {
-    refreshLikeStates(_samples.value, _likedSamples)
+  /*
+   * Function to load the user name.
+   */
+  fun loadUsername(userId: String) {
+    viewModelScope.launch {
+      try {
+        // Check cache first
+        val cached = _usernames.value[userId]
+        if (cached != null && cached != defaultName) return@launch
+
+        // Fetch latest username
+        val userName = profileRepo.getUserNameByUserId(userId) ?: defaultName
+
+        _usernames.update { it + (userId to userName) }
+      } catch (e: Exception) {
+        Log.w("SearchViewModel", "Error loading username for $userId", e)
+      }
+    }
+  }
+
+  fun resetCommentSampleId() {
+    _activeCommentSampleId.value = null
+  }
+
+  fun addComment(sampleId: String, text: String) {
+    viewModelScope.launch {
+      try {
+        val profile = profileRepo.getCurrentProfile()
+        val authorId = profile?.uid ?: auth?.currentUser?.uid ?: "unknown"
+        val authorName = profile?.username ?: defaultName
+        repo.addComment(sampleId, authorId, authorName, text.trim())
+        observeCommentsForSample(sampleId)
+      } catch (e: Exception) {
+        Log.e("SearchViewModel", "Error adding comment", e)
+      }
+    }
   }
 
   open fun search(query: String) {
