@@ -314,15 +314,19 @@ private suspend fun getSampleCoverUrl(storagePath: String): String? {
   fun loadSamplesFromFirebase() {
     if (auth?.currentUser == null) return
     viewModelScope.launch {
-      this@SearchViewModel.sampleRepo.observeSamples().collectLatest { samples ->
+        try {
+            this@SearchViewModel.sampleRepo.observeSamples().collectLatest { samples ->
         val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
         allSamples.value = readySamples
         readySamples.forEach { loadSampleResources(it) }
         applyFilter(query)
         refreshLikeStates()
       }
+            }catch (e: Exception) {
+                Log.e("SearchViewModel", "Error loading samples (Offline?)", e)
+            }
+        }
     }
-  }
 
   // ---------- Public API used by UI ----------
 

@@ -334,14 +334,18 @@ open class MainViewModel(
 
   fun refreshLikeStates() {
     viewModelScope.launch {
-      val allSamples = _discoverSamples.value + _followedSamples.value
+      try {
+        val allSamples = _discoverSamples.value + _followedSamples.value
 
-      val updatedStates = mutableMapOf<String, Boolean>()
-      for (sample in allSamples) {
-        val liked = sampleRepo.hasUserLiked(sample.id)
-        updatedStates[sample.id] = liked
+        val updatedStates = mutableMapOf<String, Boolean>()
+        for (sample in allSamples) {
+          val liked = sampleRepo.hasUserLiked(sample.id)
+          updatedStates[sample.id] = liked
+        }
+        _likedSamples.value = updatedStates
+      } catch (e: Exception) {
+        Log.e("MainViewModel", "Error refreshing likes", e)
       }
-      _likedSamples.value = updatedStates
     }
   }
 
