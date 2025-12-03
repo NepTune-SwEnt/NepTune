@@ -24,10 +24,10 @@ import com.neptune.neptune.ui.theme.NepTuneTheme
 
 @Composable
 fun OfflineScreen() {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center) {
+  Column(
+      modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center) {
         Icon(
             imageVector = Icons.Default.WifiOff,
             contentDescription = "Offline",
@@ -58,5 +58,5 @@ fun OfflineScreen() {
                     fontWeight = FontWeight.Normal,
                     color = NepTuneTheme.colors.onBackground.copy(alpha = 0.8f)),
             textAlign = TextAlign.Center)
-    }
+      }
 }
