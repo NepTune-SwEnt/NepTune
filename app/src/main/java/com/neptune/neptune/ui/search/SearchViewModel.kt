@@ -91,12 +91,10 @@ open class SearchViewModel(
 
   init {
     val observer = NetworkConnectivityObserver()
-    viewModelScope.launch { // sticky offline mode: if we regain connection ignore
+    viewModelScope.launch {
       observer.isOnline.collect { isConnected ->
+        _isOnline.value = isConnected
         isActuallyConnected = isConnected
-        if (!isConnected) {
-          _isOnline.value = false
-        }
       }
     }
   }
@@ -365,12 +363,6 @@ open class SearchViewModel(
         updatedStates[sample.id] = liked
       }
       _likedSamples.value = updatedStates
-    }
-  }
-
-  fun refresh() {
-    if (isActuallyConnected) {
-      _isOnline.value = true
     }
   }
 

@@ -246,7 +246,7 @@ fun MainScreen(
                   isUserLoggedIn = isUserLoggedIn)
             },
             floatingActionButton = {
-              if (isOnline) {
+              if (isOnline && isUserLoggedIn && !isAnonymous) {
                 FloatingActionButton(
                     onClick = navigateToProjectList,
                     containerColor = NepTuneTheme.colors.postButton,

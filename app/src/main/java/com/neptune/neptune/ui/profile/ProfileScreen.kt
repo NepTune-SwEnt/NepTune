@@ -294,7 +294,7 @@ private fun ProfileViewContent(
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
         Box(Modifier.fillMaxSize().padding(innerPadding)) {
           Column(modifier = Modifier.fillMaxSize()) {
-            if (!isOnline && !isUserLoggedIn) {
+            if (!isOnline && isUserLoggedIn) {
               OfflineBanner()
             }
             Column(

@@ -210,7 +210,6 @@ fun NeptuneApp(
                       signInViewModel = signInViewModel,
                       navigateMain = {
                         mainViewModel.refresh()
-                        searchViewModel.refresh()
                         navigationActions.navigateTo(Screen.Main)
                       })
                 }
