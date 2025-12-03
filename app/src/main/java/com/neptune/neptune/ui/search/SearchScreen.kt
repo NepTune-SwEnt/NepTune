@@ -4,12 +4,20 @@ import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -22,11 +30,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.neptune.neptune.R
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.sample.Comment
@@ -37,7 +52,6 @@ import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.main.SampleItem
 import com.neptune.neptune.ui.main.SampleResourceState
 import com.neptune.neptune.ui.main.onClickFunctions
-import com.neptune.neptune.ui.offline.OfflineScreen
 import com.neptune.neptune.ui.projectlist.SearchBar
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import kotlinx.coroutines.delay
@@ -235,3 +249,43 @@ fun ScrollableColumnOfSamples(
         isAnonymous = isAnonymous)
   }
 }
+
+@Composable
+fun OfflineScreen() {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center) {
+        Icon(
+            imageVector = Icons.Default.WifiOff,
+            contentDescription = "Offline",
+            tint = NepTuneTheme.colors.onBackground.copy(alpha = 0.5f),
+            modifier = Modifier.size(80.dp))
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "Offline Mode Active",
+            style =
+                TextStyle(
+                    fontSize = 32.sp,
+                    fontFamily = FontFamily(Font(R.font.markazi_text)),
+                    fontWeight = FontWeight.Bold,
+                    color = NepTuneTheme.colors.onBackground),
+            textAlign = TextAlign.Center)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text =
+                "You can't see the feed right now, but you can still create and modify your local projects.",
+            style =
+                TextStyle(
+                    fontSize = 20.sp,
+                    fontFamily = FontFamily(Font(R.font.markazi_text)),
+                    fontWeight = FontWeight.Normal,
+                    color = NepTuneTheme.colors.onBackground.copy(alpha = 0.8f)),
+            textAlign = TextAlign.Center)
+    }
+}
+

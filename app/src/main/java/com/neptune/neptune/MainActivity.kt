@@ -157,7 +157,6 @@ fun NeptuneApp(
                       navigateToSampleList = { type ->
                         navigationActions.navigateTo(Screen.Feed.createRoute(type))
                       },
-                      navigateToSignIn = { navigationActions.navigateTo(Screen.SignIn) },
                       mainViewModel = mainViewModel)
                 }
                 composable(Screen.Profile.route) {

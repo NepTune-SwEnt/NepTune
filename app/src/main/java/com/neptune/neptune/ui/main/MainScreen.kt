@@ -280,7 +280,7 @@ fun MainScreen(
                   pullRefreshState = pullRefreshState,
                   isAnonymous = isAnonymous,
                   isOnline = isOnline,
-                  navigateToSignIn = navigateToSignIn)
+              )
             },
             containerColor = NepTuneTheme.colors.background)
         // Comment Overlay (Outside Scaffold content, but inside Box to float over everything)
@@ -304,7 +304,6 @@ private fun MainContent(
     onCommentClicked: (Sample) -> Unit,
     handleProfileNavigation: (String) -> Unit,
     navigateToSampleList: (FeedType) -> Unit,
-    navigateToSignIn: () -> Unit = {},
     pullRefreshState: PullToRefreshState,
     isAnonymous: Boolean = false,
     isOnline: Boolean = true

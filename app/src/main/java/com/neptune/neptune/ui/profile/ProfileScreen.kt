@@ -64,7 +64,9 @@ import coil.compose.AsyncImage
 import com.neptune.neptune.R
 import com.neptune.neptune.data.rememberImagePickerLauncher
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import com.neptune.neptune.ui.main.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
+import com.neptune.neptune.util.NetworkConnectivityObserver
 
 private val ScreenPadding = 16.dp
 private val SettingsButtonSize = 30.dp
@@ -125,7 +127,8 @@ fun ProfileScreen(
     localAvatarUri: Uri? = null,
     callbacks: ProfileScreenCallbacks = ProfileScreenCallbacks.Empty,
     onAvatarEditClick: () -> Unit = {},
-    viewConfig: ProfileViewConfig
+    viewConfig: ProfileViewConfig,
+    isOnline: Boolean = true
 ) {
   Column(modifier = Modifier.padding(ScreenPadding).testTag(ProfileScreenTestTags.ROOT)) {
     when (uiState.mode) {
@@ -135,10 +138,12 @@ fun ProfileScreen(
             state = uiState,
             localAvatarUri = localAvatarUri,
             viewConfig = viewConfig,
-            goBack = callbacks.goBackClick)
+            goBack = callbacks.goBackClick,
+            isOnline = isOnline)
       }
       // Create profile screen edit content
       ProfileMode.EDIT -> {
+        if (!isOnline) OfflineBanner()
         ProfileEditContent(
             uiState = uiState,
             localAvatarUri = localAvatarUri,
@@ -256,7 +261,8 @@ private fun ProfileViewContent(
     state: SelfProfileUiState,
     localAvatarUri: Uri?,
     goBack: () -> Unit,
-    viewConfig: ProfileViewConfig
+    viewConfig: ProfileViewConfig,
+    isOnline: Boolean = true
 ) {
   Scaffold(
       modifier = Modifier.testTag(ProfileScreenTestTags.ROOT),
@@ -281,79 +287,85 @@ private fun ProfileViewContent(
       },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
         Box(Modifier.fillMaxSize().padding(innerPadding)) {
-          Column(
-              modifier =
-                  Modifier.fillMaxSize()
-                      .verticalScroll(rememberScrollState())
-                      .padding(bottom = 88.dp)
-                      .testTag(ProfileScreenTestTags.VIEW_CONTENT),
-              horizontalAlignment = Alignment.CenterHorizontally,
-          ) {
-            Spacer(Modifier.height(AvatarVerticalSpacing))
-
-            // Avatar image
-            val avatarModel = localAvatarUri ?: state.avatarUrl ?: R.drawable.ic_avatar_placeholder
-            Avatar(
-                avatarModel,
-                modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
-                showEditPencil = false)
-            Spacer(Modifier.height(AvatarVerticalSpacing))
-
-            // Name and username
-            Text(
-                text = state.name,
-                color = NepTuneTheme.colors.onBackground,
-                style = MaterialTheme.typography.headlineMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
-            Text(
-                text = "@${state.username}",
-                color = NepTuneTheme.colors.onBackground,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
-            Spacer(Modifier.height(SectionVerticalSpacing))
-
-            // Stats row
-            StatRow(state)
-            Spacer(Modifier.height(LargeSectionSpacing))
-
-            // if view mode is for other users profile, show follow button
-            viewConfig.belowStatsButton?.invoke()
-
-            // Bio
-            Text(
-                text = if (state.bio != "") "“${state.bio}”" else "",
-                color = NepTuneTheme.colors.onBackground,
-                style = MaterialTheme.typography.titleLarge,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
-            Spacer(Modifier.height(LargeSectionSpacing))
-
-            // Tags
-            if (state.tags.isNotEmpty()) {
-              Spacer(Modifier.height(16.dp))
-              FlowRow(
-                  horizontalArrangement = Arrangement.spacedBy(TagsSpacing),
-                  verticalArrangement = Arrangement.spacedBy(TagsSpacing),
-                  modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_VIEW_SECTION)) {
-                    state.tags.forEach { tag ->
-                      InputChip(
-                          selected = false,
-                          onClick = {},
-                          enabled = false,
-                          label = { Text(tag) },
-                          colors =
-                              InputChipDefaults.inputChipColors(
-                                  disabledContainerColor = NepTuneTheme.colors.cardBackground,
-                                  disabledLabelColor = NepTuneTheme.colors.onBackground),
-                          border =
-                              InputChipDefaults.inputChipBorder(
-                                  borderWidth = 0.dp, enabled = false, selected = false))
-                    }
-                  }
+          Column(modifier = Modifier.fillMaxSize()) {
+            if (!isOnline) {
+              OfflineBanner()
             }
+            Column(
+                modifier =
+                    Modifier.fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = 88.dp)
+                        .testTag(ProfileScreenTestTags.VIEW_CONTENT),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+              Spacer(Modifier.height(AvatarVerticalSpacing))
 
-            Spacer(Modifier.height(50.dp))
+              // Avatar image
+              val avatarModel =
+                  localAvatarUri ?: state.avatarUrl ?: R.drawable.ic_avatar_placeholder
+              Avatar(
+                  avatarModel,
+                  modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
+                  showEditPencil = false)
+              Spacer(Modifier.height(AvatarVerticalSpacing))
+
+              // Name and username
+              Text(
+                  text = state.name,
+                  color = NepTuneTheme.colors.onBackground,
+                  style = MaterialTheme.typography.headlineMedium,
+                  textAlign = TextAlign.Center,
+                  modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
+              Text(
+                  text = "@${state.username}",
+                  color = NepTuneTheme.colors.onBackground,
+                  style = MaterialTheme.typography.bodyMedium,
+                  modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
+              Spacer(Modifier.height(SectionVerticalSpacing))
+
+              // Stats row
+              StatRow(state)
+              Spacer(Modifier.height(LargeSectionSpacing))
+
+              // if view mode is for other users profile, show follow button
+              viewConfig.belowStatsButton?.invoke()
+
+              // Bio
+              Text(
+                  text = if (state.bio != "") "“${state.bio}”" else "",
+                  color = NepTuneTheme.colors.onBackground,
+                  style = MaterialTheme.typography.titleLarge,
+                  textAlign = TextAlign.Center,
+                  modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
+              Spacer(Modifier.height(LargeSectionSpacing))
+
+              // Tags
+              if (state.tags.isNotEmpty()) {
+                Spacer(Modifier.height(16.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(TagsSpacing),
+                    verticalArrangement = Arrangement.spacedBy(TagsSpacing),
+                    modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_VIEW_SECTION)) {
+                      state.tags.forEach { tag ->
+                        InputChip(
+                            selected = false,
+                            onClick = {},
+                            enabled = false,
+                            label = { Text(tag) },
+                            colors =
+                                InputChipDefaults.inputChipColors(
+                                    disabledContainerColor = NepTuneTheme.colors.cardBackground,
+                                    disabledLabelColor = NepTuneTheme.colors.onBackground),
+                            border =
+                                InputChipDefaults.inputChipBorder(
+                                    borderWidth = 0.dp, enabled = false, selected = false))
+                      }
+                    }
+              }
+
+              Spacer(Modifier.height(50.dp))
+            }
           }
 
           // if mode is self profile, show edit button
@@ -709,6 +721,7 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
   val state = viewModel.uiState.collectAsState().value
   val localAvatarUri by viewModel.localAvatarUri.collectAsState()
   val tempAvatarUri by viewModel.tempAvatarUri.collectAsState()
+  val isOnline by remember { NetworkConnectivityObserver().isOnline }.collectAsState(initial = true)
 
   LaunchedEffect(Unit) { viewModel.loadOrEnsure() }
 
@@ -747,7 +760,8 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
               onTagInputFieldChange = viewModel::onTagInputFieldChange,
               onTagSubmit = viewModel::onTagAddition,
               onRemoveTag = viewModel::onTagDeletion,
-              goBackClick = goBack))
+              goBackClick = goBack),
+      isOnline = isOnline)
 }
 
 @Composable
