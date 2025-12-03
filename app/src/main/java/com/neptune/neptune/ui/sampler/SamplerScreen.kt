@@ -190,8 +190,7 @@ fun SamplerScreen(
             }
       }) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-          Column(
-              modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+          Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
             PlaybackAndWaveformControls(
                 isPlaying = uiState.isPlaying,
                 onTogglePlayPause = viewModel::togglePlayPause,
@@ -224,22 +223,19 @@ fun SamplerScreen(
           // Bottom-left Help button
           Box(modifier = Modifier.fillMaxSize()) {
             Surface(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(16.dp)
-                    .size(48.dp),
+                modifier = Modifier.align(Alignment.BottomStart).padding(16.dp).size(48.dp),
                 shape = CircleShape,
                 color = NepTuneTheme.colors.accentPrimary,
                 tonalElevation = 4.dp) {
-              IconButton(
-                  onClick = { showHelpDialog = true },
-                  modifier = Modifier.testTag(SamplerTestTags.HELP_BUTTON)) {
-                Icon(
-                    imageVector = Icons.Default.Help,
-                    contentDescription = "Help",
-                    tint = Color.White)
-              }
-            }
+                  IconButton(
+                      onClick = { showHelpDialog = true },
+                      modifier = Modifier.testTag(SamplerTestTags.HELP_BUTTON)) {
+                        Icon(
+                            imageVector = Icons.Default.Help,
+                            contentDescription = "Help",
+                            tint = Color.White)
+                      }
+                }
           }
         }
       }
@@ -1762,31 +1758,37 @@ fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Un
         shape = RoundedCornerShape(12.dp),
         color = NepTuneTheme.colors.background,
         modifier = Modifier.testTag(SamplerTestTags.HELP_DIALOG)) {
-      Column(modifier = Modifier.padding(16.dp).widthIn(max = 520.dp)) {
-        Text("Sampler Help", style = MaterialTheme.typography.titleLarge, color = NepTuneTheme.colors.smallText)
-        Spacer(modifier = Modifier.height(12.dp))
+          Column(modifier = Modifier.padding(16.dp).widthIn(max = 520.dp)) {
+            Text(
+                "Sampler Help",
+                style = MaterialTheme.typography.titleLarge,
+                color = NepTuneTheme.colors.smallText)
+            Spacer(modifier = Modifier.height(12.dp))
 
-        TabRow(selectedTabIndex = selectedTab) {
-          tabs.forEachIndexed { index, title ->
-            Tab(selected = selectedTab == index, onClick = { onTabSelected(index) }, text = { Text(title) })
+            TabRow(selectedTabIndex = selectedTab) {
+              tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { onTabSelected(index) },
+                    text = { Text(title) })
+              }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            when (selectedTab) {
+              0 -> HelpOverview()
+              1 -> HelpControls()
+              2 -> HelpTips()
+              else -> HelpOverview()
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+              TextButton(onClick = onClose) { Text("Close") }
+            }
           }
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        when (selectedTab) {
-          0 -> HelpOverview()
-          1 -> HelpControls()
-          2 -> HelpTips()
-          else -> HelpOverview()
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-          TextButton(onClick = onClose) { Text("Close") }
-        }
-      }
-    }
   }
 }
 
@@ -1806,7 +1808,9 @@ private fun HelpControls() {
   Column(modifier = Modifier.fillMaxWidth()) {
     Text("Controls", fontWeight = FontWeight.Bold, color = NepTuneTheme.colors.smallText)
     Spacer(modifier = Modifier.height(8.dp))
-    Text("- Play / Pause: preview the sample\n- Save: persist project data\n- Pitch/Tempo selectors: adjust playback\n- ADSR: drag points on the curve to change envelope", color = NepTuneTheme.colors.smallText)
+    Text(
+        "- Play / Pause: preview the sample\n- Save: persist project data\n- Pitch/Tempo selectors: adjust playback\n- ADSR: drag points on the curve to change envelope",
+        color = NepTuneTheme.colors.smallText)
   }
 }
 
@@ -1815,6 +1819,8 @@ private fun HelpTips() {
   Column(modifier = Modifier.fillMaxWidth()) {
     Text("Tips", fontWeight = FontWeight.Bold, color = NepTuneTheme.colors.smallText)
     Spacer(modifier = Modifier.height(8.dp))
-    Text("- Use the ADSR editor for shaping note dynamics.\n- Use EQ faders to cut/boost frequencies.\n- Try short preview loops to fine-tune parameters.", color = NepTuneTheme.colors.smallText)
+    Text(
+        "- Use the ADSR editor for shaping note dynamics.\n- Use EQ faders to cut/boost frequencies.\n- Try short preview loops to fine-tune parameters.",
+        color = NepTuneTheme.colors.smallText)
   }
 }
