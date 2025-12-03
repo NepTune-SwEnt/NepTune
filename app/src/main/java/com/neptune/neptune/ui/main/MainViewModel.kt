@@ -264,41 +264,45 @@ open class MainViewModel(
       return
     }
     viewModelScope.launch {
-      profileRepo.observeCurrentProfile().collectLatest { profile ->
-        // Update the user avatar
-        val newAvatarUrl = profile?.avatarUrl
-        _userAvatar.value = newAvatarUrl
-        _isAnonymous.value = profile?.isAnonymous ?: auth.currentUser?.isAnonymous ?: true
+      try {
+        profileRepo.observeCurrentProfile().collectLatest { profile ->
+          // Update the user avatar
+          val newAvatarUrl = profile?.avatarUrl
+          _userAvatar.value = newAvatarUrl
+          _isAnonymous.value = profile?.isAnonymous ?: auth.currentUser?.isAnonymous ?: true
 
-        // Update username
-        val newUsername = profile?.username
-        if (newUsername != null) {
-          val old = _usernames.value[currentUser.uid]
-          if (old == null || old != newUsername) {
-            _usernames.update { it + (currentUser.uid to newUsername) }
-          }
-        }
-
-        // Update avatar for samplers owned by current user
-        val currentUserId = auth.currentUser?.uid ?: return@collectLatest
-        avatarCache[currentUserId] = newAvatarUrl
-        _sampleResources.update { currentResources ->
-          val updatedResources = currentResources.toMutableMap()
-          val allLoadedSamples = _discoverSamples.value + _followedSamples.value
-          val mySamples = allLoadedSamples.filter { it.ownerId == currentUserId }
-          mySamples.forEach { sample ->
-            val currentState = updatedResources[sample.id]
-            if (currentState != null) {
-              updatedResources[sample.id] = currentState.copy(ownerAvatarUrl = newAvatarUrl)
+          // Update username
+          val newUsername = profile?.username
+          if (newUsername != null) {
+            val old = _usernames.value[currentUser.uid]
+            if (old == null || old != newUsername) {
+              _usernames.update { it + (currentUser.uid to newUsername) }
             }
           }
-          updatedResources
+
+          // Update avatar for samplers owned by current user
+          val currentUserId = auth.currentUser?.uid ?: return@collectLatest
+          avatarCache[currentUserId] = newAvatarUrl
+          _sampleResources.update { currentResources ->
+            val updatedResources = currentResources.toMutableMap()
+            val allLoadedSamples = _discoverSamples.value + _followedSamples.value
+            val mySamples = allLoadedSamples.filter { it.ownerId == currentUserId }
+            mySamples.forEach { sample ->
+              val currentState = updatedResources[sample.id]
+              if (currentState != null) {
+                updatedResources[sample.id] = currentState.copy(ownerAvatarUrl = newAvatarUrl)
+              }
+            }
+            updatedResources
+          }
+          val following = profile?.following.orEmpty()
+          if (allSamplesCache.isNotEmpty()) {
+            val readySamples = allSamplesCache.filter { it.storagePreviewSamplePath.isNotBlank() }
+            updateLists(readySamples, following)
+          }
         }
-        val following = profile?.following.orEmpty()
-        if (allSamplesCache.isNotEmpty()) {
-          val readySamples = allSamplesCache.filter { it.storagePreviewSamplePath.isNotBlank() }
-          updateLists(readySamples, following)
-        }
+      } catch (e: Exception) {
+        Log.e("MainViewModel", "Error observing profile: ${e.message}")
       }
     }
   }
@@ -317,9 +321,13 @@ open class MainViewModel(
   override fun onLikeClick(sample: Sample, isLiked: Boolean) {
     if (_isAnonymous.value) return
     viewModelScope.launch {
-      val newState = actions?.onLikeClicked(sample, isLiked)
-      if (newState != null) {
-        _likedSamples.value = _likedSamples.value + (sample.id to newState)
+      try {
+          val newState = actions?.onLikeClicked(sample, isLiked)
+        if (newState != null) {
+          _likedSamples.value = _likedSamples.value + (sample.id to newState)
+        }
+      } catch (e: Exception) {
+        Log.e("MainViewModel", "Failed to toggle like: ${e.message}")
       }
     }
   }
@@ -340,10 +348,142 @@ open class MainViewModel(
   fun addComment(sampleId: String, text: String) {
     if (_isAnonymous.value) return
     viewModelScope.launch {
-      val profile = profileRepo.getCurrentProfile()
-      val authorId = profile?.uid ?: auth?.currentUser?.uid ?: "unknown"
-      val authorName = profile?.username ?: defaultName
-      sampleRepo.addComment(sampleId, authorId, authorName, text.trim())
+      try {
+        val profile = profileRepo.getCurrentProfile()
+        val authorId = profile?.uid ?: auth?.currentUser?.uid ?: "unknown"
+        val authorName = profile?.username ?: defaultName
+          sampleRepo.addComment(sampleId, authorId, authorName, text.trim())
+      } catch (e: Exception) {
+        Log.e("MainViewModel", "Failed to add comment: ${e.message}")
+      }
+    }
+  }
+
+  /*
+   * function to get the avatar of the sample owner.
+   */
+  private suspend fun getSampleOwnerAvatar(userId: String): String? {
+    if (avatarCache.containsKey(userId)) {
+      return avatarCache[userId]
+    }
+    val url = profileRepo.getAvatarUrlByUserId(userId)
+    avatarCache[userId] = url
+    return url
+  }
+
+  /*
+   * Function to get the user name.
+   */
+  private suspend fun getUserName(userId: String): String {
+    _usernames.value[userId]?.let {
+      return it
+    }
+
+    val userName = profileRepo.getUserNameByUserId(userId) ?: defaultName
+    _usernames.update { it + (userId to userName) }
+    return userName
+  }
+
+  /*
+   * Function to get the Download URL from the storage path.
+   */
+  private suspend fun getSampleCoverUrl(storagePath: String): String? {
+    if (storagePath.isBlank()) return null
+
+    if (coverImageCache.containsKey(storagePath)) {
+      return coverImageCache[storagePath]
+    }
+    val url = storageService.getDownloadUrl(storagePath)
+    coverImageCache[storagePath] = url
+    return url
+  }
+
+  /*
+   * Function to get the Audio URL from the storage path.
+   */
+  private suspend fun getSampleAudioUrl(sample: Sample): String? {
+    val storagePath = sample.storagePreviewSamplePath
+    if (storagePath.isBlank()) return null
+    if (audioUrlCache.containsKey(storagePath)) {
+      return audioUrlCache[storagePath]
+    }
+    val url = storageService.getDownloadUrl(storagePath)
+    audioUrlCache[storagePath] = url
+    return url
+  }
+
+  /*
+   * Retrieves the waveform for a given Sample.
+   */
+
+  private suspend fun getSampleWaveform(sample: Sample): List<Float> {
+    if (waveformCache.containsKey(sample.id)) {
+      waveformCache[sample.id]?.let {
+        return it
+      }
+    }
+    val audioUrl = getSampleAudioUrl(sample) ?: return emptyList()
+
+    return try {
+      val waveform =
+          waveformExtractor.extractWaveform(
+              context = NepTuneApplication.appContext, uri = audioUrl.toUri(), samplesCount = 100)
+
+      if (waveform.isNotEmpty()) {
+        waveformCache[sample.id] = waveform
+      }
+      waveform
+    } catch (e: Exception) {
+      Log.e("MainViewModel", "Error extracting waveform for list: ${e.message}")
+      emptyList()
+    }
+  }
+
+  /** Function to trigger loading */
+  fun loadSampleResources(sample: Sample) {
+    val currentResources = _sampleResources.value[sample.id]
+    if (currentResources != null &&
+        currentResources.loadedSamplePath == sample.storagePreviewSamplePath) {
+      return
+    }
+
+    viewModelScope.launch {
+      try {
+        _sampleResources.update { current ->
+          current +
+              (sample.id to
+                  (current[sample.id]?.copy(isLoading = true)
+                      ?: SampleResourceState(isLoading = true)))
+        }
+
+        val avatarUrl = getSampleOwnerAvatar(sample.ownerId)
+        val userName = getUserName(sample.ownerId)
+        val coverUrl =
+            if (sample.storageImagePath.isNotBlank()) getSampleCoverUrl(sample.storageImagePath)
+            else null
+        val audioUrl =
+            if (sample.storagePreviewSamplePath.isNotBlank()) getSampleAudioUrl(sample) else null
+        val waveform = getSampleWaveform(sample)
+
+        _sampleResources.update { current ->
+          current +
+              (sample.id to
+                  SampleResourceState(
+                      ownerName = userName,
+                      ownerAvatarUrl = avatarUrl,
+                      coverImageUrl = coverUrl,
+                      audioUrl = audioUrl,
+                      waveform = waveform,
+                      isLoading = false,
+                      loadedSamplePath = sample.storagePreviewSamplePath))
+        }
+      } catch (e: Exception) {
+        Log.w("MainViewModel", "Failed to load resources for sample ${sample.id}: ${e.message}")
+        _sampleResources.update { current ->
+          current +
+              (sample.id to (current[sample.id]?.copy(isLoading = false) ?: SampleResourceState()))
+        }
+      }
     }
   }
 
