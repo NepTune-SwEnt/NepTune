@@ -54,12 +54,12 @@ open class MainViewModel(
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
     auth: FirebaseAuth? = null,
 ) :
-BaseSampleFeedViewModel(
-    sampleRepo = sampleRepo,
-    profileRepo = profileRepo,
-    auth = if (useMockData) null else auth ?: FirebaseAuth.getInstance(),
-    context = context
-), SampleFeedController {
+    BaseSampleFeedViewModel(
+        sampleRepo = sampleRepo,
+        profileRepo = profileRepo,
+        auth = if (useMockData) null else auth ?: FirebaseAuth.getInstance(),
+        context = context),
+    SampleFeedController {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
   val downloadProgress = MutableStateFlow<Int?>(null)
 
@@ -106,7 +106,7 @@ BaseSampleFeedViewModel(
     } else {
       loadSamplesFromFirebase()
     }
-      auth?.addAuthStateListener(authListener)
+    auth?.addAuthStateListener(authListener)
     observeUserProfile()
   }
 
@@ -203,7 +203,7 @@ BaseSampleFeedViewModel(
 
   override fun onCleared() {
     super.onCleared()
-      auth?.removeAuthStateListener(authListener)
+    auth?.removeAuthStateListener(authListener)
   }
 
   private fun observeUserProfile() {
@@ -263,7 +263,7 @@ BaseSampleFeedViewModel(
     }
   }
 
-    override fun onLikeClick(sample: Sample, isLiked: Boolean) {
+  override fun onLikeClick(sample: Sample, isLiked: Boolean) {
     if (_isAnonymous.value) return
     viewModelScope.launch {
       val newState = actions?.onLikeClicked(sample.id, isLiked)
