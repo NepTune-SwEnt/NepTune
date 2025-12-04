@@ -22,9 +22,11 @@ import com.neptune.neptune.ui.main.SampleUiActions
 import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -99,6 +101,12 @@ open class SearchViewModel(
   private val _userResults = MutableStateFlow<List<Profile>>(emptyList())
   val userResults: StateFlow<List<Profile>> = _userResults.asStateFlow()
 
+  // Current User Profile (to track following list)
+  val currentUserProfile: StateFlow<Profile?> =
+      profileRepo
+          .observeCurrentProfile()
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
   fun toggleSearchType() {
     _searchType.update { it.toggle() }
     // Re-trigger search with the new type
@@ -114,6 +122,37 @@ open class SearchViewModel(
     addComment(sampleId, text)
     observeCommentsForSample(sampleId)
   }
+
+  fun toggleFollow(userId: String, isFollowing: Boolean) {
+    // Optimistic update for the UI list (follower counts)
+    val currentList = _userResults.value
+    val updatedList =
+        currentList.map { profile ->
+          if (profile.uid == userId) {
+            val newCount = if (isFollowing) profile.subscribers - 1 else profile.subscribers + 1
+            profile.copy(subscribers = newCount)
+          } else {
+            profile
+          }
+        }
+    _userResults.value = updatedList
+
+    // Perform actual network request
+    viewModelScope.launch {
+      try {
+        if (isFollowing) {
+          profileRepo.unfollowUser(userId)
+        } else {
+          profileRepo.followUser(userId)
+        }
+      } catch (e: Exception) {
+        Log.e("SearchViewModel", "Failed to toggle follow for $userId", e)
+        // Revert optimistic update on failure
+        _userResults.value = currentList
+      }
+    }
+  }
+
   // ---------- Actions (download, etc.) – disabled in tests ----------
   val downloadProgress = MutableStateFlow<Int?>(null)
 
@@ -264,7 +303,7 @@ open class SearchViewModel(
                 21,
                 listOf(NATURE_TAG),
                 21,
-                emptyList(),
+                listOf("uid1", "uid2"),
                 21,
                 21),
             Sample(

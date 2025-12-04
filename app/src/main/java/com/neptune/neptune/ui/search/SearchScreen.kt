@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -35,7 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -146,6 +147,7 @@ fun SearchScreen(
   // Collect the search type and user results
   val searchType by searchViewModel.searchType.collectAsState()
   val userResults by searchViewModel.userResults.collectAsState()
+  val currentUserProfile by searchViewModel.currentUserProfile.collectAsState()
 
   LaunchedEffect(searchText) {
     delay(400L) // debounce time
@@ -207,6 +209,11 @@ fun SearchScreen(
           } else {
             ScrollableColumnOfUsers(
                 users = userResults,
+                currentUserFollowing = currentUserProfile?.following ?: emptyList(),
+                currentUserId = currentUserProfile?.uid ?: "",
+                onFollowToggle = { uid, isFollowing ->
+                  searchViewModel.toggleFollow(uid, isFollowing)
+                },
                 navigateToOtherUserProfile = { uid ->
                   if (searchViewModel.isCurrentUser(uid)) {
                     navigateToProfile()
@@ -226,6 +233,9 @@ fun SearchScreen(
 @Composable
 fun ScrollableColumnOfUsers(
     users: List<Profile>,
+    currentUserFollowing: List<String>,
+    currentUserId: String,
+    onFollowToggle: (String, Boolean) -> Unit,
     navigateToOtherUserProfile: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -238,40 +248,63 @@ fun ScrollableColumnOfUsers(
       verticalArrangement = Arrangement.spacedBy(8.dp),
       contentPadding = PaddingValues(16.dp)) {
         items(users) { profile ->
+          val isFollowing = currentUserFollowing.contains(profile.uid)
+          val isMe = profile.uid == currentUserId
+
           Row(
               modifier =
                   Modifier.fillMaxWidth()
                       .clickable { navigateToOtherUserProfile(profile.uid) }
                       .background(NepTuneTheme.colors.cardBackground, RoundedCornerShape(8.dp))
                       .padding(16.dp),
-              verticalAlignment = Alignment.CenterVertically) {
-                if (profile.avatarUrl.isNotBlank()) {
-                  AsyncImage(
-                      model = profile.avatarUrl,
-                      contentDescription = "User Avatar",
-                      modifier = Modifier.size(40.dp).clip(CircleShape),
-                      contentScale = ContentScale.Crop,
-                      placeholder = painterResource(id = R.drawable.profile),
-                      error = painterResource(id = R.drawable.profile))
-                } else {
-                  Icon(
-                      painter = painterResource(id = R.drawable.profile),
-                      contentDescription = "User Avatar",
-                      modifier = Modifier.size(40.dp),
-                      tint = NepTuneTheme.colors.onBackground)
-                }
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically) {
+                      if (profile.avatarUrl.isNotBlank()) {
+                        AsyncImage(
+                            model = profile.avatarUrl,
+                            contentDescription = "User Avatar",
+                            modifier = Modifier.size(40.dp).clip(CircleShape),
+                            contentScale = ContentScale.Crop,
+                            placeholder = painterResource(id = R.drawable.profile),
+                            error = painterResource(id = R.drawable.profile))
+                      } else {
+                        Icon(
+                            painter = painterResource(id = R.drawable.profile),
+                            contentDescription = "User Avatar",
+                            modifier = Modifier.size(40.dp),
+                            tint = NepTuneTheme.colors.onBackground)
+                      }
 
-                Column(modifier = Modifier.padding(start = 16.dp)) {
-                  Text(
-                      text = profile.username.ifBlank { "User" },
-                      style = MaterialTheme.typography.titleMedium,
-                      color = NepTuneTheme.colors.onBackground)
-                  if (!profile.name.isNullOrBlank()) {
-                    Text(
-                        text = profile.name,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = NepTuneTheme.colors.onBackground)
-                  }
+                      Column(modifier = Modifier.padding(start = 16.dp)) {
+                        Text(
+                            text = profile.username.ifBlank { "User" },
+                            style = MaterialTheme.typography.titleMedium,
+                            color = NepTuneTheme.colors.onBackground)
+
+                        val namePart = if (!profile.name.isNullOrBlank()) profile.name else ""
+                        val separator = if (namePart.isNotBlank()) " • " else ""
+
+                        Text(
+                            text = "$namePart$separator${profile.subscribers} followers",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = NepTuneTheme.colors.onBackground)
+                      }
+                    }
+
+                if (!isMe) {
+                  Button(
+                      onClick = { onFollowToggle(profile.uid, isFollowing) },
+                      colors =
+                          ButtonDefaults.buttonColors(
+                              containerColor =
+                                  if (isFollowing) Color.Gray
+                                  else MaterialTheme.colorScheme.primary),
+                      modifier = Modifier.padding(start = 8.dp)) {
+                        Text(text = if (isFollowing) "Unfollow" else "Follow")
+                      }
                 }
               }
         }
