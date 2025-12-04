@@ -69,6 +69,7 @@ class ProfileSamplesViewModel(
         SampleUiActions(
             repo = sampleRepo,
             storageService = storageService,
+            profileRepo = profileRepo,
             downloadsFolder = downloadsFolder,
             context = context,
             ioDispatcher = downloadDispatcher)
