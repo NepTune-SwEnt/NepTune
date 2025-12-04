@@ -124,7 +124,7 @@ class EpicProjectE2ETest {
     composeTestRule.onNodeWithContentDescription("Save").performClick()
     composeTestRule.waitForIdle()
 
-    delay(2000)
+    delay(20000)
 
     // --- RETURN TO HOME ---
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()

@@ -209,6 +209,10 @@ fun SamplerScreen(
 
               Spacer(modifier = Modifier.height(16.dp))
 
+              ADSRTestButton(viewModel = viewModel)
+
+              Spacer(modifier = Modifier.height(16.dp))
+
               SamplerTabs(currentTab = uiState.currentTab, onTabSelected = viewModel::selectTab)
 
               TabContent(currentTab = uiState.currentTab, uiState = uiState, viewModel = viewModel)
