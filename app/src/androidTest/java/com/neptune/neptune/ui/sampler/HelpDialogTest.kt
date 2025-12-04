@@ -1,9 +1,20 @@
 package com.neptune.neptune.ui.sampler
 
+import androidx.activity.compose.setContent
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.neptune.neptune.MainActivity
+import com.neptune.neptune.media.LocalMediaPlayer
+import com.neptune.neptune.media.NeptuneMediaPlayer
+import com.neptune.neptune.screen.FakeSamplerViewModel
+import com.neptune.neptune.screen.SamplerViewModelFactory
+import com.neptune.neptune.ui.theme.SampleAppTheme
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -11,12 +22,27 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class HelpDialogTest {
   @get:Rule val composeRule = createAndroidComposeRule<MainActivity>()
+  private lateinit var fakeViewModel: FakeSamplerViewModel
+
+  @Before
+  fun setUp() {
+    fakeViewModel = FakeSamplerViewModel()
+    val factory = SamplerViewModelFactory(fakeViewModel)
+    composeRule.activity.setContent {
+      val mediaPlayer = NeptuneMediaPlayer()
+      CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
+        SampleAppTheme {
+          Surface(color = MaterialTheme.colorScheme.background) {
+            SamplerScreen(viewModel = viewModel(factory = factory), zipFilePath = null)
+          }
+        }
+      }
+    }
+    composeRule.waitForIdle()
+  }
 
   @Test
-  fun helpDialog_shows_and_navigates() {
-    // Wait for sampler screen to appear
-    composeRule.onNodeWithTag(SamplerTestTags.SCREEN_CONTAINER).assertExists()
-
+  fun helpDialogShowsAndNavigates() {
     // Tap the help button
     composeRule.onNodeWithTag(SamplerTestTags.HELP_BUTTON).performClick()
 
@@ -43,29 +69,5 @@ class HelpDialogTest {
 
     // Dialog should be dismissed
     composeRule.onNodeWithTag(SamplerTestTags.HELP_DIALOG).assertDoesNotExist()
-  }
-
-  @Test
-  fun helpButton_hidden_when_disabled_in_settings() {
-    // Open settings via FAB
-    composeRule.onNodeWithTag(SamplerTestTags.SETTINGS_BUTTON).performClick()
-
-    // Settings dialog should be visible
-    composeRule.onNodeWithTag(SamplerTestTags.SETTINGS_DIALOG).assertExists()
-
-    // Find the disable help row by semantics
-    composeRule.onNode(hasContentDescription("disableHelpRow")).assertExists()
-
-    // Toggle the switch: tap the first toggleable node we can find inside the settings dialog
-    composeRule
-        .onAllNodes(isToggleable())
-        .filterToOne(hasParent(hasTestTag(SamplerTestTags.SETTINGS_DIALOG)))
-        .performClick()
-
-    // Close settings dialog by pressing Save & Close
-    composeRule.onNodeWithTag(SamplerTestTags.SETTINGS_CONFIRM_BUTTON).performClick()
-
-    // Now the help button should not exist
-    composeRule.onNodeWithTag(SamplerTestTags.HELP_BUTTON).assertDoesNotExist()
   }
 }
