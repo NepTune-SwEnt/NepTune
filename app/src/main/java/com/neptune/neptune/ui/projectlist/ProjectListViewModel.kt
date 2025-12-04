@@ -55,14 +55,16 @@ class ProjectListViewModel(
   private var _uiState = MutableStateFlow(ProjectListUiState(projects = emptyList()))
   val uiState: StateFlow<ProjectListUiState> = _uiState.asStateFlow()
   private val connectivityObserver = NetworkConnectivityObserver()
-  private val _isOnline = MutableStateFlow(true)
-  val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+  private var isOnline = true
 
   init {
     viewModelScope.launch {
-      connectivityObserver.isOnline.collectLatest { connected -> _isOnline.value = connected }
-      refreshProjects()
+      connectivityObserver.isOnline.collectLatest { connected ->
+        isOnline = connected
+        refreshProjects()
+      }
     }
+    viewModelScope.launch { getLibraryUseCase?.invoke()?.collectLatest { refreshProjects() } }
   }
 
   /** Refreshes the list of projects by fetching them from the repository. */
@@ -79,16 +81,15 @@ class ProjectListViewModel(
 
     viewModelScope.launch {
       try {
-        val currentOnline = _isOnline.value
         val localItems = getLibraryUseCase?.invoke()?.first() ?: emptyList()
 
         // auto sync
-        if (currentOnline && localItems.isNotEmpty()) {
+        if (isOnline && localItems.isNotEmpty()) {
           localItems.forEach { item -> importProjectInFirebase(item.id) }
         }
 
         val projects =
-            if (currentOnline) {
+            if (isOnline) {
               try {
                 projectRepository.getAllProjects()
               } catch (_: Exception) {
