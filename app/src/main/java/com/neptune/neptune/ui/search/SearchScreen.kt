@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,6 +34,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -46,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
 import com.neptune.neptune.R
 import com.neptune.neptune.media.LocalMediaPlayer
@@ -159,7 +163,10 @@ fun SearchScreen(
               modifier = Modifier.fillMaxWidth(),
               horizontalAlignment = Alignment.CenterHorizontally) {
                 SearchBar(
-                    searchText, { searchText = it }, SearchScreenTestTags.SEARCH_BAR, whatToSearchFor)
+                    searchText,
+                    { searchText = it },
+                    SearchScreenTestTags.SEARCH_BAR,
+                    whatToSearchFor)
 
                 val roundShape = 50
                 Box(modifier = Modifier.padding(bottom = 8.dp)) {
@@ -237,12 +244,21 @@ fun ScrollableColumnOfUsers(
                       .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
                       .padding(16.dp),
               verticalAlignment = Alignment.CenterVertically) {
-                // Placeholder for avatar
-                Icon(
-                    painter = painterResource(id = R.drawable.profile),
-                    contentDescription = "User Avatar",
-                    modifier = Modifier.size(40.dp),
-                    tint = MaterialTheme.colorScheme.onSurface)
+                if (profile.avatarUrl.isNotBlank()) {
+                  AsyncImage(
+                      model = profile.avatarUrl,
+                      contentDescription = "User Avatar",
+                      modifier = Modifier.size(40.dp).clip(CircleShape),
+                      contentScale = ContentScale.Crop,
+                      placeholder = painterResource(id = R.drawable.profile),
+                      error = painterResource(id = R.drawable.profile))
+                } else {
+                  Icon(
+                      painter = painterResource(id = R.drawable.profile),
+                      contentDescription = "User Avatar",
+                      modifier = Modifier.size(40.dp).clip(CircleShape),
+                      tint = MaterialTheme.colorScheme.onSurface)
+                }
 
                 Column(modifier = Modifier.padding(start = 16.dp)) {
                   Text(
