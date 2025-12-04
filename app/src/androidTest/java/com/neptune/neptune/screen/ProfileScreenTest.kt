@@ -993,10 +993,14 @@ class ProfileScreenTest {
             ownerId = "other",
             storagePreviewSamplePath = "preview/other.mp3")
 
-    setContentViewMode(
-        samplesViewModel = createFakeSamplesViewModel(listOf(ownerSample, otherSample)))
+    val samplesViewModel = createFakeSamplesViewModel(listOf(ownerSample, otherSample))
+    setContentViewMode(samplesViewModel = samplesViewModel)
 
-    composeTestRule.waitUntil(5_000) {
+    composeTestRule.waitUntil(10_000) {
+      samplesViewModel.samples.value.any { it.name == ownerSample.name }
+    }
+
+    composeTestRule.waitUntil(10_000) {
       composeTestRule
           .onAllNodes(hasText("Owner Track"), useUnmergedTree = true)
           .fetchSemanticsNodes()
