@@ -163,6 +163,7 @@ open class SearchViewModel(
       this@SearchViewModel.sampleRepo.observeSamples().collectLatest { samples ->
         val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
         allSamples.value = readySamples
+        readySamples.forEach { loadSampleResources(it) }
         applyFilter(query)
         refreshLikeStates()
       }
