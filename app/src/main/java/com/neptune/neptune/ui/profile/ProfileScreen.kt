@@ -15,10 +15,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -67,19 +67,22 @@ import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
 import com.neptune.neptune.R
 import com.neptune.neptune.data.rememberImagePickerLauncher
+import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
-import com.neptune.neptune.ui.feed.ScrollableColumnOfSamples
+import com.neptune.neptune.ui.BaseSampleTestTags
+import com.neptune.neptune.ui.feed.sampleFeedItems
+import com.neptune.neptune.ui.main.CommentDialog
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
 private val ScreenPadding = 16.dp
 private val SettingsButtonSize = 30.dp
 private val AvatarVerticalSpacing = 15.dp
 private val SectionVerticalSpacing = 40.dp
-private val LargeSectionSpacing = 100.dp
 private val BottomButtonBottomPadding = 24.dp
 private val ButtonIconSpacing = 8.dp
 private val TagsSpacing = 8.dp
 private val StatBlockLabelSpacing = 8.dp
+private val SamplesSpacing = 20.dp
 
 /**
  * Centralized constants defining all `testTag` identifiers used in [ProfileScreen] UI tests.
@@ -263,6 +266,20 @@ private fun ProfileViewContent(
     viewConfig: ProfileViewConfig,
     profileSamplesViewModel: ProfileSamplesViewModel
 ) {
+  val samples by profileSamplesViewModel.samples.collectAsState()
+  val likedSamples by profileSamplesViewModel.likedSamples.collectAsState()
+  val activeCommentSampleId by profileSamplesViewModel.activeCommentSampleId.collectAsState()
+  val comments by profileSamplesViewModel.comments.collectAsState()
+  val sampleResources by profileSamplesViewModel.sampleResources.collectAsState()
+  val usernames by profileSamplesViewModel.usernames.collectAsState()
+  val mediaPlayer = LocalMediaPlayer.current
+  val configuration = LocalConfiguration.current
+  val screenWidth = configuration.screenWidthDp.dp
+  val cardWidth = screenWidth - 20.dp
+  val cardHeight = cardWidth * (150f / 166f)
+  val samplesListTagModifier =
+      if (samples.isNotEmpty()) Modifier.testTag("profile/samples/list") else Modifier
+
   Scaffold(
       modifier = Modifier.testTag(ProfileScreenTestTags.ROOT),
       topBar = {
@@ -286,85 +303,135 @@ private fun ProfileViewContent(
       },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
         Box(Modifier.fillMaxSize().padding(innerPadding)) {
-          Column(
+          LazyColumn(
               modifier =
                   Modifier.fillMaxSize()
-                      .verticalScroll(rememberScrollState())
                       .padding(bottom = 88.dp)
-                      .testTag(ProfileScreenTestTags.VIEW_CONTENT),
+                      .testTag(ProfileScreenTestTags.VIEW_CONTENT)
+                      .then(samplesListTagModifier),
               horizontalAlignment = Alignment.CenterHorizontally,
           ) {
-            Spacer(Modifier.height(AvatarVerticalSpacing))
+            item { Spacer(Modifier.height(AvatarVerticalSpacing)) }
 
             // Avatar image
-            val avatarModel = localAvatarUri ?: state.avatarUrl ?: R.drawable.ic_avatar_placeholder
-            Avatar(
-                avatarModel,
-                modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
-                showEditPencil = false)
-            Spacer(Modifier.height(AvatarVerticalSpacing))
+            item {
+              val avatarModel =
+                  localAvatarUri ?: state.avatarUrl ?: R.drawable.ic_avatar_placeholder
+              Avatar(
+                  avatarModel,
+                  modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
+                  showEditPencil = false)
+            }
+
+            item { Spacer(Modifier.height(AvatarVerticalSpacing)) }
 
             // Name and username
-            Text(
-                text = state.name,
-                color = NepTuneTheme.colors.onBackground,
-                style = MaterialTheme.typography.headlineMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
-            Text(
-                text = "@${state.username}",
-                color = NepTuneTheme.colors.onBackground,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
-            Spacer(Modifier.height(SectionVerticalSpacing))
+            item {
+              Text(
+                  text = state.name,
+                  color = NepTuneTheme.colors.onBackground,
+                  style = MaterialTheme.typography.headlineMedium,
+                  textAlign = TextAlign.Center,
+                  modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
+            }
+            item {
+              Text(
+                  text = "@${state.username}",
+                  color = NepTuneTheme.colors.onBackground,
+                  style = MaterialTheme.typography.bodyMedium,
+                  modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
+            }
+            item { Spacer(Modifier.height(SectionVerticalSpacing)) }
 
             // Stats row
-            StatRow(state)
-            Spacer(Modifier.height(LargeSectionSpacing))
+            item { StatRow(state) }
+            item { Spacer(Modifier.height(SectionVerticalSpacing)) }
 
             // if view mode is for other users profile, show follow button
-            viewConfig.belowStatsButton?.invoke()
+            viewConfig.belowStatsButton?.let { button -> item { button() } }
 
             // Bio
-            Text(
-                text = if (state.bio != "") "“${state.bio}”" else "",
-                color = NepTuneTheme.colors.onBackground,
-                style = MaterialTheme.typography.titleLarge,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
-            Spacer(Modifier.height(LargeSectionSpacing))
+            item {
+              Text(
+                  text = if (state.bio != "") "“${state.bio}”" else "",
+                  color = NepTuneTheme.colors.onBackground,
+                  style = MaterialTheme.typography.titleLarge,
+                  textAlign = TextAlign.Center,
+                  modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
+            }
 
             // Tags
             if (state.tags.isNotEmpty()) {
-              Spacer(Modifier.height(16.dp))
-              FlowRow(
-                  horizontalArrangement = Arrangement.spacedBy(TagsSpacing),
-                  verticalArrangement = Arrangement.spacedBy(TagsSpacing),
-                  modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_VIEW_SECTION)) {
-                    state.tags.forEach { tag ->
-                      InputChip(
-                          selected = false,
-                          onClick = {},
-                          enabled = false,
-                          label = { Text(tag) },
-                          colors =
-                              InputChipDefaults.inputChipColors(
-                                  disabledContainerColor = NepTuneTheme.colors.cardBackground,
-                                  disabledLabelColor = NepTuneTheme.colors.onBackground),
-                          border =
-                              InputChipDefaults.inputChipBorder(
-                                  borderWidth = 0.dp, enabled = false, selected = false))
+              item { Spacer(Modifier.height(TagsSpacing)) }
+              item {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(TagsSpacing),
+                    verticalArrangement = Arrangement.spacedBy(TagsSpacing),
+                    modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_VIEW_SECTION)) {
+                      state.tags.forEach { tag ->
+                        InputChip(
+                            selected = false,
+                            onClick = {},
+                            enabled = false,
+                            label = { Text(tag) },
+                            colors =
+                                InputChipDefaults.inputChipColors(
+                                    disabledContainerColor = NepTuneTheme.colors.cardBackground,
+                                    disabledLabelColor = NepTuneTheme.colors.onBackground),
+                            border =
+                                InputChipDefaults.inputChipBorder(
+                                    borderWidth = 0.dp, enabled = false, selected = false))
+                      }
                     }
-                  }
-
-              Spacer(Modifier.height(LargeSectionSpacing))
+              }
             }
 
-            Spacer(Modifier.height(LargeSectionSpacing))
-            ProfileSamplesSection(viewModel = profileSamplesViewModel)
-            Spacer(Modifier.height(LargeSectionSpacing))
+            item { Spacer(Modifier.height(SectionVerticalSpacing)) }
 
-            Spacer(Modifier.height(50.dp))
+            // Posted samples section
+            item {
+              Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Posted samples",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = NepTuneTheme.colors.onBackground)
+                Spacer(Modifier.height(SamplesSpacing))
+              }
+            }
+
+            if (samples.isEmpty()) {
+              item {
+                Text(
+                    text = "No samples posted yet.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = NepTuneTheme.colors.onBackground)
+              }
+            } else {
+              sampleFeedItems(
+                  samples = samples,
+                  controller = profileSamplesViewModel,
+                  mediaPlayer = mediaPlayer,
+                  likedSamples = likedSamples,
+                  sampleResources = sampleResources,
+                  navigateToProfile = {},
+                  navigateToOtherUserProfile = {},
+                  testTagsForSample = {
+                    object : BaseSampleTestTags {
+                      override val prefix = "sampleList"
+                    }
+                  },
+                  width = cardWidth,
+                  height = cardHeight)
+            }
+          }
+
+          activeCommentSampleId?.let { activeId ->
+            CommentDialog(
+                sampleId = activeId,
+                comments = comments,
+                usernames = usernames,
+                onDismiss = { profileSamplesViewModel.resetCommentSampleId() },
+                onAddComment = { id, text -> profileSamplesViewModel.onAddComment(id, text) })
           }
 
           // if mode is self profile, show edit button
@@ -692,41 +759,6 @@ fun EditableTagChip(tagText: String, onRemove: (String) -> Unit, modifier: Modif
               containerColor = NepTuneTheme.colors.background,
               labelColor = NepTuneTheme.colors.onBackground,
           ))
-}
-
-@Composable
-private fun ProfileSamplesSection(viewModel: ProfileSamplesViewModel) {
-  val samples by viewModel.samples.collectAsState()
-  val likedSamples by viewModel.likedSamples.collectAsState()
-  val activeCommentSampleId by viewModel.activeCommentSampleId.collectAsState()
-  val comments by viewModel.comments.collectAsState()
-  val sampleResources by viewModel.sampleResources.collectAsState()
-  val screenHeight = LocalConfiguration.current.screenHeightDp.dp
-
-  Column(modifier = Modifier.fillMaxWidth()) {
-    Text(
-        text = "Posted samples",
-        style = MaterialTheme.typography.headlineSmall,
-        color = NepTuneTheme.colors.onBackground)
-    Spacer(Modifier.height(16.dp))
-
-    if (samples.isEmpty()) {
-      Text(
-          text = "No samples posted yet.",
-          style = MaterialTheme.typography.bodyMedium,
-          color = NepTuneTheme.colors.onBackground)
-    } else {
-      ScrollableColumnOfSamples(
-          samples = samples,
-          controller = viewModel,
-          likedSamples = likedSamples,
-          activeCommentSampleId = activeCommentSampleId,
-          comments = comments,
-          sampleResources = sampleResources,
-          listTestTag = "profile/samples/list",
-          modifier = Modifier.fillMaxWidth().heightIn(min = 200.dp, max = screenHeight))
-    }
-  }
 }
 
 /**
