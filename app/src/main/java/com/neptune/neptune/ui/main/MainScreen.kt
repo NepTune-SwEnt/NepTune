@@ -186,6 +186,7 @@ fun MainScreen(
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
   val userAvatar by mainViewModel.userAvatar.collectAsState()
+  val isAnonymous by mainViewModel.isAnonymous.collectAsState()
 
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
   val wait: Long = 300
@@ -263,7 +264,8 @@ fun MainScreen(
                   onCommentClicked = { onCommentClicked(it) },
                   handleProfileNavigation = { handleProfileNavigation(it) },
                   navigateToSampleList = navigateToSampleList,
-                  pullRefreshState = pullRefreshState)
+                  pullRefreshState = pullRefreshState,
+                  isAnonymous = isAnonymous)
             },
             containerColor = NepTuneTheme.colors.background)
         // Comment Overlay (Outside Scaffold content, but inside Box to float over everything)
@@ -287,7 +289,8 @@ private fun MainContent(
     onCommentClicked: (Sample) -> Unit,
     handleProfileNavigation: (String) -> Unit,
     navigateToSampleList: (FeedType) -> Unit,
-    pullRefreshState: PullToRefreshState
+    pullRefreshState: PullToRefreshState,
+    isAnonymous: Boolean = false
 ) {
   val horizontalPadding = 30.dp
   Box(modifier = Modifier.fillMaxSize()) {
@@ -308,7 +311,8 @@ private fun MainContent(
                 samples = discoverSamples,
                 rowsPerColumn = 2,
                 onCommentClick = { onCommentClicked(it) },
-                onProfileClick = { handleProfileNavigation(it) })
+                onProfileClick = { handleProfileNavigation(it) },
+                isAnonymous = isAnonymous)
           }
           // ----------------Followed Section-----------------
           item {
@@ -343,7 +347,8 @@ private fun SampleSectionLazyRow(
     samples: List<Sample>,
     rowsPerColumn: Int,
     onCommentClick: (Sample) -> Unit,
-    onProfileClick: (String) -> Unit
+    onProfileClick: (String) -> Unit,
+    isAnonymous: Boolean = false
 ) {
   val configuration = LocalConfiguration.current
   val screenWidth = configuration.screenWidthDp.dp
@@ -373,7 +378,9 @@ private fun SampleSectionLazyRow(
               val clickHandlers =
                   onClickFunctions(
                       onDownloadClick = { mainViewModel.onDownloadSample(sample) },
-                      onLikeClick = { isLiked -> mainViewModel.onLikeClicked(sample, isLiked) },
+                      onLikeClick = { isLiked ->
+                        if (!isAnonymous) mainViewModel.onLikeClicked(sample, isLiked)
+                      },
                       onCommentClick = { onCommentClick(sample) },
                       onProfileClick = { onProfileClick(sample.ownerId) },
                   )
@@ -787,6 +794,7 @@ fun CommentDialog(
     usernames: Map<String, String>,
     onDismiss: () -> Unit,
     onAddComment: (sampleId: String, commentText: String) -> Unit,
+    isAnonymous: Boolean = false
 ) {
   var commentText by remember { mutableStateOf("") }
   val listScrollingState = rememberLazyListState()
@@ -872,10 +880,10 @@ fun CommentDialog(
                     verticalAlignment = Alignment.CenterVertically) {
                       TextField(
                           value = commentText,
-                          onValueChange = { commentText = it },
+                          onValueChange = { if (!isAnonymous) commentText = it },
                           placeholder = {
                             Text(
-                                "Add a comment…",
+                                if (isAnonymous) "Cannot comment" else "Add a comment…",
                                 style =
                                     TextStyle(
                                         fontSize = 25.sp,
@@ -907,6 +915,7 @@ fun CommentDialog(
                               commentText = ""
                             }
                           },
+                          enabled = !isAnonymous,
                           shape = RoundedCornerShape(15.dp),
                           colors =
                               ButtonDefaults.buttonColors(

@@ -120,7 +120,7 @@ class SearchScreenTestTagsPerSampleCard(private val idInColumn: String = "0") : 
     get() = tag("sampleDownloads")
 }
 
-private fun factory(application: Application) =
+fun searchScreenFactory(application: Application) =
     object : ViewModelProvider.Factory {
       override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(SearchViewModel::class.java)) {
@@ -135,7 +135,8 @@ private fun factory(application: Application) =
 @Composable
 fun SearchScreen(
     searchViewModel: SearchViewModel =
-        viewModel(factory = factory(LocalContext.current.applicationContext as Application)),
+        viewModel(
+            factory = searchScreenFactory(LocalContext.current.applicationContext as Application)),
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
     navigateToProfile: () -> Unit = {},
     navigateToOtherUserProfile: (String) -> Unit = {},
@@ -335,6 +336,7 @@ fun ScrollableColumnOfSamples(
   val screenWidth = configuration.screenWidthDp.dp
   val width = screenWidth - 20.dp
   val height = width * (150f / 166f) // the same ratio than in the feedScreen
+
   // Ensure the possibility to like in local
   LazyColumn(
       modifier =
@@ -385,11 +387,13 @@ fun ScrollableColumnOfSamples(
       } // Comment Overlay
   if (activeCommentSampleId != null) {
     val usernames by searchViewModel.usernames.collectAsState()
+    val isAnonymous by searchViewModel.isAnonymous.collectAsState()
     CommentDialog(
         sampleId = activeCommentSampleId,
         comments = comments,
         usernames = usernames,
         onDismiss = { searchViewModel.resetCommentSampleId() },
-        onAddComment = { id, text -> searchViewModel.onAddComment(id, text) })
+        onAddComment = { id, text -> searchViewModel.onAddComment(id, text) },
+        isAnonymous = isAnonymous)
   }
 }

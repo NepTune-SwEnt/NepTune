@@ -399,7 +399,8 @@ fun PostScreen(
                     enabled =
                         uiState.sample.name.isNotBlank() &&
                             !uiState.isUploading &&
-                            postViewModel.audioExist(),
+                            postViewModel.audioExist() &&
+                            !postViewModel.isAnonymous,
                     modifier =
                         Modifier.fillMaxWidth()
                             .height(55.dp)

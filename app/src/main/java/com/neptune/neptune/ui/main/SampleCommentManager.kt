@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 @Composable
 fun SampleCommentManager(mainViewModel: MainViewModel) {
   val activeCommentSampleId by mainViewModel.activeCommentSampleId.collectAsState()
+  val isAnonymous by mainViewModel.isAnonymous.collectAsState()
 
   if (activeCommentSampleId != null) {
     val comments by mainViewModel.comments.collectAsState()
@@ -21,6 +22,7 @@ fun SampleCommentManager(mainViewModel: MainViewModel) {
         comments = comments,
         usernames = usernames,
         onDismiss = { mainViewModel.closeCommentSection() },
-        onAddComment = { id, text -> mainViewModel.addComment(id, text) })
+        onAddComment = { id, text -> mainViewModel.addComment(id, text) },
+        isAnonymous = isAnonymous)
   }
 }

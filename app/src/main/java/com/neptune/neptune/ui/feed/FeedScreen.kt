@@ -101,22 +101,20 @@ fun FeedScreen(
               divider = false)
         },
         containerColor = NepTuneTheme.colors.background) { paddingValues ->
-          FeedContent(
-              modifier =
-                  Modifier.padding(paddingValues)
-                      .nestedScroll(pullRefreshState.nestedScrollConnection),
-              mainViewModel = mainViewModel,
-              currentType = currentType,
-              navigateToProfile = navigateToProfile,
-              navigateToOtherUserProfile = navigateToOtherUserProfile)
+          Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            FeedContent(
+                modifier = Modifier.nestedScroll(pullRefreshState.nestedScrollConnection),
+                mainViewModel = mainViewModel,
+                currentType = currentType,
+                navigateToProfile = navigateToProfile,
+                navigateToOtherUserProfile = navigateToOtherUserProfile)
 
-          PullToRefreshContainer(
-              state = pullRefreshState,
-              modifier =
-                  Modifier.align(Alignment.TopCenter)
-                      .padding(top = paddingValues.calculateTopPadding()),
-              containerColor = NepTuneTheme.colors.background,
-              contentColor = NepTuneTheme.colors.onBackground)
+            PullToRefreshContainer(
+                state = pullRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                containerColor = NepTuneTheme.colors.background,
+                contentColor = NepTuneTheme.colors.onBackground)
+          }
         }
 
     SampleCommentManager(mainViewModel = mainViewModel)

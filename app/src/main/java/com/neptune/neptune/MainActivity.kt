@@ -36,6 +36,7 @@ import com.neptune.neptune.ui.feed.FeedType
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.main.factory
+import com.neptune.neptune.ui.messages.MessagesScreen
 import com.neptune.neptune.ui.messages.SelectMessagesScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
@@ -49,6 +50,8 @@ import com.neptune.neptune.ui.profile.SelfProfileRoute
 import com.neptune.neptune.ui.projectlist.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.search.SearchScreen
+import com.neptune.neptune.ui.search.SearchViewModel
+import com.neptune.neptune.ui.search.searchScreenFactory
 import com.neptune.neptune.ui.settings.SettingsAccountScreen
 import com.neptune.neptune.ui.settings.SettingsCustomThemeScreen
 import com.neptune.neptune.ui.settings.SettingsScreen
@@ -111,6 +114,9 @@ fun NeptuneApp(
     startDestination: String = Screen.SignIn.route,
 ) {
   val signInViewModel: SignInViewModel = viewModel()
+  val searchViewModel: SearchViewModel =
+      viewModel(
+          factory = searchScreenFactory(LocalContext.current.applicationContext as Application))
   val navigationActions = NavigationActions(navController)
   val navBackStackEntry by navController.currentBackStackEntryAsState()
   val currentRoute = navBackStackEntry?.destination?.route
@@ -176,7 +182,8 @@ fun NeptuneApp(
                       navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
                       navigateToOtherUserProfile = { userId ->
                         navigationActions.navigateTo(Screen.OtherUserProfile.createRoute(userId))
-                      })
+                      },
+                      searchViewModel = searchViewModel)
                 }
                 composable(
                     route = Screen.Post.route,
@@ -273,9 +280,17 @@ fun NeptuneApp(
                 composable(Screen.SelectMessages.route) {
                   SelectMessagesScreen(
                       goBack = { navigationActions.goBack() },
-                      onSelectUser = {} // TODO: Add the Message Screen
-                      )
+                      onSelectUser = { uid ->
+                        navigationActions.navigateTo(Screen.Messages.createRoute(uid))
+                      })
                 }
+                composable(
+                    route = Screen.Messages.route,
+                    arguments = listOf(navArgument("uid") { type = NavType.StringType })) {
+                        backStackEntry ->
+                      val uid = backStackEntry.arguments?.getString("uid") ?: return@composable
+                      MessagesScreen(uid = uid, goBack = { navigationActions.goBack() })
+                    }
                 composable(
                     route = Screen.Feed.route,
                     arguments = listOf(navArgument("type") { type = NavType.StringType })) {

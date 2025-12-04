@@ -11,6 +11,8 @@ import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -25,6 +27,7 @@ import com.neptune.neptune.model.profile.ProfileRepositoryFirebase
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
+import com.neptune.neptune.ui.messages.MessagesScreenTestTags
 import com.neptune.neptune.ui.messages.SelectMessagesScreenTestTags
 import com.neptune.neptune.ui.picker.ImportScreenTestTags
 import com.neptune.neptune.ui.post.PostScreen
@@ -126,6 +129,38 @@ class NavigationTest {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).performClick()
+    composeTestRule
+        .onNodeWithTag(SelectMessagesScreenTestTags.SELECT_MESSAGE_SCREEN)
+        .assertIsDisplayed()
+  }
+
+  @Test
+  fun selectingUserNavigatesToMessagesScreen() {
+    setContent()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).performClick()
+
+    composeTestRule
+        .onAllNodesWithTag(SelectMessagesScreenTestTags.USER_ROW)
+        .onFirst()
+        .performClick()
+
+    composeTestRule.onNodeWithTag(MessagesScreenTestTags.MESSAGES_SCREEN).assertIsDisplayed()
+  }
+
+  @Test
+  fun backButtonNavigatesBackToSelectMessages() {
+    setContent()
+
+    composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).performClick()
+
+    composeTestRule
+        .onAllNodesWithTag(SelectMessagesScreenTestTags.USER_ROW)
+        .onFirst()
+        .performClick()
+
+    composeTestRule.onNodeWithTag(MessagesScreenTestTags.BACK_BUTTON).performClick()
+
     composeTestRule
         .onNodeWithTag(SelectMessagesScreenTestTags.SELECT_MESSAGE_SCREEN)
         .assertIsDisplayed()
@@ -236,6 +271,7 @@ class NavigationTest {
     every { mockViewModel.isRefreshing } returns MutableStateFlow(false)
     every { mockViewModel.activeCommentSampleId } returns MutableStateFlow(null)
     every { mockViewModel.usernames } returns MutableStateFlow(emptyMap())
+    every { mockViewModel.isAnonymous } returns MutableStateFlow(false)
     composeTestRule.setContent {
       MainScreen(navigateToProjectList = navigateToProjectListMock, mainViewModel = mockViewModel)
     }
