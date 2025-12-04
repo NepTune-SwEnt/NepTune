@@ -94,7 +94,13 @@ open class SearchViewModel(
     try {
       val observer = NetworkConnectivityObserver()
       viewModelScope.launch {
-        observer.isOnline.collect { isConnected -> _isOnline.value = isConnected }
+        observer.isOnline.collectLatest { isConnected ->
+          _isOnline.value = isConnected
+          if (isConnected) {
+            load(useMockData)
+            refreshAllResources()
+          }
+        }
       }
     } catch (e: Exception) {
       Log.e("SearchViewModel", "Network observer init failed", e)
@@ -142,6 +148,11 @@ open class SearchViewModel(
   private val coverImageCache = mutableMapOf<String, String?>()
   private val audioUrlCache = mutableMapOf<String, String?>()
   private val waveformCache = mutableMapOf<String, List<Float>>()
+
+  private fun refreshAllResources() {
+    val currentList = allSamplesCache.ifEmpty { allSamples.value }
+    currentList.forEach { sample -> loadSampleResources(sample) }
+  }
 
   private suspend fun getSampleOwnerAvatar(userId: String): String? {
     if (avatarCache.containsKey(userId)) return avatarCache[userId]
@@ -200,7 +211,10 @@ open class SearchViewModel(
   /** Function to trigger loading */
   fun loadSampleResources(sample: Sample) {
     val currentResources = _sampleResources.value[sample.id]
-    if (currentResources != null &&
+    val isAudioMissing =
+        sample.storagePreviewSamplePath.isNotBlank() && currentResources?.audioUrl == null
+    if (!isAudioMissing &&
+        currentResources != null &&
         currentResources.loadedSamplePath == sample.storagePreviewSamplePath) {
       return
     }
