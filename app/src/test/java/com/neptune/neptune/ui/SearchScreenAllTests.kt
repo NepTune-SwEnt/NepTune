@@ -21,8 +21,8 @@ import com.neptune.neptune.model.fakes.FakeSampleRepository
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
-import com.neptune.neptune.ui.feed.ScrollableColumnOfSamples
 import com.neptune.neptune.ui.projectlist.ProjectListScreenTestTags
+import com.neptune.neptune.ui.search.ScrollableColumnOfSamples
 import com.neptune.neptune.ui.search.SearchScreen
 import com.neptune.neptune.ui.search.SearchScreenTestTags
 import com.neptune.neptune.ui.search.SearchScreenTestTags.SAMPLE_LIST
@@ -296,7 +296,7 @@ class SearchScreenAllTests {
     composeRule.setContent {
       ScrollableColumnOfSamples(
           samples = listOf(sample),
-          controller = vm,
+          searchViewModel = vm,
           mediaPlayer = fakeMediaPlayer,
           testTagsForSample = { SearchScreenTestTagsPerSampleCard(it.id) },
           navigateToOtherUserProfile = { navigatedTo = it })
@@ -340,7 +340,7 @@ class SearchScreenAllTests {
     composeRule.setContent {
       ScrollableColumnOfSamples(
           samples = listOf(sample),
-          controller = vm,
+          searchViewModel = vm,
           mediaPlayer = fakeMediaPlayer,
           testTagsForSample = { SearchScreenTestTagsPerSampleCard(it.id) },
           navigateToProfile = { navigatedToSelf = true },
