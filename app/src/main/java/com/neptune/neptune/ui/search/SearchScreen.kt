@@ -11,11 +11,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -167,35 +169,41 @@ fun SearchScreen(
         containerColor = NepTuneTheme.colors.background,
         modifier = Modifier.testTag(SearchScreenTestTags.SEARCH_SCREEN),
         topBar = {
-          Column(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalAlignment = Alignment.CenterHorizontally) {
-                SearchBar(
-                    searchText,
-                    { searchText = it },
-                    SearchScreenTestTags.SEARCH_BAR,
-                    whatToSearchFor)
+          Row(
+              modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.SpaceBetween) {
+                // SearchBar (Takes all remaining space)
+                Box(modifier = Modifier.weight(1f)) {
+                  SearchBar(
+                      searchText,
+                      { searchText = it },
+                      SearchScreenTestTags.SEARCH_BAR,
+                      whatToSearchFor)
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
 
                 val roundShape = 50
-                Box(modifier = Modifier.padding(bottom = 8.dp)) {
-                  OutlinedButton(
-                      onClick = { searchViewModel.toggleSearchType() },
-                      border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground),
-                      shape = RoundedCornerShape(roundShape),
-                      colors =
-                          ButtonDefaults.outlinedButtonColors(
-                              contentColor = NepTuneTheme.colors.onBackground),
-                      modifier = Modifier.height(36.dp),
-                      contentPadding = PaddingValues(horizontal = 12.dp)) {
-                        Text(
-                            text = "See ${searchType.toggle().title}",
-                            style =
-                                TextStyle(
-                                    fontSize = 16.sp,
-                                    fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                    fontWeight = FontWeight.Bold))
-                      }
-                }
+                OutlinedButton(
+                    onClick = { searchViewModel.toggleSearchType() },
+                    border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground),
+                    shape = RoundedCornerShape(roundShape),
+                    colors =
+                        ButtonDefaults.outlinedButtonColors(
+                            contentColor = NepTuneTheme.colors.onBackground),
+                    modifier = Modifier.height(36.dp).width(100.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp)) {
+                      Text(
+                          text = "See ${searchType.toggle().title}",
+                          style =
+                              TextStyle(
+                                  fontSize = 16.sp,
+                                  fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                  fontWeight = FontWeight.Bold,
+                                  textAlign = androidx.compose.ui.text.style.TextAlign.Center),
+                          maxLines = 1)
+                    }
               }
         },
         content = { pd ->
@@ -274,13 +282,13 @@ fun ScrollableColumnOfUsers(
                             contentDescription = "User Avatar",
                             modifier = Modifier.size(40.dp).clip(CircleShape),
                             contentScale = ContentScale.Crop,
-                            placeholder = painterResource(id = R.drawable.profile),
-                            error = painterResource(id = R.drawable.profile))
+                            placeholder = painterResource(id = R.drawable.ic_avatar_placeholder),
+                            error = painterResource(id = R.drawable.ic_avatar_placeholder))
                       } else {
                         // Use Image instead of Icon to preserve the original colors of the
                         // placeholder
                         Image(
-                            painter = painterResource(id = R.drawable.profile),
+                            painter = painterResource(id = R.drawable.ic_avatar_placeholder),
                             contentDescription = "User Avatar",
                             modifier = Modifier.size(40.dp).clip(CircleShape),
                             contentScale = ContentScale.Crop)
@@ -336,7 +344,6 @@ fun ScrollableColumnOfSamples(
   val screenWidth = configuration.screenWidthDp.dp
   val width = screenWidth - 20.dp
   val height = width * (150f / 166f) // the same ratio than in the feedScreen
-
   // Ensure the possibility to like in local
   LazyColumn(
       modifier =
