@@ -253,15 +253,15 @@ private class FollowToggleTestRepository(
     throw UnsupportedOperationException("Not needed in this test")
   }
 
-    override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
-        TODO("Not yet implemented")
-    }
+  override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
+    TODO("Not yet implemented")
+  }
 
-    override suspend fun recordTagInteraction(
-        tags: List<String>,
-        likeDelta: Int,
-        downloadDelta: Int
-    ) {
-        TODO("Not yet implemented")
-    }
+  override suspend fun recordTagInteraction(
+      tags: List<String>,
+      likeDelta: Int,
+      downloadDelta: Int
+  ) {
+    TODO("Not yet implemented")
+  }
 }

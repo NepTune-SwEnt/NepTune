@@ -133,6 +133,7 @@ class FakeProfileRepository(
     val current = state.value
     return if (current?.uid == userId) current.username else null
   }
+
   override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
     val profile = state.value ?: return null
 
@@ -154,16 +155,13 @@ class FakeProfileRepository(
       }
     }
 
-    return RecoUserProfile(
-      uid = profile.uid,
-      tagsWeight = tagProfile.toMap()
-    )
+    return RecoUserProfile(uid = profile.uid, tagsWeight = tagProfile.toMap())
   }
 
   override suspend fun recordTagInteraction(
-    tags: List<String>,
-    likeDelta: Int,
-    downloadDelta: Int
+      tags: List<String>,
+      likeDelta: Int,
+      downloadDelta: Int
   ) {
     val cur = state.value ?: return
     if (tags.isEmpty()) return
@@ -182,9 +180,6 @@ class FakeProfileRepository(
     // Keep tag list in sync too
     val newTags = (cur.tags + tags).distinct()
 
-    state.value = cur.copy(
-      tagsWeight = newWeights,
-      tags = newTags
-    )
+    state.value = cur.copy(tagsWeight = newWeights, tags = newTags)
   }
 }

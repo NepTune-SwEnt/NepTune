@@ -85,10 +85,7 @@ class FakeSampleRepository(initialSamples: List<Sample> = emptyList()) : SampleR
     TODO("Not yet implemented")
   }
 
-  override suspend fun getSamplesByTags(
-    tags: List<String>,
-    perTagLimit: Int
-  ): List<Sample> {
+  override suspend fun getSamplesByTags(tags: List<String>, perTagLimit: Int): List<Sample> {
     TODO("Not yet implemented")
   }
 

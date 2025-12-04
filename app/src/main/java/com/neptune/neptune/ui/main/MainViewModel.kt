@@ -120,42 +120,38 @@ class MainViewModel(
     auth.addAuthStateListener(authListener)
     observeUserProfile()
   }
-    fun loadRecommendations(limit: Int = 50) {
-        viewModelScope.launch {
-            Log.d(
-                "RecoDebug",
-                "loadRecommendations() START, cacheSize=${allSamplesCache.size}"
-            )
-            val recoUser = profileRepo.getCurrentRecoUserProfile()
-            if (recoUser == null) {
-                // Fallback when no user or profile: just show latest samples
-                Log.d("RecoDebug", "No recoUser profile (null) – skipping recommendations")
 
-                _recommendedSamples.value = emptyList()
-                return@launch
-            }
-            val candidates = allSamplesCache
-            if (candidates.isEmpty()) {
-                Log.d("RecoDebug", "No candidates (cache empty) – skipping ranking")
-                _recommendedSamples.value = emptyList()
-                return@launch
-            }
-            val ranked = RecommendationEngine.rankSamplesForUser(
-                user = recoUser,
-                candidates = candidates,
-                limit = limit
-            )
-            ranked.forEachIndexed { index, sample ->
-                val score = RecommendationEngine.scoreSample(sample, recoUser, System.currentTimeMillis())
-                Log.d(
-                    "RecoDebug",
-                    "#$index  id=${sample.id}  name=${sample.name}  score=${"%.4f".format(score)}"
-                )
-            }
-            _recommendedSamples.value = ranked
-            _discoverSamples.value = ranked
-        }
+  fun loadRecommendations(limit: Int = 50) {
+    viewModelScope.launch {
+      Log.d("RecoDebug", "loadRecommendations() START, cacheSize=${allSamplesCache.size}")
+      val recoUser = profileRepo.getCurrentRecoUserProfile()
+      if (recoUser == null) {
+        // Fallback when no user or profile: just show latest samples
+        Log.d("RecoDebug", "No recoUser profile (null) – skipping recommendations")
+
+        _recommendedSamples.value = emptyList()
+        return@launch
+      }
+      val candidates = allSamplesCache
+      if (candidates.isEmpty()) {
+        Log.d("RecoDebug", "No candidates (cache empty) – skipping ranking")
+        _recommendedSamples.value = emptyList()
+        return@launch
+      }
+      val ranked =
+          RecommendationEngine.rankSamplesForUser(
+              user = recoUser, candidates = candidates, limit = limit)
+      ranked.forEachIndexed { index, sample ->
+        val score = RecommendationEngine.scoreSample(sample, recoUser, System.currentTimeMillis())
+        Log.d(
+            "RecoDebug",
+            "#$index  id=${sample.id}  name=${sample.name}  score=${"%.4f".format(score)}")
+      }
+      _recommendedSamples.value = ranked
+      _discoverSamples.value = ranked
     }
+  }
+
   private fun loadSamplesFromFirebase() {
     viewModelScope.launch {
       try {
@@ -196,7 +192,6 @@ class MainViewModel(
             _isRefreshing.value = false
           }
           viewModelScope.launch { loadRecommendations() }
-
         }
       } catch (e: Exception) {
         Log.e("MainViewModel", "Error loading samples", e)
@@ -498,7 +493,7 @@ class MainViewModel(
   /** Function to be called when a refresh is triggered. */
   fun refresh() {
     _isRefreshing.value = true
-    //allSamplesCache = emptyList()
+    // allSamplesCache = emptyList()
     loadSamplesFromFirebase()
   }
   /** Function to open the comment section. */

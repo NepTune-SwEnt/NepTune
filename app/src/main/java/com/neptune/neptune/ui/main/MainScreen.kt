@@ -197,7 +197,9 @@ fun MainScreen(
   val pullRefreshState = rememberPullToRefreshState()
 
   LaunchedEffect(pullRefreshState.isRefreshing) {
-      if (pullRefreshState.isRefreshing) { mainViewModel.refresh() }
+    if (pullRefreshState.isRefreshing) {
+      mainViewModel.refresh()
+    }
   }
   LaunchedEffect(isRefreshing) {
     if (isRefreshing) {

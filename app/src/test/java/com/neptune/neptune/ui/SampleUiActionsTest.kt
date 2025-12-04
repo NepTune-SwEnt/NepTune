@@ -35,10 +35,7 @@ class SampleUiActionsTest {
           comments = 0,
           usersLike = emptyList(),
           downloads = 0)
-    private val taggedSample = sample.copy(
-        id = "tagged_sample",
-        tags = listOf("miku", "lofi")
-    )
+  private val taggedSample = sample.copy(id = "tagged_sample", tags = listOf("miku", "lofi"))
 
   @Test
   fun onDownloadClickSuccessUpdatesDownloadCountAndUnzips() = runTest {
@@ -187,52 +184,53 @@ class SampleUiActionsTest {
     assertTrue(result)
     verify(repo, never()).toggleLike(any(), any())
   }
-    @Test
-    fun onLikeClickedLikesUnlikedSampleAndRecordsPositiveTagInteraction() = runTest {
-        whenever(repo.hasUserLiked(taggedSample.id)).thenReturn(false)
 
-        val actions =
-            SampleUiActions(
-                repo = repo,
-                storageService = storageService,
-                downloadsFolder = downloadsFolder,
-                context = context,
-                profileRepo = profileRepo,
-            )
+  @Test
+  fun onLikeClickedLikesUnlikedSampleAndRecordsPositiveTagInteraction() = runTest {
+    whenever(repo.hasUserLiked(taggedSample.id)).thenReturn(false)
 
-        val result = actions.onLikeClicked(taggedSample, isLiked = true)
-
-        assertTrue(result)
-        verify(repo).toggleLike(taggedSample.id, true)
-
-        // +1 like, 0 downloads
-        verify(profileRepo).recordTagInteraction(
-            eq(taggedSample.tags),
-            eq(1),  // likeDelta
-            eq(0),  // downloadDelta
+    val actions =
+        SampleUiActions(
+            repo = repo,
+            storageService = storageService,
+            downloadsFolder = downloadsFolder,
+            context = context,
+            profileRepo = profileRepo,
         )
-    }
 
+    val result = actions.onLikeClicked(taggedSample, isLiked = true)
 
-    @Test
-    fun onLikeClickedNoChangesDoesNotTouchRepoOrTagProfile() = runTest {
-        whenever(repo.hasUserLiked(taggedSample.id)).thenReturn(true)
+    assertTrue(result)
+    verify(repo).toggleLike(taggedSample.id, true)
 
-        val actions =
-            SampleUiActions(
-                repo = repo,
-                storageService = storageService,
-                downloadsFolder = downloadsFolder,
-                context = context,
-                profileRepo = profileRepo,
-            )
+    // +1 like, 0 downloads
+    verify(profileRepo)
+        .recordTagInteraction(
+            eq(taggedSample.tags),
+            eq(1), // likeDelta
+            eq(0), // downloadDelta
+        )
+  }
 
-        val result = actions.onLikeClicked(taggedSample, isLiked = true)
+  @Test
+  fun onLikeClickedNoChangesDoesNotTouchRepoOrTagProfile() = runTest {
+    whenever(repo.hasUserLiked(taggedSample.id)).thenReturn(true)
 
-        assertTrue(result)
-        verify(repo, never()).toggleLike(any(), any())
+    val actions =
+        SampleUiActions(
+            repo = repo,
+            storageService = storageService,
+            downloadsFolder = downloadsFolder,
+            context = context,
+            profileRepo = profileRepo,
+        )
 
-        // And no tag interaction should be recorded
-        verify(profileRepo, never()).recordTagInteraction(any(), any(), any())
-    }
+    val result = actions.onLikeClicked(taggedSample, isLiked = true)
+
+    assertTrue(result)
+    verify(repo, never()).toggleLike(any(), any())
+
+    // And no tag interaction should be recorded
+    verify(profileRepo, never()).recordTagInteraction(any(), any(), any())
+  }
 }

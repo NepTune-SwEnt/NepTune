@@ -174,197 +174,198 @@ class SampleRepositoryFirebaseTest {
     val likedAfter = repository.hasUserLiked("4")
     assertTrue(likedAfter)
   }
-    @Test
-    fun getLatestSamplesReturnsMostRecentFirst() = runBlocking {
-        // We rely on server timestamps, so insert with small delays
-        val sampleOldest =
-            Sample(
-                id = "latest_1",
-                name = "Oldest",
-                description = "Oldest sample",
-                durationSeconds = 10,
-                tags = listOf("tagA"),
-                likes = 0,
-                comments = 0,
-                downloads = 0,
-                usersLike = emptyList())
 
-        val sampleMiddle =
-            Sample(
-                id = "latest_2",
-                name = "Middle",
-                description = "Middle sample",
-                durationSeconds = 20,
-                tags = listOf("tagB"),
-                likes = 0,
-                comments = 0,
-                downloads = 0,
-                usersLike = emptyList())
+  @Test
+  fun getLatestSamplesReturnsMostRecentFirst() = runBlocking {
+    // We rely on server timestamps, so insert with small delays
+    val sampleOldest =
+        Sample(
+            id = "latest_1",
+            name = "Oldest",
+            description = "Oldest sample",
+            durationSeconds = 10,
+            tags = listOf("tagA"),
+            likes = 0,
+            comments = 0,
+            downloads = 0,
+            usersLike = emptyList())
 
-        val sampleNewest =
-            Sample(
-                id = "latest_3",
-                name = "Newest",
-                description = "Newest sample",
-                durationSeconds = 30,
-                tags = listOf("tagC"),
-                likes = 0,
-                comments = 0,
-                downloads = 0,
-                usersLike = emptyList())
+    val sampleMiddle =
+        Sample(
+            id = "latest_2",
+            name = "Middle",
+            description = "Middle sample",
+            durationSeconds = 20,
+            tags = listOf("tagB"),
+            likes = 0,
+            comments = 0,
+            downloads = 0,
+            usersLike = emptyList())
 
-        repository.addSample(sampleOldest)
-        delay(500)
-        repository.addSample(sampleMiddle)
-        delay(500)
-        repository.addSample(sampleNewest)
+    val sampleNewest =
+        Sample(
+            id = "latest_3",
+            name = "Newest",
+            description = "Newest sample",
+            durationSeconds = 30,
+            tags = listOf("tagC"),
+            likes = 0,
+            comments = 0,
+            downloads = 0,
+            usersLike = emptyList())
 
-        val latestTwo = repository.getLatestSamples(limit = 2)
+    repository.addSample(sampleOldest)
+    delay(500)
+    repository.addSample(sampleMiddle)
+    delay(500)
+    repository.addSample(sampleNewest)
 
-        assertEquals(2, latestTwo.size)
-        // Most recent should be "latest_3", then "latest_2"
-        assertEquals("latest_3", latestTwo[0].id)
-        assertEquals("latest_2", latestTwo[1].id)
+    val latestTwo = repository.getLatestSamples(limit = 2)
+
+    assertEquals(2, latestTwo.size)
+    // Most recent should be "latest_3", then "latest_2"
+    assertEquals("latest_3", latestTwo[0].id)
+    assertEquals("latest_2", latestTwo[1].id)
+  }
+
+  @Test
+  fun getTrendingSamplesOrdersByCombinedScore() = runBlocking {
+    // trendingScore = downloads + 2 * likes
+    val lowTrending =
+        Sample(
+            id = "trend_low",
+            name = "Low trending",
+            description = "",
+            durationSeconds = 10,
+            tags = listOf("miku"),
+            likes = 1, // score = 10 + 2 = 12
+            comments = 0,
+            downloads = 10,
+            usersLike = emptyList())
+
+    val highDownloadsLowLikes =
+        Sample(
+            id = "trend_downloads",
+            name = "High downloads only",
+            description = "",
+            durationSeconds = 10,
+            tags = listOf("miku"),
+            likes = 0, // score = 100 + 0 = 100
+            comments = 0,
+            downloads = 100,
+            usersLike = emptyList())
+
+    val highLikesLowerDownloads =
+        Sample(
+            id = "trend_likes",
+            name = "High likes, fewer downloads",
+            description = "",
+            durationSeconds = 10,
+            tags = listOf("miku"),
+            likes = 60, // score = 10 + 120 = 130
+            comments = 0,
+            downloads = 10,
+            usersLike = emptyList())
+
+    repository.addSample(lowTrending)
+    repository.addSample(highDownloadsLowLikes)
+    repository.addSample(highLikesLowerDownloads)
+
+    val trending = repository.getTrendingSamples(limit = 3)
+
+    // Expect ordering by score: trend_likes (130), trend_downloads (100), trend_low (12)
+    assertEquals(3, trending.size)
+    assertEquals("trend_likes", trending[0].id)
+    assertEquals("trend_downloads", trending[1].id)
+    assertEquals("trend_low", trending[2].id)
+  }
+
+  @Test
+  fun getSamplesByTagsFiltersAndDeduplicates() = runBlocking {
+    val sampleMikuLofi =
+        Sample(
+            id = "tag_1",
+            name = "Miku Lofi",
+            description = "",
+            durationSeconds = 20,
+            tags = listOf("miku", "lofi"),
+            likes = 0,
+            comments = 0,
+            downloads = 0,
+            usersLike = emptyList())
+
+    val sampleMikuOnly =
+        Sample(
+            id = "tag_2",
+            name = "Miku only",
+            description = "",
+            durationSeconds = 20,
+            tags = listOf("miku"),
+            likes = 0,
+            comments = 0,
+            downloads = 0,
+            usersLike = emptyList())
+
+    val sampleIrrelevant =
+        Sample(
+            id = "tag_3",
+            name = "Rock only",
+            description = "",
+            durationSeconds = 20,
+            tags = listOf("rock"),
+            likes = 0,
+            comments = 0,
+            downloads = 0,
+            usersLike = emptyList())
+
+    repository.addSample(sampleMikuLofi)
+    repository.addSample(sampleMikuOnly)
+    repository.addSample(sampleIrrelevant)
+
+    val result =
+        repository.getSamplesByTags(
+            tags = listOf("miku", "lofi"),
+            perTagLimit = 10,
+        )
+
+    // Should contain only samples that have at least one of the requested tags
+    val ids = result.map { it.id }
+    assertTrue(ids.contains("tag_1"))
+    assertTrue(ids.contains("tag_2"))
+    assertFalse(ids.contains("tag_3"))
+
+    // No duplicates even though tag_1 matches both "miku" and "lofi"
+    assertEquals(ids.size, ids.toSet().size)
+  }
+
+  @Test
+  fun getSamplesByTagsWithEmptyTagListReturnsEmptyList() = runBlocking {
+    // Even if there are samples in DB, empty tag list should give empty result
+    val sample =
+        Sample(
+            id = "tag_empty",
+            name = "Some sample",
+            description = "",
+            durationSeconds = 10,
+            tags = listOf("miku"),
+            likes = 0,
+            comments = 0,
+            downloads = 0,
+            usersLike = emptyList())
+
+    repository.addSample(sample)
+
+    val result = repository.getSamplesByTags(emptyList(), perTagLimit = 5)
+    assertTrue(result.isEmpty())
+  }
+
+  private fun cleanUp() {
+    runBlocking {
+      val col = db.collection("samples")
+      val snaps = col.get().await()
+      for (doc in snaps.documents) {
+        col.document(doc.id).delete().await()
+      }
     }
-
-    @Test
-    fun getTrendingSamplesOrdersByCombinedScore() = runBlocking {
-        // trendingScore = downloads + 2 * likes
-        val lowTrending =
-            Sample(
-                id = "trend_low",
-                name = "Low trending",
-                description = "",
-                durationSeconds = 10,
-                tags = listOf("miku"),
-                likes = 1,          // score = 10 + 2 = 12
-                comments = 0,
-                downloads = 10,
-                usersLike = emptyList())
-
-        val highDownloadsLowLikes =
-            Sample(
-                id = "trend_downloads",
-                name = "High downloads only",
-                description = "",
-                durationSeconds = 10,
-                tags = listOf("miku"),
-                likes = 0,          // score = 100 + 0 = 100
-                comments = 0,
-                downloads = 100,
-                usersLike = emptyList())
-
-        val highLikesLowerDownloads =
-            Sample(
-                id = "trend_likes",
-                name = "High likes, fewer downloads",
-                description = "",
-                durationSeconds = 10,
-                tags = listOf("miku"),
-                likes = 60,         // score = 10 + 120 = 130
-                comments = 0,
-                downloads = 10,
-                usersLike = emptyList())
-
-        repository.addSample(lowTrending)
-        repository.addSample(highDownloadsLowLikes)
-        repository.addSample(highLikesLowerDownloads)
-
-        val trending = repository.getTrendingSamples(limit = 3)
-
-        // Expect ordering by score: trend_likes (130), trend_downloads (100), trend_low (12)
-        assertEquals(3, trending.size)
-        assertEquals("trend_likes", trending[0].id)
-        assertEquals("trend_downloads", trending[1].id)
-        assertEquals("trend_low", trending[2].id)
-    }
-
-    @Test
-    fun getSamplesByTagsFiltersAndDeduplicates() = runBlocking {
-        val sampleMikuLofi =
-            Sample(
-                id = "tag_1",
-                name = "Miku Lofi",
-                description = "",
-                durationSeconds = 20,
-                tags = listOf("miku", "lofi"),
-                likes = 0,
-                comments = 0,
-                downloads = 0,
-                usersLike = emptyList())
-
-        val sampleMikuOnly =
-            Sample(
-                id = "tag_2",
-                name = "Miku only",
-                description = "",
-                durationSeconds = 20,
-                tags = listOf("miku"),
-                likes = 0,
-                comments = 0,
-                downloads = 0,
-                usersLike = emptyList())
-
-        val sampleIrrelevant =
-            Sample(
-                id = "tag_3",
-                name = "Rock only",
-                description = "",
-                durationSeconds = 20,
-                tags = listOf("rock"),
-                likes = 0,
-                comments = 0,
-                downloads = 0,
-                usersLike = emptyList())
-
-        repository.addSample(sampleMikuLofi)
-        repository.addSample(sampleMikuOnly)
-        repository.addSample(sampleIrrelevant)
-
-        val result =
-            repository.getSamplesByTags(
-                tags = listOf("miku", "lofi"),
-                perTagLimit = 10,
-            )
-
-        // Should contain only samples that have at least one of the requested tags
-        val ids = result.map { it.id }
-        assertTrue(ids.contains("tag_1"))
-        assertTrue(ids.contains("tag_2"))
-        assertFalse(ids.contains("tag_3"))
-
-        // No duplicates even though tag_1 matches both "miku" and "lofi"
-        assertEquals(ids.size, ids.toSet().size)
-    }
-
-    @Test
-    fun getSamplesByTagsWithEmptyTagListReturnsEmptyList() = runBlocking {
-        // Even if there are samples in DB, empty tag list should give empty result
-        val sample =
-            Sample(
-                id = "tag_empty",
-                name = "Some sample",
-                description = "",
-                durationSeconds = 10,
-                tags = listOf("miku"),
-                likes = 0,
-                comments = 0,
-                downloads = 0,
-                usersLike = emptyList())
-
-        repository.addSample(sample)
-
-        val result = repository.getSamplesByTags(emptyList(), perTagLimit = 5)
-        assertTrue(result.isEmpty())
-    }
-
-    private fun cleanUp() {
-        runBlocking {
-            val col = db.collection("samples")
-            val snaps = col.get().await()
-            for (doc in snaps.documents) {
-                col.document(doc.id).delete().await()
-            }
-        }
-    }
+  }
 }

@@ -109,5 +109,4 @@ interface SampleRepository {
    * @param tags the tags to match
    */
   suspend fun getSamplesByTags(tags: List<String>, perTagLimit: Int = 100): List<Sample>
-
 }

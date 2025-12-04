@@ -965,15 +965,16 @@ private class FakeOtherProfileRepository(
   override suspend fun getAvatarUrlByUserId(userId: String): String? = null
 
   override suspend fun getUserNameByUserId(userId: String): String? = null
-    override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
-        TODO("Not yet implemented")
-    }
 
-    override suspend fun recordTagInteraction(
-        tags: List<String>,
-        likeDelta: Int,
-        downloadDelta: Int
-    ) {
-        TODO("Not yet implemented")
-    }
+  override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun recordTagInteraction(
+      tags: List<String>,
+      likeDelta: Int,
+      downloadDelta: Int
+  ) {
+    TODO("Not yet implemented")
+  }
 }

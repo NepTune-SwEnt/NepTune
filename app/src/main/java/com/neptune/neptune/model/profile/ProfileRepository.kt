@@ -157,14 +157,9 @@ interface ProfileRepository {
   /** Retrieves the username of a specific user via their ID. */
   suspend fun getUserNameByUserId(userId: String): String?
 
-  /**
-   * Create a profile meant for the recommendation algorithm
-   */
+  /** Create a profile meant for the recommendation algorithm */
   suspend fun getCurrentRecoUserProfile(): RecoUserProfile?
 
-  /**
-   * Actions to execute when a tag interaction is recorded.
-   */
+  /** Actions to execute when a tag interaction is recorded. */
   suspend fun recordTagInteraction(tags: List<String>, likeDelta: Int, downloadDelta: Int)
-
 }

@@ -107,11 +107,13 @@ class ProfileRepositoryFirebase(
     } else {
       val tagsWeightRaw = get("tagsWeight") as? Map<*, *>
       val tagsWeight: Map<String, Double> =
-          tagsWeightRaw?.mapNotNull { (k, v) ->
-              val tag = k as? String ?: return@mapNotNull null
-              val weight = (v as? Number)?.toDouble() ?: return@mapNotNull null
-              tag to weight
-          }?.toMap() ?: emptyMap()
+          tagsWeightRaw
+              ?.mapNotNull { (k, v) ->
+                val tag = k as? String ?: return@mapNotNull null
+                val weight = (v as? Number)?.toDouble() ?: return@mapNotNull null
+                tag to weight
+              }
+              ?.toMap() ?: emptyMap()
       Profile(
           uid = id,
           username = getString("username").orEmpty(),
@@ -128,31 +130,29 @@ class ProfileRepositoryFirebase(
           isAnonymous = getBoolean("isAnonymous") ?: false)
     }
   }
-  override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
-      val profile = getCurrentProfile()
 
-      //1) Try to read tagsWeight map
-      val tagsWeightRaw = profile?.tagsWeight
-      val tagsWeight = mutableMapOf<String, Double>()
-      if(tagsWeightRaw?.isNotEmpty() == true) {
-          for ((key, value) in tagsWeightRaw) {
-              val tag = key
-              val weight = (value as? Number)?.toDouble() ?: continue
-              if (weight >= 0) {
-                  tagsWeight[tag] = weight
-              }
-          }
+  override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
+    val profile = getCurrentProfile()
+
+    // 1) Try to read tagsWeight map
+    val tagsWeightRaw = profile?.tagsWeight
+    val tagsWeight = mutableMapOf<String, Double>()
+    if (tagsWeightRaw?.isNotEmpty() == true) {
+      for ((key, value) in tagsWeightRaw) {
+        val tag = key
+        val weight = (value as? Number)?.toDouble() ?: continue
+        if (weight >= 0) {
+          tagsWeight[tag] = weight
+        }
       }
-      if(tagsWeight.isEmpty()) {
-          val tags = profile?.tags ?: emptyList()
-          for (tag in tags) {
-              tagsWeight[tag] = 1.0
-          }
+    }
+    if (tagsWeight.isEmpty()) {
+      val tags = profile?.tags ?: emptyList()
+      for (tag in tags) {
+        tagsWeight[tag] = 1.0
       }
-      return RecoUserProfile(
-          uid = requireCurrentUid(),
-          tagsWeight = tagsWeight
-      )
+    }
+    return RecoUserProfile(uid = requireCurrentUid(), tagsWeight = tagsWeight)
   }
 
   /**
@@ -213,8 +213,7 @@ class ProfileRepositoryFirebase(
                     "tags" to emptyList<String>(),
                     "following" to emptyList<String>(),
                     "isAnonymous" to (auth.currentUser?.isAnonymous == true),
-                    "tagsWeight" to emptyMap<String, Double>()
-                ))
+                    "tagsWeight" to emptyMap<String, Double>()))
 
             created
           }
@@ -394,16 +393,21 @@ class ProfileRepositoryFirebase(
       null
     }
   }
-  override suspend fun recordTagInteraction(tags: List<String>, likeDelta: Int, downloadDelta: Int) {
-      if (tags.isEmpty()) return
 
-      val uid = requireCurrentUid()
-      val profileRef = profiles.document(uid)
+  override suspend fun recordTagInteraction(
+      tags: List<String>,
+      likeDelta: Int,
+      downloadDelta: Int
+  ) {
+    if (tags.isEmpty()) return
 
-      val delta = likeDelta * 2.0 + downloadDelta * 1.0
-      if (delta == 0.0) return
+    val uid = requireCurrentUid()
+    val profileRef = profiles.document(uid)
 
-      db.runTransaction { tx ->
+    val delta = likeDelta * 2.0 + downloadDelta * 1.0
+    if (delta == 0.0) return
+
+    db.runTransaction { tx ->
           val snap = tx.get(profileRef)
           if (!snap.exists()) return@runTransaction
 
@@ -412,21 +416,22 @@ class ProfileRepositoryFirebase(
 
           // Safely rehydrate current map
           for ((k, v) in raw) {
-              val tag = k as? String ?: continue
-              val weight = (v as? Number)?.toDouble() ?: continue
-              current[tag] = weight
+            val tag = k as? String ?: continue
+            val weight = (v as? Number)?.toDouble() ?: continue
+            current[tag] = weight
           }
 
           // Apply delta to each tag
           for (tag in tags) {
-              val key = tag.trim().lowercase() // keep same normalization as your tags
-              val old = current[key] ?: 0.0
-              val updated = (old + delta).coerceIn(0.0, TAG_WEIGHT_MAX)
-              current[key] = updated
+            val key = tag.trim().lowercase() // keep same normalization as your tags
+            val old = current[key] ?: 0.0
+            val updated = (old + delta).coerceIn(0.0, TAG_WEIGHT_MAX)
+            current[key] = updated
           }
 
           tx.update(profileRef, "tagsWeight", current as Map<String, Double>)
-      }.await()
+        }
+        .await()
   }
 
   /** Converts an input string to a valid username base (lowercase, alphanumeric + underscores). */

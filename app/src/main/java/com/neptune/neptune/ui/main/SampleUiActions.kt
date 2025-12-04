@@ -27,6 +27,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
+
 /**
  * SampleActions Handles user actions related to samples such as liking and downloading. Manages
  * download state and error reporting. Uses coroutines for asynchronous operations.
@@ -66,12 +67,8 @@ class SampleUiActions(
       withContext(ioDispatcher) { storageService.persistZipToDownloads(zip, downloadsFolder) }
       repo.increaseDownloadCount(sample.id)
 
-      //record download interaction
-      profileRepo.recordTagInteraction(
-          tags = sample.tags,
-          likeDelta = 0,
-          downloadDelta = 1
-      )
+      // record download interaction
+      profileRepo.recordTagInteraction(tags = sample.tags, likeDelta = 0, downloadDelta = 1)
     } catch (e: SecurityException) {
       downloadError.value = "Storage permission required: ${e.message}"
     } catch (e: IOException) {
@@ -89,24 +86,21 @@ class SampleUiActions(
     val sampleId = sample.id
     val alreadyLiked = repo.hasUserLiked(sampleId)
 
-    val result = if (!alreadyLiked && isLiked) {
-      repo.toggleLike(sampleId, true)
-      true
-    } else if (alreadyLiked && !isLiked) {
-      repo.toggleLike(sampleId, false)
-      false
-    } else {
-      // Doesn't change
-      alreadyLiked
-    }
+    val result =
+        if (!alreadyLiked && isLiked) {
+          repo.toggleLike(sampleId, true)
+          true
+        } else if (alreadyLiked && !isLiked) {
+          repo.toggleLike(sampleId, false)
+          false
+        } else {
+          // Doesn't change
+          alreadyLiked
+        }
     if (!alreadyLiked && isLiked) {
-      profileRepo.recordTagInteraction(
-          tags = sample.tags,
-          likeDelta = 1,
-          downloadDelta = 0
-      )
+      profileRepo.recordTagInteraction(tags = sample.tags, likeDelta = 1, downloadDelta = 0)
     }
-      return result
+    return result
   }
 
   /** Delegate function to get download URL from StorageService */
