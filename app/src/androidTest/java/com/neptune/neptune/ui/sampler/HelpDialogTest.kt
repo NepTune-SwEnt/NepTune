@@ -9,11 +9,17 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.neptune.neptune.MainActivity
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.screen.FakeSamplerViewModel
 import com.neptune.neptune.screen.SamplerViewModelFactory
+import com.neptune.neptune.ui.settings.SettingsScreenTestTags.DISABLE_HELP_SWITCH
+import com.neptune.neptune.ui.settings.ThemeDataStore
 import com.neptune.neptune.ui.theme.SampleAppTheme
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -69,5 +75,54 @@ class HelpDialogTest {
 
     // Dialog should be dismissed
     composeRule.onNodeWithTag(SamplerTestTags.HELP_DIALOG).assertDoesNotExist()
+  }
+
+  @Test
+  fun helpDialogWhenDisable() {
+    // When the datastore flag 'disableHelp' is true, the help FAB/button should not appear.
+    val dataStore = ThemeDataStore(NepTuneApplication.appContext)
+    try {
+      runBlocking { dataStore.setDisableHelp(true) }
+
+      // Wait for the UI to observe the change and recompose
+      composeRule.waitForIdle()
+
+      // Help button must not be present
+      composeRule.onNodeWithTag(SamplerTestTags.HELP_BUTTON).assertDoesNotExist()
+    } finally {
+      // Reset to default to avoid polluting other tests
+      runBlocking { dataStore.setDisableHelp(false) }
+    }
+  }
+
+  @Test
+  fun disableHelpSettingCorrect() {
+    // Verify that toggling the setting in the Settings screen updates the datastore value.
+    val dataStore = ThemeDataStore(NepTuneApplication.appContext)
+
+    // Ensure starting from a known state
+    runBlocking { dataStore.setDisableHelp(false) }
+
+    // Show the Settings screen directly so we can interact with the disable-help switch/card
+    composeRule.activity.setContent {
+      SampleAppTheme {
+        // Use the SettingsScreen composable from the app
+        com.neptune.neptune.ui.settings.SettingsScreen()
+      }
+    }
+    composeRule.waitForIdle()
+
+    // Tap the setting card (has the test tag) which toggles the setting
+    composeRule.onNodeWithTag(DISABLE_HELP_SWITCH).performClick()
+
+    // Wait for the coroutine write to DataStore to complete
+    composeRule.waitForIdle()
+
+    // Read back the value and assert it is now true
+    val disabledValue = runBlocking { dataStore.disableHelp.first() }
+    assertTrue(disabledValue)
+
+    // Clean up
+    runBlocking { dataStore.setDisableHelp(false) }
   }
 }
