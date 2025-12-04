@@ -2,6 +2,7 @@ package com.neptune.neptune.ui.search
 
 import android.app.Application
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -147,6 +147,9 @@ fun SearchScreen(
   // Collect the search type and user results
   val searchType by searchViewModel.searchType.collectAsState()
   val userResults by searchViewModel.userResults.collectAsState()
+
+  // Observe the synchronized following IDs
+  val followingIds by searchViewModel.followingIds.collectAsState()
   val currentUserProfile by searchViewModel.currentUserProfile.collectAsState()
 
   LaunchedEffect(searchText) {
@@ -209,7 +212,7 @@ fun SearchScreen(
           } else {
             ScrollableColumnOfUsers(
                 users = userResults,
-                currentUserFollowing = currentUserProfile?.following ?: emptyList(),
+                followingIds = followingIds,
                 currentUserId = currentUserProfile?.uid ?: "",
                 onFollowToggle = { uid, isFollowing ->
                   searchViewModel.toggleFollow(uid, isFollowing)
@@ -233,7 +236,7 @@ fun SearchScreen(
 @Composable
 fun ScrollableColumnOfUsers(
     users: List<Profile>,
-    currentUserFollowing: List<String>,
+    followingIds: Set<String>,
     currentUserId: String,
     onFollowToggle: (String, Boolean) -> Unit,
     navigateToOtherUserProfile: (String) -> Unit,
@@ -248,7 +251,7 @@ fun ScrollableColumnOfUsers(
       verticalArrangement = Arrangement.spacedBy(8.dp),
       contentPadding = PaddingValues(16.dp)) {
         items(users) { profile ->
-          val isFollowing = currentUserFollowing.contains(profile.uid)
+          val isFollowing = followingIds.contains(profile.uid)
           val isMe = profile.uid == currentUserId
 
           Row(
@@ -268,14 +271,16 @@ fun ScrollableColumnOfUsers(
                             contentDescription = "User Avatar",
                             modifier = Modifier.size(40.dp).clip(CircleShape),
                             contentScale = ContentScale.Crop,
-                            placeholder = painterResource(id = R.drawable.profile),
-                            error = painterResource(id = R.drawable.profile))
+                            placeholder = painterResource(id = R.drawable.ic_avatar_placeholder),
+                            error = painterResource(id = R.drawable.ic_avatar_placeholder))
                       } else {
-                        Icon(
-                            painter = painterResource(id = R.drawable.profile),
+                        // Use Image instead of Icon to preserve the original colors of the
+                        // placeholder
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_avatar_placeholder),
                             contentDescription = "User Avatar",
-                            modifier = Modifier.size(40.dp),
-                            tint = NepTuneTheme.colors.onBackground)
+                            modifier = Modifier.size(40.dp).clip(CircleShape),
+                            contentScale = ContentScale.Crop)
                       }
 
                       Column(modifier = Modifier.padding(start = 16.dp)) {

@@ -107,6 +107,10 @@ open class SearchViewModel(
           .observeCurrentProfile()
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+  // Local state for following IDs to ensure instant UI updates
+  private val _followingIds = MutableStateFlow<Set<String>>(emptySet())
+  val followingIds: StateFlow<Set<String>> = _followingIds.asStateFlow()
+
   fun toggleSearchType() {
     _searchType.update { it.toggle() }
     // Re-trigger search with the new type
@@ -124,20 +128,17 @@ open class SearchViewModel(
   }
 
   fun toggleFollow(userId: String, isFollowing: Boolean) {
-    // Optimistic update for the UI list (follower counts)
-    val currentList = _userResults.value
-    val updatedList =
-        currentList.map { profile ->
-          if (profile.uid == userId) {
-            val newCount = if (isFollowing) profile.subscribers - 1 else profile.subscribers + 1
-            profile.copy(subscribers = newCount)
-          } else {
-            profile
-          }
+    // 1. Optimistic update for the Button (following state) to keep UI responsive
+    val currentFollowing = _followingIds.value
+    val newFollowing =
+        if (isFollowing) {
+          currentFollowing - userId
+        } else {
+          currentFollowing + userId
         }
-    _userResults.value = updatedList
+    _followingIds.value = newFollowing
 
-    // Perform actual network request
+    // 2. Perform network request and update follower count ONLY after processing
     viewModelScope.launch {
       try {
         if (isFollowing) {
@@ -145,10 +146,22 @@ open class SearchViewModel(
         } else {
           profileRepo.followUser(userId)
         }
+
+        // Action processed successfully: Now update the follower count in the list
+        _userResults.update { currentList ->
+          currentList.map { profile ->
+            if (profile.uid == userId) {
+              val newCount = if (isFollowing) profile.subscribers - 1 else profile.subscribers + 1
+              profile.copy(subscribers = newCount)
+            } else {
+              profile
+            }
+          }
+        }
       } catch (e: Exception) {
         Log.e("SearchViewModel", "Failed to toggle follow for $userId", e)
-        // Revert optimistic update on failure
-        _userResults.value = currentList
+        // Revert optimistic button update on failure
+        _followingIds.value = currentFollowing
       }
     }
   }
@@ -186,6 +199,16 @@ open class SearchViewModel(
     if (firebaseAuth != null && authListener != null) {
       firebaseAuth.addAuthStateListener(authListener)
     }
+
+    // Observe current user profile to keep following list in sync with server
+    viewModelScope.launch {
+      profileRepo.observeCurrentProfile().collectLatest { profile ->
+        if (profile != null) {
+          _followingIds.value = profile.following.toSet()
+        }
+      }
+    }
+
     load(useMockData)
   }
 
