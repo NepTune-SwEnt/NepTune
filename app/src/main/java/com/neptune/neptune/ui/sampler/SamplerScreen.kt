@@ -148,6 +148,8 @@ private const val EQ_GAIN_MAX = 20.0f
 
 val spectrogramBackground = Color.Black.copy(alpha = 0.5f)
 
+val HELP_DIALOG_TAB_COUNT = 6
+
 enum class KnobUnit {
   SECONDS,
   PERCENT,
@@ -1773,14 +1775,12 @@ fun SettingsDialog(viewModel: SamplerViewModel, onClose: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Unit) {
-  // Number of help pages (keeps order in sync with the when() block below)
-  val tabCount = 6
   // swipe threshold in pixels (density-aware)
   val swipeThresholdPx = LocalDensity.current.run { 64.dp.toPx() }
   var dragAccum by remember { mutableFloatStateOf(0f) }
   fun onSwipe() = {
     // negative accumulation = swipe left (go to next)
-    if (dragAccum < -swipeThresholdPx && selectedTab < tabCount - 1) {
+    if (dragAccum < -swipeThresholdPx && selectedTab < HELP_DIALOG_TAB_COUNT - 1) {
       onTabSelected(selectedTab + 1)
     } else if (dragAccum > swipeThresholdPx && selectedTab > 0) {
       onTabSelected(selectedTab - 1)
@@ -1807,83 +1807,95 @@ fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Un
                           onDragEnd = onSwipe(),
                           onDragCancel = { dragAccum = 0f })
                     }) {
-                  Text(
-                      stringResource(id = R.string.sampler_help_title),
-                      style = MaterialTheme.typography.titleLarge,
-                      color = NepTuneTheme.colors.smallText)
-                  Spacer(modifier = Modifier.height(12.dp))
-
-                  // Content pages (no visible tabs) - swipe left/right to change
-                  when (selectedTab) {
-                    0 -> HelpOverview()
-                    1 -> HelpControls()
-                    2 -> HelpADSR()
-                    3 -> HelpReverb()
-                    4 -> HelpEqualizer()
-                    5 -> HelpCompressor()
-                    else -> HelpOverview()
-                  }
+                  HelpDialogContent(selectedTab)
 
                   Spacer(modifier = Modifier.height(12.dp))
                   Spacer(modifier = Modifier.height(8.dp))
                   // Place the page indicator and Close button on the same row so dots are
                   // vertically aligned with the Close button
                   Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    HelpDialogNavigationArrows(selectedTab, onTabSelected)
                     Box {
                       PageIndicator(
-                          pageCount = tabCount,
+                          pageCount = HELP_DIALOG_TAB_COUNT,
                           currentPage = selectedTab,
                           onPageSelected = { idx -> onTabSelected(idx) },
                           modifier = Modifier.wrapContentWidth())
                     }
-
+                  }
+                  Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     TextButton(modifier = Modifier.align(Alignment.CenterEnd), onClick = onClose) {
                       Text(stringResource(id = R.string.close))
                     }
                   }
                 }
-
-            // Left navigation button (overlaid)
-            val canGoPrev = selectedTab > 0
-            IconButton(
-                onClick = { if (canGoPrev) onTabSelected(selectedTab - 1) },
-                enabled = canGoPrev,
-                modifier =
-                    Modifier.align(Alignment.CenterStart)
-                        .absoluteOffset((-24).dp)
-                        .padding(start = 8.dp)
-                        .size(50.dp)
-                        .testTag(SamplerTestTags.HELP_NAV_LEFT)) {
-                  Surface(shape = CircleShape, color = Color.Transparent, tonalElevation = 2.dp) {
-                    Icon(
-                        imageVector = Icons.Default.ChevronLeft,
-                        contentDescription = "Previous help page",
-                        tint = Color.White,
-                        modifier = Modifier.padding(6.dp))
-                  }
-                }
-
-            // Right navigation button (overlaid)
-            val canGoNext = selectedTab < tabCount - 1
-            IconButton(
-                onClick = { if (canGoNext) onTabSelected(selectedTab + 1) },
-                enabled = canGoNext,
-                modifier =
-                    Modifier.align(Alignment.CenterEnd)
-                        .absoluteOffset(24.dp)
-                        .padding(end = 8.dp)
-                        .size(50.dp)
-                        .testTag(SamplerTestTags.HELP_NAV_RIGHT)) {
-                  Surface(shape = CircleShape, color = Color.Transparent, tonalElevation = 2.dp) {
-                    Icon(
-                        imageVector = Icons.Default.ChevronRight,
-                        contentDescription = "Next help page",
-                        tint = Color.White,
-                        modifier = Modifier.padding(6.dp))
-                  }
-                }
           }
         }
+  }
+}
+
+@Composable
+private fun HelpDialogNavigationArrows(selectedTab: Int, onTabSelected: (Int) -> Unit) {
+  // Left navigation button (overlaid)
+  Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+    val canGoPrev = selectedTab > 0
+    IconButton(
+        onClick = { if (canGoPrev) onTabSelected(selectedTab - 1) },
+        enabled = canGoPrev,
+        modifier =
+            Modifier.align(Alignment.CenterStart)
+                .absoluteOffset((-24).dp)
+                .padding(start = 8.dp)
+                .size(50.dp)
+                .testTag(SamplerTestTags.HELP_NAV_LEFT)) {
+          Surface(shape = CircleShape, color = Color.Transparent, tonalElevation = 2.dp) {
+            Icon(
+                imageVector = Icons.Default.ChevronLeft,
+                contentDescription = "Previous help page",
+                tint = Color.White,
+                modifier = Modifier.padding(6.dp))
+          }
+        }
+
+    // Right navigation button (overlaid)
+    val canGoNext = selectedTab < HELP_DIALOG_TAB_COUNT - 1
+    IconButton(
+        onClick = { if (canGoNext) onTabSelected(selectedTab + 1) },
+        enabled = canGoNext,
+        modifier =
+            Modifier.align(Alignment.CenterEnd)
+                .absoluteOffset(24.dp)
+                .padding(end = 8.dp)
+                .size(50.dp)
+                .testTag(SamplerTestTags.HELP_NAV_RIGHT)) {
+          Surface(shape = CircleShape, color = Color.Transparent, tonalElevation = 2.dp) {
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "Next help page",
+                tint = Color.White,
+                modifier = Modifier.padding(6.dp))
+          }
+        }
+  }
+}
+
+@Composable
+private fun HelpDialogContent(selectedTab: Int) {
+  Text(
+      stringResource(id = R.string.sampler_help_title),
+      style = MaterialTheme.typography.titleLarge,
+      color = NepTuneTheme.colors.smallText)
+  Spacer(modifier = Modifier.height(12.dp))
+
+  // Content pages (no visible tabs) - swipe left/right to change
+  when (selectedTab) {
+    0 -> HelpOverview()
+    1 -> HelpControls()
+    2 -> HelpADSR()
+    3 -> HelpReverb()
+    4 -> HelpEqualizer()
+    5 -> HelpCompressor()
+    else -> HelpOverview()
   }
 }
 
