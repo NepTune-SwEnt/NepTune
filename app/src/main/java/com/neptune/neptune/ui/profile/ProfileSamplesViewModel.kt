@@ -17,6 +17,8 @@ import com.neptune.neptune.ui.feed.SampleFeedController
 import com.neptune.neptune.ui.main.SampleUiActions
 import com.neptune.neptune.util.DownloadDirectoryProvider
 import java.io.File
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +34,7 @@ class ProfileSamplesViewModel(
     context: Context,
     explicitStorageService: StorageService? = null,
     explicitDownloadsFolder: File? = null,
+    explicitIoDispatcher: CoroutineDispatcher? = null,
     auth: FirebaseAuth? = FirebaseAuth.getInstance(),
     private val enableActions: Boolean = true,
 ) :
@@ -55,12 +58,14 @@ class ProfileSamplesViewModel(
                     FirebaseStorage.getInstance(context.getString(R.string.storage_path)))
         val downloadsFolder =
             DownloadDirectoryProvider.resolveDownloadsDir(context, explicitDownloadsFolder)
+        val ioDispatcher = explicitIoDispatcher ?: Dispatchers.IO
 
         SampleUiActions(
             repo = sampleRepo,
             storageService = storageService,
             downloadsFolder = downloadsFolder,
-            context = context)
+            context = context,
+            ioDispatcher = ioDispatcher)
       }
 
   init {
