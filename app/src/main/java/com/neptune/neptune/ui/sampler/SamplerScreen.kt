@@ -118,6 +118,9 @@ object SamplerTestTags {
   // Help-related test tags
   const val HELP_BUTTON = "helpButton"
   const val HELP_DIALOG = "helpDialog"
+  const val HELP_NAV_LEFT = "helpNavLeft"
+  const val HELP_NAV_RIGHT = "helpNavRight"
+  const val HELP_PAGE_INDICATOR = "helpPageIndicator"
 }
 
 val KnobBackground = Color.Black
@@ -1757,49 +1760,151 @@ fun SettingsDialog(viewModel: SamplerViewModel, onClose: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Unit) {
-  val tabs =
-      listOf(
-          stringResource(id = R.string.tab_overview),
-          stringResource(id = R.string.tab_controls),
-          stringResource(id = R.string.tab_tips))
+  // Number of help pages (keeps order in sync with the when() block below)
+  val tabCount = 6
+  // swipe threshold in pixels (density-aware)
+  val swipeThresholdPx = LocalDensity.current.run { 64.dp.toPx() }
+  var dragAccum by remember { mutableStateOf(0f) }
 
   Dialog(onDismissRequest = onClose) {
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = NepTuneTheme.colors.background,
         modifier = Modifier.testTag(SamplerTestTags.HELP_DIALOG)) {
-          Column(modifier = Modifier.padding(16.dp).widthIn(max = 520.dp)) {
-            Text(
-                stringResource(id = R.string.sampler_help_title),
-                style = MaterialTheme.typography.titleLarge,
-                color = NepTuneTheme.colors.smallText)
-            Spacer(modifier = Modifier.height(12.dp))
+          // Entire content area is swipeable horizontally to switch pages
+          Box(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier =
+                    Modifier.padding(16.dp).widthIn(max = 520.dp).pointerInput(selectedTab) {
+                      detectDragGestures(
+                          onDragStart = { dragAccum = 0f },
+                          onDrag = { change, dragAmount ->
+                            change.consume()
+                            dragAccum += dragAmount.x
+                          },
+                          onDragEnd = {
+                            // negative accumulation = swipe left (go to next)
+                            if (dragAccum < -swipeThresholdPx && selectedTab < tabCount - 1) {
+                              onTabSelected(selectedTab + 1)
+                            } else if (dragAccum > swipeThresholdPx && selectedTab > 0) {
+                              onTabSelected(selectedTab - 1)
+                            }
+                            dragAccum = 0f
+                          },
+                          onDragCancel = { dragAccum = 0f })
+                    }) {
+                  Text(
+                      stringResource(id = R.string.sampler_help_title),
+                      style = MaterialTheme.typography.titleLarge,
+                      color = NepTuneTheme.colors.smallText)
+                  Spacer(modifier = Modifier.height(12.dp))
 
-            TabRow(selectedTabIndex = selectedTab) {
-              tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTab == index,
-                    onClick = { onTabSelected(index) },
-                    text = { Text(title) })
-              }
-            }
+                  // Content pages (no visible tabs) - swipe left/right to change
+                  when (selectedTab) {
+                    0 -> HelpOverview()
+                    1 -> HelpControls()
+                    2 -> HelpADSR()
+                    3 -> HelpReverb()
+                    4 -> HelpEqualizer()
+                    5 -> HelpCompressor()
+                    else -> HelpOverview()
+                  }
 
-            Spacer(modifier = Modifier.height(12.dp))
+                  Spacer(modifier = Modifier.height(12.dp))
+                  Spacer(modifier = Modifier.height(16.dp))
+                  // Place the page indicator to the left of the Close button
+                  Row(
+                      modifier = Modifier.fillMaxWidth(),
+                      horizontalArrangement = Arrangement.End,
+                      verticalAlignment = Alignment.CenterVertically) {
+                        PageIndicator(
+                            pageCount = tabCount,
+                            currentPage = selectedTab,
+                            onPageSelected = { idx -> onTabSelected(idx) },
+                            modifier = Modifier.wrapContentWidth().padding(end = 8.dp))
 
-            when (selectedTab) {
-              0 -> HelpOverview()
-              1 -> HelpControls()
-              2 -> HelpTips()
-              else -> HelpOverview()
-            }
+                        TextButton(onClick = onClose) { Text(stringResource(id = R.string.close)) }
+                      }
+                }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-              TextButton(onClick = onClose) { Text(stringResource(id = R.string.close)) }
-            }
+            // Left navigation button (overlaid)
+            val canGoPrev = selectedTab > 0
+            IconButton(
+                onClick = { if (canGoPrev) onTabSelected(selectedTab - 1) },
+                enabled = canGoPrev,
+                modifier =
+                    Modifier.align(Alignment.CenterStart)
+                        .padding(start = 8.dp)
+                        .size(40.dp)
+                        .testTag(SamplerTestTags.HELP_NAV_LEFT)) {
+                  Surface(
+                      shape = CircleShape,
+                      color =
+                          if (canGoPrev) NepTuneTheme.colors.accentPrimary
+                          else NepTuneTheme.colors.accentPrimary.copy(alpha = 0.35f),
+                      tonalElevation = 2.dp) {
+                        Icon(
+                            imageVector = Icons.Default.ChevronLeft,
+                            contentDescription = "Previous help page",
+                            tint = Color.White,
+                            modifier = Modifier.padding(6.dp))
+                      }
+                }
+
+            // Right navigation button (overlaid)
+            val canGoNext = selectedTab < tabCount - 1
+            IconButton(
+                onClick = { if (canGoNext) onTabSelected(selectedTab + 1) },
+                enabled = canGoNext,
+                modifier =
+                    Modifier.align(Alignment.CenterEnd)
+                        .padding(end = 8.dp)
+                        .size(40.dp)
+                        .testTag(SamplerTestTags.HELP_NAV_RIGHT)) {
+                  Surface(
+                      shape = CircleShape,
+                      color =
+                          if (canGoNext) NepTuneTheme.colors.accentPrimary
+                          else NepTuneTheme.colors.accentPrimary.copy(alpha = 0.35f),
+                      tonalElevation = 2.dp) {
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = "Next help page",
+                            tint = Color.White,
+                            modifier = Modifier.padding(6.dp))
+                      }
+                }
           }
         }
   }
+}
+
+@Composable
+private fun PageIndicator(
+    pageCount: Int,
+    currentPage: Int,
+    onPageSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+  Row(
+      modifier = modifier.padding(vertical = 4.dp).testTag(SamplerTestTags.HELP_PAGE_INDICATOR),
+      horizontalArrangement = Arrangement.Center,
+      verticalAlignment = Alignment.CenterVertically) {
+        val dotSize = 8.dp
+        val spacing = 8.dp
+        for (i in 0 until pageCount) {
+          val isSelected = i == currentPage
+          Box(
+              modifier =
+                  Modifier.size(dotSize)
+                      .clip(CircleShape)
+                      .background(
+                          if (isSelected) NepTuneTheme.colors.accentPrimary
+                          else NepTuneTheme.colors.smallText.copy(alpha = 0.25f))
+                      .clickable { onPageSelected(i) })
+          if (i < pageCount - 1) Spacer(modifier = Modifier.width(spacing))
+        }
+      }
 }
 
 @Composable
@@ -1827,13 +1932,49 @@ private fun HelpControls() {
 }
 
 @Composable
-private fun HelpTips() {
+private fun HelpADSR() {
   Column(modifier = Modifier.fillMaxWidth()) {
     Text(
-        stringResource(id = R.string.tab_tips),
+        stringResource(id = R.string.tab_adsr),
         fontWeight = FontWeight.Bold,
         color = NepTuneTheme.colors.smallText)
     Spacer(modifier = Modifier.height(8.dp))
-    Text(stringResource(id = R.string.help_tips_text), color = NepTuneTheme.colors.smallText)
+    Text(stringResource(id = R.string.help_adsr_text), color = NepTuneTheme.colors.smallText)
+  }
+}
+
+@Composable
+private fun HelpReverb() {
+  Column(modifier = Modifier.fillMaxWidth()) {
+    Text(
+        stringResource(id = R.string.tab_reverb),
+        fontWeight = FontWeight.Bold,
+        color = NepTuneTheme.colors.smallText)
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(stringResource(id = R.string.help_reverb_text), color = NepTuneTheme.colors.smallText)
+  }
+}
+
+@Composable
+private fun HelpEqualizer() {
+  Column(modifier = Modifier.fillMaxWidth()) {
+    Text(
+        stringResource(id = R.string.tab_equalizer),
+        fontWeight = FontWeight.Bold,
+        color = NepTuneTheme.colors.smallText)
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(stringResource(id = R.string.help_equalizer_text), color = NepTuneTheme.colors.smallText)
+  }
+}
+
+@Composable
+private fun HelpCompressor() {
+  Column(modifier = Modifier.fillMaxWidth()) {
+    Text(
+        stringResource(id = R.string.tab_compressor),
+        fontWeight = FontWeight.Bold,
+        color = NepTuneTheme.colors.smallText)
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(stringResource(id = R.string.help_compressor_text), color = NepTuneTheme.colors.smallText)
   }
 }

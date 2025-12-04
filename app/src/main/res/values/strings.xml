@@ -9,13 +9,22 @@
     <string name="sampler_help_title">Sampler Help</string>
     <string name="tab_overview">Overview</string>
     <string name="tab_controls">Controls</string>
-    <string name="tab_tips">Tips</string>
+    <string name="tab_adsr">ADSR</string>
+    <string name="tab_reverb">Reverb</string>
+    <string name="tab_equalizer">Equalizer</string>
+    <string name="tab_compressor">Compressor</string>
 
     <string name="help_overview_text">The sampler allows previewing audio, adjusting pitch and tempo, editing ADSR envelope, EQ and compression. Use the tabs to switch sections.</string>
 
-    <string name="help_controls_text">On the top of the sampler lay the control bar:\n- Play / Pause: preview the sample\n- Save: persist project data\n- Pitch/Tempo selectors: adjust playback</string>
+    <string name="help_controls_text">On the top of the sampler lay the control bar:\n- Play / Pause: preview the sample\n- Save: persist project data\n- Pitch selectors: change the note\n- BPM selector: change the beat per minute\n- Time signature selector: change the beat display on the timeline</string>
 
-    <string name="help_tips_text">- Use the ADSR editor for shaping note dynamics.\n- Use EQ faders to cut/boost frequencies.\n- Try short preview loops to fine-tune parameters.</string>
+    <string name="help_adsr_text">Use the ADSR editor to shape how a note evolves over time: Attack sets how quickly the sound reaches full volume, Decay controls how the sound falls to the Sustain level, Sustain is the steady level while the note is held, and Release controls how the sound fades after release.</string>
+
+    <string name="help_reverb_text">Reverb simulates room reflections. Use Wet to control the mix between dry and effected signal, Size to set the perceived room size, Width and Depth to shape the stereo field, and Predelay to offset the onset of reflections.</string>
+
+    <string name="help_equalizer_text">Use the EQ faders to boost or cut specific frequency bands. Drag the vertical fader up to boost (positive dB) or down to cut (negative dB). Typical workflow: remove unwanted low rumble, gently shape mids, and add clarity with high band boosts.</string>
+
+    <string name="help_compressor_text">Compressor reduces the dynamic range. Threshold sets the level above which compression occurs, Ratio sets the amount of gain reduction, Knee smooths the transition, Attack/Decay control timing, and Make-up Gain compensates for level loss.</string>
 
     <string name="close">Close</string>
 </resources>
