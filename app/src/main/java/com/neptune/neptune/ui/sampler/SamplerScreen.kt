@@ -1811,20 +1811,23 @@ fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Un
                   }
 
                   Spacer(modifier = Modifier.height(12.dp))
-                  Spacer(modifier = Modifier.height(16.dp))
-                  // Place the page indicator to the left of the Close button
-                  Row(
+                  Spacer(modifier = Modifier.height(8.dp))
+                  // Place the page indicator and Close button on the same row so dots are
+                  // vertically aligned with the Close button
+                  Box(
                       modifier = Modifier.fillMaxWidth(),
-                      horizontalArrangement = Arrangement.End,
-                      verticalAlignment = Alignment.CenterVertically) {
-                        PageIndicator(
-                            pageCount = tabCount,
-                            currentPage = selectedTab,
-                            onPageSelected = { idx -> onTabSelected(idx) },
-                            modifier = Modifier.wrapContentWidth().padding(end = 8.dp))
+//                      verticalAlignment = Alignment.CenterVertically,
+                      contentAlignment = Alignment.Center) {
+                    Box {
+                      PageIndicator(
+                          pageCount = tabCount,
+                          currentPage = selectedTab,
+                          onPageSelected = { idx -> onTabSelected(idx) },
+                          modifier = Modifier.wrapContentWidth())
+                    }
 
-                        TextButton(onClick = onClose) { Text(stringResource(id = R.string.close)) }
-                      }
+                    TextButton(modifier = Modifier.align(Alignment.CenterEnd), onClick = onClose) { Text(stringResource(id = R.string.close)) }
+                  }
                 }
 
             // Left navigation button (overlaid)
