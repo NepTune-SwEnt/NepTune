@@ -21,11 +21,14 @@ import com.neptune.neptune.ui.main.SampleResourceState
 import com.neptune.neptune.ui.main.SampleUiActions
 import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -47,6 +50,7 @@ enum class SearchType(val title: String) {
  *
  * written with assistance from ChatGPT
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 open class SearchViewModel(
     private val repo: SampleRepository = SampleRepositoryProvider.repository,
     private val context: Context,
@@ -106,9 +110,17 @@ open class SearchViewModel(
   val userResults: StateFlow<List<Profile>> = _userResults.asStateFlow()
 
   // Current User Profile (to track following list)
+  // Logic: Observe the current user flow. If a user is logged in, observe their profile.
+  // If no user is logged in, emit null.
   val currentUserProfile: StateFlow<Profile?> =
-      profileRepo
-          .observeCurrentProfile()
+      _currentUserFlow
+          .flatMapLatest { user ->
+            if (user == null) {
+              flowOf(null)
+            } else {
+              profileRepo.observeProfile(user.uid)
+            }
+          }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
   // Local state for following IDs to ensure instant UI updates
@@ -205,12 +217,23 @@ open class SearchViewModel(
     }
 
     // Observe current user profile to keep following list in sync with server
+    // FIX: Using flatMapLatest to safely handle the case where currentUser is null
     viewModelScope.launch {
-      profileRepo.observeCurrentProfile().collectLatest { profile ->
-        if (profile != null) {
-          _followingIds.value = profile.following.toSet()
-        }
-      }
+      _currentUserFlow
+          .flatMapLatest { user ->
+            if (user != null) {
+              profileRepo.observeProfile(user.uid)
+            } else {
+              flowOf(null)
+            }
+          }
+          .collectLatest { profile ->
+            if (profile != null) {
+              _followingIds.value = profile.following.toSet()
+            } else {
+              _followingIds.value = emptySet()
+            }
+          }
     }
 
     load(useMockData)
