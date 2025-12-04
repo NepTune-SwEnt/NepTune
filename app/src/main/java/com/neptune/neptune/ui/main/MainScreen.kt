@@ -187,7 +187,7 @@ fun MainScreen(
   val followedSamples by mainViewModel.followedSamples.collectAsState()
   val userAvatar by mainViewModel.userAvatar.collectAsState()
   val isAnonymous by mainViewModel.isAnonymous.collectAsState()
-
+  val recommendedSamples by mainViewModel.recommendedSamples.collectAsState()
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
   val wait: Long = 300
   // Depends on the size of the screen
@@ -208,6 +208,9 @@ fun MainScreen(
         pullRefreshState.endRefresh()
       }
     }
+  }
+  LaunchedEffect(Unit) {
+      mainViewModel.loadRecommendations()
   }
 
   fun onCommentClicked(sample: Sample) {
@@ -258,7 +261,7 @@ fun MainScreen(
               MainContent(
                   paddingValues = paddingValues,
                   mainViewModel = mainViewModel,
-                  discoverSamples = discoverSamples,
+                  discoverSamples = recommendedSamples.ifEmpty { discoverSamples },
                   followedSamples = followedSamples,
                   maxColumns = maxColumns,
                   onCommentClicked = { onCommentClicked(it) },

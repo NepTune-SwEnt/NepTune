@@ -1,6 +1,7 @@
 package com.neptune.neptune.model.profile
 
 import android.net.Uri
+import com.neptune.neptune.model.recommendation.RecoUserProfile
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -155,4 +156,10 @@ interface ProfileRepository {
 
   /** Retrieves the username of a specific user via their ID. */
   suspend fun getUserNameByUserId(userId: String): String?
+
+  /**
+   * Create a profile meant for the recommendation algorithm
+   */
+  suspend fun getCurrentRecoUserProfile(): RecoUserProfile?
+
 }

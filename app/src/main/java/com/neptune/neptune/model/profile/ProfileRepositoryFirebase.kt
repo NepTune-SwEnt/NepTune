@@ -10,6 +10,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Transaction
 import com.google.firebase.functions.FirebaseFunctions
+import com.neptune.neptune.model.recommendation.RecoUserProfile
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -103,6 +104,13 @@ class ProfileRepositoryFirebase(
     return if (!exists()) {
       null
     } else {
+      val tagsWeightRaw = get("tagsWeight") as? Map<*, *>
+      val tagsWeight: Map<String, Double> =
+          tagsWeightRaw?.mapNotNull { (k, v) ->
+              val tag = k as? String ?: return@mapNotNull null
+              val weight = (v as? Number)?.toDouble() ?: return@mapNotNull null
+              tag to weight
+          }?.toMap() ?: emptyMap()
       Profile(
           uid = id,
           username = getString("username").orEmpty(),
@@ -113,10 +121,37 @@ class ProfileRepositoryFirebase(
           likes = getLong("likes") ?: 0L,
           posts = getLong("posts") ?: 0L,
           tags = (get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+          tagsWeight = tagsWeight,
           avatarUrl = getString("avatarUrl").orEmpty(),
           following = (get("following") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
           isAnonymous = getBoolean("isAnonymous") ?: false)
     }
+  }
+  override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
+      val profile = getCurrentProfile()
+
+      //1) Try to read tagsWeight map
+      val tagsWeightRaw = profile?.tagsWeight
+      val tagsWeight = mutableMapOf<String, Double>()
+      if(tagsWeightRaw?.isNotEmpty() == true) {
+          for ((key, value) in tagsWeightRaw) {
+              val tag = key
+              val weight = (value as? Number)?.toDouble() ?: continue
+              if (weight >= 0) {
+                  tagsWeight[tag] = weight
+              }
+          }
+      }
+      if(tagsWeight.isEmpty()) {
+          val tags = profile?.tags ?: emptyList()
+          for (tag in tags) {
+              tagsWeight[tag] = 1.0
+          }
+      }
+      return RecoUserProfile(
+          uid = requireCurrentUid(),
+          tagsWeight = tagsWeight
+      )
   }
 
   /**
@@ -176,7 +211,9 @@ class ProfileRepositoryFirebase(
                     "posts" to 0L,
                     "tags" to emptyList<String>(),
                     "following" to emptyList<String>(),
-                    "isAnonymous" to (auth.currentUser?.isAnonymous == true)))
+                    "isAnonymous" to (auth.currentUser?.isAnonymous == true),
+                    "tagsWeight" to emptyMap<String, Double>()
+                ))
 
             created
           }

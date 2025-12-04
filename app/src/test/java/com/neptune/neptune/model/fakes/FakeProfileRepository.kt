@@ -4,6 +4,7 @@ import android.net.Uri
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.UsernameTakenException
+import com.neptune.neptune.model.recommendation.RecoUserProfile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -131,5 +132,31 @@ class FakeProfileRepository(
   override suspend fun getUserNameByUserId(userId: String): String? {
     val current = state.value
     return if (current?.uid == userId) current.username else null
+  }
+  override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
+    val profile = state.value ?: return null
+
+    val tagProfile = mutableMapOf<String, Double>()
+
+    // Use stored tag weights if present
+    if (profile.tagsWeight.isNotEmpty()) {
+      for ((tag, weight) in profile.tagsWeight) {
+        if (weight > 0.0) {
+          tagProfile[tag] = weight
+        }
+      }
+    }
+
+    // Fallback: if no weights, use plain tags with weight = 1f
+    if (tagProfile.isEmpty()) {
+      for (tag in profile.tags) {
+        tagProfile[tag] = 1.0
+      }
+    }
+
+    return RecoUserProfile(
+      uid = profile.uid,
+      tagsWeight = tagProfile.toMap()
+    )
   }
 }

@@ -33,6 +33,7 @@ data class Profile(
     val avatarUrl: String = "",
     val following: List<String> = emptyList(),
     val isAnonymous: Boolean = false,
+    val tagsWeight: Map<String, Double> = emptyMap()
 )
 
 /**

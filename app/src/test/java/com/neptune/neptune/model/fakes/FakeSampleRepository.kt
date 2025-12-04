@@ -77,6 +77,61 @@ class FakeSampleRepository(initialSamples: List<Sample> = emptyList()) : SampleR
     _samples.value = samples.toList()
   }
 
+  override suspend fun getLatestSamples(limit: Int): List<Sample> {
+    // Sort by creationTime descending, newest first
+    return samples
+      .sortedByDescending { it.creationTime }
+      .take(limit.coerceAtLeast(0))
+  }
+
+  override suspend fun getTrendingSamples(limit: Int): List<Sample> {
+    // Same trending formula as the real repo:
+    // score = downloads + 2 * likes
+    val scored = samples.map { sample ->
+      val score = sample.downloads + sample.likes * 2
+      sample to score
+    }
+
+    return scored
+      .sortedByDescending { it.second }
+      .take(limit.coerceAtLeast(0))
+      .map { it.first }
+  }
+
+  override suspend fun getSamplesByTags(
+    tags: List<String>,
+    perTagLimit: Int
+  ): List<Sample> {
+    if (tags.isEmpty()) return emptyList()
+
+    val distinctTags = tags.distinct()
+    val result = mutableListOf<Sample>()
+    val seenIds = mutableSetOf<String>()
+
+    for (tag in distinctTags) {
+      val matchingForTag = samples.filter { sample ->
+        tag in sample.tags
+      }
+
+      var addedForThisTag = 0
+
+      for (sample in matchingForTag) {
+        if (sample.id !in seenIds) {
+          result += sample
+          seenIds += sample.id
+          addedForThisTag++
+
+          if (perTagLimit > 0 && addedForThisTag >= perTagLimit) {
+            break
+          }
+        }
+      }
+    }
+
+    return result
+  }
+
+
   override suspend fun addComment(
       sampleId: String,
       authorId: String,

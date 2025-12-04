@@ -67,6 +67,7 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.airbnb.lottie.compose.rememberLottieDynamicProperties
 import com.airbnb.lottie.compose.rememberLottieDynamicProperty
+import com.google.firebase.firestore.FieldValue
 import com.neptune.neptune.R
 import com.neptune.neptune.data.rememberImagePickerLauncher
 import com.neptune.neptune.media.LocalMediaPlayer
@@ -473,7 +474,8 @@ fun ProjectListScreenPreview() {
                 likes = 123,
                 usersLike = emptyList(),
                 comments = 45,
-                downloads = 67))
+                downloads = 67,
+                creationTime = 0L))
       }
 
   val fakeMediaPlayer = NeptuneMediaPlayer()

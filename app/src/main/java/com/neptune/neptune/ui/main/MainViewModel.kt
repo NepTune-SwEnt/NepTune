@@ -13,6 +13,7 @@ import com.neptune.neptune.R
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import com.neptune.neptune.model.recommendation.RecommendationEngine
 import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
@@ -106,6 +107,9 @@ class MainViewModel(
   val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
   private val _activeCommentSampleId = MutableStateFlow<String?>(null)
   val activeCommentSampleId: StateFlow<String?> = _activeCommentSampleId.asStateFlow()
+  private val _recommendedSamples = MutableStateFlow<List<Sample>>(emptyList())
+  val recommendedSamples: StateFlow<List<Sample>> = _recommendedSamples
+  private val recommendationEngine = RecommendationEngine(repo)
 
   init {
     if (useMockData) {
@@ -117,7 +121,20 @@ class MainViewModel(
     auth.addAuthStateListener(authListener)
     observeUserProfile()
   }
+    fun loadRecommendations(limit: Int = 50) {
+        viewModelScope.launch {
+            val recoUser = profileRepo.getCurrentRecoUserProfile()
+            if (recoUser == null) {
+                // Fallback when no user or profile: just show latest samples
+                val latest = repo.getLatestSamples(limit)
+                _recommendedSamples.value = latest
+                return@launch
+            }
 
+            val recs = recommendationEngine.getRecommendedSamplesForUser(recoUser, limit)
+            _recommendedSamples.value = recs
+        }
+    }
   private fun loadSamplesFromFirebase() {
     viewModelScope.launch {
       try {
@@ -460,6 +477,7 @@ class MainViewModel(
     _isRefreshing.value = true
     allSamplesCache = emptyList()
     loadSamplesFromFirebase()
+    viewModelScope.launch { loadRecommendations() }
   }
   /** Function to open the comment section. */
   fun openCommentSection(sample: Sample) {

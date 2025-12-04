@@ -3,7 +3,9 @@ package com.neptune.neptune.model.sample
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import kotlin.String
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -18,7 +20,7 @@ const val SAMPLES_COLLECTION_PATH = "samples"
  * Handles loading, observing, and updating samples stored under `samples/{sampleId}`. This has been
  * written with the help of LLMs.
  *
- * @author Angéline Bignens
+ * @authors Angéline Bignens, Tony Andriamampianina
  */
 class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleRepository {
   private val samples = db.collection(SAMPLES_COLLECTION_PATH)
@@ -177,10 +179,80 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
 
   /** Adds a new sample (for testing). */
   override suspend fun addSample(sample: Sample) {
-    samples.document(sample.id).set(sample.toMap()).await()
+    val data = sample.toMap().toMutableMap()
+    data["creationTime"] = FieldValue.serverTimestamp()
+    samples.document(sample.id).set(data).await()
   }
+    /**
+     * Fetches the most recent [limit] samples ordered by creationTime desc.
+     */
+    override suspend fun getLatestSamples(limit: Int): List<Sample> {
+        val snap =
+            samples.orderBy("creationTime", Query.Direction.DESCENDING)
+                .limit(limit.toLong())
+                .get()
+                .await()
+        return snap.documents.mapNotNull { it.toSampleOrNull() }
+    }
+    /**
+     * Fetches trending samples based on a combined popularity score:
+     *
+     *   trending = downloads + 2 * likes
+     *
+     * Firestore can't sort by computed fields, so we fetch a batch ordered by downloads,
+     * compute scores locally, and then return the top [limit].
+     */
+    override suspend fun getTrendingSamples(limit: Int): List<Sample> {
+        // Fetch a big enough window to compute trending properly
+        val snap = samples
+            .orderBy("downloads", Query.Direction.DESCENDING)
+            .limit((limit * 3).toLong()) // fetch more, then filter
+            .get()
+            .await()
 
-  /** Converts a Firestore [DocumentSnapshot] to a [Sample] instance, or null if missing. */
+        val all = snap.documents.mapNotNull { it.toSampleOrNull() }
+
+        // Compute trending score
+        val scored = all.map { sample ->
+            val score = sample.downloads + sample.likes * 2 // trending formula
+            sample to score
+        }
+
+        // Sort by score desc & return only top "limit"
+        return scored
+            .sortedByDescending { it.second }
+            .take(limit.toInt())
+            .map { it.first }
+    }
+    /**
+     *
+     */
+    override suspend fun getSamplesByTags(tags: List<String>, perTagLimit: Int): List<Sample> {
+        if (tags.isEmpty()) return emptyList()
+
+        val all = mutableListOf<Sample>()
+        val seenIds = mutableSetOf<String>()
+
+        for (tag in tags.distinct()) {
+            val snap =
+                samples
+                    .whereArrayContains("tags", tag)
+                    .orderBy("creationTime", Query.Direction.DESCENDING)
+                    .limit(perTagLimit.toLong())
+                    .get()
+                    .await()
+
+            snap.documents.mapNotNull { it.toSampleOrNull() }.forEach { sample ->
+                if (seenIds.add(sample.id)) {
+                    all += sample
+                }
+            }
+        }
+
+        return all
+    }
+
+    /** Converts a Firestore [DocumentSnapshot] to a [Sample] instance, or null if missing. */
   private fun DocumentSnapshot.toSampleOrNull(): Sample? {
     if (!exists()) return null
     val id = getString("id") ?: return null
@@ -200,7 +272,8 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
         usersLike = (get("usersLike") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
         storageZipPath = getString("storageZipPath").orEmpty(),
         storageImagePath = getString("storageImagePath").orEmpty(),
-        storagePreviewSamplePath = getString("storagePreviewSamplePath").orEmpty())
+        storagePreviewSamplePath = getString("storagePreviewSamplePath").orEmpty(),
+        creationTime = getTimestamp("creationTime")?.toDate()?.time ?: 0L)
   }
 
   private fun Sample.toMap(): Map<String, Any> =
