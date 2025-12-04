@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.domain.model.MediaItem
@@ -33,7 +34,8 @@ class ProjectListViewModelFactory(
         projectRepository = TotalProjectItemsRepositoryProvider.repository,
         getLibraryUseCase = getLibraryUseCase,
         mediaRepository = mediaRepository,
-        storageService = StorageService(FirebaseStorage.getInstance()))
+        storageService = StorageService(FirebaseStorage.getInstance()),
+        auth = FirebaseAuth.getInstance())
         as T
   }
 }
@@ -51,12 +53,16 @@ class ProjectListViewModel(
     private val getLibraryUseCase: GetLibraryUseCase? = null,
     private val mediaRepository: MediaRepository? = null,
     private val storageService: StorageService? = null,
+    private val auth: FirebaseAuth? = null
 ) : ViewModel() {
   private var _uiState = MutableStateFlow(ProjectListUiState(projects = emptyList()))
   val uiState: StateFlow<ProjectListUiState> = _uiState.asStateFlow()
   private val connectivityObserver = NetworkConnectivityObserver()
   private val _isOnline = MutableStateFlow(true)
   val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+
+  val isUserLoggedIn: Boolean
+    get() = auth?.currentUser != null
 
   init {
     viewModelScope.launch {
@@ -84,6 +90,13 @@ class ProjectListViewModel(
       try {
         val localItems = getLibraryUseCase?.invoke()?.first() ?: emptyList()
         val online = _isOnline.value
+
+        if (!isUserLoggedIn) {
+          val localProjects = localItems.map { toLocalProjectItem(it) }
+          val sortedProjects = localProjects.sortedByDescending { it.lastUpdated }
+          _uiState.value = ProjectListUiState(projects = sortedProjects, isLoading = false)
+          return@launch
+        }
 
         // auto sync
         if (online && localItems.isNotEmpty()) {
