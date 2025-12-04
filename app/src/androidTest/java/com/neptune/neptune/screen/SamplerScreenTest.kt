@@ -7,6 +7,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.filter
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasParent
@@ -525,5 +527,85 @@ class SamplerScreenTest {
 
     // Verify that inputTempo has been updated in the viewModel
     assertEquals(130, fakeViewModel.uiState.value.inputTempo)
+  }
+
+  @Test
+  fun helpDialogOpensAndCloseClosesDialog() {
+    // Open the help dialog via the Help FAB
+    composeTestRule.onNodeWithTag(SamplerTestTags.HELP_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // The dialog should be visible
+    composeTestRule.onNodeWithTag(SamplerTestTags.HELP_DIALOG).assertIsDisplayed()
+
+    // Click the Close button (uses string resource)
+    val closeText = composeTestRule.activity.getString(com.neptune.neptune.R.string.close)
+    composeTestRule.onNodeWithText(closeText).performClick()
+    composeTestRule.waitForIdle()
+
+    // The dialog should no longer exist
+    composeTestRule.onNodeWithTag(SamplerTestTags.HELP_DIALOG).assertDoesNotExist()
+  }
+
+  @Test
+  fun helpDialogNavigationButtonsWork() {
+    // Open the help dialog
+    composeTestRule.onNodeWithTag(SamplerTestTags.HELP_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // Initially, left nav is disabled (first page), right nav enabled
+    composeTestRule.onNodeWithTag(SamplerTestTags.HELP_NAV_LEFT).assertIsNotEnabled()
+    composeTestRule.onNodeWithTag(SamplerTestTags.HELP_NAV_RIGHT).assertIsEnabled()
+
+    // Click next
+    composeTestRule.onNodeWithTag(SamplerTestTags.HELP_NAV_RIGHT).performClick()
+    composeTestRule.waitForIdle()
+
+    // Now left should be enabled (we moved forward)
+    composeTestRule.onNodeWithTag(SamplerTestTags.HELP_NAV_LEFT).assertIsEnabled()
+
+    // Click previous to return
+    composeTestRule.onNodeWithTag(SamplerTestTags.HELP_NAV_LEFT).performClick()
+    composeTestRule.waitForIdle()
+
+    // Back to initial state
+    composeTestRule.onNodeWithTag(SamplerTestTags.HELP_NAV_LEFT).assertIsNotEnabled()
+
+    // Close dialog to clean up
+    val closeText = composeTestRule.activity.getString(com.neptune.neptune.R.string.close)
+    composeTestRule.onNodeWithText(closeText).performClick()
+    composeTestRule.waitForIdle()
+  }
+
+  @Test
+  fun helpDialogSwipeChangesPages() {
+    // Open the help dialog
+    composeTestRule.onNodeWithTag(SamplerTestTags.HELP_BUTTON).performClick()
+    composeTestRule.waitForIdle()
+
+    // Perform a left swipe gesture on the dialog surface to go to the next page
+    val dialogNode = composeTestRule.onNodeWithTag(SamplerTestTags.HELP_DIALOG)
+    dialogNode.performTouchInput {
+      // swipe left by a significant amount
+      swipe(start = center, end = center + Offset(x = -300f, y = 0f), durationMillis = 200)
+    }
+    composeTestRule.waitForIdle()
+
+    // After swipe, left nav should be enabled
+    composeTestRule.onNodeWithTag(SamplerTestTags.HELP_NAV_LEFT).assertIsEnabled()
+
+    // Swipe right to go back
+    dialogNode.performTouchInput {
+      swipe(start = center, end = center + Offset(x = 300f, y = 0f), durationMillis = 200)
+    }
+    composeTestRule.waitForIdle()
+
+    // Back to first page: left nav disabled
+    composeTestRule.onNodeWithTag(SamplerTestTags.HELP_NAV_LEFT).assertIsNotEnabled()
+
+    // Close dialog
+    val closeText = composeTestRule.activity.getString(com.neptune.neptune.R.string.close)
+    composeTestRule.onNodeWithText(closeText).performClick()
+    composeTestRule.waitForIdle()
   }
 }
