@@ -60,7 +60,12 @@ open class SearchViewModel(
 
   private val authListener: FirebaseAuth.AuthStateListener? =
       firebaseAuth?.let {
-        FirebaseAuth.AuthStateListener { fbAuth -> _currentUserFlow.value = fbAuth.currentUser }
+        FirebaseAuth.AuthStateListener { fbAuth ->
+          _currentUserFlow.value = fbAuth.currentUser
+          if (fbAuth.currentUser != null) {
+            load(useMockData)
+          }
+        }
       }
 
   // ---------- Samples & likes / comments ----------
@@ -91,9 +96,9 @@ open class SearchViewModel(
     get() = auth?.currentUser != null
 
   init {
-    try {
-      val observer = NetworkConnectivityObserver()
-      viewModelScope.launch {
+    viewModelScope.launch {
+      try {
+        val observer = NetworkConnectivityObserver()
         observer.isOnline.collectLatest { isConnected ->
           _isOnline.value = isConnected
           if (isConnected) {
@@ -101,9 +106,9 @@ open class SearchViewModel(
             refreshAllResources()
           }
         }
+      } catch (e: Exception) {
+        Log.e("SearchViewModel", "Network observer init failed", e)
       }
-    } catch (e: Exception) {
-      Log.e("SearchViewModel", "Network observer init failed", e)
     }
     if (firebaseAuth != null && authListener != null) {
       firebaseAuth.addAuthStateListener(authListener)
