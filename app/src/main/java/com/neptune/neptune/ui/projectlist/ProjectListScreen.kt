@@ -65,6 +65,7 @@ import com.google.firebase.Timestamp
 import com.neptune.neptune.R
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
+import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import kotlinx.coroutines.runBlocking
 
@@ -104,6 +105,7 @@ fun ProjectListScreen(
   val uiState by projectListViewModel.uiState.collectAsState()
   val projects: List<ProjectItem> = uiState.projects
   val selectedProjects: String? = uiState.selectedProject
+  val isOnline by projectListViewModel.isOnline.collectAsState()
 
   var searchText by remember { mutableStateOf("") }
   val filteredProjects =
@@ -126,6 +128,9 @@ fun ProjectListScreen(
                     .fillMaxSize()
                     .padding(it)) {
               SearchBar(value = searchText, onValueChange = { searchText = it })
+              if (!isOnline) {
+                OfflineBanner()
+              }
               ProjectList(
                   projects = filteredProjects,
                   selectedProject = selectedProjects,
