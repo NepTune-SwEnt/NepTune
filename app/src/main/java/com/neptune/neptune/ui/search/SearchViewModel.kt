@@ -81,10 +81,9 @@ open class SearchViewModel(
                 }
 
         val downloadsFolder =
-            explicitDownloadsFolder
-                ?: Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            explicitDownloadsFolder ?: context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir
 
-        SampleUiActions(
+          SampleUiActions(
             sampleRepo,
             storageService,
             downloadsFolder,

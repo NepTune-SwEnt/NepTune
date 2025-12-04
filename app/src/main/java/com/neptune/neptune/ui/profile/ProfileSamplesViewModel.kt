@@ -55,7 +55,9 @@ class ProfileSamplesViewModel(
                     FirebaseStorage.getInstance(context.getString(R.string.storage_path)))
         val downloadsFolder =
             explicitDownloadsFolder
-                ?: Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                ?: context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+                ?: context.filesDir
+
         SampleUiActions(
             repo = sampleRepo,
             storageService = storageService,
