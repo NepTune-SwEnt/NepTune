@@ -9,7 +9,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
-import androidx.test.espresso.Espresso
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
@@ -26,6 +25,7 @@ import com.neptune.neptune.ui.sampler.SamplerTestTags
 import com.neptune.neptune.ui.sampler.SamplerViewModel
 import com.neptune.neptune.ui.settings.SettingsScreenTestTags.DISABLE_HELP_SWITCH
 import com.neptune.neptune.ui.theme.SampleAppTheme
+import com.neptune.neptune.ui.util.NeptuneTopBarTestTags
 import java.io.File
 import java.io.FileOutputStream
 import kotlinx.coroutines.delay
@@ -88,8 +88,8 @@ class EpicProjectE2ETest {
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
     composeTestRule.onNodeWithTag(ProfileScreenTestTags.SETTINGS_BUTTON).performClick()
     composeTestRule.onNodeWithTag(DISABLE_HELP_SWITCH).performClick()
-    Espresso.pressBack()
-    Espresso.pressBack()
+    composeTestRule.onNodeWithTag(NeptuneTopBarTestTags.GO_BACK_BUTTON).performClick()
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.GOBACK_BUTTON).performClick()
     // --- NAVIGATE TO PROJECTLIST ---
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
     composeTestRule.waitForIdle()
@@ -156,13 +156,10 @@ class EpicProjectE2ETest {
 
     val reload = vmReload.uiState.value
 
-    Espresso.pressBack()
-    Espresso.pressBack()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
     composeTestRule.onNodeWithTag(ProfileScreenTestTags.SETTINGS_BUTTON).performClick()
     composeTestRule.onNodeWithTag(DISABLE_HELP_SWITCH).performClick()
-    Espresso.pressBack()
-    Espresso.pressBack()
 
     // --- VERIFY PERSISTED VALUES ---
     assertTrue("Attack was not changed!", reload.attack != originalAttack)
