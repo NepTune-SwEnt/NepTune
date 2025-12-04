@@ -113,7 +113,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun NeptuneApp(
-    settingsViewModel: SettingsViewModel,
+    settingsViewModel: SettingsViewModel = viewModel(),
     navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.SignIn.route,
 ) {
