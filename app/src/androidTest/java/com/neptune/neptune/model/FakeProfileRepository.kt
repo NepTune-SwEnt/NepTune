@@ -3,6 +3,7 @@ package com.neptune.neptune.model
 import android.net.Uri
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.model.recommendation.RecoUserProfile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
@@ -105,5 +106,17 @@ class FakeProfileRepository(initial: Profile? = null) : ProfileRepository {
 
     // Otherwise check test usernames map
     return usernames[userId]
+  }
+
+  override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun recordTagInteraction(
+    tags: List<String>,
+    likeDelta: Int,
+    downloadDelta: Int
+  ) {
+    TODO("Not yet implemented")
   }
 }

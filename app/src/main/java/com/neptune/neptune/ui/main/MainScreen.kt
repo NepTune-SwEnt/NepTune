@@ -196,8 +196,8 @@ fun MainScreen(
   val isRefreshing by mainViewModel.isRefreshing.collectAsState()
   val pullRefreshState = rememberPullToRefreshState()
 
-  if (pullRefreshState.isRefreshing) {
-    LaunchedEffect(true) { mainViewModel.refresh() }
+  LaunchedEffect(pullRefreshState.isRefreshing) {
+      if (pullRefreshState.isRefreshing) { mainViewModel.refresh() }
   }
   LaunchedEffect(isRefreshing) {
     if (isRefreshing) {
@@ -209,9 +209,9 @@ fun MainScreen(
       }
     }
   }
-  LaunchedEffect(Unit) {
+  /*LaunchedEffect(Unit) {
       mainViewModel.loadRecommendations()
-  }
+  }*/
 
   fun onCommentClicked(sample: Sample) {
     mainViewModel.openCommentSection(sample)

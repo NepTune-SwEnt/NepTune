@@ -159,4 +159,32 @@ class FakeProfileRepository(
       tagsWeight = tagProfile.toMap()
     )
   }
+
+  override suspend fun recordTagInteraction(
+    tags: List<String>,
+    likeDelta: Int,
+    downloadDelta: Int
+  ) {
+    val cur = state.value ?: return
+    if (tags.isEmpty()) return
+
+    // simple scoring: likes count full, downloads half
+    val delta = likeDelta.toDouble() + downloadDelta.toDouble() * 0.5
+    if (delta == 0.0) return
+
+    val newWeights = cur.tagsWeight.toMutableMap()
+    for (tag in tags) {
+      val prev = newWeights[tag] ?: 0.0
+      val updated = (prev + delta).coerceAtLeast(0.0)
+      newWeights[tag] = updated
+    }
+
+    // Keep tag list in sync too
+    val newTags = (cur.tags + tags).distinct()
+
+    state.value = cur.copy(
+      tagsWeight = newWeights,
+      tags = newTags
+    )
+  }
 }

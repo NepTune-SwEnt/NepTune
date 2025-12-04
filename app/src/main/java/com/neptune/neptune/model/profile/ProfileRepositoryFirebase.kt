@@ -19,6 +19,7 @@ import kotlinx.coroutines.tasks.await
 const val PROFILES_COLLECTION_PATH = "profiles"
 const val USERNAMES_COLLECTION_PATH = "usernames"
 const val GUEST_NAME = "anonymous"
+const val TAG_WEIGHT_MAX = 50.0
 private const val DEFAULT_BIO = "Hello! New NepTune user here!"
 
 /**
@@ -392,6 +393,40 @@ class ProfileRepositoryFirebase(
       Log.e("ProfileRepository", "Error fetching username for userId=$userId", e)
       null
     }
+  }
+  override suspend fun recordTagInteraction(tags: List<String>, likeDelta: Int, downloadDelta: Int) {
+      if (tags.isEmpty()) return
+
+      val uid = requireCurrentUid()
+      val profileRef = profiles.document(uid)
+
+      val delta = likeDelta * 2.0 + downloadDelta * 1.0
+      if (delta == 0.0) return
+
+      db.runTransaction { tx ->
+          val snap = tx.get(profileRef)
+          if (!snap.exists()) return@runTransaction
+
+          val raw = snap.get("tagsWeight") as? Map<*, *> ?: emptyMap<Any, Any>()
+          val current = mutableMapOf<String, Double>()
+
+          // Safely rehydrate current map
+          for ((k, v) in raw) {
+              val tag = k as? String ?: continue
+              val weight = (v as? Number)?.toDouble() ?: continue
+              current[tag] = weight
+          }
+
+          // Apply delta to each tag
+          for (tag in tags) {
+              val key = tag.trim().lowercase() // keep same normalization as your tags
+              val old = current[key] ?: 0.0
+              val updated = (old + delta).coerceIn(0.0, TAG_WEIGHT_MAX)
+              current[key] = updated
+          }
+
+          tx.update(profileRef, "tagsWeight", current as Map<String, Double>)
+      }.await()
   }
 
   /** Converts an input string to a valid username base (lowercase, alphanumeric + underscores). */

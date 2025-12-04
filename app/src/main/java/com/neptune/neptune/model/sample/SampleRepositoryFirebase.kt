@@ -225,7 +225,7 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
             .map { it.first }
     }
     /**
-     *
+     *Restraint to samples with tags loved by user and sort by recency
      */
     override suspend fun getSamplesByTags(tags: List<String>, perTagLimit: Int): List<Sample> {
         if (tags.isEmpty()) return emptyList()

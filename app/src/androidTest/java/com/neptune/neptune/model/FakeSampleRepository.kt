@@ -77,6 +77,21 @@ class FakeSampleRepository(initialSamples: List<Sample> = emptyList()) : SampleR
     _samples.value = samples.toList()
   }
 
+  override suspend fun getLatestSamples(limit: Int): List<Sample> {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun getTrendingSamples(limit: Int): List<Sample> {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun getSamplesByTags(
+    tags: List<String>,
+    perTagLimit: Int
+  ): List<Sample> {
+    TODO("Not yet implemented")
+  }
+
   override suspend fun addComment(
       sampleId: String,
       authorId: String,

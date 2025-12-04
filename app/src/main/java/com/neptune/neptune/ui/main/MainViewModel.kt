@@ -109,7 +109,6 @@ class MainViewModel(
   val activeCommentSampleId: StateFlow<String?> = _activeCommentSampleId.asStateFlow()
   private val _recommendedSamples = MutableStateFlow<List<Sample>>(emptyList())
   val recommendedSamples: StateFlow<List<Sample>> = _recommendedSamples
-  private val recommendationEngine = RecommendationEngine(repo)
 
   init {
     if (useMockData) {
@@ -123,16 +122,38 @@ class MainViewModel(
   }
     fun loadRecommendations(limit: Int = 50) {
         viewModelScope.launch {
+            Log.d(
+                "RecoDebug",
+                "loadRecommendations() START, cacheSize=${allSamplesCache.size}"
+            )
             val recoUser = profileRepo.getCurrentRecoUserProfile()
             if (recoUser == null) {
                 // Fallback when no user or profile: just show latest samples
-                val latest = repo.getLatestSamples(limit)
-                _recommendedSamples.value = latest
+                Log.d("RecoDebug", "No recoUser profile (null) – skipping recommendations")
+
+                _recommendedSamples.value = emptyList()
                 return@launch
             }
-
-            val recs = recommendationEngine.getRecommendedSamplesForUser(recoUser, limit)
-            _recommendedSamples.value = recs
+            val candidates = allSamplesCache
+            if (candidates.isEmpty()) {
+                Log.d("RecoDebug", "No candidates (cache empty) – skipping ranking")
+                _recommendedSamples.value = emptyList()
+                return@launch
+            }
+            val ranked = RecommendationEngine.rankSamplesForUser(
+                user = recoUser,
+                candidates = candidates,
+                limit = limit
+            )
+            ranked.forEachIndexed { index, sample ->
+                val score = RecommendationEngine.scoreSample(sample, recoUser, System.currentTimeMillis())
+                Log.d(
+                    "RecoDebug",
+                    "#$index  id=${sample.id}  name=${sample.name}  score=${"%.4f".format(score)}"
+                )
+            }
+            _recommendedSamples.value = ranked
+            _discoverSamples.value = ranked
         }
     }
   private fun loadSamplesFromFirebase() {
@@ -174,6 +195,8 @@ class MainViewModel(
           if (_isRefreshing.value) {
             _isRefreshing.value = false
           }
+          viewModelScope.launch { loadRecommendations() }
+
         }
       } catch (e: Exception) {
         Log.e("MainViewModel", "Error loading samples", e)
@@ -312,7 +335,7 @@ class MainViewModel(
   fun onLikeClicked(sample: Sample, isLiked: Boolean) {
     if (_isAnonymous.value) return
     viewModelScope.launch {
-      val newState = actions?.onLikeClicked(sample.id, isLiked)
+      val newState = actions?.onLikeClicked(sample, isLiked)
       if (newState != null) {
         _likedSamples.value = _likedSamples.value + (sample.id to newState)
       }
@@ -475,9 +498,8 @@ class MainViewModel(
   /** Function to be called when a refresh is triggered. */
   fun refresh() {
     _isRefreshing.value = true
-    allSamplesCache = emptyList()
+    //allSamplesCache = emptyList()
     loadSamplesFromFirebase()
-    viewModelScope.launch { loadRecommendations() }
   }
   /** Function to open the comment section. */
   fun openCommentSection(sample: Sample) {

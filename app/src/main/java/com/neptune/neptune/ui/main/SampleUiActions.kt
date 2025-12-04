@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.neptune.neptune.data.storage.StorageService
+import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.ui.theme.NepTuneTheme
@@ -25,7 +27,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
-
 /**
  * SampleActions Handles user actions related to samples such as liking and downloading. Manages
  * download state and error reporting. Uses coroutines for asynchronous operations.
@@ -43,7 +44,8 @@ class SampleUiActions(
     private val downloadsFolder: File,
     private val context: Context,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val downloadProgress: MutableStateFlow<Int?> = MutableStateFlow(0)
+    private val downloadProgress: MutableStateFlow<Int?> = MutableStateFlow(0),
+    private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository
 ) {
   val downloadBusy = MutableStateFlow(false)
   val downloadError = MutableStateFlow<String?>(null)
@@ -63,6 +65,13 @@ class SampleUiActions(
           }
       withContext(ioDispatcher) { storageService.persistZipToDownloads(zip, downloadsFolder) }
       repo.increaseDownloadCount(sample.id)
+
+      //record download interaction
+      profileRepo.recordTagInteraction(
+          tags = sample.tags,
+          likeDelta = 0,
+          downloadDelta = 1
+      )
     } catch (e: SecurityException) {
       downloadError.value = "Storage permission required: ${e.message}"
     } catch (e: IOException) {
@@ -76,10 +85,11 @@ class SampleUiActions(
     }
   }
 
-  suspend fun onLikeClicked(sampleId: String, isLiked: Boolean): Boolean {
+  suspend fun onLikeClicked(sample: Sample, isLiked: Boolean): Boolean {
+    val sampleId = sample.id
     val alreadyLiked = repo.hasUserLiked(sampleId)
 
-    return if (!alreadyLiked && isLiked) {
+    val result = if (!alreadyLiked && isLiked) {
       repo.toggleLike(sampleId, true)
       true
     } else if (alreadyLiked && !isLiked) {
@@ -89,6 +99,14 @@ class SampleUiActions(
       // Doesn't change
       alreadyLiked
     }
+    if (!alreadyLiked && isLiked) {
+      profileRepo.recordTagInteraction(
+          tags = sample.tags,
+          likeDelta = 1,
+          downloadDelta = 0
+      )
+    }
+      return result
   }
 
   /** Delegate function to get download URL from StorageService */

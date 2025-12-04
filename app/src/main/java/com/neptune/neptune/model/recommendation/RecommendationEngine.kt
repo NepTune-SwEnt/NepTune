@@ -8,52 +8,20 @@ import kotlinx.coroutines.withContext
 import kotlin.math.log10
 import kotlin.math.sqrt
 
-class RecommendationEngine(
-    private val sampleRepo: SampleRepository
-) {
-    /**
-     *
-     */
-    suspend fun getRecommendedSamplesForUser(
-        user: RecoUserProfile,
-        limit: Int = 50
-    ): List<Sample> = withContext(Dispatchers.Default) {
-        val candidates = mutableListOf<Sample>()
+object RecommendationEngine{
 
-        //1) latest samples
-        val latest = sampleRepo.getLatestSamples(limit)
-        //2) trending
-        val trending = sampleRepo.getTrendingSamples(limit)
-        //3) tag-matching samples based on user's top tags
-        val topTags = user.topTags(limit)
-        val tagMatches = sampleRepo.getSamplesByTags(tags = topTags, perTagLimit = 40)
-        candidates.addAll(latest)
-        candidates.addAll(trending)
-        candidates.addAll(tagMatches)
-        val distinctCandidates: List<Sample> = candidates.distinctBy { it.id }
-        val now = System.currentTimeMillis()
-
-        //score each candidate
-        val scored: List<Pair<Sample, Double>> = distinctCandidates.map { sample ->
-            val score = scoreSample(sample, user, now)
-            sample to score
-        }
-        scored.sortedByDescending {(_, score) -> score}
-            .take(limit)
-            .map { (sample, _) -> sample }
-    }
 
     /**
      * Calculates a popularity score for user based on the number of downloads and likes,
      * recency and tags of a sample
      */
-    private fun scoreSample(sample: Sample, user: RecoUserProfile, now: Long): Double {
+    fun scoreSample(sample: Sample, user: RecoUserProfile, now: Long): Double {
         val tagSim = tagSimilarity(user.tagsWeight, sample.tags)
         val pop = popularityScore(sample.downloads, sample.likes)
         val recency = recencyScore(sample.creationTime, now)
 
         // Hyperparameters
-        val alpha = 2.0  // tag similarity importance
+        val alpha = 4.0  // tag similarity importance
         val beta  = 1.0  // popularity importance
         val gamma = 0.5  // recency importance
 
@@ -64,7 +32,7 @@ class RecommendationEngine(
      * Calculates the similarity of a sample's tags with a user's top tags
      * between 0 and 1, where 1 means a perfect match.
      */
-    private fun tagSimilarity(
+    fun tagSimilarity(
         userTagProfile: Map<String, Double>,
         sampleTags: List<String>
     ): Double {
@@ -96,7 +64,7 @@ class RecommendationEngine(
      * Calculates a score based on popularity that makes a huge difference in numbers still fair using
      * log
      */
-    private fun popularityScore(downloads: Int, likes: Int): Double {
+    fun popularityScore(downloads: Int, likes: Int): Double {
         val raw = downloads + likes
         return log10(1.0 + raw.toDouble())
     }
@@ -104,13 +72,32 @@ class RecommendationEngine(
     /**
      * Recency score: samples get higher score if recent
      */
-    private fun recencyScore(
+    fun recencyScore(
         creationTime: Long,
         now: Long
     ): Double {
         if (creationTime <= 0L) return 0.0
         val ageMillis = (now - creationTime).coerceAtLeast(1L)
-        val ageDays = ageMillis / (1000 * 60 * 60 * 24)
-        return 1.0 / ageDays.toDouble()
+        val ageDays = ageMillis / (1000.0 * 60.0 * 60.0 * 24.0)
+        return 1.0 / (1.0 + ageDays.toDouble())
+    }
+    /**
+     * rank samples for user based on their tags and likes, recency, and downloads
+     */
+    fun rankSamplesForUser(
+        user: RecoUserProfile,
+        candidates: List<Sample>,
+        limit: Int = 50
+        ): List<Sample> {
+            if (candidates.isEmpty()) return emptyList()
+
+            val now = System.currentTimeMillis()
+
+            return candidates
+                .distinctBy { it.id }
+                .map { sample -> sample to scoreSample(sample, user, now) }
+                .sortedByDescending { it.second }
+                .take(limit)
+                .map { it.first }
     }
 }

@@ -162,4 +162,9 @@ interface ProfileRepository {
    */
   suspend fun getCurrentRecoUserProfile(): RecoUserProfile?
 
+  /**
+   * Actions to execute when a tag interaction is recorded.
+   */
+  suspend fun recordTagInteraction(tags: List<String>, likeDelta: Int, downloadDelta: Int)
+
 }
