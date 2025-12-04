@@ -10,33 +10,31 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
 import androidx.compose.material3.SwitchDefaults
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
-import com.neptune.neptune.NepTuneApplication
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.R
 import com.neptune.neptune.ui.settings.SettingsScreenTestTags.DISABLE_HELP_SWITCH
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.ui.util.NeptuneTopBar
+import kotlinx.coroutines.launch
 
 object SettingsScreenTestTags {
   const val DISABLE_HELP_SWITCH = "disableHelpSwitch"
@@ -68,10 +66,7 @@ fun SettingsScreen(
         val coroutineScope = rememberCoroutineScope()
 
         LazyColumn(
-            modifier = Modifier
-              .fillMaxSize()
-              .padding(innerPadding)
-              .padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
           item {
@@ -90,30 +85,33 @@ fun SettingsScreen(
           }
           item {
             Card(
-              onClick = { coroutineScope.launch { dataStore.setDisableHelp(!disabled) } },
-              modifier = Modifier.fillMaxWidth().testTag(DISABLE_HELP_SWITCH),
-              colors = CardDefaults.cardColors(containerColor = NepTuneTheme.colors.cardBackground),
+                onClick = { coroutineScope.launch { dataStore.setDisableHelp(!disabled) } },
+                modifier = Modifier.fillMaxWidth().testTag(DISABLE_HELP_SWITCH),
+                colors =
+                    CardDefaults.cardColors(containerColor = NepTuneTheme.colors.cardBackground),
             ) {
               Row(
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                  text = "Disable sampler help button",
-                  style =
-                    TextStyle(
-                      fontSize = 22.sp,
-                      fontFamily = FontFamily(Font(R.font.markazi_text)),
-                      fontWeight = FontWeight.Normal,
-                      color = NepTuneTheme.colors.onBackground,
-                    ))
-                Switch(
-                  checked = disabled,
-                  onCheckedChange = { checked -> coroutineScope.launch { dataStore.setDisableHelp(checked) } },
-                  colors = SwitchDefaults.colors(uncheckedThumbColor = NepTuneTheme.colors.onBackground))
-              }
+                  modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Disable sampler help button",
+                        style =
+                            TextStyle(
+                                fontSize = 22.sp,
+                                fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                fontWeight = FontWeight.Normal,
+                                color = NepTuneTheme.colors.onBackground,
+                            ))
+                    Switch(
+                        checked = disabled,
+                        onCheckedChange = { checked ->
+                          coroutineScope.launch { dataStore.setDisableHelp(checked) }
+                        },
+                        colors =
+                            SwitchDefaults.colors(
+                                uncheckedThumbColor = NepTuneTheme.colors.onBackground))
+                  }
             }
           }
         }

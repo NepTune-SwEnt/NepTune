@@ -29,8 +29,10 @@ class HelpDialogTest {
     // Tap the right nav button to go to next page
     composeRule.onNodeWithTag(SamplerTestTags.HELP_NAV_RIGHT).performClick()
 
-    // Page indicator should now reflect page 1 selected — verify by ensuring the second dot is clickable
-    // We can't directly read which dot is selected, but the nav button state changes; check that left nav becomes enabled
+    // Page indicator should now reflect page 1 selected — verify by ensuring the second dot is
+    // clickable
+    // We can't directly read which dot is selected, but the nav button state changes; check that
+    // left nav becomes enabled
     composeRule.onNodeWithTag(SamplerTestTags.HELP_NAV_LEFT).assertIsEnabled()
 
     // Navigate back left
@@ -55,7 +57,10 @@ class HelpDialogTest {
     composeRule.onNode(hasContentDescription("disableHelpRow")).assertExists()
 
     // Toggle the switch: tap the first toggleable node we can find inside the settings dialog
-    composeRule.onAllNodes(isToggleable()).filterToOne(hasParent(hasTestTag(SamplerTestTags.SETTINGS_DIALOG))).performClick()
+    composeRule
+        .onAllNodes(isToggleable())
+        .filterToOne(hasParent(hasTestTag(SamplerTestTags.SETTINGS_DIALOG)))
+        .performClick()
 
     // Close settings dialog by pressing Save & Close
     composeRule.onNodeWithTag(SamplerTestTags.SETTINGS_CONFIRM_BUTTON).performClick()
