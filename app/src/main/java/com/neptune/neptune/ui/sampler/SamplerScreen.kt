@@ -1809,8 +1809,7 @@ fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Un
                     }) {
                   HelpDialogContent(selectedTab)
 
-                  Spacer(modifier = Modifier.height(12.dp))
-                  Spacer(modifier = Modifier.height(8.dp))
+                  Spacer(modifier = Modifier.height(20.dp))
                   // Place the page indicator and Close button on the same row so dots are
                   // vertically aligned with the Close button
                   Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
