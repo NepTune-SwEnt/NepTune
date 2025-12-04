@@ -2,6 +2,7 @@ package com.neptune.neptune.ui.sampler
 
 import android.graphics.Paint
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -27,7 +28,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -60,7 +63,9 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.Locale
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.atan2
+import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -630,7 +635,7 @@ fun WaveformDisplay(
 
           // Calculate label step to avoid overlapping labels horizontally
           val minLabelSpacingPx = 24.dp.toPx()
-          val labelStep = max(1, kotlin.math.ceil(minLabelSpacingPx / pixelsPerSecond).toInt())
+          val labelStep = max(1, ceil(minLabelSpacingPx / pixelsPerSecond).toInt())
 
           val labelHorizontalPadding = 4.dp.toPx()
           for (sec in 0..totalSeconds) {
@@ -1227,7 +1232,7 @@ fun ExpandableSection(
                   tint = NepTuneTheme.colors.accentPrimary)
             }
 
-        androidx.compose.animation.AnimatedVisibility(
+        AnimatedVisibility(
             visible = isExpanded,
             enter = expandVertically(animationSpec = tween(300)),
             exit = shrinkVertically(animationSpec = tween(300))) {
@@ -1307,9 +1312,7 @@ fun EQFader(
                 drawRect(
                     color = lightPurpleBlue,
                     topLeft = Offset(x = 0f, y = if (currentGain >= 0) faderTopY else zeroDbY),
-                    size =
-                        androidx.compose.ui.geometry.Size(
-                            width = size.width, height = kotlin.math.abs(faderHeightFromCenter)))
+                    size = Size(width = size.width, height = abs(faderHeightFromCenter)))
               }
             }
 
@@ -1446,7 +1449,7 @@ fun CompressorCurve(
     val kneeStartX = dbToX(kneeStartDb)
     val kneeEndX = dbToX(kneeEndDb)
 
-    val linePath = androidx.compose.ui.graphics.Path()
+    val linePath = Path()
 
     drawLine(
         color = Color.Gray,
@@ -1814,10 +1817,7 @@ fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Un
                   Spacer(modifier = Modifier.height(8.dp))
                   // Place the page indicator and Close button on the same row so dots are
                   // vertically aligned with the Close button
-                  Box(
-                      modifier = Modifier.fillMaxWidth(),
-//                      verticalAlignment = Alignment.CenterVertically,
-                      contentAlignment = Alignment.Center) {
+                  Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Box {
                       PageIndicator(
                           pageCount = tabCount,
@@ -1826,7 +1826,9 @@ fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Un
                           modifier = Modifier.wrapContentWidth())
                     }
 
-                    TextButton(modifier = Modifier.align(Alignment.CenterEnd), onClick = onClose) { Text(stringResource(id = R.string.close)) }
+                    TextButton(modifier = Modifier.align(Alignment.CenterEnd), onClick = onClose) {
+                      Text(stringResource(id = R.string.close))
+                    }
                   }
                 }
 
@@ -1837,21 +1839,17 @@ fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Un
                 enabled = canGoPrev,
                 modifier =
                     Modifier.align(Alignment.CenterStart)
+                        .absoluteOffset((-24).dp)
                         .padding(start = 8.dp)
-                        .size(40.dp)
+                        .size(50.dp)
                         .testTag(SamplerTestTags.HELP_NAV_LEFT)) {
-                  Surface(
-                      shape = CircleShape,
-                      color =
-                          if (canGoPrev) NepTuneTheme.colors.accentPrimary
-                          else NepTuneTheme.colors.accentPrimary.copy(alpha = 0.35f),
-                      tonalElevation = 2.dp) {
-                        Icon(
-                            imageVector = Icons.Default.ChevronLeft,
-                            contentDescription = "Previous help page",
-                            tint = Color.White,
-                            modifier = Modifier.padding(6.dp))
-                      }
+                  Surface(shape = CircleShape, color = Color.Transparent, tonalElevation = 2.dp) {
+                    Icon(
+                        imageVector = Icons.Default.ChevronLeft,
+                        contentDescription = "Previous help page",
+                        tint = Color.White,
+                        modifier = Modifier.padding(6.dp))
+                  }
                 }
 
             // Right navigation button (overlaid)
@@ -1861,21 +1859,17 @@ fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Un
                 enabled = canGoNext,
                 modifier =
                     Modifier.align(Alignment.CenterEnd)
+                        .absoluteOffset(24.dp)
                         .padding(end = 8.dp)
-                        .size(40.dp)
+                        .size(50.dp)
                         .testTag(SamplerTestTags.HELP_NAV_RIGHT)) {
-                  Surface(
-                      shape = CircleShape,
-                      color =
-                          if (canGoNext) NepTuneTheme.colors.accentPrimary
-                          else NepTuneTheme.colors.accentPrimary.copy(alpha = 0.35f),
-                      tonalElevation = 2.dp) {
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = "Next help page",
-                            tint = Color.White,
-                            modifier = Modifier.padding(6.dp))
-                      }
+                  Surface(shape = CircleShape, color = Color.Transparent, tonalElevation = 2.dp) {
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "Next help page",
+                        tint = Color.White,
+                        modifier = Modifier.padding(6.dp))
+                  }
                 }
           }
         }
