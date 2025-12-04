@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** Displays all samples posted by [ownerId] on profile screens. */
 class ProfileSamplesViewModel(
@@ -93,7 +94,7 @@ class ProfileSamplesViewModel(
     val safeActions = actions ?: return
     viewModelScope.launch {
       try {
-        safeActions.onDownloadClicked(sample)
+        withContext(Dispatchers.IO) { safeActions.onDownloadClicked(sample) }
       } catch (e: Exception) {
         Log.e("ProfileSamplesViewModel", "Error downloading sample: ${e.message}")
       }
