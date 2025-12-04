@@ -274,13 +274,13 @@ fun ScrollableColumnOfUsers(
                             contentDescription = "User Avatar",
                             modifier = Modifier.size(40.dp).clip(CircleShape),
                             contentScale = ContentScale.Crop,
-                            placeholder = painterResource(id = R.drawable.ic_avatar_placeholder),
-                            error = painterResource(id = R.drawable.ic_avatar_placeholder))
+                            placeholder = painterResource(id = R.drawable.profile),
+                            error = painterResource(id = R.drawable.profile))
                       } else {
                         // Use Image instead of Icon to preserve the original colors of the
                         // placeholder
                         Image(
-                            painter = painterResource(id = R.drawable.ic_avatar_placeholder),
+                            painter = painterResource(id = R.drawable.profile),
                             contentDescription = "User Avatar",
                             modifier = Modifier.size(40.dp).clip(CircleShape),
                             contentScale = ContentScale.Crop)
