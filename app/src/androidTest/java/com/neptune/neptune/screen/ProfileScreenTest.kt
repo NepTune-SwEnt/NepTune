@@ -996,17 +996,27 @@ class ProfileScreenTest {
     val samplesViewModel = createFakeSamplesViewModel(listOf(ownerSample, otherSample))
     setContentViewMode(samplesViewModel = samplesViewModel)
 
-    composeTestRule.waitUntil(15_000) {
-      samplesViewModel.samples.value.any { it.name == ownerSample.name }
+    // Wait for the LazyColumn that renders samples to appear
+    composeTestRule.waitUntil(timeoutMillis = 15_000) {
+      composeTestRule
+          .onAllNodes(hasTestTag("profile/samples/list"), useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
     }
 
-    composeTestRule.waitUntil(15_000) {
+    // Scroll the list so the owner sample is composed
+    composeTestRule
+        .onNodeWithTag("profile/samples/list", useUnmergedTree = true)
+        .performScrollToNode(hasText("Owner Track"))
+
+    // Now wait for the item text to exist, then assert
+    composeTestRule.waitUntil(timeoutMillis = 15_000) {
       composeTestRule
           .onAllNodes(hasText("Owner Track"), useUnmergedTree = true)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
-    composeTestRule.scrollAnyScrollableTo(hasText("Owner Track"))
+
     composeTestRule.onNode(hasText("Owner Track"), useUnmergedTree = true).assertIsDisplayed()
     composeTestRule.onAllNodes(hasText("Other Track"), useUnmergedTree = true).assertCountEquals(0)
   }
