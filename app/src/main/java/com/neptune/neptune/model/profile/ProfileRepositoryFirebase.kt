@@ -353,8 +353,8 @@ class ProfileRepositoryFirebase(
 
   /**
    * Searches for users. If [query] is empty, returns a list of all users ordered by subscribers.
-   * Otherwise, returns users whose username starts with the given query, sorted by subscribers
-   * descending (client-side sort for best UX within Firestore limits).
+   * Otherwise, returns users whose username OR name starts with the given query, sorted by
+   * subscribers descending (client-side sort for best UX within Firestore limits).
    *
    * @param query the prefix to search for, or empty string for all users
    * @return a list of matching profiles
@@ -371,18 +371,33 @@ class ProfileRepositoryFirebase(
             .mapNotNull { it.toProfileOrNull() }
       } else {
         val normalizedQuery = normalizeUsername(query)
-        // Use Firestore range query for prefix matching on username
-        val results =
+
+        // Search by username
+        val usernameResults =
             profiles
                 .whereGreaterThanOrEqualTo("username", normalizedQuery)
                 .whereLessThan("username", normalizedQuery + "\uf8ff")
-                .limit(50) // Fetch slightly more to sort client-side effectively
+                .limit(50)
                 .get()
                 .await()
                 .mapNotNull { it.toProfileOrNull() }
 
+        // Search by name
+        // We use the raw query here because names can have spaces and mixed casing
+        val nameResults =
+            profiles
+                .whereGreaterThanOrEqualTo("name", query)
+                .whereLessThan("name", query + "\uf8ff")
+                .limit(50)
+                .get()
+                .await()
+                .mapNotNull { it.toProfileOrNull() }
+
+        // Merge and deduplicate
+        val allResults = (usernameResults + nameResults).distinctBy { it.uid }
+
         // Client-side sort to show most popular matches first
-        results.sortedByDescending { it.subscribers }
+        allResults.sortedByDescending { it.subscribers }
       }
     } catch (e: Exception) {
       Log.e("ProfileRepository", "Error searching users", e)
