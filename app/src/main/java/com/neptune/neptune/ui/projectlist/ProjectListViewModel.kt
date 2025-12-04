@@ -150,40 +150,23 @@ class ProjectListViewModel(
     viewModelScope.launch {
       try {
         val projectToDelete = uiState.value.projects.find { it.uid == projectId }
-        if (projectId.startsWith("local_")) {
-          val realId = projectId.removePrefix("local_")
-          val localItems = getLibraryUseCase?.invoke()?.first() ?: emptyList()
-          val item = localItems.find { it.id == realId }
-          if (item != null && mediaRepository != null) {
-            mediaRepository.delete(item)
-            try {
-              val file = File(item.projectUri)
-              if (file.exists()) {
-                file.delete()
-              }
-            } catch (e: Exception) {
-              Log.e("ProjectListVM", "Error deleting local file", e)
-            }
-          }
-        } else {
-          projectRepository.deleteProject(projectId)
+        projectRepository.deleteProject(projectId)
 
-          if (projectToDelete?.projectFileLocalPath != null && mediaRepository != null) {
-            val path = projectToDelete.projectFileLocalPath
-            val localItems = getLibraryUseCase?.invoke()?.first() ?: emptyList()
-            val ghostItem = localItems.find { it.projectUri == path }
-            if (ghostItem != null) {
-              mediaRepository.delete(ghostItem)
-            }
-            try {
-              val file = File(path)
-              if (file.exists()) file.delete()
-            } catch (_: Exception) {
-              // Ignore
-            }
+        if (projectToDelete?.projectFileLocalPath != null && mediaRepository != null) {
+          val path = projectToDelete.projectFileLocalPath
+          val localItems = getLibraryUseCase?.invoke()?.first() ?: emptyList()
+          val ghostItem = localItems.find { it.projectUri == path }
+          if (ghostItem != null) {
+            mediaRepository.delete(ghostItem)
           }
-          refreshProjects()
+          try {
+            val file = File(path)
+            if (file.exists()) file.delete()
+          } catch (_: Exception) {
+            // Ignore
+          }
         }
+        refreshProjects()
       } catch (e: Exception) {
         Log.e("ProjectListViewModel", "Error deleting project", e)
       }
