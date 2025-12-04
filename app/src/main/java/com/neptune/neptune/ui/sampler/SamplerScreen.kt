@@ -207,7 +207,6 @@ fun SamplerScreen(
                   uiState = uiState,
                   viewModel = viewModel)
 
-
               Spacer(modifier = Modifier.height(16.dp))
 
               SamplerTabs(currentTab = uiState.currentTab, onTabSelected = viewModel::selectTab)
@@ -226,7 +225,7 @@ fun SamplerScreen(
 fun ADSRTestButton(viewModel: SamplerViewModel, modifier: Modifier = Modifier) {
   Surface(
       modifier =
-          modifier.testTag("ADSR_TEST_BUTTON").fillMaxWidth().height(80.dp).pointerInput(Unit) {
+          modifier.testTag("ADSR_TEST_BUTTON").fillMaxWidth().height(30.dp).pointerInput(Unit) {
             detectTapGestures(
                 onPress = {
                   viewModel.startADSRSample()
