@@ -40,7 +40,7 @@ open class StorageService(
   }
   // correct -> obtain path from Firestore and not Storage
   @Throws(IOException::class)
-  suspend fun downloadZippedSample(
+  open suspend fun downloadZippedSample(
       sample: Sample,
       context: Context,
       onProgress: (Int) -> Unit = {}
@@ -79,7 +79,7 @@ open class StorageService(
    * @throws IllegalArgumentException if no audio or no json file is found
    * @throws java.io.IOException for I/O errors or unsafe paths
    */
-  fun persistZipToDownloads(zipFile: File, outputDir: File): File {
+  open fun persistZipToDownloads(zipFile: File, outputDir: File): File {
     require(zipFile.isFile) { "zipFile must be a file: ${zipFile.path}" }
 
     var hasAudio = false

@@ -384,7 +384,7 @@ private fun SampleSectionLazyRow(
                   onClickFunctions(
                       onDownloadClick = { mainViewModel.onDownloadSample(sample) },
                       onLikeClick = { isLiked ->
-                        if (!isAnonymous) mainViewModel.onLikeClicked(sample, isLiked)
+                        if (!isAnonymous) mainViewModel.onLikeClick(sample, isLiked)
                       },
                       onCommentClick = { onCommentClick(sample) },
                       onProfileClick = { onProfileClick(sample.ownerId) },
