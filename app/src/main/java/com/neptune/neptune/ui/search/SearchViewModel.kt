@@ -1,10 +1,12 @@
 package com.neptune.neptune.ui.search
 
 import android.content.Context
+import android.os.Environment
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.R
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.Profile
@@ -53,6 +55,7 @@ enum class SearchType(val title: String) {
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 open class SearchViewModel(
+    private val repo: SampleRepository = SampleRepositoryProvider.repository,
     sampleRepo: SampleRepository = SampleRepositoryProvider.repository,
     context: Context,
     private val useMockData: Boolean = false,
@@ -96,6 +99,8 @@ open class SearchViewModel(
   private val _searchType = MutableStateFlow(SearchType.SAMPLES)
   val searchType: StateFlow<SearchType> = _searchType.asStateFlow()
 
+    private val _isAnonymous = MutableStateFlow(auth.currentUser?.isAnonymous ?: true)
+    val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
   // User search results
   private val _userResults = MutableStateFlow<List<Profile>>(emptyList())
   val userResults: StateFlow<List<Profile>> = _userResults.asStateFlow()
@@ -121,7 +126,7 @@ open class SearchViewModel(
   private val _isOnline = MutableStateFlow(true)
   val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
   val isUserLoggedIn: Boolean
-    get() = auth?.currentUser != null
+    get() = auth.currentUser != null
 
   init {
     viewModelScope.launch {
@@ -199,7 +204,8 @@ open class SearchViewModel(
             explicitStorageService
                 ?: run {
                   val storage =
-                      FirebaseStorage.getInstance(context.getString(R.string.storage_path))
+                      FirebaseStorage.getInstance(
+                          NepTuneApplication.appContext.getString(R.string.storage_path))
                   StorageService(storage)
                 }
 
@@ -293,7 +299,10 @@ private suspend fun getSampleCoverUrl(storagePath: String): String? {
     return try {
       val waveform =
           WaveformExtractor()
-              .extractWaveform(context = context, uri = audioUrl.toUri(), samplesCount = 100)
+              .extractWaveform(
+                  context = NepTuneApplication.appContext,
+                  uri = audioUrl.toUri(),
+                  samplesCount = 100)
       if (waveform.isNotEmpty()) {
         waveformCache[sample.id] = waveform
       }
@@ -415,7 +424,7 @@ private suspend fun getSampleCoverUrl(storagePath: String): String? {
   }
 
   fun loadSamplesFromFirebase() {
-    if (auth?.currentUser == null) return
+    if (auth.currentUser == null) return
     viewModelScope.launch {
         try {
             this@SearchViewModel.sampleRepo.observeSamples().collectLatest { samples ->
@@ -515,7 +524,7 @@ private suspend fun getSampleCoverUrl(storagePath: String): String? {
     viewModelScope.launch {
       try {
         val profile = profileRepo.getCurrentProfile()
-        val authorId = profile?.uid ?: auth?.currentUser?.uid ?: "unknown"
+        val authorId = profile?.uid ?: auth.currentUser?.uid ?: "unknown"
         val authorName = profile?.username ?: defaultName
         repo.addComment(sampleId, authorId, authorName, text.trim())
         observeCommentsForSample(sampleId)

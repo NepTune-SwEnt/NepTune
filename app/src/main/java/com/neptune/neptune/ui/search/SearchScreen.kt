@@ -44,7 +44,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -153,9 +152,7 @@ fun searchScreenFactory(application: Application) =
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
-    searchViewModel: SearchViewModel =
-        viewModel(
-            factory = searchScreenFactory(LocalContext.current.applicationContext as Application)),
+    searchViewModel: SearchViewModel = viewModel(),
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
     navigateToProfile: () -> Unit = {},
     navigateToOtherUserProfile: (String) -> Unit = {},

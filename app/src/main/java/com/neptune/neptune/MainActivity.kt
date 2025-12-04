@@ -59,7 +59,6 @@ import com.neptune.neptune.ui.projectlist.ProjectListViewModelFactory
 import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.search.SearchScreen
 import com.neptune.neptune.ui.search.SearchViewModel
-import com.neptune.neptune.ui.search.searchScreenFactory
 import com.neptune.neptune.ui.settings.SettingsAccountScreen
 import com.neptune.neptune.ui.settings.SettingsCustomThemeScreen
 import com.neptune.neptune.ui.settings.SettingsScreen
@@ -121,9 +120,7 @@ fun NeptuneApp(
     startDestination: String = Screen.SignIn.route,
 ) {
   val signInViewModel: SignInViewModel = viewModel()
-  val searchViewModel: SearchViewModel =
-      viewModel(
-          factory = searchScreenFactory(LocalContext.current.applicationContext as Application))
+  val searchViewModel: SearchViewModel = viewModel()
   val navigationActions = NavigationActions(navController)
   val navBackStackEntry by navController.currentBackStackEntryAsState()
   val currentRoute = navBackStackEntry?.destination?.route
