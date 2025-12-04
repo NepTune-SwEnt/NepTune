@@ -224,22 +224,7 @@ fun SamplerScreen(
           }
 
           // Bottom-left Help button
-          Box(modifier = Modifier.fillMaxSize()) {
-            Surface(
-                modifier = Modifier.align(Alignment.BottomStart).padding(16.dp).size(48.dp),
-                shape = CircleShape,
-                color = NepTuneTheme.colors.accentPrimary,
-                tonalElevation = 4.dp) {
-                  IconButton(
-                      onClick = { showHelpDialog = true },
-                      modifier = Modifier.testTag(SamplerTestTags.HELP_BUTTON)) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Help,
-                            contentDescription = "Help",
-                            tint = Color.White)
-                      }
-                }
-          }
+          HelpButton { showHelpDialog = true }
         }
       }
 
@@ -254,6 +239,24 @@ fun SamplerScreen(
         selectedTab = helpTabIndex,
         onTabSelected = { helpTabIndex = it },
         onClose = { showHelpDialog = false })
+  }
+}
+
+@Composable
+fun HelpButton(onClick: () -> Unit) {
+  Box(modifier = Modifier.fillMaxSize()) {
+    Surface(
+        modifier = Modifier.align(Alignment.BottomStart).padding(16.dp).size(56.dp),
+        shape = CircleShape,
+        color = NepTuneTheme.colors.accentPrimary,
+        tonalElevation = 4.dp) {
+          IconButton(onClick = onClick, modifier = Modifier.testTag(SamplerTestTags.HELP_BUTTON)) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Help,
+                contentDescription = "Help",
+                tint = Color.White)
+          }
+        }
   }
 }
 

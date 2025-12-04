@@ -13,7 +13,7 @@
 
     <string name="help_overview_text">The sampler allows previewing audio, adjusting pitch and tempo, editing ADSR envelope, EQ and compression. Use the tabs to switch sections.</string>
 
-    <string name="help_controls_text">- Play / Pause: preview the sample\n- Save: persist project data\n- Pitch/Tempo selectors: adjust playback\n- ADSR: drag points on the curve to change envelope</string>
+    <string name="help_controls_text">On the top of the sampler lay the control bar:\n- Play / Pause: preview the sample\n- Save: persist project data\n- Pitch/Tempo selectors: adjust playback</string>
 
     <string name="help_tips_text">- Use the ADSR editor for shaping note dynamics.\n- Use EQ faders to cut/boost frequencies.\n- Try short preview loops to fine-tune parameters.</string>
 
