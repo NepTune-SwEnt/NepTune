@@ -1,6 +1,7 @@
 package com.neptune.neptune.ui.main
 
 import android.app.Application
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -48,6 +49,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -70,6 +72,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
@@ -81,6 +84,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -96,9 +100,11 @@ import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
+import com.neptune.neptune.ui.feed.FeedType
 import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.formatTime
+import kotlinx.coroutines.delay
 
 object MainScreenTestTags : BaseSampleTestTags {
   override val prefix = "MainScreen"
@@ -106,7 +112,7 @@ object MainScreenTestTags : BaseSampleTestTags {
   // General
   const val MAIN_SCREEN = "mainScreen"
   const val POST_BUTTON = "postButton"
-  const val DOWNlOAD_PROGRESS = "downloadProgressBar"
+  const val DOWNLOAD_PROGRESS = "downloadProgressBar"
 
   // Top Bar
   const val TOP_BAR = "topBar"
@@ -173,25 +179,20 @@ fun MainScreen(
     navigateToProjectList: () -> Unit = {},
     navigateToOtherUserProfile: (String) -> Unit = {},
     navigateToSelectMessages: () -> Unit = {},
+    navigateToSampleList: (FeedType) -> Unit = {},
     mainViewModel: MainViewModel =
         viewModel(factory = factory(LocalContext.current.applicationContext as Application))
 ) {
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
   val userAvatar by mainViewModel.userAvatar.collectAsState()
-  val likedSamples by mainViewModel.likedSamples.collectAsState()
-  val comments by mainViewModel.comments.collectAsState()
-  val usernames by mainViewModel.usernames.collectAsState()
-  var activeCommentSampleId by remember { mutableStateOf<String?>(null) }
+  val isAnonymous by mainViewModel.isAnonymous.collectAsState()
 
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-  val horizontalPadding = 30.dp
-  val spacing = 25.dp
+  val wait: Long = 300
   // Depends on the size of the screen
   val maxColumns = if (screenWidth < 360.dp) 1 else 2
-  val cardWidth = (screenWidth - horizontalPadding * 2 - spacing) / 2
   val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
-  val sampleResources by mainViewModel.sampleResources.collectAsState()
   val isRefreshing by mainViewModel.isRefreshing.collectAsState()
   val pullRefreshState = rememberPullToRefreshState()
 
@@ -202,18 +203,15 @@ fun MainScreen(
     if (isRefreshing) {
       pullRefreshState.startRefresh()
     } else {
-      pullRefreshState.endRefresh()
+      if (pullRefreshState.isRefreshing) {
+        delay(wait)
+        pullRefreshState.endRefresh()
+      }
     }
   }
 
   fun onCommentClicked(sample: Sample) {
-    mainViewModel.observeCommentsForSample(sample.id)
-    activeCommentSampleId = sample.id
-  }
-
-  fun onAddComment(sampleId: String, text: String) {
-    mainViewModel.addComment(sampleId, text)
-    mainViewModel.observeCommentsForSample(sampleId)
+    mainViewModel.openCommentSection(sample)
   }
 
   fun handleProfileNavigation(ownerId: String) {
@@ -231,69 +229,10 @@ fun MainScreen(
               .testTag(MainScreenTestTags.MAIN_SCREEN)) {
         Scaffold(
             topBar = {
-              Column {
-                CenterAlignedTopAppBar(
-                    modifier =
-                        Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
-                    navigationIcon = {
-                      // Message Button
-                      IconButton(
-                          onClick = navigateToSelectMessages,
-                          modifier =
-                              Modifier.padding(vertical = 38.dp, horizontal = 25.dp)
-                                  .size(38.dp)
-                                  .testTag(NavigationTestTags.MESSAGE_BUTTON)) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.messageicon),
-                                contentDescription = "Messages",
-                                modifier = Modifier.size(30.dp),
-                                tint = NepTuneTheme.colors.onBackground,
-                            )
-                          }
-                    },
-                    title = {
-                      Text(
-                          text = "NepTune",
-                          style =
-                              TextStyle(
-                                  fontSize = 45.sp,
-                                  fontFamily = FontFamily(Font(R.font.lily_script_one)),
-                                  fontWeight = FontWeight(149),
-                                  color = NepTuneTheme.colors.onBackground,
-                              ),
-                          modifier =
-                              Modifier.padding(25.dp).testTag(MainScreenTestTags.TOP_BAR_TITLE),
-                          textAlign = TextAlign.Center)
-                    },
-                    actions = {
-                      // Profile Button
-                      IconButton(
-                          onClick = navigateToProfile,
-                          modifier =
-                              Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
-                                  .size(57.dp)
-                                  .testTag(NavigationTestTags.PROFILE_BUTTON)) {
-                            AsyncImage(
-                                model =
-                                    ImageRequest.Builder(LocalContext.current)
-                                        .data(userAvatar ?: R.drawable.profile)
-                                        .crossfade(true)
-                                        .build(),
-                                contentDescription = "Profile",
-                                modifier = Modifier.fillMaxSize().clip(CircleShape),
-                                contentScale = ContentScale.Crop,
-                                placeholder = painterResource(R.drawable.profile),
-                                error = painterResource(R.drawable.profile))
-                          }
-                    },
-                    colors =
-                        TopAppBarDefaults.centerAlignedTopAppBarColors(
-                            containerColor = NepTuneTheme.colors.background))
-                HorizontalDivider(
-                    modifier = Modifier.fillMaxWidth(),
-                    thickness = 0.75.dp,
-                    color = NepTuneTheme.colors.onBackground)
-              }
+              MainTopAppBar(
+                  userAvatar = userAvatar,
+                  navigateToSelectMessages = navigateToSelectMessages,
+                  navigateToProfile = navigateToProfile)
             },
             floatingActionButton = {
               FloatingActionButton(
@@ -316,111 +255,229 @@ fun MainScreen(
                   }
             },
             content = { paddingValues ->
-              LazyColumn(
-                  contentPadding = paddingValues, // Apply Scaffold padding
-                  modifier =
-                      Modifier.fillMaxSize()
-                          .padding(horizontal = horizontalPadding) // Apply screen-specific padding
-                          .testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
-                    // ----------------Discover Section-----------------
-                    item { SectionHeader(title = "Discover") }
-                    item {
-                      LazyRow(
-                          horizontalArrangement = Arrangement.spacedBy(spacing),
-                          modifier = Modifier.fillMaxWidth()) {
-                            // We want to show only the sample whom have a sound.
-                            val validDiscoverSamples =
-                                discoverSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
-                            // As this element is horizontally scrollable, we can let 2
-                            val columns = validDiscoverSamples.chunked(2)
-
-                            items(columns) { samplesColumn ->
-                              Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
-                                samplesColumn.forEach { sample ->
-                                  LaunchedEffect(sample.id, sample.storagePreviewSamplePath) {
-                                    mainViewModel.loadSampleResources(sample)
-                                  }
-                                  val resources =
-                                      sampleResources[sample.id] ?: SampleResourceState()
-                                  val clickHandlers =
-                                      onClickFunctions(
-                                          onDownloadClick = {
-                                            mainViewModel.onDownloadSample(sample)
-                                          },
-                                          onLikeClick = { isLiked ->
-                                            mainViewModel.onLikeClicked(sample, isLiked)
-                                          },
-                                          onCommentClick = { onCommentClicked(sample) },
-                                          onProfileClick = {
-                                            handleProfileNavigation(sample.ownerId)
-                                          },
-                                      )
-                                  SampleItem(
-                                      sample = sample,
-                                      width = cardWidth,
-                                      isLiked = likedSamples[sample.id] == true,
-                                      clickHandlers = clickHandlers,
-                                      resourceState = resources)
-                                }
-                              }
-                            }
-                          }
-                    }
-                    // ----------------Followed Section-----------------
-                    item { SectionHeader(title = "Followed") }
-                    // If the screen is too small, it will display 1 Card instead of 2
-
-                    // We want to show only the sample whom have a sound.
-                    val validFollowedSamples =
-                        followedSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
-                    items(validFollowedSamples.chunked(maxColumns)) { samples ->
-                      SampleCardRow(
-                          samples = samples,
-                          cardWidth = cardWidth,
-                          likedSamples = likedSamples,
-                          onProfileClick = { sample -> handleProfileNavigation(sample.ownerId) },
-                          onLikeClick = { sample, isLiked ->
-                            mainViewModel.onLikeClicked(sample, isLiked)
-                          },
-                          onCommentClick = { sample -> onCommentClicked(sample) },
-                          onDownloadClick = { sample -> mainViewModel.onDownloadSample(sample) },
-                          sampleResources = sampleResources,
-                          onLoadResources = { s -> mainViewModel.loadSampleResources(s) })
-                    }
-                  }
+              MainContent(
+                  paddingValues = paddingValues,
+                  mainViewModel = mainViewModel,
+                  discoverSamples = discoverSamples,
+                  followedSamples = followedSamples,
+                  maxColumns = maxColumns,
+                  onCommentClicked = { onCommentClicked(it) },
+                  handleProfileNavigation = { handleProfileNavigation(it) },
+                  navigateToSampleList = navigateToSampleList,
+                  pullRefreshState = pullRefreshState,
+                  isAnonymous = isAnonymous)
             },
             containerColor = NepTuneTheme.colors.background)
-        PullToRefreshContainer(
-            state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter),
-            containerColor = NepTuneTheme.colors.background,
-            contentColor = NepTuneTheme.colors.onBackground)
         // Comment Overlay (Outside Scaffold content, but inside Box to float over everything)
-        if (activeCommentSampleId != null) {
-          CommentDialog(
-              sampleId = activeCommentSampleId!!,
-              usernames = usernames,
-              comments = comments,
-              onDismiss = { activeCommentSampleId = null },
-              onAddComment = { id, text -> onAddComment(id, text) })
-        }
+        SampleCommentManager(mainViewModel = mainViewModel)
 
         if (downloadProgress != null && downloadProgress != 0) {
           DownloadProgressBar(
-              downloadProgress = downloadProgress!!, MainScreenTestTags.DOWNlOAD_PROGRESS)
+              downloadProgress = downloadProgress!!, MainScreenTestTags.DOWNLOAD_PROGRESS)
         }
       }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MainContent(
+    paddingValues: PaddingValues,
+    mainViewModel: MainViewModel,
+    discoverSamples: List<Sample>,
+    followedSamples: List<Sample>,
+    maxColumns: Int,
+    onCommentClicked: (Sample) -> Unit,
+    handleProfileNavigation: (String) -> Unit,
+    navigateToSampleList: (FeedType) -> Unit,
+    pullRefreshState: PullToRefreshState,
+    isAnonymous: Boolean = false
+) {
+  val horizontalPadding = 30.dp
+  Box(modifier = Modifier.fillMaxSize()) {
+    LazyColumn(
+        contentPadding = paddingValues, // Apply Scaffold padding
+        modifier = Modifier.fillMaxSize().testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
+          // ----------------Discover Section-----------------
+          item {
+            Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+              SectionHeader(
+                  title = FeedType.DISCOVER.title,
+                  onClick = { navigateToSampleList(FeedType.DISCOVER) })
+            }
+          }
+          item {
+            SampleSectionLazyRow(
+                mainViewModel = mainViewModel,
+                samples = discoverSamples,
+                rowsPerColumn = 2,
+                onCommentClick = { onCommentClicked(it) },
+                onProfileClick = { handleProfileNavigation(it) },
+                isAnonymous = isAnonymous)
+          }
+          // ----------------Followed Section-----------------
+          item {
+            Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+              SectionHeader(
+                  title = FeedType.FOLLOWED.title,
+                  onClick = { navigateToSampleList(FeedType.FOLLOWED) })
+            }
+          }
+          item {
+            SampleSectionLazyRow(
+                mainViewModel = mainViewModel,
+                samples = followedSamples,
+                rowsPerColumn = maxColumns,
+                onCommentClick = { onCommentClicked(it) },
+                onProfileClick = { handleProfileNavigation(it) })
+            Spacer(modifier = Modifier.height(50.dp))
+          }
+        }
+    PullToRefreshContainer(
+        state = pullRefreshState,
+        modifier =
+            Modifier.align(Alignment.TopCenter).padding(top = paddingValues.calculateTopPadding()),
+        containerColor = NepTuneTheme.colors.background,
+        contentColor = NepTuneTheme.colors.onBackground)
+  }
+}
+
+@Composable
+private fun SampleSectionLazyRow(
+    mainViewModel: MainViewModel,
+    samples: List<Sample>,
+    rowsPerColumn: Int,
+    onCommentClick: (Sample) -> Unit,
+    onProfileClick: (String) -> Unit,
+    isAnonymous: Boolean = false
+) {
+  val configuration = LocalConfiguration.current
+  val screenWidth = configuration.screenWidthDp.dp
+  val horizontalPadding = 30.dp
+  val spacing = 25.dp
+  val cardWidth = (screenWidth - horizontalPadding * 2 - spacing) / 2
+
+  val sampleResources by mainViewModel.sampleResources.collectAsState()
+  val likedSamples by mainViewModel.likedSamples.collectAsState()
+
+  LazyRow(
+      horizontalArrangement = Arrangement.spacedBy(spacing),
+      contentPadding = PaddingValues(horizontal = horizontalPadding),
+      modifier = Modifier.fillMaxWidth()) {
+        val validSamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
+        val columns = validSamples.chunked(rowsPerColumn)
+
+        items(columns) { samplesColumn ->
+          Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
+            samplesColumn.forEach { sample ->
+              LaunchedEffect(sample.id, sample.storagePreviewSamplePath) {
+                mainViewModel.loadSampleResources(sample)
+              }
+
+              val resources = sampleResources[sample.id] ?: SampleResourceState()
+
+              val clickHandlers =
+                  onClickFunctions(
+                      onDownloadClick = { mainViewModel.onDownloadSample(sample) },
+                      onLikeClick = { isLiked ->
+                        if (!isAnonymous) mainViewModel.onLikeClicked(sample, isLiked)
+                      },
+                      onCommentClick = { onCommentClick(sample) },
+                      onProfileClick = { onProfileClick(sample.ownerId) },
+                  )
+
+              SampleItem(
+                  sample = sample,
+                  width = cardWidth,
+                  isLiked = likedSamples[sample.id] == true,
+                  clickHandlers = clickHandlers,
+                  resourceState = resources)
+            }
+          }
+        }
+      }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MainTopAppBar(
+    userAvatar: String?,
+    navigateToSelectMessages: () -> Unit,
+    navigateToProfile: () -> Unit
+) {
+  Column {
+    CenterAlignedTopAppBar(
+        modifier = Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
+        navigationIcon = {
+          // Message Button
+          IconButton(
+              onClick = navigateToSelectMessages,
+              modifier =
+                  Modifier.padding(vertical = 38.dp, horizontal = 25.dp)
+                      .size(38.dp)
+                      .testTag(NavigationTestTags.MESSAGE_BUTTON)) {
+                Icon(
+                    painter = painterResource(id = R.drawable.messageicon),
+                    contentDescription = "Messages",
+                    modifier = Modifier.size(30.dp),
+                    tint = NepTuneTheme.colors.onBackground,
+                )
+              }
+        },
+        title = {
+          Text(
+              text = "NepTune",
+              style =
+                  TextStyle(
+                      fontSize = 45.sp,
+                      fontFamily = FontFamily(Font(R.font.lily_script_one)),
+                      fontWeight = FontWeight(149),
+                      color = NepTuneTheme.colors.onBackground,
+                  ),
+              modifier = Modifier.padding(25.dp).testTag(MainScreenTestTags.TOP_BAR_TITLE),
+              textAlign = TextAlign.Center)
+        },
+        actions = {
+          // Profile Button
+          IconButton(
+              onClick = navigateToProfile,
+              modifier =
+                  Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
+                      .size(57.dp)
+                      .testTag(NavigationTestTags.PROFILE_BUTTON)) {
+                AsyncImage(
+                    model =
+                        ImageRequest.Builder(LocalContext.current)
+                            .data(userAvatar ?: R.drawable.profile)
+                            .crossfade(true)
+                            .build(),
+                    contentDescription = "Profile",
+                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    contentScale = ContentScale.Crop,
+                    placeholder = painterResource(R.drawable.profile),
+                    error = painterResource(R.drawable.profile))
+              }
+        },
+        colors =
+            TopAppBarDefaults.centerAlignedTopAppBarColors(
+                containerColor = NepTuneTheme.colors.background))
+    HorizontalDivider(
+        modifier = Modifier.fillMaxWidth(),
+        thickness = 0.75.dp,
+        color = NepTuneTheme.colors.onBackground)
+  }
 }
 
 @Composable
 fun SampleItem(
     sample: Sample,
     width: Dp,
+    height: Dp = 166.dp,
     isLiked: Boolean,
     clickHandlers: ClickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
     testTags: BaseSampleTestTags = MainScreenTestTags,
     resourceState: SampleResourceState = SampleResourceState(),
+    iconSize: Dp = 16.dp
 ) {
 
   Column(modifier = Modifier.width(width)) {
@@ -435,11 +492,13 @@ fun SampleItem(
     SampleCard(
         sample = sample,
         width = width,
+        height = height,
         isLiked = isLiked,
         clickHandlers = clickHandlers,
         testTags = testTags,
         mediaPlayer = mediaPlayer,
-        resourceState = resourceState)
+        resourceState = resourceState,
+        iconSize = iconSize)
   }
 }
 
@@ -487,9 +546,10 @@ fun SampleCardHeader(
 
 // ----------------Section Header-----------------
 @Composable
-fun SectionHeader(title: String) {
+fun SectionHeader(title: String, onClick: () -> Unit) {
   Row(
-      modifier = Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 12.dp),
+      modifier =
+          Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 12.dp).clickable { onClick() },
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically) {
         Text(
@@ -500,7 +560,7 @@ fun SectionHeader(title: String) {
                     fontSize = 37.sp,
                     fontFamily = FontFamily(Font(R.font.markazi_text)),
                     fontWeight = FontWeight(400)))
-        IconButton(onClick = { /*Does nothing for now, Todo: Add an action with the click*/}) {
+        IconButton(onClick = onClick) {
           Icon(
               imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
               contentDescription = "See More",
@@ -510,41 +570,6 @@ fun SectionHeader(title: String) {
       }
 }
 
-// ----------------Sample Card in Row (2 per row)-----------------
-@Composable
-fun SampleCardRow(
-    samples: List<Sample>,
-    cardWidth: Dp,
-    likedSamples: Map<String, Boolean> = emptyMap(),
-    onProfileClick: (Sample) -> Unit = {},
-    onLikeClick: (Sample, Boolean) -> Unit = { _, _ -> },
-    onCommentClick: (Sample) -> Unit = {},
-    onDownloadClick: (Sample) -> Unit = {},
-    sampleResources: Map<String, SampleResourceState> = emptyMap(),
-    onLoadResources: (Sample) -> Unit = {},
-) {
-  Row(
-      modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-      horizontalArrangement = Arrangement.spacedBy(25.dp)) {
-        samples.forEach { sample ->
-          LaunchedEffect(sample.id, sample.storagePreviewSamplePath) { onLoadResources(sample) }
-          val resources = sampleResources[sample.id] ?: SampleResourceState()
-          val isLiked = likedSamples[sample.id] == true
-          val clickHandlers =
-              onClickFunctions(
-                  onProfileClick = { onProfileClick(sample) },
-                  onLikeClick = { isLiked -> onLikeClick(sample, isLiked) },
-                  onCommentClick = { onCommentClick(sample) },
-                  onDownloadClick = { onDownloadClick(sample) })
-          SampleItem(
-              sample = sample,
-              width = cardWidth,
-              isLiked = isLiked,
-              clickHandlers = clickHandlers,
-              resourceState = resources)
-        }
-      }
-}
 // ----------------Click Handlers for Sample Card-----------------
 // Placeholder for click handlers
 data class ClickHandlers(
@@ -579,15 +604,22 @@ fun SampleCard(
     clickHandlers: ClickHandlers,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
     resourceState: SampleResourceState = SampleResourceState(),
+    iconSize: Dp = 16.dp
 ) {
   val likeDescription = if (isLiked) "liked" else "not liked"
   val heartColor = if (isLiked) Color.Red else NepTuneTheme.colors.background
   val heartIcon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder
+  var isExpanded by remember { mutableStateOf(false) }
+  val bottomPartHeight = height * 0.36f
+  val imagePartHeight = height - bottomPartHeight
+  val density = LocalDensity.current
+  val smallFontSize = with(density) { (height * 0.06f).toSp() }
+  val regularFontSize = with(density) { (height * 0.072f).toSp() }
 
   Card(
       modifier =
           Modifier.width(width)
-              .height(height)
+              .animateContentSize()
               .clickable(
                   onClick = {
                     if (resourceState.audioUrl != null) {
@@ -600,8 +632,8 @@ fun SampleCard(
       colors = CardDefaults.cardColors(containerColor = NepTuneTheme.colors.cardBackground),
       shape = RoundedCornerShape(12.dp),
       border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground)) {
-        Column(modifier = Modifier.fillMaxSize()) {
-          Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+          Box(modifier = Modifier.fillMaxWidth().height(imagePartHeight)) {
             if (resourceState.coverImageUrl != null) {
               AsyncImage(
                   model =
@@ -633,8 +665,8 @@ fun SampleCard(
                       contentAlignment = Alignment.Center) {
                         SampleWaveform(
                             amplitudes = resourceState.waveform,
-                            color = NepTuneTheme.colors.inverse,
-                            modifier = Modifier.fillMaxWidth(0.95f).height(70.dp))
+                            color = NepTuneTheme.colors.onBackground,
+                            modifier = Modifier.fillMaxWidth(0.95f).height(imagePartHeight * 0.7f))
                       }
 
                   // Sample name and duration
@@ -644,13 +676,13 @@ fun SampleCard(
                       verticalAlignment = Alignment.Bottom) {
                         Text(
                             sample.name,
-                            color = NepTuneTheme.colors.inverse,
+                            color = NepTuneTheme.colors.onBackground,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f).testTag(testTags.SAMPLE_NAME),
                             style =
                                 TextStyle(
-                                    fontSize = 12.sp,
+                                    fontSize = regularFontSize,
                                     fontFamily = FontFamily(Font(R.font.markazi_text)),
                                     fontWeight = FontWeight(400)))
 
@@ -658,12 +690,12 @@ fun SampleCard(
                         val seconds = sample.durationSeconds % 60
                         Text(
                             "%02d:%02d".format(minutes, seconds),
-                            color = NepTuneTheme.colors.inverse,
+                            color = NepTuneTheme.colors.onBackground,
                             modifier =
                                 Modifier.padding(start = 8.dp).testTag(testTags.SAMPLE_DURATION),
                             style =
                                 TextStyle(
-                                    fontSize = 12.sp,
+                                    fontSize = regularFontSize,
                                     fontFamily = FontFamily(Font(R.font.markazi_text)),
                                     fontWeight = FontWeight(400),
                                 ))
@@ -681,23 +713,39 @@ fun SampleCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween) {
                       Text(
-                          sample.tags.joinToString(", "),
+                          text = sample.tags.joinToString(" ") { "#$it" },
                           color = NepTuneTheme.colors.background,
-                          modifier = Modifier.testTag(testTags.SAMPLE_TAGS),
+                          modifier = Modifier.testTag(testTags.SAMPLE_TAGS).weight(1f),
+                          maxLines = 1,
+                          overflow = TextOverflow.Ellipsis,
                           style =
                               TextStyle(
-                                  fontSize = 10.sp,
+                                  fontSize = smallFontSize,
                                   fontFamily = FontFamily(Font(R.font.markazi_text)),
                                   fontWeight = FontWeight(400)))
                       Text(
-                          text = "see more…",
+                          text = if (isExpanded) "see less…" else "see more…",
                           color = NepTuneTheme.colors.background,
+                          modifier = Modifier.clickable { isExpanded = !isExpanded },
                           style =
                               TextStyle(
-                                  fontSize = 10.sp,
+                                  fontSize = smallFontSize,
                                   fontFamily = FontFamily(Font(R.font.markazi_text)),
                                   fontWeight = FontWeight(400)))
                     }
+                if (isExpanded) {
+                  Spacer(Modifier.height(4.dp))
+                  Text(
+                      text = sample.description,
+                      color = NepTuneTheme.colors.background,
+                      maxLines = 5,
+                      overflow = TextOverflow.Ellipsis,
+                      style =
+                          TextStyle(
+                              fontSize = regularFontSize,
+                              fontFamily = FontFamily(Font(R.font.markazi_text)),
+                              fontWeight = FontWeight(400)))
+                }
                 Spacer(Modifier.height(4.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -710,7 +758,9 @@ fun SampleCard(
                               Modifier.testTag(testTags.SAMPLE_LIKES)
                                   .semantics { stateDescription = likeDescription }
                                   .clickable { clickHandlers.onLikeClick(!isLiked) },
-                          tint = heartColor)
+                          tint = heartColor,
+                          iconSize = iconSize,
+                          fontSize = smallFontSize)
                       IconWithTextPainter(
                           icon = painterResource(R.drawable.comments),
                           iconDescription = "Comments",
@@ -718,14 +768,18 @@ fun SampleCard(
                           modifier =
                               Modifier.testTag(testTags.SAMPLE_COMMENTS).clickable {
                                 clickHandlers.onCommentClick()
-                              })
+                              },
+                          iconSize = iconSize,
+                          fontSize = smallFontSize)
                       IconWithTextPainter(
                           icon = painterResource(R.drawable.download),
                           iconDescription = "Downloads",
                           text = sample.downloads.toString(),
                           modifier =
                               Modifier.testTag(testTags.SAMPLE_DOWNLOADS)
-                                  .clickable(onClick = clickHandlers.onDownloadClick))
+                                  .clickable(onClick = clickHandlers.onDownloadClick),
+                          iconSize = iconSize,
+                          fontSize = smallFontSize)
                     }
               }
         }
@@ -740,6 +794,7 @@ fun CommentDialog(
     usernames: Map<String, String>,
     onDismiss: () -> Unit,
     onAddComment: (sampleId: String, commentText: String) -> Unit,
+    isAnonymous: Boolean = false
 ) {
   var commentText by remember { mutableStateOf("") }
   val listScrollingState = rememberLazyListState()
@@ -825,10 +880,10 @@ fun CommentDialog(
                     verticalAlignment = Alignment.CenterVertically) {
                       TextField(
                           value = commentText,
-                          onValueChange = { commentText = it },
+                          onValueChange = { if (!isAnonymous) commentText = it },
                           placeholder = {
                             Text(
-                                "Add a comment…",
+                                if (isAnonymous) "Cannot comment" else "Add a comment…",
                                 style =
                                     TextStyle(
                                         fontSize = 25.sp,
@@ -860,6 +915,7 @@ fun CommentDialog(
                               commentText = ""
                             }
                           },
+                          enabled = !isAnonymous,
                           shape = RoundedCornerShape(15.dp),
                           colors =
                               ButtonDefaults.buttonColors(
@@ -890,12 +946,15 @@ fun IconWithText(
     iconDescription: String,
     text: String,
     modifier: Modifier = Modifier,
-    tint: Color = NepTuneTheme.colors.background
+    tint: Color = NepTuneTheme.colors.background,
+    iconSize: Dp = 16.dp,
+    fontSize: TextUnit = 10.sp
 ) {
   Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
-    Icon(icon, contentDescription = iconDescription, tint = tint, modifier = Modifier.size(16.dp))
+    Icon(
+        icon, contentDescription = iconDescription, tint = tint, modifier = Modifier.size(iconSize))
     Spacer(Modifier.width(3.dp))
-    Text(text, color = NepTuneTheme.colors.background, fontSize = 10.sp)
+    Text(text, color = NepTuneTheme.colors.background, fontSize = fontSize)
   }
 }
 
@@ -905,16 +964,18 @@ fun IconWithTextPainter(
     icon: Painter,
     iconDescription: String,
     text: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    iconSize: Dp = 16.dp,
+    fontSize: TextUnit = 10.sp
 ) {
   Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
     Icon(
         icon,
         contentDescription = iconDescription,
         tint = NepTuneTheme.colors.background,
-        modifier = Modifier.size(16.dp))
+        modifier = Modifier.size(iconSize))
     Spacer(Modifier.width(3.dp))
-    Text(text, color = NepTuneTheme.colors.background, fontSize = 10.sp)
+    Text(text, color = NepTuneTheme.colors.background, fontSize = fontSize)
   }
 }
 
@@ -950,8 +1011,8 @@ fun SampleWaveform(amplitudes: List<Float>, color: Color, modifier: Modifier = M
     Image(
         painter = painterResource(R.drawable.waveform),
         contentDescription = "Waveform",
-        modifier = modifier,
-        contentScale = ContentScale.FillBounds,
+        modifier = modifier.padding(vertical = 12.dp, horizontal = 20.dp),
+        contentScale = ContentScale.Fit,
         colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(color))
   }
 }

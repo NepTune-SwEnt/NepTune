@@ -73,10 +73,14 @@ open class SearchViewModel(
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
   private val allSamples = MutableStateFlow<List<Sample>>(emptyList())
+  private var allSamplesCache: List<Sample> = emptyList()
   private val _activeCommentSampleId = MutableStateFlow<String?>(null)
   val activeCommentSampleId: StateFlow<String?> = _activeCommentSampleId.asStateFlow()
   private val _sampleResources = MutableStateFlow<Map<String, SampleResourceState>>(emptyMap())
   val sampleResources = _sampleResources.asStateFlow()
+
+  private val _isAnonymous = MutableStateFlow(auth?.currentUser?.isAnonymous ?: true)
+  val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
 
   private val _usernames = MutableStateFlow<Map<String, String>>(emptyMap())
   val usernames: StateFlow<Map<String, String>> = _usernames.asStateFlow()
@@ -281,9 +285,21 @@ open class SearchViewModel(
 
   fun loadSamplesFromFirebase() {
     viewModelScope.launch {
-      repo.observeSamples().collectLatest { samples ->
-        val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
-        allSamples.value = readySamples
+      repo.observeSamples().collectLatest { remoteSamples ->
+        if (allSamplesCache.isEmpty()) {
+          allSamplesCache = remoteSamples
+          val readySamples = remoteSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
+          readySamples.forEach { loadSampleResources(it) }
+        } else {
+          val existingIds = allSamplesCache.map { it.id }.toSet()
+          val newSamples = remoteSamples.filter { it.id !in existingIds }
+          allSamplesCache = remoteSamples
+          newSamples
+              .filter { it.storagePreviewSamplePath.isNotBlank() }
+              .forEach { loadSampleResources(it) }
+        }
+        val validSamples = allSamplesCache.filter { it.storagePreviewSamplePath.isNotBlank() }
+        allSamples.value = validSamples
         applyFilter(query)
         refreshLikeStates()
       }

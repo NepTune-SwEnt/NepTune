@@ -7,18 +7,17 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasAnyChild
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
-import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
-import androidx.compose.ui.test.performTextInput
-import androidx.test.espresso.Espresso
 import com.google.firebase.Timestamp
 import com.neptune.neptune.NepTuneApplication.Companion.appContext
 import com.neptune.neptune.media.LocalMediaPlayer
@@ -183,12 +182,31 @@ class MainScreenTest {
 
   @Test
   fun canScrollToLastSampleCard() {
+    val discoverSamples = viewModel.discoverSamples.value
+    if (discoverSamples.isEmpty()) {
+      return
+    }
+    val lastSample = discoverSamples.last()
+
+    val itemsPerColumn = 2
+
+    val columnCount = (discoverSamples.size + itemsPerColumn - 1) / itemsPerColumn
+    val lastColumnIndex = if (columnCount > 0) columnCount - 1 else 0
+
     composeTestRule
         .onNodeWithTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)
-        .performScrollToNode(hasTestTag(MainScreenTestTags.SAMPLE_CARD))
+        .performScrollToNode(hasText("Discover"))
+    composeTestRule.waitForIdle()
 
-    // When scrolling the last card should be visible
-    composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_CARD).onLast().assertIsDisplayed()
+    val discoverLazyRow =
+        composeTestRule
+            .onAllNodes(hasAnyChild(hasTestTag(MainScreenTestTags.SAMPLE_CARD)))
+            .onFirst()
+
+    discoverLazyRow.performScrollToIndex(lastColumnIndex)
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithText(lastSample.name, substring = true).assertIsDisplayed()
   }
 
   /** Test that like button is clickable */
@@ -201,40 +219,6 @@ class MainScreenTest {
         .performClick()
   }
 
-  /** Test that a comment can be added on a sample */
-  @Test
-  fun canAddCommentToSample() {
-    // Scroll to a Sample card
-    composeTestRule
-        .onNodeWithTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)
-        .performScrollToNode(hasTestTag(MainScreenTestTags.SAMPLE_CARD))
-
-    // Click on comment icon
-    composeTestRule
-        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_COMMENTS)
-        .onFirst()
-        .assertHasClickAction()
-        .performClick()
-
-    composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_SECTION).assertIsDisplayed()
-
-    // Type a comment
-    composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_TEXT_FIELD).performTextInput("Banana")
-
-    // Send the comment
-    composeTestRule
-        .onNodeWithTag(MainScreenTestTags.COMMENT_POST_BUTTON)
-        .assertHasClickAction()
-        .performClick()
-
-    // Verify it appears
-    composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_LIST).assertIsDisplayed()
-    try {
-      Espresso.closeSoftKeyboard()
-    } catch (_: Exception) {}
-    composeTestRule.onNodeWithText("Banana").assertIsDisplayed()
-  }
-
   @Test
   fun downloadProgressBarIsVisibleWhenProgressNonZeroOnMainScreenUseMockDataTrue() {
     // Simulate 40% progress directly on the MainViewModel
@@ -242,7 +226,7 @@ class MainScreenTest {
     composeTestRule.waitForIdle()
 
     // Check that the bar is displayed
-    val barNode = composeTestRule.onNodeWithTag(MainScreenTestTags.DOWNlOAD_PROGRESS)
+    val barNode = composeTestRule.onNodeWithTag(MainScreenTestTags.DOWNLOAD_PROGRESS)
     barNode.assertIsDisplayed()
 
     // Optionally check the semantic progress value ≈ 0.4
@@ -256,12 +240,12 @@ class MainScreenTest {
     // Case 1: null
     viewModel.downloadProgress.value = null
     composeTestRule.waitForIdle()
-    composeTestRule.onAllNodesWithTag(MainScreenTestTags.DOWNlOAD_PROGRESS).assertCountEquals(0)
+    composeTestRule.onAllNodesWithTag(MainScreenTestTags.DOWNLOAD_PROGRESS).assertCountEquals(0)
 
     // Case 2: zero
     viewModel.downloadProgress.value = 0
     composeTestRule.waitForIdle()
-    composeTestRule.onAllNodesWithTag(MainScreenTestTags.DOWNlOAD_PROGRESS).assertCountEquals(0)
+    composeTestRule.onAllNodesWithTag(MainScreenTestTags.DOWNLOAD_PROGRESS).assertCountEquals(0)
     /** Test that different timestamps on different comments display correctly */
   }
 

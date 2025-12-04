@@ -31,9 +31,12 @@ import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.resources.C
 import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInViewModel
+import com.neptune.neptune.ui.feed.FeedScreen
+import com.neptune.neptune.ui.feed.FeedType
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.main.factory
+import com.neptune.neptune.ui.messages.MessagesScreen
 import com.neptune.neptune.ui.messages.SelectMessagesScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
@@ -47,7 +50,10 @@ import com.neptune.neptune.ui.profile.SelfProfileRoute
 import com.neptune.neptune.ui.projectlist.ProjectListScreen
 import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.search.SearchScreen
+import com.neptune.neptune.ui.search.SearchViewModel
+import com.neptune.neptune.ui.search.searchScreenFactory
 import com.neptune.neptune.ui.settings.SettingsAccountScreen
+import com.neptune.neptune.ui.settings.SettingsCustomThemeScreen
 import com.neptune.neptune.ui.settings.SettingsScreen
 import com.neptune.neptune.ui.settings.SettingsThemeScreen
 import com.neptune.neptune.ui.settings.SettingsViewModel
@@ -77,16 +83,25 @@ class MainActivity : ComponentActivity() {
       // so the ViewModel instance receives the DataStore dependency.
       val settingsViewModel: SettingsViewModel = viewModel(factory = settingsViewModelFactory)
 
-      // Collect the current theme setting (SYSTEM, LIGHT, or DARK) as a Composable state.
+      // Collect the current theme setting and persisted custom Color values
       val themeSetting by settingsViewModel.theme.collectAsState()
+      val customPrimary by settingsViewModel.customPrimaryColor.collectAsState()
+      val customBackground by settingsViewModel.customBackgroundColor.collectAsState()
+      val customOnBackground by settingsViewModel.customOnBackgroundColor.collectAsState()
+
       // A surface container using the 'background' color from the theme
-      SampleAppTheme(themeSetting = themeSetting) {
-        Surface(
-            modifier = Modifier.fillMaxSize().semantics { testTag = C.Tag.main_screen_container },
-            color = MaterialTheme.colorScheme.background) {
-              NeptuneApp(settingsViewModel = settingsViewModel)
-            }
-      }
+      SampleAppTheme(
+          themeSetting = themeSetting,
+          customPrimary = customPrimary,
+          customBackground = customBackground,
+          customOnBackground = customOnBackground) {
+            Surface(
+                modifier =
+                    Modifier.fillMaxSize().semantics { testTag = C.Tag.main_screen_container },
+                color = MaterialTheme.colorScheme.background) {
+                  NeptuneApp(settingsViewModel = settingsViewModel)
+                }
+          }
     }
   }
 }
@@ -99,6 +114,9 @@ fun NeptuneApp(
     startDestination: String = Screen.SignIn.route,
 ) {
   val signInViewModel: SignInViewModel = viewModel()
+  val searchViewModel: SearchViewModel =
+      viewModel(
+          factory = searchScreenFactory(LocalContext.current.applicationContext as Application))
   val navigationActions = NavigationActions(navController)
   val navBackStackEntry by navController.currentBackStackEntryAsState()
   val currentRoute = navBackStackEntry?.destination?.route
@@ -125,7 +143,6 @@ fun NeptuneApp(
               navController = navController,
               startDestination = startDestination,
               modifier = Modifier.padding(innerPadding)) {
-                // TODO: Replace mock screens with actual app screens
                 composable(Screen.Main.route) {
                   MainScreen(
                       navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
@@ -137,6 +154,9 @@ fun NeptuneApp(
                       },
                       navigateToSelectMessages = {
                         navigationActions.navigateTo(Screen.SelectMessages)
+                      },
+                      navigateToSampleList = { type ->
+                        navigationActions.navigateTo(Screen.Feed.createRoute(type))
                       },
                       mainViewModel = mainViewModel)
                 }
@@ -162,7 +182,8 @@ fun NeptuneApp(
                       navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
                       navigateToOtherUserProfile = { userId ->
                         navigationActions.navigateTo(Screen.OtherUserProfile.createRoute(userId))
-                      })
+                      },
+                      searchViewModel = searchViewModel)
                 }
                 composable(
                     route = Screen.Post.route,
@@ -228,6 +249,12 @@ fun NeptuneApp(
                 composable(Screen.SettingsTheme.route) {
                   SettingsThemeScreen(
                       settingsViewModel = settingsViewModel,
+                      goBack = { navigationActions.goBack() },
+                      goCustomTheme = { navigationActions.navigateTo(Screen.SettingsCustomTheme) })
+                }
+                composable(Screen.SettingsCustomTheme.route) {
+                  SettingsCustomThemeScreen(
+                      settingsViewModel = settingsViewModel,
                       goBack = { navigationActions.goBack() })
                 }
                 composable(Screen.SettingsAccount.route) {
@@ -253,9 +280,38 @@ fun NeptuneApp(
                 composable(Screen.SelectMessages.route) {
                   SelectMessagesScreen(
                       goBack = { navigationActions.goBack() },
-                      onSelectUser = {} // TODO: Add the Message Screen
-                      )
+                      onSelectUser = { uid ->
+                        navigationActions.navigateTo(Screen.Messages.createRoute(uid))
+                      })
                 }
+                composable(
+                    route = Screen.Messages.route,
+                    arguments = listOf(navArgument("uid") { type = NavType.StringType })) {
+                        backStackEntry ->
+                      val uid = backStackEntry.arguments?.getString("uid") ?: return@composable
+                      MessagesScreen(uid = uid, goBack = { navigationActions.goBack() })
+                    }
+                composable(
+                    route = Screen.Feed.route,
+                    arguments = listOf(navArgument("type") { type = NavType.StringType })) {
+                        backStackEntry ->
+                      val typeName = backStackEntry.arguments?.getString("type")
+                      val feedType =
+                          try {
+                            if (typeName != null) FeedType.valueOf(typeName) else FeedType.DISCOVER
+                          } catch (_: IllegalArgumentException) {
+                            FeedType.DISCOVER // default value
+                          }
+                      FeedScreen(
+                          mainViewModel = mainViewModel,
+                          initialType = feedType,
+                          goBack = { navigationActions.goBack() },
+                          navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
+                          navigateToOtherUserProfile = { userId ->
+                            navigationActions.navigateTo(
+                                Screen.OtherUserProfile.createRoute(userId))
+                          })
+                    }
               }
         })
   }
