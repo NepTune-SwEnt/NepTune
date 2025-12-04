@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -241,7 +242,7 @@ fun ScrollableColumnOfUsers(
               modifier =
                   Modifier.fillMaxWidth()
                       .clickable { navigateToOtherUserProfile(profile.uid) }
-                      .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
+                      .background(NepTuneTheme.colors.cardBackground, RoundedCornerShape(8.dp))
                       .padding(16.dp),
               verticalAlignment = Alignment.CenterVertically) {
                 if (profile.avatarUrl.isNotBlank()) {
@@ -256,20 +257,20 @@ fun ScrollableColumnOfUsers(
                   Icon(
                       painter = painterResource(id = R.drawable.profile),
                       contentDescription = "User Avatar",
-                      modifier = Modifier.size(40.dp).clip(CircleShape),
-                      tint = MaterialTheme.colorScheme.onSurface)
+                      modifier = Modifier.size(40.dp),
+                      tint = NepTuneTheme.colors.onBackground)
                 }
 
                 Column(modifier = Modifier.padding(start = 16.dp)) {
                   Text(
                       text = profile.username.ifBlank { "User" },
                       style = MaterialTheme.typography.titleMedium,
-                      color = MaterialTheme.colorScheme.onSurface)
+                      color = NepTuneTheme.colors.onBackground)
                   if (!profile.name.isNullOrBlank()) {
                     Text(
                         text = profile.name,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        color = NepTuneTheme.colors.onBackground)
                   }
                 }
               }
