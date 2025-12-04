@@ -1,6 +1,5 @@
 package com.neptune.neptune.ui.search
 
-import android.content.Context
 import android.os.Environment
 import android.util.Log
 import androidx.core.net.toUri
@@ -8,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.R
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
@@ -38,12 +38,11 @@ const val NATURE_TAG = "#nature"
  */
 open class SearchViewModel(
     private val repo: SampleRepository = SampleRepositoryProvider.repository,
-    private val context: Context,
     private val useMockData: Boolean = false,
     private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
     explicitStorageService: StorageService? = null,
     explicitDownloadsFolder: File? = null,
-    private val auth: FirebaseAuth? = null
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : ViewModel() {
   private val defaultName = "anonymous"
 
@@ -53,7 +52,7 @@ open class SearchViewModel(
       if (useMockData) {
         null
       } else {
-        auth ?: FirebaseAuth.getInstance()
+        auth
       }
 
   private val _currentUserFlow = MutableStateFlow(firebaseAuth?.currentUser)
@@ -85,7 +84,7 @@ open class SearchViewModel(
   private val _sampleResources = MutableStateFlow<Map<String, SampleResourceState>>(emptyMap())
   val sampleResources = _sampleResources.asStateFlow()
 
-  private val _isAnonymous = MutableStateFlow(auth?.currentUser?.isAnonymous ?: true)
+  private val _isAnonymous = MutableStateFlow(auth.currentUser?.isAnonymous ?: true)
   val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
 
   private val _usernames = MutableStateFlow<Map<String, String>>(emptyMap())
@@ -93,7 +92,7 @@ open class SearchViewModel(
   private val _isOnline = MutableStateFlow(true)
   val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
   val isUserLoggedIn: Boolean
-    get() = auth?.currentUser != null
+    get() = auth.currentUser != null
 
   init {
     viewModelScope.launch {
@@ -136,7 +135,8 @@ open class SearchViewModel(
             explicitStorageService
                 ?: run {
                   val storage =
-                      FirebaseStorage.getInstance(context.getString(R.string.storage_path))
+                      FirebaseStorage.getInstance(
+                          NepTuneApplication.appContext.getString(R.string.storage_path))
                   StorageService(storage)
                 }
 
@@ -145,7 +145,11 @@ open class SearchViewModel(
                 ?: Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
 
         SampleUiActions(
-            repo, storageService, downloadsFolder, context, downloadProgress = downloadProgress)
+            repo,
+            storageService,
+            downloadsFolder,
+            NepTuneApplication.appContext,
+            downloadProgress = downloadProgress)
       }
 
   private val avatarCache = mutableMapOf<String, String?>()
@@ -202,7 +206,10 @@ open class SearchViewModel(
     return try {
       val waveform =
           WaveformExtractor()
-              .extractWaveform(context = context, uri = audioUrl.toUri(), samplesCount = 100)
+              .extractWaveform(
+                  context = NepTuneApplication.appContext,
+                  uri = audioUrl.toUri(),
+                  samplesCount = 100)
       if (waveform.isNotEmpty()) {
         waveformCache[sample.id] = waveform
       }
@@ -324,7 +331,7 @@ open class SearchViewModel(
   }
 
   fun loadSamplesFromFirebase() {
-    if (auth?.currentUser == null) return
+    if (auth.currentUser == null) return
     viewModelScope.launch {
       try {
         repo.observeSamples().collectLatest { remoteSamples ->
@@ -447,7 +454,7 @@ open class SearchViewModel(
     viewModelScope.launch {
       try {
         val profile = profileRepo.getCurrentProfile()
-        val authorId = profile?.uid ?: auth?.currentUser?.uid ?: "unknown"
+        val authorId = profile?.uid ?: auth.currentUser?.uid ?: "unknown"
         val authorName = profile?.username ?: defaultName
         repo.addComment(sampleId, authorId, authorName, text.trim())
         observeCommentsForSample(sampleId)

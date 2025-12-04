@@ -1,7 +1,6 @@
 package com.neptune.neptune.ui.search
 
 import OfflineScreen
-import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,13 +21,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.firebase.auth.FirebaseAuth
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.sample.Comment
@@ -93,23 +88,10 @@ class SearchScreenTestTagsPerSampleCard(private val idInColumn: String = "0") : 
     get() = tag("sampleDownloads")
 }
 
-fun searchScreenFactory(application: Application) =
-    object : ViewModelProvider.Factory {
-      override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(SearchViewModel::class.java)) {
-          @Suppress("UNCHECKED_CAST")
-          return SearchViewModel(context = application, auth = FirebaseAuth.getInstance()) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-      }
-    }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
-    searchViewModel: SearchViewModel =
-        viewModel(
-            factory = searchScreenFactory(LocalContext.current.applicationContext as Application)),
+    searchViewModel: SearchViewModel = viewModel(),
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
     navigateToProfile: () -> Unit = {},
     navigateToOtherUserProfile: (String) -> Unit = {},
