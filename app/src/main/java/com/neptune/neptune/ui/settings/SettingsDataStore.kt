@@ -7,6 +7,7 @@ import androidx.core.graphics.toColorInt
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -21,6 +22,8 @@ class ThemeDataStore(private val context: Context) {
   private val CUSTOM_PRIMARY_KEY = stringPreferencesKey("custom_primary_hex")
   private val CUSTOM_BACKGROUND_KEY = stringPreferencesKey("custom_background_hex")
   private val CUSTOM_ONBACKGROUND_KEY = stringPreferencesKey("custom_onbackground_hex")
+  // New key to control whether the help button in the sampler should be disabled
+  private val DISABLE_HELP_KEY = booleanPreferencesKey("disable_help_button")
 
   companion object {
     private const val RGB_MASK = 0xFFFFFF
@@ -74,6 +77,10 @@ class ThemeDataStore(private val context: Context) {
         }
       }
 
+  /** Flow emitting whether the sampler help button should be disabled. Defaults to false. */
+  val disableHelp: Flow<Boolean> =
+      context.dataStore.data.map { prefs -> prefs[DISABLE_HELP_KEY] ?: false }
+
   /**
    * Suspended function to persist the user's selected [ThemeSetting] to DataStore.
    *
@@ -82,6 +89,11 @@ class ThemeDataStore(private val context: Context) {
    */
   suspend fun setTheme(theme: ThemeSetting) {
     context.dataStore.edit { settings -> settings[THEME_KEY] = theme.name }
+  }
+
+  /** Persist whether the sampler help button should be disabled. */
+  suspend fun setDisableHelp(disabled: Boolean) {
+    context.dataStore.edit { settings -> settings[DISABLE_HELP_KEY] = disabled }
   }
 
   /** Save custom colors as hex strings (e.g. #RRGGBB). */

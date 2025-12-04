@@ -58,6 +58,7 @@ import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.ui.sampler.SamplerTestTags.CURVE_EDITOR_SCROLL_CONTAINER
 import com.neptune.neptune.ui.sampler.SamplerTestTags.FADER_60HZ_TAG
 import com.neptune.neptune.ui.sampler.SamplerTestTags.PREVIEW_PLAY_BUTTON
+import com.neptune.neptune.ui.settings.ThemeDataStore
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -176,6 +177,11 @@ fun SamplerScreen(
   var showHelpDialog by remember { mutableStateOf(false) }
   var helpTabIndex by remember { mutableStateOf(0) }
 
+  // Collect the disabledHelp state from the data store
+  val context = NepTuneApplication.appContext
+  val dataStore = remember { ThemeDataStore(context) }
+  val disabledHelp by dataStore.disableHelp.collectAsState(initial = false)
+
   LaunchedEffect(Unit) {
     if (decodedZipPath != null) {
       viewModel.loadProjectData(decodedZipPath)
@@ -232,7 +238,10 @@ fun SamplerScreen(
           }
 
           // Bottom-left Help button
-          HelpButton { showHelpDialog = true }
+          // Only show the Help button if help is not disabled
+          if (!disabledHelp) {
+            HelpButton { showHelpDialog = true }
+          }
         }
       }
 

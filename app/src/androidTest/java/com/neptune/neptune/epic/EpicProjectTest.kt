@@ -7,8 +7,10 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
+import androidx.test.espresso.Espresso
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
@@ -20,8 +22,10 @@ import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepositoryVarVar
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.ui.navigation.NavigationTestTags
+import com.neptune.neptune.ui.profile.ProfileScreenTestTags
 import com.neptune.neptune.ui.sampler.SamplerTestTags
 import com.neptune.neptune.ui.sampler.SamplerViewModel
+import com.neptune.neptune.ui.settings.SettingsScreenTestTags.DISABLE_HELP_SWITCH
 import com.neptune.neptune.ui.theme.SampleAppTheme
 import java.io.File
 import java.io.FileOutputStream
@@ -82,6 +86,11 @@ class EpicProjectE2ETest {
 
   @Test
   fun epicFlow_modifyViaUI_save_reload_verifyValues() = runBlocking {
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.SETTINGS_BUTTON).performClick()
+    composeTestRule.onNodeWithTag(DISABLE_HELP_SWITCH).performClick()
+    Espresso.pressBack()
+    Espresso.pressBack()
     // --- NAVIGATE TO PROJECTLIST ---
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).performClick()
     composeTestRule.waitForIdle()
