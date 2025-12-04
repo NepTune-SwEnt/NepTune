@@ -1,7 +1,6 @@
 package com.neptune.neptune.ui.search
 
 import android.content.Context
-import android.os.Environment
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -16,6 +15,7 @@ import com.neptune.neptune.model.sample.SampleRepositoryProvider
 import com.neptune.neptune.ui.feed.BaseSampleFeedViewModel
 import com.neptune.neptune.ui.feed.SampleFeedController
 import com.neptune.neptune.ui.main.SampleUiActions
+import com.neptune.neptune.util.DownloadDirectoryProvider
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -81,9 +81,7 @@ open class SearchViewModel(
                 }
 
         val downloadsFolder =
-            explicitDownloadsFolder
-                ?: context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-                ?: context.filesDir
+            DownloadDirectoryProvider.resolveDownloadsDir(context, explicitDownloadsFolder)
 
         SampleUiActions(
             sampleRepo,
