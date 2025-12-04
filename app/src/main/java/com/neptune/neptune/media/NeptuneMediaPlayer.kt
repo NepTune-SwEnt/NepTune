@@ -6,6 +6,10 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.core.net.toUri
 import com.neptune.neptune.NepTuneApplication
 import kotlin.math.abs
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 open class NeptuneMediaPlayer() {
   val context = NepTuneApplication.appContext
@@ -15,7 +19,7 @@ open class NeptuneMediaPlayer() {
 
   private var onCompletionCallback: (() -> Unit)? = null
 
-  fun setOnCompletionListener(listener: () -> Unit) {
+  open fun setOnCompletionListener(listener: () -> Unit) {
     this.onCompletionCallback = listener
     mediaPlayer?.setOnCompletionListener { player ->
       player.seekTo(0)
@@ -117,7 +121,7 @@ open class NeptuneMediaPlayer() {
   }
 
   /** Stop the audio playback and release resources. */
-  fun stop() {
+  open fun stop() {
     mediaPlayer?.let {
       if (it.isPlaying) {
         it.stop()
@@ -171,6 +175,55 @@ open class NeptuneMediaPlayer() {
    */
   open fun getCurrentUri(): Uri? {
     return currentUri
+  }
+
+  fun setVolume(level: Float) {
+    val v = level.coerceIn(0f, 1f)
+    mediaPlayer?.setVolume(v, v)
+  }
+
+  fun stopWithFade(releaseMillis: Long) {
+    val mp = mediaPlayer ?: return
+    if (releaseMillis <= 0L) {
+      try {
+        if (mp.isPlaying) mp.stop()
+      } catch (e: Exception) {}
+      mp.release()
+      mediaPlayer = null
+      currentUri = null
+      return
+    }
+
+    CoroutineScope(Dispatchers.Main).launch {
+      val steps = 20
+      val stepDelay = (releaseMillis / steps).coerceAtLeast(5L)
+      var current = 1.0f
+      for (i in steps downTo 1) {
+        val level = i.toFloat() / steps.toFloat()
+        try {
+          mp.setVolume(level, level)
+        } catch (e: Exception) {}
+        delay(stepDelay)
+      }
+      try {
+        mp.setVolume(0f, 0f)
+        if (mp.isPlaying) mp.stop()
+      } catch (e: Exception) {}
+      mp.release()
+      mediaPlayer = null
+      currentUri = null
+    }
+  }
+
+  fun forceStopAndRelease() {
+    mediaPlayer?.let {
+      try {
+        if (it.isPlaying) it.stop()
+      } catch (e: Exception) {}
+      it.release()
+    }
+    mediaPlayer = null
+    currentUri = null
   }
 
   /**

@@ -9,14 +9,6 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import be.tarsos.dsp.AudioDispatcher
-import be.tarsos.dsp.AudioEvent
-import be.tarsos.dsp.AudioProcessor
-import be.tarsos.dsp.PitchShifter
-import be.tarsos.dsp.io.TarsosDSPAudioFormat
-import be.tarsos.dsp.io.TarsosDSPAudioInputStream
-import be.tarsos.dsp.io.android.AndroidAudioInputStream
-import be.tarsos.dsp.io.android.AudioDispatcherFactory
 import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.project.AudioFileMetadata
@@ -43,9 +35,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.ByteArrayInputStream
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 
 enum class SamplerTab {
   BASICS,
@@ -84,7 +73,7 @@ data class SamplerUiState(
     val pitchOctave: Int = 4,
     val attack: Float = 0.0f,
     val decay: Float = 0.0f,
-    val sustain: Float = 0.0f,
+    val sustain: Float = 1.0f,
     val release: Float = 0.0f,
     val playbackPosition: Float = 0.0f,
     val eqBands: List<Float> = List(EQ_FREQUENCIES.size) { EQ_GAIN_DEFAULT },
@@ -514,6 +503,34 @@ open class SamplerViewModel() : ViewModel() {
     }
   }
 
+  private var adsrPlaying = false
+
+  open fun startADSRSample() {
+    val uri = _uiState.value.currentAudioUri ?: _uiState.value.originalAudioUri ?: return
+
+    if (mediaPlayer.getCurrentUri() == uri && mediaPlayer.isPlaying()) return
+
+    mediaPlayer.play(uri)
+    adsrPlaying = true
+    _uiState.update { it.copy(previewPlaying = true) }
+  }
+
+  open fun stopADSRSample() {
+    if (!adsrPlaying) return
+    adsrPlaying = false
+
+    val releaseSeconds = _uiState.value.release.coerceAtLeast(0f)
+    val releaseMillis = (releaseSeconds * 1000f).toLong()
+
+    if (releaseMillis <= 0L) {
+      mediaPlayer.forceStopAndRelease()
+      _uiState.update { it.copy(previewPlaying = false) }
+    } else {
+      mediaPlayer.stopWithFade(releaseMillis)
+      _uiState.update { it.copy(previewPlaying = false) }
+    }
+  }
+
   open fun loadProjectData(zipFilePath: String) {
     viewModelScope.launch {
       try {
@@ -799,7 +816,11 @@ open class SamplerViewModel() : ViewModel() {
                   reverbWidth = state.reverbWidth,
                   reverbDepth = state.reverbDepth,
                   reverbPredelay = state.reverbPredelay,
-                  semitones = semitones)
+                  semitones = semitones,
+                  attack = state.attack,
+                  decay = state.decay,
+                  sustain = state.sustain,
+                  release = state.release)
             }
 
         // If processing succeeds, update the UI state with the new processed audio URI
@@ -825,7 +846,11 @@ open class SamplerViewModel() : ViewModel() {
       reverbWidth: Float,
       reverbDepth: Float,
       reverbPredelay: Float,
-      semitones: Int = 0
+      semitones: Int = 0,
+      attack: Float = 0f,
+      decay: Float = 0f,
+      sustain: Float = 1f,
+      release: Float = 0f
   ): Uri? {
 
     if (currentAudioUri == null) return null
@@ -837,14 +862,7 @@ open class SamplerViewModel() : ViewModel() {
     // 2. Apply EQ: Parametric equalization is applied non-destructively to the samples
     samples = applyEQFilters(samples, sampleRate, eqBands)
 
-    // 3. Apply pitch shift
-    if (semitones != 0) {
-      Log.d(
-          "SamplerViewModel",
-          "processAudio: semitones=$semitones sampleRate=$sampleRate inSamples=${samples.size} durationSec=${samples.size.toDouble()/sampleRate}")
-      samples = pitchShift(samples, semitones)
-      Log.d("SamplerViewModel", "after pitchShift: samples=${samples.size}")
-    }
+    samples = applyADSR(samples, sampleRate, attack, decay, sustain, release)
 
     // 3. Apply Reverb: Reverb is applied on top of the EQ'd signal
     samples =
@@ -1299,24 +1317,6 @@ open class SamplerViewModel() : ViewModel() {
       return out
     }
   }
-  fun pitchShift(samples: FloatArray, semitones: Int): FloatArray {
-    if (semitones == 0) return samples
-
-    val pitchFactor = 2.0.pow(semitones / 12.0).toFloat()
-
-    val out = FloatArray(samples.size)
-
-    for (i in out.indices) {
-      val origIndex = i * pitchFactor
-      val idx0 = origIndex.toInt().coerceIn(0, samples.size - 1)
-      val idx1 = (idx0 + 1).coerceIn(0, samples.size - 1)
-      val frac = origIndex - idx0
-      out[i] = samples[idx0] * (1 - frac) + samples[idx1] * frac
-    }
-
-    return out
-  }
-
 
   private val NOTE_TO_SEMITONE =
       mapOf(
@@ -1361,5 +1361,49 @@ open class SamplerViewModel() : ViewModel() {
     val s1 = noteToSemitone(inputNote, inputOctave)
     val s2 = noteToSemitone(targetNote, targetOctave)
     return s2 - s1
+  }
+
+  /**
+   * Apply an ADSR envelope to the audio samples.
+   *
+   * @param samples Mono or interleaved stereo PCM samples in [-1.0, 1.0]
+   * @param sampleRate Sample rate in Hz
+   * @param attack Attack time in seconds
+   * @param decay Decay time in seconds
+   * @param sustain Sustain level in [0, 1]
+   * @param release Release time in seconds
+   */
+  open fun applyADSR(
+      samples: FloatArray,
+      sampleRate: Int,
+      attack: Float,
+      decay: Float,
+      sustain: Float,
+      release: Float
+  ): FloatArray {
+    val totalFrames = samples.size
+    val attackFrames = (attack * sampleRate).toInt()
+    val decayFrames = (decay * sampleRate).toInt()
+    val releaseFrames = (release * sampleRate).toInt()
+    val sustainFrames = totalFrames - attackFrames - decayFrames - releaseFrames
+
+    val envelope = FloatArray(totalFrames)
+
+    for (i in 0 until totalFrames) {
+      envelope[i] =
+          when {
+            i < attackFrames -> (i.toFloat() / attackFrames)
+            i < attackFrames + decayFrames -> {
+              val t = (i - attackFrames).toFloat() / decayFrames
+              1f + t * (sustain - 1f)
+            }
+            i < attackFrames + decayFrames + sustainFrames -> sustain
+            else -> {
+              val t = (i - (attackFrames + decayFrames + sustainFrames)).toFloat() / releaseFrames
+              sustain * (1f - t)
+            }
+          }
+    }
+    return samples.mapIndexed { index, sample -> sample * envelope[index] }.toFloatArray()
   }
 }
