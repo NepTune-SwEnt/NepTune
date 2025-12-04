@@ -53,6 +53,8 @@ class ProfileSamplesViewModel(
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples.asStateFlow()
 
+  private val downloadDispatcher: CoroutineDispatcher = explicitIoDispatcher ?: Dispatchers.IO
+
   override val actions: SampleUiActions? =
       if (!enableActions) {
         null
@@ -63,14 +65,13 @@ class ProfileSamplesViewModel(
                     FirebaseStorage.getInstance(context.getString(R.string.storage_path)))
         val downloadsFolder =
             DownloadDirectoryProvider.resolveDownloadsDir(context, explicitDownloadsFolder)
-        val ioDispatcher = explicitIoDispatcher ?: Dispatchers.IO
 
         SampleUiActions(
             repo = sampleRepo,
             storageService = storageService,
             downloadsFolder = downloadsFolder,
             context = context,
-            ioDispatcher = ioDispatcher)
+            ioDispatcher = downloadDispatcher)
       }
 
   init {
@@ -94,7 +95,7 @@ class ProfileSamplesViewModel(
     val safeActions = actions ?: return
     viewModelScope.launch {
       try {
-        withContext(Dispatchers.IO) { safeActions.onDownloadClicked(sample) }
+        withContext(downloadDispatcher) { safeActions.onDownloadClicked(sample) }
       } catch (e: Exception) {
         Log.e("ProfileSamplesViewModel", "Error downloading sample: ${e.message}")
       }
