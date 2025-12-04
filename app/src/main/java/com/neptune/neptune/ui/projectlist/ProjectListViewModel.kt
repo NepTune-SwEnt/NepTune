@@ -85,7 +85,7 @@ class ProjectListViewModel(
 
         // auto sync
         if (isOnline && localItems.isNotEmpty()) {
-          localItems.forEach { item -> importProjectInFirebase(item.id) }
+          localItems.forEach { item -> importProjectInFirebaseSuspend(item.id) }
         }
 
         val projects =
@@ -94,7 +94,8 @@ class ProjectListViewModel(
                 projectRepository.getAllProjects()
               } catch (_: Exception) {
                 Log.w("ProjectListViewModel", "Error on cloud pass in offline mode")
-                localItems.map { toLocalProjectItem(it) }
+                val remainingLocal = getLibraryUseCase?.invoke()?.first() ?: emptyList()
+                remainingLocal.map { toLocalProjectItem(it) }
               }
             } else {
               localItems.map { toLocalProjectItem(it) }
@@ -140,6 +141,14 @@ class ProjectListViewModel(
           val item = localItems.find { it.id == realId }
           if (item != null && mediaRepository != null) {
             mediaRepository.delete(item)
+            try {
+              val file = File(item.projectUri)
+              if (file.exists()) {
+                file.delete()
+              }
+            } catch (e: Exception) {
+              Log.e("ProjectListVM", "Error deleting local file", e)
+            }
           }
         } else {
           projectRepository.deleteProject(projectId)
@@ -150,6 +159,12 @@ class ProjectListViewModel(
             val ghostItem = localItems.find { it.projectUri == path }
             if (ghostItem != null) {
               mediaRepository.delete(ghostItem)
+            }
+            try {
+              val file = File(path)
+              if (file.exists()) file.delete()
+            } catch (_: Exception) {
+              // Ignore
             }
           }
           refreshProjects()
@@ -201,37 +216,33 @@ class ProjectListViewModel(
     }
   }
 
-  private fun importProjectInFirebase(projectId: String) {
-    viewModelScope.launch {
-      try {
-        val localItems = getLibraryUseCase?.invoke()?.first() ?: emptyList()
-        val mediaItem = localItems.find { it.id == projectId } ?: return@launch
-        val file = File(mediaItem.projectUri)
+  private suspend fun importProjectInFirebaseSuspend(rawId: String) {
+    try {
+      val localItems = getLibraryUseCase?.invoke()?.first() ?: emptyList()
+      val mediaItem = localItems.find { it.id == rawId } ?: return
+      val file = File(mediaItem.projectUri)
 
-        if (file.exists() && storageService != null && mediaRepository != null) {
-          val newCloudId = projectRepository.getNewIdCloud()
-          val storagePath = "projects/$newCloudId.zip"
-          storageService.uploadFile(Uri.fromFile(file), storagePath)
-          val downloadUrl = storageService.getDownloadUrl(storagePath)
+      if (file.exists() && storageService != null && mediaRepository != null) {
+        val newCloudId = projectRepository.getNewIdCloud()
+        val storagePath = "projects/$newCloudId.zip"
 
-          val newProject =
-              ProjectItem(
-                  uid = newCloudId,
-                  name = file.nameWithoutExtension,
-                  isStoredInCloud = true,
-                  projectFileCloudUri = downloadUrl,
-                  projectFileLocalPath = mediaItem.projectUri,
-                  lastUpdated = Timestamp.now())
-          projectRepository.addProject(newProject)
+        storageService.uploadFile(Uri.fromFile(file), storagePath)
+        val downloadUrl = storageService.getDownloadUrl(storagePath)
 
-          mediaRepository.delete(mediaItem)
+        val newProject =
+            ProjectItem(
+                uid = newCloudId,
+                name = file.nameWithoutExtension,
+                isStoredInCloud = false,
+                projectFileCloudUri = downloadUrl,
+                projectFileLocalPath = mediaItem.projectUri,
+                lastUpdated = Timestamp.now())
+        projectRepository.addProject(newProject)
 
-          Log.i("ProjectListVM", "Projet local synchronisé avec succès : ${newProject.name}")
-        }
-        refreshProjects()
-      } catch (e: Exception) {
-        Log.e("ProjectListViewModel", "Error adding project to cloud", e)
+        mediaRepository.delete(mediaItem)
       }
+    } catch (e: Exception) {
+      Log.e("ProjectListViewModel", "Error sync item $rawId", e)
     }
   }
 
