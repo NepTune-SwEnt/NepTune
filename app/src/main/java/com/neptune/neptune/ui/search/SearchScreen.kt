@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -259,6 +260,7 @@ fun ScrollableColumnOfUsers(
                   Modifier.fillMaxWidth()
                       .clickable { navigateToOtherUserProfile(profile.uid) }
                       .background(NepTuneTheme.colors.cardBackground, RoundedCornerShape(8.dp))
+                      .border(1.dp, NepTuneTheme.colors.onBackground, RoundedCornerShape(8.dp))
                       .padding(16.dp),
               verticalAlignment = Alignment.CenterVertically,
               horizontalArrangement = Arrangement.SpaceBetween) {
