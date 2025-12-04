@@ -14,13 +14,13 @@
     <string name="tab_equalizer">Equalizer</string>
     <string name="tab_compressor">Compressor</string>
 
-    <string name="help_overview_text">The sampler allows previewing audio, adjusting pitch and tempo, editing ADSR envelope, EQ and compression. Use the tabs to switch sections.</string>
+    <string name="help_overview_text">The sampler allows previewing audio, adjusting pitch and tempo, editing ADSR envelope, reverb, EQ and compression. Use the tabs to switch sections.</string>
 
     <string name="help_controls_text">On the top of the sampler lay the control bar:\n- Play / Pause: preview the sample\n- Save: persist project data\n- Pitch selectors: change the note\n- BPM selector: change the beat per minute\n- Time signature selector: change the beat display on the timeline</string>
 
-    <string name="help_adsr_text">Use the ADSR editor to shape how a note evolves over time: Attack sets how quickly the sound reaches full volume, Decay controls how the sound falls to the Sustain level, Sustain is the steady level while the note is held, and Release controls how the sound fades after release.</string>
+    <string name="help_adsr_text">Use the ADSR editor to shape how a note evolves over time: Attack sets how quickly the sound reaches full volume, Decay is the time to falls at the Sustain level, Sustain is the steady level while the note is held, and Release is the time to fade after release.</string>
 
-    <string name="help_reverb_text">Reverb simulates room reflections. Use Wet to control the mix between dry and effected signal, Size to set the perceived room size, Width and Depth to shape the stereo field, and Predelay to offset the onset of reflections.</string>
+    <string name="help_reverb_text">Reverb simulates room reflections. Wet controls how much of the reverberated sound is mixed with the original sound, Size to set the perceived room size, Width and Depth to shape the stereo field, and Predelay to offset the onset of reflections.</string>
 
     <string name="help_equalizer_text">Use the EQ faders to boost or cut specific frequency bands. Drag the vertical fader up to boost (positive dB) or down to cut (negative dB). Typical workflow: remove unwanted low rumble, gently shape mids, and add clarity with high band boosts.</string>
 
