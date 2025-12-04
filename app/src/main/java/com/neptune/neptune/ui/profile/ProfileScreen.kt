@@ -83,6 +83,7 @@ private val ButtonIconSpacing = 8.dp
 private val TagsSpacing = 8.dp
 private val StatBlockLabelSpacing = 8.dp
 private val SamplesSpacing = 20.dp
+private const val UNKOWN_CLASS = "Unknown ViewModel class"
 
 /**
  * Centralized constants defining all `testTag` identifiers used in [ProfileScreen] UI tests.
@@ -783,7 +784,7 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
             @Suppress("UNCHECKED_CAST")
             return SelfProfileViewModel(repo = ProfileRepositoryProvider.repository) as T
           }
-          throw IllegalArgumentException("Unknown ViewModel class")
+          throw IllegalArgumentException(UNKOWN_CLASS)
         }
       }
 
@@ -799,7 +800,7 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
             )
                 as T
           }
-          throw IllegalArgumentException("Unknown ViewModel class")
+          throw IllegalArgumentException(UNKOWN_CLASS)
         }
       }
 
@@ -867,7 +868,7 @@ fun OtherUserProfileRoute(
                 repo = ProfileRepositoryProvider.repository, userId = userId)
                 as T
           }
-          throw IllegalArgumentException("Unknown ViewModel class")
+          throw IllegalArgumentException(UNKOWN_CLASS)
         }
       }
 
