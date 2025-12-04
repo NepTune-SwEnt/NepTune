@@ -85,6 +85,6 @@ class MainViewModelTest {
   fun isCurrentUserMatchesCurrentFirebaseUserId() {
     Assert.assertTrue(viewModel.isCurrentUser("fake_user_id_for_test"))
     Assert.assertFalse(viewModel.isCurrentUser("someone_else"))
-    Assert.assertFalse(viewModel.isCurrentUser(null))
+    Assert.assertFalse(viewModel.isCurrentUser(""))
   }
 }

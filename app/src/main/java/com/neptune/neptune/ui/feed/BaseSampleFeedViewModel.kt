@@ -221,4 +221,5 @@ abstract class BaseSampleFeedViewModel(
   internal fun loadUsernamePublic(userId: String) {
     loadUsername(userId)
   }
+
 }
