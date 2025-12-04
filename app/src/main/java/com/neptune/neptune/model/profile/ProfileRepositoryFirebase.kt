@@ -369,6 +369,7 @@ class ProfileRepositoryFirebase(
             .get()
             .await()
             .mapNotNull { it.toProfileOrNull() }
+            .filter { !it.isAnonymous }
       } else {
         val normalizedQuery = normalizeUsername(query)
 
@@ -383,7 +384,6 @@ class ProfileRepositoryFirebase(
                 .mapNotNull { it.toProfileOrNull() }
 
         // Search by name
-        // We use the raw query here because names can have spaces and mixed casing
         val nameResults =
             profiles
                 .whereGreaterThanOrEqualTo("name", query)
@@ -393,11 +393,11 @@ class ProfileRepositoryFirebase(
                 .await()
                 .mapNotNull { it.toProfileOrNull() }
 
-        // Merge and deduplicate
-        val allResults = (usernameResults + nameResults).distinctBy { it.uid }
-
-        // Client-side sort to show most popular matches first
-        allResults.sortedByDescending { it.subscribers }
+        // Merge, deduplicate, filter anonymous, and sort
+        (usernameResults + nameResults)
+            .distinctBy { it.uid }
+            .filter { !it.isAnonymous }
+            .sortedByDescending { it.subscribers }
       }
     } catch (e: Exception) {
       Log.e("ProfileRepository", "Error searching users", e)
