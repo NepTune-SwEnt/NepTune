@@ -242,7 +242,7 @@ fun NeptuneApp(
                                   ProjectListViewModelFactory(
                                       getLibraryUseCase = getLibraryUseCase,
                                       mediaRepository = mediaRepo,
-                                      context = NepTuneApplication.appContext))
+                                  ))
                       ProjectListScreen(
                           projectListViewModel = vm,
                           onProjectClick = { projectItem ->
