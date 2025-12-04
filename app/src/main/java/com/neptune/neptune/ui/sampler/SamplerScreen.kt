@@ -207,9 +207,6 @@ fun SamplerScreen(
                   uiState = uiState,
                   viewModel = viewModel)
 
-              Spacer(modifier = Modifier.height(16.dp))
-
-              ADSRTestButton(viewModel = viewModel)
 
               Spacer(modifier = Modifier.height(16.dp))
 
