@@ -133,6 +133,14 @@ fun searchScreenFactory(application: Application) =
       }
     }
 
+/**
+ * Composable function representing the Search Screen.
+ *
+ * @param searchViewModel The ViewModel managing the search logic and state.
+ * @param mediaPlayer The media player instance for sample playback.
+ * @param navigateToProfile Lambda function to navigate to the current user's profile.
+ * @param navigateToOtherUserProfile Lambda function to navigate to another user's profile by ID.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
@@ -184,11 +192,11 @@ fun SearchScreen(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                val roundShape = 50
+                val roundShapePercentage = 50
                 OutlinedButton(
                     onClick = { searchViewModel.toggleSearchType() },
                     border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground),
-                    shape = RoundedCornerShape(roundShape),
+                    shape = RoundedCornerShape(roundShapePercentage),
                     colors =
                         ButtonDefaults.outlinedButtonColors(
                             contentColor = NepTuneTheme.colors.onBackground),

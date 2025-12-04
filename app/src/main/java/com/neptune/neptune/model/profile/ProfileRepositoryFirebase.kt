@@ -20,6 +20,7 @@ const val PROFILES_COLLECTION_PATH = "profiles"
 const val USERNAMES_COLLECTION_PATH = "usernames"
 const val GUEST_NAME = "anonymous"
 private const val DEFAULT_BIO = "Hello! New NepTune user here!"
+private const val MAX_USER_QUERY_RESULTS = 50L
 
 /**
  * Firebase-backed implementation of [ProfileRepository] using Firestore.
@@ -388,7 +389,7 @@ class ProfileRepositoryFirebase(
             profiles
                 .whereGreaterThanOrEqualTo("username", normalizedQuery)
                 .whereLessThan("username", normalizedQuery + "\uf8ff")
-                .limit(50)
+                .limit(MAX_USER_QUERY_RESULTS)
                 .get()
                 .await()
                 .mapNotNull { it.toProfileOrNull() }
@@ -398,7 +399,7 @@ class ProfileRepositoryFirebase(
             profiles
                 .whereGreaterThanOrEqualTo("name", query)
                 .whereLessThan("name", query + "\uf8ff")
-                .limit(50)
+                .limit(MAX_USER_QUERY_RESULTS)
                 .get()
                 .await()
                 .mapNotNull { it.toProfileOrNull() }
