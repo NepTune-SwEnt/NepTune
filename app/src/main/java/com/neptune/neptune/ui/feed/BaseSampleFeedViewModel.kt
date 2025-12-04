@@ -7,12 +7,14 @@ import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.ui.main.SampleResourceState
 import com.neptune.neptune.ui.main.SampleUiActions
+import com.neptune.neptune.util.AudioWaveformExtractor
 import com.neptune.neptune.util.WaveformExtractor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,7 +31,9 @@ abstract class BaseSampleFeedViewModel(
     protected val sampleRepo: SampleRepository,
     protected val profileRepo: ProfileRepository,
     protected val auth: FirebaseAuth? = null,
-    protected val context: Context
+    protected val context: Context,
+    private val storageService: StorageService? = null,
+    private val waveformExtractor: AudioWaveformExtractor = WaveformExtractor()
 ) : ViewModel(), SampleFeedController {
   protected open val actions: SampleUiActions? = null
   protected val defaultName = "anonymous"
@@ -150,7 +154,10 @@ abstract class BaseSampleFeedViewModel(
   private suspend fun getSampleCoverUrl(storagePath: String): String? {
     if (storagePath.isBlank()) return null
     if (coverImageCache.containsKey(storagePath)) return coverImageCache[storagePath]
-    val url = actions?.getDownloadUrl(storagePath) ?: return null
+    val url =
+        actions?.getDownloadUrl(storagePath)
+            ?: storageService?.getDownloadUrl(storagePath)
+            ?: return null
     coverImageCache[storagePath] = url
     return url
   }
@@ -160,7 +167,10 @@ abstract class BaseSampleFeedViewModel(
     if (storagePath.isBlank()) return null
     if (audioUrlCache.containsKey(storagePath)) return audioUrlCache[storagePath]
 
-    val url = actions?.getDownloadUrl(storagePath) ?: return null
+    val url =
+        actions?.getDownloadUrl(storagePath)
+            ?: storageService?.getDownloadUrl(storagePath)
+            ?: return null
     audioUrlCache[storagePath] = url
     return url
   }
@@ -175,8 +185,8 @@ abstract class BaseSampleFeedViewModel(
 
     return try {
       val waveform =
-          WaveformExtractor()
-              .extractWaveform(context = context, uri = audioUrl.toUri(), samplesCount = 100)
+          waveformExtractor.extractWaveform(
+              context = context, uri = audioUrl.toUri(), samplesCount = 100)
       if (waveform.isNotEmpty()) {
         waveformCache[sample.id] = waveform
       }

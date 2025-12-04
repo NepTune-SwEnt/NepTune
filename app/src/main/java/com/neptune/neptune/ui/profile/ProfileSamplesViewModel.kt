@@ -39,7 +39,11 @@ class ProfileSamplesViewModel(
     private val enableActions: Boolean = true,
 ) :
     BaseSampleFeedViewModel(
-        sampleRepo = sampleRepo, profileRepo = profileRepo, auth = auth, context = context),
+        sampleRepo = sampleRepo,
+        profileRepo = profileRepo,
+        auth = auth,
+        context = context,
+        storageService = explicitStorageService),
     SampleFeedController {
 
   private val _samples = MutableStateFlow<List<Sample>>(emptyList())

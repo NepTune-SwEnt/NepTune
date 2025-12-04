@@ -70,7 +70,8 @@ class MainViewModelAudioTest {
             profileRepo = mockProfileRepo,
             storageService = mockStorageService,
             auth = mockAuth,
-            useMockData = true)
+            useMockData = true,
+            waveformExtractor = mockWaveformExtractor)
   }
 
   @After

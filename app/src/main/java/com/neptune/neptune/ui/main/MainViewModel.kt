@@ -15,6 +15,8 @@ import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
 import com.neptune.neptune.ui.feed.BaseSampleFeedViewModel
 import com.neptune.neptune.ui.feed.SampleFeedController
+import com.neptune.neptune.util.AudioWaveformExtractor
+import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -53,12 +55,15 @@ open class MainViewModel(
     downloadsFolder: File =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
     auth: FirebaseAuth? = null,
+    waveformExtractor: AudioWaveformExtractor = WaveformExtractor()
 ) :
     BaseSampleFeedViewModel(
         sampleRepo = sampleRepo,
         profileRepo = profileRepo,
-        auth = if (useMockData) null else auth ?: FirebaseAuth.getInstance(),
-        context = context),
+        auth = auth ?: if (useMockData) null else FirebaseAuth.getInstance(),
+        context = context,
+        storageService = storageService,
+        waveformExtractor = waveformExtractor),
     SampleFeedController {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
   val downloadProgress = MutableStateFlow<Int?>(null)
