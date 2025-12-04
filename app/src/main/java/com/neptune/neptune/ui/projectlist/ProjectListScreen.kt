@@ -106,6 +106,7 @@ fun ProjectListScreen(
   val projects: List<ProjectItem> = uiState.projects
   val selectedProjects: String? = uiState.selectedProject
   val isOnline by projectListViewModel.isOnline.collectAsState()
+  val isUserLoggedIn = projectListViewModel.isUserLoggedIn
 
   var searchText by remember { mutableStateOf("") }
   val filteredProjects =
@@ -128,7 +129,7 @@ fun ProjectListScreen(
                     .fillMaxSize()
                     .padding(it)) {
               SearchBar(value = searchText, onValueChange = { searchText = it })
-              if (!isOnline) {
+              if (!isOnline && isUserLoggedIn) {
                 OfflineBanner()
               }
               ProjectList(
