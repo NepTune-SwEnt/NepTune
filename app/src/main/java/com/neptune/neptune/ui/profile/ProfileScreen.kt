@@ -302,141 +302,141 @@ private fun ProfileViewContent(
         }
       },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
-        Box(Modifier.fillMaxSize().padding(innerPadding)) {
-          LazyColumn(
-              modifier =
-                  Modifier.fillMaxSize()
-                      .padding(bottom = 88.dp)
-                      .testTag(ProfileScreenTestTags.VIEW_CONTENT)
-                      .then(samplesListTagModifier),
-              horizontalAlignment = Alignment.CenterHorizontally,
-          ) {
-            item { Spacer(Modifier.height(AvatarVerticalSpacing)) }
+        Box(
+            Modifier.fillMaxSize()
+                .padding(innerPadding)
+                .testTag(ProfileScreenTestTags.VIEW_CONTENT)) {
+              LazyColumn(
+                  modifier =
+                      Modifier.fillMaxSize().padding(bottom = 88.dp).then(samplesListTagModifier),
+                  horizontalAlignment = Alignment.CenterHorizontally,
+              ) {
+                item { Spacer(Modifier.height(AvatarVerticalSpacing)) }
 
-            // Avatar image
-            item {
-              val avatarModel =
-                  localAvatarUri ?: state.avatarUrl ?: R.drawable.ic_avatar_placeholder
-              Avatar(
-                  avatarModel,
-                  modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
-                  showEditPencil = false)
-            }
+                // Avatar image
+                item {
+                  val avatarModel =
+                      localAvatarUri ?: state.avatarUrl ?: R.drawable.ic_avatar_placeholder
+                  Avatar(
+                      avatarModel,
+                      modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
+                      showEditPencil = false)
+                }
 
-            item { Spacer(Modifier.height(AvatarVerticalSpacing)) }
+                item { Spacer(Modifier.height(AvatarVerticalSpacing)) }
 
-            // Name and username
-            item {
-              Text(
-                  text = state.name,
-                  color = NepTuneTheme.colors.onBackground,
-                  style = MaterialTheme.typography.headlineMedium,
-                  textAlign = TextAlign.Center,
-                  modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
-            }
-            item {
-              Text(
-                  text = "@${state.username}",
-                  color = NepTuneTheme.colors.onBackground,
-                  style = MaterialTheme.typography.bodyMedium,
-                  modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
-            }
-            item { Spacer(Modifier.height(SectionVerticalSpacing)) }
+                // Name and username
+                item {
+                  Text(
+                      text = state.name,
+                      color = NepTuneTheme.colors.onBackground,
+                      style = MaterialTheme.typography.headlineMedium,
+                      textAlign = TextAlign.Center,
+                      modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
+                }
+                item {
+                  Text(
+                      text = "@${state.username}",
+                      color = NepTuneTheme.colors.onBackground,
+                      style = MaterialTheme.typography.bodyMedium,
+                      modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
+                }
+                item { Spacer(Modifier.height(SectionVerticalSpacing)) }
 
-            // Stats row
-            item { StatRow(state) }
-            item { Spacer(Modifier.height(SectionVerticalSpacing)) }
+                // Stats row
+                item { StatRow(state) }
+                item { Spacer(Modifier.height(SectionVerticalSpacing)) }
 
-            // if view mode is for other users profile, show follow button
-            viewConfig.belowStatsButton?.let { button -> item { button() } }
+                // if view mode is for other users profile, show follow button
+                viewConfig.belowStatsButton?.let { button -> item { button() } }
 
-            // Bio
-            item {
-              Text(
-                  text = if (state.bio != "") "“${state.bio}”" else "",
-                  color = NepTuneTheme.colors.onBackground,
-                  style = MaterialTheme.typography.titleLarge,
-                  textAlign = TextAlign.Center,
-                  modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
-            }
+                // Bio
+                item {
+                  Text(
+                      text = if (state.bio != "") "“${state.bio}”" else "",
+                      color = NepTuneTheme.colors.onBackground,
+                      style = MaterialTheme.typography.titleLarge,
+                      textAlign = TextAlign.Center,
+                      modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
+                }
 
-            // Tags
-            if (state.tags.isNotEmpty()) {
-              item { Spacer(Modifier.height(TagsSpacing)) }
-              item {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(TagsSpacing),
-                    verticalArrangement = Arrangement.spacedBy(TagsSpacing),
-                    modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_VIEW_SECTION)) {
-                      state.tags.forEach { tag ->
-                        InputChip(
-                            selected = false,
-                            onClick = {},
-                            enabled = false,
-                            label = { Text(tag) },
-                            colors =
-                                InputChipDefaults.inputChipColors(
-                                    disabledContainerColor = NepTuneTheme.colors.cardBackground,
-                                    disabledLabelColor = NepTuneTheme.colors.onBackground),
-                            border =
-                                InputChipDefaults.inputChipBorder(
-                                    borderWidth = 0.dp, enabled = false, selected = false))
-                      }
-                    }
+                // Tags
+                if (state.tags.isNotEmpty()) {
+                  item { Spacer(Modifier.height(TagsSpacing)) }
+                  item {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(TagsSpacing),
+                        verticalArrangement = Arrangement.spacedBy(TagsSpacing),
+                        modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_VIEW_SECTION)) {
+                          state.tags.forEach { tag ->
+                            InputChip(
+                                selected = false,
+                                onClick = {},
+                                enabled = false,
+                                label = { Text(tag) },
+                                colors =
+                                    InputChipDefaults.inputChipColors(
+                                        disabledContainerColor = NepTuneTheme.colors.cardBackground,
+                                        disabledLabelColor = NepTuneTheme.colors.onBackground),
+                                border =
+                                    InputChipDefaults.inputChipBorder(
+                                        borderWidth = 0.dp, enabled = false, selected = false))
+                          }
+                        }
+                  }
+                }
+
+                item { Spacer(Modifier.height(SectionVerticalSpacing)) }
+
+                // Posted samples section
+                item {
+                  Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Posted samples",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = NepTuneTheme.colors.onBackground)
+                    Spacer(Modifier.height(SamplesSpacing))
+                  }
+                }
+
+                if (samples.isEmpty()) {
+                  item {
+                    Text(
+                        text = "No samples posted yet.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = NepTuneTheme.colors.onBackground)
+                  }
+                } else {
+                  sampleFeedItems(
+                      samples = samples,
+                      controller = profileSamplesViewModel,
+                      mediaPlayer = mediaPlayer,
+                      likedSamples = likedSamples,
+                      sampleResources = sampleResources,
+                      navigateToProfile = {},
+                      navigateToOtherUserProfile = {},
+                      testTagsForSample = {
+                        object : BaseSampleTestTags {
+                          override val prefix = "sampleList"
+                        }
+                      },
+                      width = cardWidth,
+                      height = cardHeight)
+                }
               }
-            }
 
-            item { Spacer(Modifier.height(SectionVerticalSpacing)) }
-
-            // Posted samples section
-            item {
-              Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "Posted samples",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = NepTuneTheme.colors.onBackground)
-                Spacer(Modifier.height(SamplesSpacing))
+              activeCommentSampleId?.let { activeId ->
+                CommentDialog(
+                    sampleId = activeId,
+                    comments = comments,
+                    usernames = usernames,
+                    onDismiss = { profileSamplesViewModel.resetCommentSampleId() },
+                    onAddComment = { id, text -> profileSamplesViewModel.onAddComment(id, text) })
               }
+
+              // if mode is self profile, show edit button
+              viewConfig.bottomScreenButton?.invoke(Modifier.align(Alignment.BottomCenter))
             }
-
-            if (samples.isEmpty()) {
-              item {
-                Text(
-                    text = "No samples posted yet.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = NepTuneTheme.colors.onBackground)
-              }
-            } else {
-              sampleFeedItems(
-                  samples = samples,
-                  controller = profileSamplesViewModel,
-                  mediaPlayer = mediaPlayer,
-                  likedSamples = likedSamples,
-                  sampleResources = sampleResources,
-                  navigateToProfile = {},
-                  navigateToOtherUserProfile = {},
-                  testTagsForSample = {
-                    object : BaseSampleTestTags {
-                      override val prefix = "sampleList"
-                    }
-                  },
-                  width = cardWidth,
-                  height = cardHeight)
-            }
-          }
-
-          activeCommentSampleId?.let { activeId ->
-            CommentDialog(
-                sampleId = activeId,
-                comments = comments,
-                usernames = usernames,
-                onDismiss = { profileSamplesViewModel.resetCommentSampleId() },
-                onAddComment = { id, text -> profileSamplesViewModel.onAddComment(id, text) })
-          }
-
-          // if mode is self profile, show edit button
-          viewConfig.bottomScreenButton?.invoke(Modifier.align(Alignment.BottomCenter))
-        }
       }
 }
 
