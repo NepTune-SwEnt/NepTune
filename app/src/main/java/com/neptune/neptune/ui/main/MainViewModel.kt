@@ -102,6 +102,10 @@ class MainViewModel(
   val sampleResources = _sampleResources.asStateFlow()
   private val _isRefreshing = MutableStateFlow(false)
   val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+  private val _isAnonymous = MutableStateFlow(auth.currentUser?.isAnonymous ?: true)
+  val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
+  private val _activeCommentSampleId = MutableStateFlow<String?>(null)
+  val activeCommentSampleId: StateFlow<String?> = _activeCommentSampleId.asStateFlow()
 
   init {
     if (useMockData) {
@@ -221,6 +225,7 @@ class MainViewModel(
         // Update the user avatar
         val newAvatarUrl = profile?.avatarUrl
         _userAvatar.value = newAvatarUrl
+        _isAnonymous.value = profile?.isAnonymous ?: auth.currentUser?.isAnonymous ?: true
 
         // Update username
         val newUsername = profile?.username
@@ -288,6 +293,7 @@ class MainViewModel(
   }
 
   fun onLikeClicked(sample: Sample, isLiked: Boolean) {
+    if (_isAnonymous.value) return
     viewModelScope.launch {
       val newState = actions?.onLikeClicked(sample.id, isLiked)
       if (newState != null) {
@@ -320,6 +326,7 @@ class MainViewModel(
   }
 
   fun addComment(sampleId: String, text: String) {
+    if (_isAnonymous.value) return
     viewModelScope.launch {
       val profile = profileRepo.getCurrentProfile()
       val authorId = profile?.uid ?: auth.currentUser?.uid ?: "unknown"
@@ -453,6 +460,15 @@ class MainViewModel(
     _isRefreshing.value = true
     allSamplesCache = emptyList()
     loadSamplesFromFirebase()
+  }
+  /** Function to open the comment section. */
+  fun openCommentSection(sample: Sample) {
+    _activeCommentSampleId.value = sample.id
+    observeCommentsForSample(sample.id)
+  }
+  /** Function to close the comment section. */
+  fun closeCommentSection() {
+    _activeCommentSampleId.value = null
   }
 
   // Mock Data

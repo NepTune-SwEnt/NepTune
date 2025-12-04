@@ -227,6 +227,8 @@ dependencies {
     implementation("com.airbnb.android:lottie-compose:6.7.1")
 
 
+    // Color picker for Compose from github
+    implementation("com.godaddy.android.colorpicker:compose-color-picker:0.7.0")
 }
 
 tasks.withType<Test> {
