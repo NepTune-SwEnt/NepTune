@@ -156,7 +156,6 @@ class EpicProjectE2ETest {
 
     val reload = vmReload.uiState.value
 
-
     Espresso.pressBack()
     Espresso.pressBack()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
