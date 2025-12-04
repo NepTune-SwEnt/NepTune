@@ -155,6 +155,14 @@ enum class KnobUnit {
   NONE
 }
 
+private fun getDecodedZipPath(zipFilePath: String?): String? {
+  return if (zipFilePath.isNullOrEmpty()) {
+    null
+  } else {
+    URLDecoder.decode(zipFilePath, StandardCharsets.UTF_8.name())
+  }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SamplerScreen(
@@ -162,20 +170,13 @@ fun SamplerScreen(
     zipFilePath: String?,
 ) {
   val uiState by viewModel.uiState.collectAsState()
-  val decodedZipPath =
-      remember(zipFilePath) {
-        if (zipFilePath.isNullOrEmpty()) {
-          null
-        } else {
-          URLDecoder.decode(zipFilePath, StandardCharsets.UTF_8.name())
-        }
-      }
+  val decodedZipPath = remember(zipFilePath) { getDecodedZipPath(zipFilePath) }
 
   // Local state to control visibility of the floating settings dialog
   var showSettingsDialog by remember { mutableStateOf(false) }
   // Local state for the help dialog and selected tab
   var showHelpDialog by remember { mutableStateOf(false) }
-  var helpTabIndex by remember { mutableStateOf(0) }
+  var helpTabIndex by remember { mutableIntStateOf(0) }
 
   // Collect the disabledHelp state from the data store
   val context = NepTuneApplication.appContext
@@ -1776,7 +1777,16 @@ fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Un
   val tabCount = 6
   // swipe threshold in pixels (density-aware)
   val swipeThresholdPx = LocalDensity.current.run { 64.dp.toPx() }
-  var dragAccum by remember { mutableStateOf(0f) }
+  var dragAccum by remember { mutableFloatStateOf(0f) }
+  fun onSwipe() = {
+    // negative accumulation = swipe left (go to next)
+    if (dragAccum < -swipeThresholdPx && selectedTab < tabCount - 1) {
+      onTabSelected(selectedTab + 1)
+    } else if (dragAccum > swipeThresholdPx && selectedTab > 0) {
+      onTabSelected(selectedTab - 1)
+    }
+    dragAccum = 0f
+  }
 
   Dialog(onDismissRequest = onClose) {
     Surface(
@@ -1794,15 +1804,7 @@ fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Un
                             change.consume()
                             dragAccum += dragAmount.x
                           },
-                          onDragEnd = {
-                            // negative accumulation = swipe left (go to next)
-                            if (dragAccum < -swipeThresholdPx && selectedTab < tabCount - 1) {
-                              onTabSelected(selectedTab + 1)
-                            } else if (dragAccum > swipeThresholdPx && selectedTab > 0) {
-                              onTabSelected(selectedTab - 1)
-                            }
-                            dragAccum = 0f
-                          },
+                          onDragEnd = onSwipe(),
                           onDragCancel = { dragAccum = 0f })
                     }) {
                   Text(
