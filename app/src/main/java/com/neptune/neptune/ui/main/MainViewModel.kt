@@ -104,8 +104,6 @@ open class MainViewModel(
   val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
   private val _isAnonymous = MutableStateFlow(auth?.currentUser?.isAnonymous ?: true)
   val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
-  private val _activeCommentSampleId = MutableStateFlow<String?>(null)
-  val activeCommentSampleId: StateFlow<String?> = _activeCommentSampleId.asStateFlow()
   private val _recommendedSamples = MutableStateFlow<List<Sample>>(emptyList())
   val recommendedSamples: StateFlow<List<Sample>> = _recommendedSamples
 
