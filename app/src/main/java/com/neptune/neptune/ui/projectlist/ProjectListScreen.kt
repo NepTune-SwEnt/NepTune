@@ -280,6 +280,7 @@ fun EditMenu(
   var showRenameDialog by remember { mutableStateOf(false) }
   var showChangeDescDialog by remember { mutableStateOf(false) }
   var showDeleteDialog by remember { mutableStateOf(false) }
+  val isOnline by projectListViewModel.isOnline.collectAsState()
 
   if (showRenameDialog) {
     RenameProjectDialog(
@@ -310,68 +311,71 @@ fun EditMenu(
         onDismiss = { showDeleteDialog = false })
   }
 
-  // Right  buttons
-  Row {
-    // Star favorite toggle
-    IconButton(
-        onClick = { projectListViewModel.toggleFavorite(project.uid) },
-        modifier = Modifier.testTag("favorite_${project.uid}")) {
-          Icon(
-              imageVector = if (project.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
-              contentDescription = "Favorite",
-              tint = NepTuneTheme.colors.onBackground,
-              modifier = Modifier.size(26.dp))
-        }
-
-    Box(modifier = Modifier.padding(end = 0.dp)) {
+  if (isOnline) {
+    // Right  buttons
+    Row {
+      // Star favorite toggle
       IconButton(
-          onClick = { expanded = true }, modifier = Modifier.testTag("menu_${project.uid}")) {
+          onClick = { projectListViewModel.toggleFavorite(project.uid) },
+          modifier = Modifier.testTag("favorite_${project.uid}")) {
             Icon(
-                Icons.Rounded.MoreVert,
-                contentDescription = "Edit",
+                imageVector =
+                    if (project.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
+                contentDescription = "Favorite",
                 tint = NepTuneTheme.colors.onBackground,
-                modifier = Modifier.size(30.dp).padding(end = 0.dp),
-            )
+                modifier = Modifier.size(26.dp))
           }
-      DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-        DropdownMenuItem(
-            modifier = Modifier.testTag(ProjectListScreenTestTags.RENAME_BUTTON),
-            text = { Text("Rename") },
-            onClick = {
-              showRenameDialog = true
-              expanded = false
-            })
-        DropdownMenuItem(
-            modifier = Modifier.testTag(ProjectListScreenTestTags.CHANGE_DESCRIPTION_BUTTON),
-            text = { Text("Change Description") },
-            onClick = {
-              showChangeDescDialog = true
-              expanded = false
-            })
-        if (!project.isStoredInCloud) {
+
+      Box(modifier = Modifier.padding(end = 0.dp)) {
+        IconButton(
+            onClick = { expanded = true }, modifier = Modifier.testTag("menu_${project.uid}")) {
+              Icon(
+                  Icons.Rounded.MoreVert,
+                  contentDescription = "Edit",
+                  tint = NepTuneTheme.colors.onBackground,
+                  modifier = Modifier.size(30.dp).padding(end = 0.dp),
+              )
+            }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
           DropdownMenuItem(
-              modifier = Modifier.testTag(ProjectListScreenTestTags.ADD_TO_CLOUD_BUTTON),
-              text = { Text("Add to Cloud") },
+              modifier = Modifier.testTag(ProjectListScreenTestTags.RENAME_BUTTON),
+              text = { Text("Rename") },
               onClick = {
-                projectListViewModel.addProjectToCloud(project.uid)
+                showRenameDialog = true
                 expanded = false
               })
-        } else {
           DropdownMenuItem(
-              modifier = Modifier.testTag(ProjectListScreenTestTags.REMOVE_FROM_CLOUD_BUTTON),
-              text = { Text("Remove from Cloud") },
+              modifier = Modifier.testTag(ProjectListScreenTestTags.CHANGE_DESCRIPTION_BUTTON),
+              text = { Text("Change Description") },
               onClick = {
-                projectListViewModel.removeProjectFromCloud(project.uid)
+                showChangeDescDialog = true
+                expanded = false
+              })
+          if (!project.isStoredInCloud) {
+            DropdownMenuItem(
+                modifier = Modifier.testTag(ProjectListScreenTestTags.ADD_TO_CLOUD_BUTTON),
+                text = { Text("Add to Cloud") },
+                onClick = {
+                  projectListViewModel.addProjectToCloud(project.uid)
+                  expanded = false
+                })
+          } else {
+            DropdownMenuItem(
+                modifier = Modifier.testTag(ProjectListScreenTestTags.REMOVE_FROM_CLOUD_BUTTON),
+                text = { Text("Remove from Cloud") },
+                onClick = {
+                  projectListViewModel.removeProjectFromCloud(project.uid)
+                  expanded = false
+                })
+          }
+          DropdownMenuItem(
+              modifier = Modifier.testTag(ProjectListScreenTestTags.DELETE_BUTTON),
+              text = { Text("Delete") },
+              onClick = {
+                showDeleteDialog = true
                 expanded = false
               })
         }
-        DropdownMenuItem(
-            modifier = Modifier.testTag(ProjectListScreenTestTags.DELETE_BUTTON),
-            text = { Text("Delete") },
-            onClick = {
-              showDeleteDialog = true
-              expanded = false
-            })
       }
     }
   }
