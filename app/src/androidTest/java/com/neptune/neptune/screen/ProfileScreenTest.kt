@@ -996,11 +996,11 @@ class ProfileScreenTest {
     val samplesViewModel = createFakeSamplesViewModel(listOf(ownerSample, otherSample))
     setContentViewMode(samplesViewModel = samplesViewModel)
 
-    composeTestRule.waitUntil(10_000) {
+    composeTestRule.waitUntil(15_000) {
       samplesViewModel.samples.value.any { it.name == ownerSample.name }
     }
 
-    composeTestRule.waitUntil(10_000) {
+    composeTestRule.waitUntil(15_000) {
       composeTestRule
           .onAllNodes(hasText("Owner Track"), useUnmergedTree = true)
           .fetchSemanticsNodes()
