@@ -84,7 +84,7 @@ class EpicProjectE2ETest {
   }
 
   @Test
-  fun epicFlow_modifyViaUI_save_reload_verifyValues() = runBlocking {
+  fun epicFlowModifyViaUISaveReloadVerifyValues() = runBlocking {
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
     composeTestRule.onNodeWithTag(ProfileScreenTestTags.SETTINGS_BUTTON).performClick()
     composeTestRule.onNodeWithTag(DISABLE_HELP_SWITCH).performClick()
@@ -155,6 +155,15 @@ class EpicProjectE2ETest {
     delay(500)
 
     val reload = vmReload.uiState.value
+
+
+    Espresso.pressBack()
+    Espresso.pressBack()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
+    composeTestRule.onNodeWithTag(ProfileScreenTestTags.SETTINGS_BUTTON).performClick()
+    composeTestRule.onNodeWithTag(DISABLE_HELP_SWITCH).performClick()
+    Espresso.pressBack()
+    Espresso.pressBack()
 
     // --- VERIFY PERSISTED VALUES ---
     assertTrue("Attack was not changed!", reload.attack != originalAttack)
