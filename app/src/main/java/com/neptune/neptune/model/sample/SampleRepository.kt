@@ -89,4 +89,24 @@ interface SampleRepository {
    * @param sampleId the ID of the sample
    */
   suspend fun increaseDownloadCount(sampleId: String)
+  /**
+   * Fetch samples by recency.
+   *
+   * @param limit the number of samples to fetch
+   */
+  suspend fun getLatestSamples(limit: Int): List<Sample>
+
+  /**
+   * Fetch samples by popularity.
+   *
+   * @param limit the number of samples to fetch
+   */
+  suspend fun getTrendingSamples(limit: Int): List<Sample>
+
+  /**
+   * Fetch samples by tags.
+   *
+   * @param tags the tags to match
+   */
+  suspend fun getSamplesByTags(tags: List<String>, perTagLimit: Int = 100): List<Sample>
 }

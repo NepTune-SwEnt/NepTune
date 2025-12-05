@@ -35,6 +35,7 @@ import com.neptune.neptune.model.FakeSampleRepository
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import com.neptune.neptune.model.recommendation.RecoUserProfile
 import com.neptune.neptune.ui.profile.OtherUserProfileRoute
 import com.neptune.neptune.ui.profile.ProfileMode
 import com.neptune.neptune.ui.profile.ProfileSamplesViewModel
@@ -1098,4 +1099,16 @@ private class FakeOtherProfileRepository(
   override suspend fun getAvatarUrlByUserId(userId: String): String? = null
 
   override suspend fun getUserNameByUserId(userId: String): String? = null
+
+  override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun recordTagInteraction(
+      tags: List<String>,
+      likeDelta: Int,
+      downloadDelta: Int
+  ) {
+    TODO("Not yet implemented")
+  }
 }
