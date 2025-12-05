@@ -65,13 +65,13 @@ class MainViewModelAudioTest {
 
     viewModel =
         MainViewModel(
-            repo = mockSampleRepo,
+            sampleRepo = mockSampleRepo,
             context = appContext,
             profileRepo = mockProfileRepo,
             storageService = mockStorageService,
             auth = mockAuth,
-            waveformExtractor = mockWaveformExtractor,
-            useMockData = true)
+            useMockData = true,
+            waveformExtractor = mockWaveformExtractor)
   }
 
   @After
