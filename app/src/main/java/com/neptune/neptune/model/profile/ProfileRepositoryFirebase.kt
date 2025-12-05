@@ -408,10 +408,10 @@ class ProfileRepositoryFirebase(
     if (delta == 0.0) return
 
     db.runTransaction { tx ->
-          val snap = tx.get(profileRef)
+          val snap = tx[profileRef]
           if (!snap.exists()) return@runTransaction
 
-          val raw = snap.get("tagsWeight") as? Map<*, *> ?: emptyMap<Any, Any>()
+          val raw = snap["tagsWeight"] as? Map<*, *> ?: emptyMap<Any, Any>()
           val current = mutableMapOf<String, Double>()
 
           // Safely rehydrate current map
