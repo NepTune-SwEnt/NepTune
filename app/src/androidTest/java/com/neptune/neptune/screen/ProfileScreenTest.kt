@@ -1101,6 +1101,7 @@ private class FakeOtherProfileRepository(
   override suspend fun getUserNameByUserId(userId: String): String? = null
 
   override suspend fun searchUsers(query: String): List<Profile> = emptyList()
+
   override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
     TODO("Not yet implemented")
   }

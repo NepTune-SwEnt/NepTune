@@ -134,6 +134,8 @@ class FakeProfileRepository(
     return if (current?.uid == userId) current.username else null
   }
 
+  override suspend fun searchUsers(query: String): List<Profile> = emptyList()
+
   override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
     val profile = state.value ?: return null
 
