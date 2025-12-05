@@ -47,6 +47,13 @@ class SettingsViewModel(private val themeDataStore: ThemeDataStore) : ViewModel(
           started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
           initialValue = ThemeDataStore.DEFAULT_ONBACKGROUND_COLOR)
 
+  // Expose the disable-help preference as StateFlow<Boolean>
+  val disableHelp: StateFlow<Boolean> =
+      themeDataStore.disableHelp.stateIn(
+          scope = viewModelScope,
+          started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+          initialValue = false)
+
   fun updateTheme(newTheme: ThemeSetting) {
     viewModelScope.launch { themeDataStore.setTheme(newTheme) }
   }
@@ -57,6 +64,11 @@ class SettingsViewModel(private val themeDataStore: ThemeDataStore) : ViewModel(
 
   fun resetCustomColors() {
     viewModelScope.launch { themeDataStore.resetCustomColors() }
+  }
+
+  /** Persist the user's preference for disabling the sampler help button. */
+  fun setDisableHelp(disabled: Boolean) {
+    viewModelScope.launch { themeDataStore.setDisableHelp(disabled) }
   }
 }
 

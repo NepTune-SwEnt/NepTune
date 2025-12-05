@@ -47,7 +47,7 @@ class SearchScreenTest {
     fakeProfileRepo = FakeProfileRepository()
     viewModel =
         SearchViewModel(
-            repo = fakeSampleRepo,
+            sampleRepo = fakeSampleRepo,
             profileRepo = fakeProfileRepo,
             context = composeTestRule.activity.applicationContext,
             useMockData = true)

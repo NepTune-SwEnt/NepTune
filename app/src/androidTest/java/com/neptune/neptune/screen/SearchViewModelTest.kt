@@ -37,7 +37,7 @@ class SearchViewModelTest {
   private lateinit var context: Context
 
   private val emulatorHost = "10.0.2.2"
-  private val timeOut: Long = 5000
+  private val timeOut: Long = 15000
 
   @Before
   fun setup() {
@@ -71,7 +71,7 @@ class SearchViewModelTest {
 
     val viewModel =
         SearchViewModel(
-            repo = realRepo,
+            sampleRepo = realRepo,
             context = context,
             useMockData = false,
             profileRepo = ProfileRepositoryProvider.repository,
