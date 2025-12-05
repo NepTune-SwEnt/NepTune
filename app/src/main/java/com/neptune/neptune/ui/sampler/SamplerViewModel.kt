@@ -503,7 +503,7 @@ open class SamplerViewModel() : ViewModel() {
     }
   }
 
-  private var adsrPlaying = false
+  var adsrPlaying = false
 
   open fun startADSRSample() {
     val uri = _uiState.value.currentAudioUri ?: _uiState.value.originalAudioUri ?: return
@@ -816,7 +816,6 @@ open class SamplerViewModel() : ViewModel() {
                   reverbWidth = state.reverbWidth,
                   reverbDepth = state.reverbDepth,
                   reverbPredelay = state.reverbPredelay,
-                  semitones = semitones,
                   attack = state.attack,
                   decay = state.decay,
                   sustain = state.sustain,
@@ -846,7 +845,6 @@ open class SamplerViewModel() : ViewModel() {
       reverbWidth: Float,
       reverbDepth: Float,
       reverbPredelay: Float,
-      semitones: Int = 0,
       attack: Float = 0f,
       decay: Float = 0f,
       sustain: Float = 1f,

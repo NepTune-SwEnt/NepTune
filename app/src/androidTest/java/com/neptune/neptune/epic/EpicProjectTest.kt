@@ -131,7 +131,7 @@ class EpicProjectE2ETest {
 
     composeTestRule.waitForIdle()
 
-    delay(10000)
+    delay(5000)
 
     val vmReload = SamplerViewModel()
     vmReload.loadProjectData(assetZipFile.absolutePath)

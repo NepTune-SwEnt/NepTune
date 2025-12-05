@@ -2,6 +2,7 @@ package com.neptune.neptune.media
 
 import android.media.MediaPlayer
 import android.net.Uri
+import android.util.Log
 import androidx.compose.runtime.compositionLocalOf
 import androidx.core.net.toUri
 import com.neptune.neptune.NepTuneApplication
@@ -182,13 +183,19 @@ open class NeptuneMediaPlayer() {
     mediaPlayer?.setVolume(v, v)
   }
 
-  fun stopWithFade(releaseMillis: Long) {
+  open fun stopWithFade(releaseMillis: Long) {
     val mp = mediaPlayer ?: return
     if (releaseMillis <= 0L) {
       try {
         if (mp.isPlaying) mp.stop()
-      } catch (e: Exception) {}
-      mp.release()
+      } catch (e: Exception) {
+        Log.e("NeptuneMediaPlayer", "Error stopping media player", e)
+      }
+      try {
+        mp.release()
+      } catch (e: Exception) {
+        Log.e("NeptuneMediaPlayer", "Error releasing media player", e)
+      }
       mediaPlayer = null
       currentUri = null
       return
@@ -197,30 +204,43 @@ open class NeptuneMediaPlayer() {
     CoroutineScope(Dispatchers.Main).launch {
       val steps = 20
       val stepDelay = (releaseMillis / steps).coerceAtLeast(5L)
-      var current = 1.0f
       for (i in steps downTo 1) {
         val level = i.toFloat() / steps.toFloat()
         try {
           mp.setVolume(level, level)
-        } catch (e: Exception) {}
+        } catch (e: Exception) {
+          Log.e("NeptuneMediaPlayer", "Error setting volume during fade", e)
+        }
         delay(stepDelay)
       }
       try {
         mp.setVolume(0f, 0f)
         if (mp.isPlaying) mp.stop()
-      } catch (e: Exception) {}
-      mp.release()
+      } catch (e: Exception) {
+        Log.e("NeptuneMediaPlayer", "Error stopping media player at fade end", e)
+      }
+      try {
+        mp.release()
+      } catch (e: Exception) {
+        Log.e("NeptuneMediaPlayer", "Error releasing media player at fade end", e)
+      }
       mediaPlayer = null
       currentUri = null
     }
   }
 
-  fun forceStopAndRelease() {
+  open fun forceStopAndRelease() {
     mediaPlayer?.let {
       try {
         if (it.isPlaying) it.stop()
-      } catch (e: Exception) {}
-      it.release()
+      } catch (e: Exception) {
+        Log.e("NeptuneMediaPlayer", "Error stopping media player in forceStopAndRelease", e)
+      }
+      try {
+        it.release()
+      } catch (e: Exception) {
+        Log.e("NeptuneMediaPlayer", "Error releasing media player in forceStopAndRelease", e)
+      }
     }
     mediaPlayer = null
     currentUri = null
