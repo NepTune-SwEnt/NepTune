@@ -18,10 +18,10 @@ import com.neptune.neptune.ui.feed.SampleFeedController
 import com.neptune.neptune.ui.main.SampleUiActions
 import com.neptune.neptune.util.DownloadDirectoryProvider
 import java.io.File
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -46,7 +46,6 @@ enum class SearchType(val title: String) {
  *
  * written with assistance from ChatGPT
  */
-@OptIn(ExperimentalCoroutinesApi::class)
 open class SearchViewModel(
     sampleRepo: SampleRepository = SampleRepositoryProvider.repository,
     context: Context,
@@ -82,7 +81,6 @@ open class SearchViewModel(
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
   private val allSamples = MutableStateFlow<List<Sample>>(emptyList())
-
   // Search Type State
   private val _searchType = MutableStateFlow(SearchType.SAMPLES)
   val searchType: StateFlow<SearchType> = _searchType.asStateFlow()
@@ -113,16 +111,6 @@ open class SearchViewModel(
     _searchType.update { it.toggle() }
     // Re-trigger search with the new type
     search(query)
-  }
-
-  fun onCommentClicked(sample: Sample) {
-    observeCommentsForSample(sample.id)
-    _activeCommentSampleId.value = sample.id
-  }
-
-  fun onAddComment(sampleId: String, text: String) {
-    addComment(sampleId, text)
-    observeCommentsForSample(sampleId)
   }
 
   fun toggleFollow(userId: String, isFollowing: Boolean) {
@@ -163,7 +151,6 @@ open class SearchViewModel(
       }
     }
   }
-
   // ---------- Actions (download, etc.) – disabled in tests ----------
   val downloadProgress = MutableStateFlow<Int?>(null)
 
@@ -238,7 +225,7 @@ open class SearchViewModel(
                 21,
                 listOf(NATURE_TAG),
                 21,
-                listOf("uid1", "uid2"),
+                emptyList(),
                 21,
                 21),
             Sample(
