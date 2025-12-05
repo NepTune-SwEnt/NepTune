@@ -259,7 +259,7 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
                           .await()
 
                   snapshot.documents.mapNotNull { it.toSampleOrNull() }
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                   // Fail soft for one chunk, don't kill the whole call
                   emptyList<Sample>()
                 }
