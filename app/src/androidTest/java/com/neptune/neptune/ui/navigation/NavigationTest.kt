@@ -272,6 +272,8 @@ class NavigationTest {
     every { mockViewModel.activeCommentSampleId } returns MutableStateFlow(null)
     every { mockViewModel.usernames } returns MutableStateFlow(emptyMap())
     every { mockViewModel.isAnonymous } returns MutableStateFlow(false)
+    every { mockViewModel.recommendedSamples } returns MutableStateFlow(emptyList())
+
     composeTestRule.setContent {
       MainScreen(navigateToProjectList = navigateToProjectListMock, mainViewModel = mockViewModel)
     }
