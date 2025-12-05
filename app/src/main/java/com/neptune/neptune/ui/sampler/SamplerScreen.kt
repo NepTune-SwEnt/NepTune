@@ -11,12 +11,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.*
@@ -232,6 +234,9 @@ fun SamplerScreen(
                 onDecreasePitch = viewModel::decreasePitch,
                 uiState = uiState,
                 viewModel = viewModel)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            ADSRTestButton(viewModel = viewModel)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -278,6 +283,31 @@ fun HelpButton(onClick: () -> Unit) {
           }
         }
   }
+}
+
+@Composable
+fun ADSRTestButton(viewModel: SamplerViewModel, modifier: Modifier = Modifier) {
+  Surface(
+      modifier =
+          modifier.testTag("ADSR_TEST_BUTTON").fillMaxWidth().height(30.dp).pointerInput(Unit) {
+            detectTapGestures(
+                onPress = {
+                  viewModel.startADSRSample()
+                  tryAwaitRelease()
+                  viewModel.stopADSRSample()
+                })
+          },
+      color = NepTuneTheme.colors.soundWave,
+      shape = RoundedCornerShape(12.dp),
+      tonalElevation = 2.dp,
+      shadowElevation = 4.dp) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+          Icon(
+              imageVector = Icons.Default.Piano,
+              contentDescription = "Play ADSR",
+              tint = Color.White)
+        }
+      }
 }
 
 @Composable
@@ -793,6 +823,7 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
       modifier =
           Modifier.fillMaxWidth()
               .wrapContentHeight()
+              .verticalScroll(rememberScrollState())
               .padding(top = 8.dp)
               .testTag(SamplerTestTags.TAB_BASICS_CONTENT)) {
         ExpandableSection(

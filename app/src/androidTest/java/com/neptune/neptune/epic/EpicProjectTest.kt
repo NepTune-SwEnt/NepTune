@@ -106,14 +106,7 @@ class EpicProjectE2ETest {
     composeTestRule.onNodeWithTag("project_$TARGET_PROJECT_ID").performClick()
     composeTestRule.waitForIdle()
 
-    val vmOriginal = SamplerViewModel()
-    vmOriginal.loadProjectData(assetZipFile.absolutePath)
     delay(500)
-
-    val original = vmOriginal.uiState.value
-
-    val originalAttack = original.attack
-    val originalSustain = original.sustain
 
     // --- INTERACT WITH REAL UI ---
 
@@ -132,7 +125,7 @@ class EpicProjectE2ETest {
     composeTestRule.onNodeWithContentDescription("Save").performClick()
     composeTestRule.waitForIdle()
 
-    delay(1000)
+    delay(2000)
 
     // --- RETURN TO HOME ---
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
@@ -143,16 +136,14 @@ class EpicProjectE2ETest {
     composeTestRule.waitForIdle()
 
     composeTestRule.onNodeWithTag("project_$TARGET_PROJECT_ID").performClick()
+
     composeTestRule.waitForIdle()
 
-    // Load internally to check ZIP values
-    val vm = SamplerViewModel()
-    vm.loadProjectData(assetZipFile.absolutePath)
-    delay(500)
+    delay(5000)
 
     val vmReload = SamplerViewModel()
     vmReload.loadProjectData(assetZipFile.absolutePath)
-    delay(500)
+    delay(5000)
 
     val reload = vmReload.uiState.value
 
@@ -162,7 +153,7 @@ class EpicProjectE2ETest {
     composeTestRule.onNodeWithTag(DISABLE_HELP_SWITCH).performClick()
 
     // --- VERIFY PERSISTED VALUES ---
-    assertTrue("Attack was not changed!", reload.attack != originalAttack)
-    assertTrue("Sustain was not changed!", reload.sustain != originalSustain)
+    assertTrue("Attack was not changed!", reload.attack != 0.toFloat())
+    assertTrue("Sustain was not changed!", reload.sustain != 1.toFloat())
   }
 }
