@@ -276,7 +276,7 @@ class FeedScreenTest {
 
     // Like
     composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_LIKES).onFirst().performClick()
-    verify { mockViewModel.onLikeClicked(sample, any()) }
+    verify { mockViewModel.onLikeClick(sample, any()) }
 
     // Download
     composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_DOWNLOADS).onFirst().performClick()

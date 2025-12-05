@@ -2,12 +2,10 @@ package com.neptune.neptune.ui.search
 
 import android.app.Application
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -32,11 +30,10 @@ import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
+import com.neptune.neptune.ui.feed.sampleFeedItems
 import com.neptune.neptune.ui.main.CommentDialog
 import com.neptune.neptune.ui.main.DownloadProgressBar
-import com.neptune.neptune.ui.main.SampleItem
 import com.neptune.neptune.ui.main.SampleResourceState
-import com.neptune.neptune.ui.main.onClickFunctions
 import com.neptune.neptune.ui.projectlist.SearchBar
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import kotlinx.coroutines.delay
@@ -162,6 +159,9 @@ fun ScrollableColumnOfSamples(
     navigateToProfile: () -> Unit = {},
     navigateToOtherUserProfile: (String) -> Unit = {},
     sampleResources: Map<String, SampleResourceState> = emptyMap(),
+    testTagsForSample: (Sample) -> BaseSampleTestTags = {
+      SearchScreenTestTagsPerSampleCard(idInColumn = it.id)
+    },
 ) {
   val configuration = LocalConfiguration.current
   val screenWidth = configuration.screenWidthDp.dp
@@ -175,56 +175,27 @@ fun ScrollableColumnOfSamples(
               .testTag(SearchScreenTestTags.SAMPLE_LIST)
               .fillMaxSize()
               .background(NepTuneTheme.colors.background),
-      verticalArrangement = Arrangement.spacedBy(12.dp),
       horizontalAlignment = Alignment.CenterHorizontally) {
-        items(samples) { sample ->
-          LaunchedEffect(sample.id, sample.storagePreviewSamplePath) {
-            searchViewModel.loadSampleResources(sample)
-          }
-          val resources = sampleResources[sample.id] ?: SampleResourceState()
-          // change height and width if necessary
-          val testTags = SearchScreenTestTagsPerSampleCard(idInColumn = sample.id)
-          val isLiked = likedSamples[sample.id] == true
-          val actions =
-              onClickFunctions(
-                  onDownloadClick = { searchViewModel.onDownloadSample(sample) },
-                  onLikeClick = {
-                    val newIsLiked = !isLiked
-                    searchViewModel.onLikeClick(sample, newIsLiked)
-                  },
-                  onCommentClick = { searchViewModel.onCommentClicked(sample) },
-                  onProfileClick = {
-                    val ownerId = sample.ownerId
-                    if (ownerId.isNotBlank()) {
-                      if (searchViewModel.isCurrentUser(ownerId)) {
-                        navigateToProfile()
-                      } else {
-                        navigateToOtherUserProfile(ownerId)
-                      }
-                    }
-                  },
-              )
-          SampleItem(
-              sample = sample,
-              width = width,
-              height = height,
-              clickHandlers = actions,
-              isLiked = likedSamples[sample.id] == true,
-              testTags = testTags,
-              mediaPlayer = mediaPlayer,
-              resourceState = resources,
-              iconSize = 20.dp)
-        }
+        sampleFeedItems(
+            samples = samples,
+            controller = searchViewModel,
+            mediaPlayer = mediaPlayer,
+            likedSamples = likedSamples,
+            sampleResources = sampleResources,
+            navigateToProfile = navigateToProfile,
+            navigateToOtherUserProfile = navigateToOtherUserProfile,
+            testTagsForSample = testTagsForSample,
+            width = width,
+            height = height)
       } // Comment Overlay
   if (activeCommentSampleId != null) {
     val usernames by searchViewModel.usernames.collectAsState()
-    val isAnonymous by searchViewModel.isAnonymous.collectAsState()
     CommentDialog(
         sampleId = activeCommentSampleId,
         comments = comments,
         usernames = usernames,
         onDismiss = { searchViewModel.resetCommentSampleId() },
         onAddComment = { id, text -> searchViewModel.onAddComment(id, text) },
-        isAnonymous = isAnonymous)
+    )
   }
 }

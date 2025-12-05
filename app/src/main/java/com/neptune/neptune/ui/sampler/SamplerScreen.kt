@@ -2,6 +2,7 @@ package com.neptune.neptune.ui.sampler
 
 import android.graphics.Paint
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -19,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,7 +30,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -38,6 +42,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -47,18 +52,23 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.NepTuneApplication
+import com.neptune.neptune.R
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.ui.sampler.SamplerTestTags.CURVE_EDITOR_SCROLL_CONTAINER
 import com.neptune.neptune.ui.sampler.SamplerTestTags.FADER_60HZ_TAG
 import com.neptune.neptune.ui.sampler.SamplerTestTags.PREVIEW_PLAY_BUTTON
+import com.neptune.neptune.ui.settings.ThemeDataStore
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.Locale
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.atan2
+import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -112,6 +122,13 @@ object SamplerTestTags {
   const val SETTINGS_CONFIRM_BUTTON = "settingsConfirmButton"
   const val SETTINGS_CANCEL_BUTTON = "settingsCancelButton"
   const val SETTINGS_PITCH_SELECTOR = "settingsPitchSelector"
+
+  // Help-related test tags
+  const val HELP_BUTTON = "helpButton"
+  const val HELP_DIALOG = "helpDialog"
+  const val HELP_NAV_LEFT = "helpNavLeft"
+  const val HELP_NAV_RIGHT = "helpNavRight"
+  const val HELP_PAGE_INDICATOR = "helpPageIndicator"
 }
 
 val KnobBackground = Color.Black
@@ -133,11 +150,21 @@ private const val EQ_GAIN_MAX = 20.0f
 
 val spectrogramBackground = Color.Black.copy(alpha = 0.5f)
 
+val HELP_DIALOG_TAB_COUNT = 6
+
 enum class KnobUnit {
   SECONDS,
   PERCENT,
   MILLISECONDS,
   NONE
+}
+
+private fun getDecodedZipPath(zipFilePath: String?): String? {
+  return if (zipFilePath.isNullOrEmpty()) {
+    null
+  } else {
+    URLDecoder.decode(zipFilePath, StandardCharsets.UTF_8.name())
+  }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -147,17 +174,18 @@ fun SamplerScreen(
     zipFilePath: String?,
 ) {
   val uiState by viewModel.uiState.collectAsState()
-  val decodedZipPath =
-      remember(zipFilePath) {
-        if (zipFilePath.isNullOrEmpty()) {
-          null
-        } else {
-          URLDecoder.decode(zipFilePath, StandardCharsets.UTF_8.name())
-        }
-      }
+  val decodedZipPath = remember(zipFilePath) { getDecodedZipPath(zipFilePath) }
 
   // Local state to control visibility of the floating settings dialog
   var showSettingsDialog by remember { mutableStateOf(false) }
+  // Local state for the help dialog and selected tab
+  var showHelpDialog by remember { mutableStateOf(false) }
+  var helpTabIndex by remember { mutableIntStateOf(0) }
+
+  // Collect the disabledHelp state from the data store
+  val context = NepTuneApplication.appContext
+  val dataStore = remember { ThemeDataStore(context) }
+  val disabledHelp by dataStore.disableHelp.collectAsState(initial = false)
 
   LaunchedEffect(Unit) {
     if (decodedZipPath != null) {
@@ -183,45 +211,77 @@ fun SamplerScreen(
                   tint = Color.White)
             }
       }) { paddingValues ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp)) {
-              PlaybackAndWaveformControls(
-                  isPlaying = uiState.isPlaying,
-                  onTogglePlayPause = viewModel::togglePlayPause,
-                  onSave = {
-                    if (decodedZipPath != null) {
-                      viewModel.saveProjectData(decodedZipPath)
-                      Log.i("SamplerScreen", "Project saved in $decodedZipPath")
-                    } else {
-                      Log.w("SamplerScreen", "No project path found for saving")
-                    }
-                  },
-                  pitch = uiState.fullPitch,
-                  tempo = uiState.tempo,
-                  onPitchChange = viewModel::updatePitch,
-                  onTempoChange = viewModel::updateTempo,
-                  playbackPosition = uiState.playbackPosition,
-                  onPositionChange = viewModel::updatePlaybackPosition,
-                  onIncreasePitch = viewModel::increasePitch,
-                  onDecreasePitch = viewModel::decreasePitch,
-                  uiState = uiState,
-                  viewModel = viewModel)
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+          Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+            PlaybackAndWaveformControls(
+                isPlaying = uiState.isPlaying,
+                onTogglePlayPause = viewModel::togglePlayPause,
+                onSave = {
+                  if (decodedZipPath != null) {
+                    viewModel.saveProjectData(decodedZipPath)
+                    Log.i("SamplerScreen", "Project saved in $decodedZipPath")
+                  } else {
+                    Log.w("SamplerScreen", "No project path found for saving")
+                  }
+                },
+                pitch = uiState.fullPitch,
+                tempo = uiState.tempo,
+                onPitchChange = viewModel::updatePitch,
+                onTempoChange = viewModel::updateTempo,
+                playbackPosition = uiState.playbackPosition,
+                onPositionChange = viewModel::updatePlaybackPosition,
+                onIncreasePitch = viewModel::increasePitch,
+                onDecreasePitch = viewModel::decreasePitch,
+                uiState = uiState,
+                viewModel = viewModel)
+            Spacer(modifier = Modifier.height(16.dp))
 
-              Spacer(modifier = Modifier.height(16.dp))
+            ADSRTestButton(viewModel = viewModel)
 
-              ADSRTestButton(viewModel = viewModel)
+            Spacer(modifier = Modifier.height(16.dp))
 
-              Spacer(modifier = Modifier.height(16.dp))
+            SamplerTabs(currentTab = uiState.currentTab, onTabSelected = viewModel::selectTab)
 
-              SamplerTabs(currentTab = uiState.currentTab, onTabSelected = viewModel::selectTab)
+            TabContent(currentTab = uiState.currentTab, uiState = uiState, viewModel = viewModel)
+          }
 
-              TabContent(currentTab = uiState.currentTab, uiState = uiState, viewModel = viewModel)
-            }
+          // Bottom-left Help button
+          // Only show the Help button if help is not disabled
+          if (!disabledHelp) {
+            HelpButton { showHelpDialog = true }
+          }
+        }
       }
 
   // Show a simple settings dialog when settings button is pressed
   if (showSettingsDialog) {
     SettingsDialog(viewModel = viewModel, onClose = { showSettingsDialog = false })
+  }
+
+  // Help dialog - multi-tab explanatory dialog
+  if (showHelpDialog) {
+    HelpDialog(
+        selectedTab = helpTabIndex,
+        onTabSelected = { helpTabIndex = it },
+        onClose = { showHelpDialog = false })
+  }
+}
+
+@Composable
+fun HelpButton(onClick: () -> Unit) {
+  Box(modifier = Modifier.fillMaxSize()) {
+    Surface(
+        modifier = Modifier.align(Alignment.BottomStart).padding(16.dp).size(56.dp),
+        shape = CircleShape,
+        color = NepTuneTheme.colors.accentPrimary,
+        tonalElevation = 4.dp) {
+          IconButton(onClick = onClick, modifier = Modifier.testTag(SamplerTestTags.HELP_BUTTON)) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Help,
+                contentDescription = "Help",
+                tint = Color.White)
+          }
+        }
   }
 }
 
@@ -617,7 +677,7 @@ fun WaveformDisplay(
 
           // Calculate label step to avoid overlapping labels horizontally
           val minLabelSpacingPx = 24.dp.toPx()
-          val labelStep = max(1, kotlin.math.ceil(minLabelSpacingPx / pixelsPerSecond).toInt())
+          val labelStep = max(1, ceil(minLabelSpacingPx / pixelsPerSecond).toInt())
 
           val labelHorizontalPadding = 4.dp.toPx()
           for (sec in 0..totalSeconds) {
@@ -1215,7 +1275,7 @@ fun ExpandableSection(
                   tint = NepTuneTheme.colors.accentPrimary)
             }
 
-        androidx.compose.animation.AnimatedVisibility(
+        AnimatedVisibility(
             visible = isExpanded,
             enter = expandVertically(animationSpec = tween(300)),
             exit = shrinkVertically(animationSpec = tween(300))) {
@@ -1295,9 +1355,7 @@ fun EQFader(
                 drawRect(
                     color = lightPurpleBlue,
                     topLeft = Offset(x = 0f, y = if (currentGain >= 0) faderTopY else zeroDbY),
-                    size =
-                        androidx.compose.ui.geometry.Size(
-                            width = size.width, height = kotlin.math.abs(faderHeightFromCenter)))
+                    size = Size(width = size.width, height = abs(faderHeightFromCenter)))
               }
             }
 
@@ -1434,7 +1492,7 @@ fun CompressorCurve(
     val kneeStartX = dbToX(kneeStartDb)
     val kneeEndX = dbToX(kneeEndDb)
 
-    val linePath = androidx.compose.ui.graphics.Path()
+    val linePath = Path()
 
     drawLine(
         color = Color.Gray,
@@ -1743,4 +1801,166 @@ fun SettingsDialog(viewModel: SamplerViewModel, onClose: () -> Unit) {
               Text("Cancel")
             }
       })
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Unit) {
+  // swipe threshold in pixels (density-aware)
+  val swipeThresholdPx = LocalDensity.current.run { 64.dp.toPx() }
+  var dragAccum by remember { mutableFloatStateOf(0f) }
+  fun onSwipe() = {
+    // negative accumulation = swipe left (go to next)
+    if (dragAccum < -swipeThresholdPx && selectedTab < HELP_DIALOG_TAB_COUNT - 1) {
+      onTabSelected(selectedTab + 1)
+    } else if (dragAccum > swipeThresholdPx && selectedTab > 0) {
+      onTabSelected(selectedTab - 1)
+    }
+    dragAccum = 0f
+  }
+
+  Dialog(onDismissRequest = onClose) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = NepTuneTheme.colors.background,
+        modifier = Modifier.testTag(SamplerTestTags.HELP_DIALOG)) {
+          // Entire content area is swipeable horizontally to switch pages
+          Box(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier =
+                    Modifier.padding(16.dp).widthIn(max = 520.dp).pointerInput(selectedTab) {
+                      detectDragGestures(
+                          onDragStart = { dragAccum = 0f },
+                          onDrag = { change, dragAmount ->
+                            change.consume()
+                            dragAccum += dragAmount.x
+                          },
+                          onDragEnd = onSwipe(),
+                          onDragCancel = { dragAccum = 0f })
+                    }) {
+                  HelpDialogContent(selectedTab)
+
+                  Spacer(modifier = Modifier.height(20.dp))
+                  // Place the page indicator and Close button on the same row so dots are
+                  // vertically aligned with the Close button
+                  Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    HelpDialogNavigationArrows(selectedTab, onTabSelected)
+                    PageIndicator(
+                        currentPage = selectedTab,
+                        onPageSelected = { idx -> onTabSelected(idx) },
+                        modifier = Modifier.wrapContentWidth())
+                  }
+                  Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    TextButton(modifier = Modifier.align(Alignment.CenterEnd), onClick = onClose) {
+                      Text(stringResource(id = R.string.close))
+                    }
+                  }
+                }
+          }
+        }
+  }
+}
+
+@Composable
+private fun HelpDialogNavigationArrows(selectedTab: Int, onTabSelected: (Int) -> Unit) {
+  // Left navigation button (overlaid)
+  Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+    val canGoPrev = selectedTab > 0
+    IconButton(
+        onClick = { if (canGoPrev) onTabSelected(selectedTab - 1) },
+        enabled = canGoPrev,
+        modifier =
+            Modifier.align(Alignment.CenterStart)
+                .absoluteOffset((-24).dp)
+                .padding(start = 8.dp)
+                .size(50.dp)
+                .testTag(SamplerTestTags.HELP_NAV_LEFT)) {
+          Surface(shape = CircleShape, color = Color.Transparent, tonalElevation = 2.dp) {
+            Icon(
+                imageVector = Icons.Default.ChevronLeft,
+                contentDescription = "Previous help page",
+                tint = Color.White,
+                modifier = Modifier.padding(6.dp))
+          }
+        }
+
+    // Right navigation button (overlaid)
+    val canGoNext = selectedTab < HELP_DIALOG_TAB_COUNT - 1
+    IconButton(
+        onClick = { if (canGoNext) onTabSelected(selectedTab + 1) },
+        enabled = canGoNext,
+        modifier =
+            Modifier.align(Alignment.CenterEnd)
+                .absoluteOffset(24.dp)
+                .padding(end = 8.dp)
+                .size(50.dp)
+                .testTag(SamplerTestTags.HELP_NAV_RIGHT)) {
+          Surface(shape = CircleShape, color = Color.Transparent, tonalElevation = 2.dp) {
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "Next help page",
+                tint = Color.White,
+                modifier = Modifier.padding(6.dp))
+          }
+        }
+  }
+}
+
+@Composable
+private fun HelpDialogContent(selectedTab: Int) {
+  Text(
+      stringResource(id = R.string.sampler_help_title),
+      style = MaterialTheme.typography.titleLarge,
+      color = NepTuneTheme.colors.smallText)
+  Spacer(modifier = Modifier.height(12.dp))
+
+  // Content pages (no visible tabs) - swipe left/right to change
+  when (selectedTab) {
+    0 -> HelpTabText(R.string.tab_overview, R.string.help_overview_text)
+    1 -> HelpTabText(R.string.tab_controls, R.string.help_controls_text)
+    2 -> HelpTabText(R.string.tab_adsr, R.string.help_adsr_text)
+    3 -> HelpTabText(R.string.tab_reverb, R.string.help_reverb_text)
+    4 -> HelpTabText(R.string.tab_equalizer, R.string.help_equalizer_text)
+    5 -> HelpTabText(R.string.tab_compressor, R.string.help_compressor_text)
+    else -> HelpTabText(R.string.tab_overview, R.string.help_overview_text)
+  }
+}
+
+@Composable
+private fun PageIndicator(
+    currentPage: Int,
+    onPageSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+  Row(
+      modifier = modifier.padding(vertical = 4.dp).testTag(SamplerTestTags.HELP_PAGE_INDICATOR),
+      horizontalArrangement = Arrangement.Center,
+      verticalAlignment = Alignment.CenterVertically) {
+        val dotSize = 8.dp
+        val spacing = 8.dp
+        for (i in 0 until HELP_DIALOG_TAB_COUNT) {
+          val isSelected = i == currentPage
+          Box(
+              modifier =
+                  Modifier.size(dotSize)
+                      .clip(CircleShape)
+                      .background(
+                          if (isSelected) NepTuneTheme.colors.accentPrimary
+                          else NepTuneTheme.colors.smallText.copy(alpha = 0.25f))
+                      .clickable { onPageSelected(i) })
+          if (i < HELP_DIALOG_TAB_COUNT - 1) Spacer(modifier = Modifier.width(spacing))
+        }
+      }
+}
+
+@Composable
+private fun HelpTabText(titleStringResource: Int, textStringResource: Int) {
+  Column(modifier = Modifier.fillMaxWidth()) {
+    Text(
+        stringResource(id = titleStringResource),
+        fontWeight = FontWeight.Bold,
+        color = NepTuneTheme.colors.smallText)
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(stringResource(id = textStringResource), color = NepTuneTheme.colors.smallText)
+  }
 }
