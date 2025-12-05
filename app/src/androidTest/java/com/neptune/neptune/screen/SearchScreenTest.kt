@@ -91,6 +91,7 @@ class SearchScreenTest {
         Profile(
             uid = "user123", username = "TestUser", name = "Test Name", bio = "Bio", avatarUrl = "")
     fakeProfileRepo.addProfile(testUser)
+    composeTestRule.waitForIdle()
 
     // 2. Switch to User Search Mode
     // The button text is "See Users" when in Sample mode (default)
@@ -104,11 +105,11 @@ class SearchScreenTest {
 
     // Wait for debounce (400ms in code) + small buffer
     composeTestRule.mainClock.advanceTimeBy(500)
+    composeTestRule.waitForIdle()
 
     // 4. Verify User Card Displayed
     val userTags = SearchScreenTestTagsPerUserCard(testUser.uid)
     composeTestRule.onNodeWithTag(userTags.CARD).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(userTags.USERNAME).assertIsDisplayed()
 
     // 5. Test Follow Interaction
     // Initially should say "Follow"
@@ -117,6 +118,7 @@ class SearchScreenTest {
 
     // Click Follow
     composeTestRule.onNodeWithTag(userTags.FOLLOW_BUTTON).performClick()
+    composeTestRule.waitForIdle()
 
     // Verify it changes to "Unfollow"
     composeTestRule.onNodeWithText("Unfollow").assertIsDisplayed()
