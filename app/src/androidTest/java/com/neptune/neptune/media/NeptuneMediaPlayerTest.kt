@@ -200,14 +200,25 @@ class NeptuneMediaPlayerTest {
   fun testStopWithFadePositive() {
     mediaPlayer.play(testURI1)
     waitForPlayback()
-
     mediaPlayer.stopWithFade(2000)
     assert(mediaPlayer.isPlaying())
-
     Thread.sleep(3000)
     assert(!mediaPlayer.isPlaying())
     assert(mediaPlayer.getCurrentUri() == null)
+  }
 
+  @Test
+  fun testStopWithFadeWhenNoMediaPlayer() {
     mediaPlayer.stopWithFade(200)
+    Thread.sleep(50)
+    assert(!mediaPlayer.isPlaying())
+    assert(mediaPlayer.getCurrentUri() == null)
+  }
+
+  @Test
+  fun testForceStopAndReleaseWhenNoMedia() {
+    mediaPlayer.forceStopAndRelease()
+    assert(!mediaPlayer.isPlaying())
+    assert(mediaPlayer.getCurrentUri() == null)
   }
 }
