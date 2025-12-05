@@ -7,7 +7,10 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlin.String
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
@@ -183,7 +186,10 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
     data["creationTime"] = FieldValue.serverTimestamp()
     samples.document(sample.id).set(data).await()
   }
-  /** Fetches the most recent [limit] samples ordered by creationTime desc. */
+  /**
+   * Fetches the most recent [limit] samples ordered by creationTime desc. This is only used in
+   * tests, for now, keep it for later use in production.
+   */
   override suspend fun getLatestSamples(limit: Int): List<Sample> {
     val snap =
         samples
@@ -199,7 +205,8 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
    * trending = downloads + 2 * likes
    *
    * Firestore can't sort by computed fields, so we fetch a batch ordered by downloads, compute
-   * scores locally, and then return the top [limit].
+   * scores locally, and then return the top [limit]. This is only used in tests, for now, keep it
+   * for later use in production.
    */
   override suspend fun getTrendingSamples(limit: Int): List<Sample> {
     // Fetch a big enough window to compute trending properly
@@ -222,32 +229,57 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
     // Sort by score desc & return only top "limit"
     return scored.sortedByDescending { it.second }.take(limit).map { it.first }
   }
-  /** Restraint to samples with tags loved by user and sort by recency */
-  override suspend fun getSamplesByTags(tags: List<String>, perTagLimit: Int): List<Sample> {
-    if (tags.isEmpty()) return emptyList()
+  /**
+   * Restraint to samples with tags loved by user and sort by recency This is only used in tests,
+   * for now, keep it for later use in production.
+   */
+  override suspend fun getSamplesByTags(tags: List<String>, perTagLimit: Int): List<Sample> =
+      coroutineScope {
+        if (tags.isEmpty()) return@coroutineScope emptyList()
 
-    val all = mutableListOf<Sample>()
-    val seenIds = mutableSetOf<String>()
+        // Normalize + dedupe tags
+        val distinctTags = tags.map { it.trim().lowercase() }.filter { it.isNotEmpty() }.distinct()
 
-    for (tag in tags.distinct()) {
-      val snap =
-          samples
-              .whereArrayContains("tags", tag)
-              .orderBy("creationTime", Query.Direction.DESCENDING)
-              .limit(perTagLimit.toLong())
-              .get()
-              .await()
+        if (distinctTags.isEmpty()) return@coroutineScope emptyList()
 
-      snap.documents
-          .mapNotNull { it.toSampleOrNull() }
-          .forEach { sample ->
-            if (seenIds.add(sample.id)) {
-              all += sample
+        // Firestore: whereArrayContainsAny supports up to 10 values
+        val chunks = distinctTags.chunked(10)
+
+        val deferredResults =
+            chunks.map { chunk ->
+              async {
+                try {
+                  val snapshot =
+                      samples
+                          .whereArrayContainsAny("tags", chunk)
+                          .orderBy("creationTime", Query.Direction.DESCENDING)
+                          // rough upper bound: perTagLimit * number of tags in this chunk
+                          .limit((perTagLimit * chunk.size).toLong())
+                          .get()
+                          .await()
+
+                  snapshot.documents.mapNotNull { it.toSampleOrNull() }
+                } catch (e: Exception) {
+                  // Fail soft for one chunk, don't kill the whole call
+                  emptyList<Sample>()
+                }
+              }
             }
-          }
-    }
 
-    return all
+        val allSamples = deferredResults.awaitAll().flatten()
+
+        // Deduplicate by id, preserving first (most recent) occurrence
+        val byId = LinkedHashMap<String, Sample>()
+        for (sample in allSamples) {
+          if (!byId.containsKey(sample.id)) {
+            byId[sample.id] = sample
+          }
+        }
+
+        // Final sort by creationTime desc (in case different chunks overlapped)
+        byId.values.sortedByDescending {
+          it.creationTime
+        } // adjust getter if your field is named differently
   }
 
   /** Converts a Firestore [DocumentSnapshot] to a [Sample] instance, or null if missing. */

@@ -391,6 +391,7 @@ class ProfileRepositoryFirebaseTest {
     assertFalse(tagsAfterRemove.contains("indie"))
     assertTrue(tagsAfterRemove.containsAll(listOf("edm", "metal")))
   }
+
   @Test
   fun recordTagInteractionWithEmptyTagsOrZeroDeltaDoesNothing() = runBlocking {
     val profile = repo.ensureProfile("no-op-tags", null)
@@ -414,6 +415,7 @@ class ProfileRepositoryFirebaseTest {
     tagsWeight = snap.get("tagsWeight") as? Map<*, *> ?: emptyMap<Any, Any>()
     assertEquals(10.0, (tagsWeight["rock"] as Number).toDouble(), 1e-6)
   }
+
   @Test
   fun recordTagInteractionUpdatesAndClampsTagWeights() = runBlocking {
     val profile = repo.ensureProfile("tag-weights", null)
@@ -429,10 +431,10 @@ class ProfileRepositoryFirebaseTest {
     // Tags intentionally messy to exercise normalization + merging:
     // " Rock", "rock", "EDM " -> should become keys "rock" and "edm"
     repo.recordTagInteraction(
-      tags = listOf(" Rock", "rock", "EDM "),
-      likeDelta = 1,   // contributes 2.0
-      downloadDelta = 1   // contributes 1.0
-    )
+        tags = listOf(" Rock", "rock", "EDM "),
+        likeDelta = 1, // contributes 2.0
+        downloadDelta = 1 // contributes 1.0
+        )
     // delta = 3.0
 
     snap = doc.get().await()
@@ -443,20 +445,10 @@ class ProfileRepositoryFirebaseTest {
     assertEquals(3.0, (tagsWeight["edm"] as Number).toDouble(), 1e-6)
 
     // Now simulate existing weights and test clamping at TAG_WEIGHT_MAX
-    doc.update(
-      "tagsWeight",
-      mapOf(
-        "rock" to TAG_WEIGHT_MAX - 1.0,
-        "edm" to TAG_WEIGHT_MAX
-      )
-    ).await()
+    doc.update("tagsWeight", mapOf("rock" to TAG_WEIGHT_MAX - 1.0, "edm" to TAG_WEIGHT_MAX)).await()
 
     // delta = 2 * 2 + 0 = 4.0
-    repo.recordTagInteraction(
-      tags = listOf("rock", "EDM"),
-      likeDelta = 2,
-      downloadDelta = 0
-    )
+    repo.recordTagInteraction(tags = listOf("rock", "EDM"), likeDelta = 2, downloadDelta = 0)
 
     snap = doc.get().await()
     tagsWeight = snap.get("tagsWeight") as? Map<*, *> ?: emptyMap<Any, Any>()
@@ -470,11 +462,7 @@ class ProfileRepositoryFirebaseTest {
     doc.update("tagsWeight", mapOf("rock" to 1.0)).await()
 
     // delta = 2 * (-1) + (-1) = -3.0
-    repo.recordTagInteraction(
-      tags = listOf(" ROCK "),
-      likeDelta = -1,
-      downloadDelta = -1
-    )
+    repo.recordTagInteraction(tags = listOf(" ROCK "), likeDelta = -1, downloadDelta = -1)
 
     snap = doc.get().await()
     tagsWeight = snap.get("tagsWeight") as? Map<*, *> ?: emptyMap<Any, Any>()
@@ -482,6 +470,7 @@ class ProfileRepositoryFirebaseTest {
     // After applying -3 to 1, clamped at 0.0
     assertEquals(0.0, (tagsWeight["rock"] as Number).toDouble(), 1e-6)
   }
+
   @Test
   fun toProfileOrNullParsesTagsWeightAndFiltersInvalidEntries() = runBlocking {
     // Ensure a profile exists so we have a document to manipulate
@@ -495,15 +484,15 @@ class ProfileRepositoryFirebaseTest {
     // - "flag"     -> Boolean value (non-numeric, should be dropped)
     // - "neg"      -> valid numeric but negative (kept by toProfileOrNull)
     doc.update(
-      mapOf(
-        "tagsWeight" to mapOf<String, Any>(
-          "rock" to 2.5,
-          "weird" to "oops",
-          "flag" to true,
-          "neg" to -1.0,
-        )
-      )
-    ).await()
+            mapOf(
+                "tagsWeight" to
+                    mapOf<String, Any>(
+                        "rock" to 2.5,
+                        "weird" to "oops",
+                        "flag" to true,
+                        "neg" to -1.0,
+                    )))
+        .await()
 
     val loaded = repo.getCurrentProfile()!!
     val tw = loaded.tagsWeight
@@ -519,6 +508,7 @@ class ProfileRepositoryFirebaseTest {
     assertEquals(2.5, tw["rock"]!!, 1e-6)
     assertEquals(-1.0, tw["neg"]!!, 1e-6)
   }
+
   @Test
   fun getCurrentRecoUserProfileUsesExistingWeightsAndFiltersNegative() = runBlocking {
     val profile = repo.ensureProfile("reco-weights", null)
@@ -527,14 +517,14 @@ class ProfileRepositoryFirebaseTest {
 
     // Write a tagsWeight map that will be parsed by toProfileOrNull
     doc.update(
-      mapOf(
-        "tagsWeight" to mapOf<Any, Any>(
-          "rock" to 3.0,   // valid
-          "neg" to -2.0,   // negative
-          "badKey" to "x"  // non-numeric
-        )
-      )
-    ).await()
+            mapOf(
+                "tagsWeight" to
+                    mapOf<Any, Any>(
+                        "rock" to 3.0, // valid
+                        "neg" to -2.0, // negative
+                        "badKey" to "x" // non-numeric
+                        )))
+        .await()
 
     val reco = repo.getCurrentRecoUserProfile()!!
     val tw = reco.tagsWeight
@@ -542,6 +532,7 @@ class ProfileRepositoryFirebaseTest {
     // Only non-negative numeric entries from the Profile.tagsWeight should remain
     assertEquals(mapOf("rock" to 3.0), tw)
   }
+
   @Test
   fun getCurrentRecoUserProfileFallsBackToTagsWhenNoWeights() = runBlocking {
     val profile = repo.ensureProfile("reco-fallback-tags", null)
@@ -550,25 +541,18 @@ class ProfileRepositoryFirebaseTest {
 
     // Explicitly clear tagsWeight and set tags
     doc.update(
-      mapOf(
-        "tagsWeight" to emptyMap<String, Double>(),
-        "tags" to listOf("rock", "jazz", "EDM")
-      )
-    ).await()
+            mapOf(
+                "tagsWeight" to emptyMap<String, Double>(),
+                "tags" to listOf("rock", "jazz", "EDM")))
+        .await()
 
     val reco = repo.getCurrentRecoUserProfile()!!
     val tw = reco.tagsWeight
 
     // Should give weight 1.0 to each tag
-    assertEquals(
-      mapOf(
-        "rock" to 1.0,
-        "jazz" to 1.0,
-        "EDM" to 1.0
-      ),
-      tw
-    )
+    assertEquals(mapOf("rock" to 1.0, "jazz" to 1.0, "EDM" to 1.0), tw)
   }
+
   @Test
   fun getCurrentRecoUserProfileReturnsEmptyWeightsWhenProfileMissing() = runBlocking {
     // Make sure we have a user but no profile document
@@ -582,6 +566,7 @@ class ProfileRepositoryFirebaseTest {
     assertEquals("UID should still be the current user", currentUid, reco.uid)
     assertTrue("tagsWeight should be empty when there is no profile", reco.tagsWeight.isEmpty())
   }
+
   @Test
   fun getCurrentRecoUserProfileUsesExistingWeightsAndFiltersNegativeAndNonNumeric() = runBlocking {
     val profile = repo.ensureProfile("reco-weights", null)
@@ -590,14 +575,14 @@ class ProfileRepositoryFirebaseTest {
 
     // First, store a messy tagsWeight map in Firestore
     doc.update(
-      mapOf(
-        "tagsWeight" to mapOf<String, Any>(
-          "rock" to 3.0,   // valid
-          "neg"  to -2.0,  // negative
-          "bad"  to "x"    // non-numeric
-        )
-      )
-    ).await()
+            mapOf(
+                "tagsWeight" to
+                    mapOf<String, Any>(
+                        "rock" to 3.0, // valid
+                        "neg" to -2.0, // negative
+                        "bad" to "x" // non-numeric
+                        )))
+        .await()
 
     // This goes through toProfileOrNull -> Profile.tagsWeight,
     // then through getCurrentRecoUserProfile's filtering layer.
@@ -607,5 +592,4 @@ class ProfileRepositoryFirebaseTest {
     // In getCurrentRecoUserProfile, we only keep weight >= 0
     assertEquals(mapOf("rock" to 3.0), tw)
   }
-
 }

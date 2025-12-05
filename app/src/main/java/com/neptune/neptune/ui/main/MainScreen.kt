@@ -211,10 +211,6 @@ fun MainScreen(
       }
     }
   }
-  /*LaunchedEffect(Unit) {
-      mainViewModel.loadRecommendations()
-  }*/
-
   fun onCommentClicked(sample: Sample) {
     mainViewModel.openCommentSection(sample)
   }

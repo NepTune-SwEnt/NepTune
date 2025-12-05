@@ -423,7 +423,7 @@ class ProfileRepositoryFirebase(
 
           // Apply delta to each tag
           for (tag in tags) {
-            val key = tag.trim().lowercase() // keep same normalization as your tags
+            val key = normalizeTag(tag) // keep same normalization as your tags
             val old = current[key] ?: 0.0
             val updated = (old + delta).coerceIn(0.0, TAG_WEIGHT_MAX)
             current[key] = updated
