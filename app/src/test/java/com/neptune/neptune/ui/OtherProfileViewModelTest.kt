@@ -9,6 +9,7 @@ import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.model.recommendation.RecoUserProfile
 import com.neptune.neptune.ui.profile.OtherProfileViewModel
 import com.neptune.neptune.utils.MainDispatcherRule
 import kotlin.test.assertEquals
@@ -250,5 +251,17 @@ private class FollowToggleTestRepository(
 
   override suspend fun getUserNameByUserId(userId: String): String? {
     throw UnsupportedOperationException("Not needed in this test")
+  }
+
+  override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun recordTagInteraction(
+      tags: List<String>,
+      likeDelta: Int,
+      downloadDelta: Int
+  ) {
+    TODO("Not yet implemented")
   }
 }

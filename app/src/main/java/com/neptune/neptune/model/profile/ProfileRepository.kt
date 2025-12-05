@@ -1,6 +1,7 @@
 package com.neptune.neptune.model.profile
 
 import android.net.Uri
+import com.neptune.neptune.model.recommendation.RecoUserProfile
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -164,4 +165,9 @@ interface ProfileRepository {
    * @return a list of matching profiles
    */
   suspend fun searchUsers(query: String): List<Profile>
+  /** Create a profile meant for the recommendation algorithm */
+  suspend fun getCurrentRecoUserProfile(): RecoUserProfile?
+
+  /** Actions to execute when a tag interaction is recorded. */
+  suspend fun recordTagInteraction(tags: List<String>, likeDelta: Int, downloadDelta: Int)
 }

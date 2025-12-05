@@ -176,4 +176,49 @@ class NeptuneMediaPlayerTest {
     assert(uri1 == "android.resource://${context.packageName}/raw/record1".toUri())
     assert(uri2 == "android.resource://${context.packageName}/raw/record2".toUri())
   }
+
+  @Test
+  fun testSetVolume() {
+    mediaPlayer.play(testURI1)
+    waitForPlayback()
+    mediaPlayer.setVolume(2.5f)
+    mediaPlayer.setVolume(-5f)
+    mediaPlayer.setVolume(0.5f)
+  }
+
+  @Test
+  fun testStopWithFadeZero() {
+    mediaPlayer.play(testURI1)
+    waitForPlayback()
+    mediaPlayer.stopWithFade(0)
+    Thread.sleep(50)
+    assert(!mediaPlayer.isPlaying())
+    assert(mediaPlayer.getCurrentUri() == null)
+  }
+
+  @Test
+  fun testStopWithFadePositive() {
+    mediaPlayer.play(testURI1)
+    waitForPlayback()
+    mediaPlayer.stopWithFade(2000)
+    assert(mediaPlayer.isPlaying())
+    Thread.sleep(3000)
+    assert(!mediaPlayer.isPlaying())
+    assert(mediaPlayer.getCurrentUri() == null)
+  }
+
+  @Test
+  fun testStopWithFadeWhenNoMediaPlayer() {
+    mediaPlayer.stopWithFade(200)
+    Thread.sleep(50)
+    assert(!mediaPlayer.isPlaying())
+    assert(mediaPlayer.getCurrentUri() == null)
+  }
+
+  @Test
+  fun testForceStopAndReleaseWhenNoMedia() {
+    mediaPlayer.forceStopAndRelease()
+    assert(!mediaPlayer.isPlaying())
+    assert(mediaPlayer.getCurrentUri() == null)
+  }
 }

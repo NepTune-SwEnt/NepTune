@@ -11,6 +11,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.Transaction
 import com.google.firebase.functions.FirebaseFunctions
+import com.neptune.neptune.model.recommendation.RecoUserProfile
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -19,6 +20,7 @@ import kotlinx.coroutines.tasks.await
 const val PROFILES_COLLECTION_PATH = "profiles"
 const val USERNAMES_COLLECTION_PATH = "usernames"
 const val GUEST_NAME = "anonymous"
+const val TAG_WEIGHT_MAX = 50.0
 private const val DEFAULT_BIO = "Hello! New NepTune user here!"
 private const val MAX_USER_QUERY_RESULTS = 50L
 
@@ -105,6 +107,15 @@ class ProfileRepositoryFirebase(
     return if (!exists()) {
       null
     } else {
+      val tagsWeightRaw = get("tagsWeight") as? Map<*, *>
+      val tagsWeight: Map<String, Double> =
+          tagsWeightRaw
+              ?.mapNotNull { (k, v) ->
+                val tag = k as? String ?: return@mapNotNull null
+                val weight = (v as? Number)?.toDouble() ?: return@mapNotNull null
+                tag to weight
+              }
+              ?.toMap() ?: emptyMap()
       Profile(
           uid = id,
           username = getString("username").orEmpty(),
@@ -115,10 +126,35 @@ class ProfileRepositoryFirebase(
           likes = getLong("likes") ?: 0L,
           posts = getLong("posts") ?: 0L,
           tags = (get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+          tagsWeight = tagsWeight,
           avatarUrl = getString("avatarUrl").orEmpty(),
           following = (get("following") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
           isAnonymous = getBoolean("isAnonymous") ?: false)
     }
+  }
+
+  override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
+    val profile = getCurrentProfile()
+
+    // 1) Try to read tagsWeight map
+    val tagsWeightRaw = profile?.tagsWeight
+    val tagsWeight = mutableMapOf<String, Double>()
+    if (tagsWeightRaw?.isNotEmpty() == true) {
+      for ((key, value) in tagsWeightRaw) {
+        val tag = key
+        val weight = (value as? Number)?.toDouble() ?: continue
+        if (weight >= 0) {
+          tagsWeight[tag] = weight
+        }
+      }
+    }
+    if (tagsWeight.isEmpty()) {
+      val tags = profile?.tags ?: emptyList()
+      for (tag in tags) {
+        tagsWeight[tag] = 1.0
+      }
+    }
+    return RecoUserProfile(uid = requireCurrentUid(), tagsWeight = tagsWeight)
   }
 
   /**
@@ -178,7 +214,8 @@ class ProfileRepositoryFirebase(
                     "posts" to 0L,
                     "tags" to emptyList<String>(),
                     "following" to emptyList<String>(),
-                    "isAnonymous" to (auth.currentUser?.isAnonymous == true)))
+                    "isAnonymous" to (auth.currentUser?.isAnonymous == true),
+                    "tagsWeight" to emptyMap<String, Double>()))
 
             created
           }
@@ -357,6 +394,46 @@ class ProfileRepositoryFirebase(
       Log.e("ProfileRepository", "Error fetching username for userId=$userId", e)
       null
     }
+  }
+
+  override suspend fun recordTagInteraction(
+      tags: List<String>,
+      likeDelta: Int,
+      downloadDelta: Int
+  ) {
+    if (tags.isEmpty()) return
+
+    val uid = requireCurrentUid()
+    val profileRef = profiles.document(uid)
+
+    val delta = likeDelta * 2.0 + downloadDelta * 1.0
+    if (delta == 0.0) return
+
+    db.runTransaction { tx ->
+          val snap = tx[profileRef]
+          if (!snap.exists()) return@runTransaction
+
+          val raw = snap["tagsWeight"] as? Map<*, *> ?: emptyMap<Any, Any>()
+          val current = mutableMapOf<String, Double>()
+
+          // Safely rehydrate current map
+          for ((k, v) in raw) {
+            val tag = k as? String ?: continue
+            val weight = (v as? Number)?.toDouble() ?: continue
+            current[tag] = weight
+          }
+
+          // Apply delta to each tag
+          for (tag in tags) {
+            val key = normalizeTag(tag) // keep same normalization as your tags
+            val old = current[key] ?: 0.0
+            val updated = (old + delta).coerceIn(0.0, TAG_WEIGHT_MAX)
+            current[key] = updated
+          }
+
+          tx.update(profileRef, "tagsWeight", current as Map<String, Double>)
+        }
+        .await()
   }
 
   /** Converts an input string to a valid username base (lowercase, alphanumeric + underscores). */
