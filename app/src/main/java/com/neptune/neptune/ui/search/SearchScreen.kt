@@ -122,6 +122,12 @@ class SearchScreenTestTagsPerSampleCard(private val idInColumn: String = "0") : 
     get() = tag("sampleDownloads")
 }
 
+class SearchScreenTestTagsPerUserCard(private val uid: String) {
+  val CARD = "userCard_$uid"
+  val USERNAME = "userUsername_$uid"
+  val FOLLOW_BUTTON = "userFollowButton_$uid"
+}
+
 fun searchScreenFactory(application: Application) =
     object : ViewModelProvider.Factory {
       override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -271,10 +277,12 @@ fun ScrollableColumnOfUsers(
         items(users) { profile ->
           val isFollowing = followingIds.contains(profile.uid)
           val isMe = profile.uid == currentUserId
+          val testTags = SearchScreenTestTagsPerUserCard(profile.uid)
 
           Row(
               modifier =
                   Modifier.fillMaxWidth()
+                      .testTag(testTags.CARD)
                       .clickable { navigateToOtherUserProfile(profile.uid) }
                       .background(NepTuneTheme.colors.cardBackground, RoundedCornerShape(8.dp))
                       .border(1.dp, NepTuneTheme.colors.onBackground, RoundedCornerShape(8.dp))
@@ -306,7 +314,8 @@ fun ScrollableColumnOfUsers(
                         Text(
                             text = profile.username.ifBlank { "User" },
                             style = MaterialTheme.typography.titleMedium,
-                            color = NepTuneTheme.colors.onBackground)
+                            color = NepTuneTheme.colors.onBackground,
+                            modifier = Modifier.testTag(testTags.USERNAME))
 
                         val namePart = if (!profile.name.isNullOrBlank()) profile.name else ""
                         val separator = if (namePart.isNotBlank()) " • " else ""
@@ -326,7 +335,7 @@ fun ScrollableColumnOfUsers(
                               containerColor =
                                   if (isFollowing) Color.Gray
                                   else MaterialTheme.colorScheme.primary),
-                      modifier = Modifier.padding(start = 8.dp)) {
+                      modifier = Modifier.padding(start = 8.dp).testTag(testTags.FOLLOW_BUTTON)) {
                         Text(text = if (isFollowing) "Unfollow" else "Follow")
                       }
                 }

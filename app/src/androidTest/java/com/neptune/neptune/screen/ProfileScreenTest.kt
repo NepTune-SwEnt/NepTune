@@ -964,4 +964,6 @@ private class FakeOtherProfileRepository(
   override suspend fun getAvatarUrlByUserId(userId: String): String? = null
 
   override suspend fun getUserNameByUserId(userId: String): String? = null
+
+  override suspend fun searchUsers(query: String): List<Profile> = emptyList()
 }
