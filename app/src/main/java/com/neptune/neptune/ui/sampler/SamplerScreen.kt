@@ -1814,13 +1814,10 @@ fun HelpDialog(selectedTab: Int, onTabSelected: (Int) -> Unit, onClose: () -> Un
                   // vertically aligned with the Close button
                   Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     HelpDialogNavigationArrows(selectedTab, onTabSelected)
-                    Box {
-                      PageIndicator(
-                          pageCount = HELP_DIALOG_TAB_COUNT,
-                          currentPage = selectedTab,
-                          onPageSelected = { idx -> onTabSelected(idx) },
-                          modifier = Modifier.wrapContentWidth())
-                    }
+                    PageIndicator(
+                        currentPage = selectedTab,
+                        onPageSelected = { idx -> onTabSelected(idx) },
+                        modifier = Modifier.wrapContentWidth())
                   }
                   Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     TextButton(modifier = Modifier.align(Alignment.CenterEnd), onClick = onClose) {
@@ -1888,19 +1885,18 @@ private fun HelpDialogContent(selectedTab: Int) {
 
   // Content pages (no visible tabs) - swipe left/right to change
   when (selectedTab) {
-    0 -> HelpOverview()
-    1 -> HelpControls()
-    2 -> HelpADSR()
-    3 -> HelpReverb()
-    4 -> HelpEqualizer()
-    5 -> HelpCompressor()
-    else -> HelpOverview()
+    0 -> HelpTabText(R.string.tab_overview, R.string.help_overview_text)
+    1 -> HelpTabText(R.string.tab_controls, R.string.help_controls_text)
+    2 -> HelpTabText(R.string.tab_adsr, R.string.help_adsr_text)
+    3 -> HelpTabText(R.string.tab_reverb, R.string.help_reverb_text)
+    4 -> HelpTabText(R.string.tab_equalizer, R.string.help_equalizer_text)
+    5 -> HelpTabText(R.string.tab_compressor, R.string.help_compressor_text)
+    else -> HelpTabText(R.string.tab_overview, R.string.help_overview_text)
   }
 }
 
 @Composable
 private fun PageIndicator(
-    pageCount: Int,
     currentPage: Int,
     onPageSelected: (Int) -> Unit,
     modifier: Modifier = Modifier
@@ -1911,7 +1907,7 @@ private fun PageIndicator(
       verticalAlignment = Alignment.CenterVertically) {
         val dotSize = 8.dp
         val spacing = 8.dp
-        for (i in 0 until pageCount) {
+        for (i in 0 until HELP_DIALOG_TAB_COUNT) {
           val isSelected = i == currentPage
           Box(
               modifier =
@@ -1921,79 +1917,19 @@ private fun PageIndicator(
                           if (isSelected) NepTuneTheme.colors.accentPrimary
                           else NepTuneTheme.colors.smallText.copy(alpha = 0.25f))
                       .clickable { onPageSelected(i) })
-          if (i < pageCount - 1) Spacer(modifier = Modifier.width(spacing))
+          if (i < HELP_DIALOG_TAB_COUNT - 1) Spacer(modifier = Modifier.width(spacing))
         }
       }
 }
 
 @Composable
-private fun HelpOverview() {
+private fun HelpTabText(titleStringResource: Int, textStringResource: Int) {
   Column(modifier = Modifier.fillMaxWidth()) {
     Text(
-        stringResource(id = R.string.tab_overview),
+        stringResource(id = titleStringResource),
         fontWeight = FontWeight.Bold,
         color = NepTuneTheme.colors.smallText)
     Spacer(modifier = Modifier.height(8.dp))
-    Text(stringResource(id = R.string.help_overview_text), color = NepTuneTheme.colors.smallText)
-  }
-}
-
-@Composable
-private fun HelpControls() {
-  Column(modifier = Modifier.fillMaxWidth()) {
-    Text(
-        stringResource(id = R.string.tab_controls),
-        fontWeight = FontWeight.Bold,
-        color = NepTuneTheme.colors.smallText)
-    Spacer(modifier = Modifier.height(8.dp))
-    Text(stringResource(id = R.string.help_controls_text), color = NepTuneTheme.colors.smallText)
-  }
-}
-
-@Composable
-private fun HelpADSR() {
-  Column(modifier = Modifier.fillMaxWidth()) {
-    Text(
-        stringResource(id = R.string.tab_adsr),
-        fontWeight = FontWeight.Bold,
-        color = NepTuneTheme.colors.smallText)
-    Spacer(modifier = Modifier.height(8.dp))
-    Text(stringResource(id = R.string.help_adsr_text), color = NepTuneTheme.colors.smallText)
-  }
-}
-
-@Composable
-private fun HelpReverb() {
-  Column(modifier = Modifier.fillMaxWidth()) {
-    Text(
-        stringResource(id = R.string.tab_reverb),
-        fontWeight = FontWeight.Bold,
-        color = NepTuneTheme.colors.smallText)
-    Spacer(modifier = Modifier.height(8.dp))
-    Text(stringResource(id = R.string.help_reverb_text), color = NepTuneTheme.colors.smallText)
-  }
-}
-
-@Composable
-private fun HelpEqualizer() {
-  Column(modifier = Modifier.fillMaxWidth()) {
-    Text(
-        stringResource(id = R.string.tab_equalizer),
-        fontWeight = FontWeight.Bold,
-        color = NepTuneTheme.colors.smallText)
-    Spacer(modifier = Modifier.height(8.dp))
-    Text(stringResource(id = R.string.help_equalizer_text), color = NepTuneTheme.colors.smallText)
-  }
-}
-
-@Composable
-private fun HelpCompressor() {
-  Column(modifier = Modifier.fillMaxWidth()) {
-    Text(
-        stringResource(id = R.string.tab_compressor),
-        fontWeight = FontWeight.Bold,
-        color = NepTuneTheme.colors.smallText)
-    Spacer(modifier = Modifier.height(8.dp))
-    Text(stringResource(id = R.string.help_compressor_text), color = NepTuneTheme.colors.smallText)
+    Text(stringResource(id = textStringResource), color = NepTuneTheme.colors.smallText)
   }
 }
