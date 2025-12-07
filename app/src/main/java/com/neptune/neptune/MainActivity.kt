@@ -33,6 +33,7 @@ import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInViewModel
 import com.neptune.neptune.ui.feed.FeedScreen
 import com.neptune.neptune.ui.feed.FeedType
+import com.neptune.neptune.ui.follow.FollowListTab
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.main.factory
@@ -311,6 +312,31 @@ fun NeptuneApp(
                             navigationActions.navigateTo(
                                 Screen.OtherUserProfile.createRoute(userId))
                           })
+                    }
+                composable(
+                    route = Screen.FollowList.route,
+                    arguments = listOf(navArgument("initialTab") { type = NavType.StringType })) {
+                        backStackEntry ->
+                      val tabName = backStackEntry.arguments?.getString("initialTab")
+                      val initialTab =
+                          try {
+                            if (tabName != null) {
+                              FollowListTab.valueOf(tabName)
+                            } else {
+                              // By default, show Followers tab
+                              FollowListTab.FOLLOWERS
+                            }
+                          } catch (_: IllegalArgumentException) {
+                            FollowListTab.FOLLOWERS
+                          }
+                      //                    TODO: implement follow list screen
+                      //                    FollowListScreen(
+                      //                        initialTab = initialTab,
+                      //                        goBack = { navigationActions.goBack() },
+                      //                        navigateToOtherUserProfile = { userId ->
+                      //                            navigationActions.navigateTo(
+                      //                                Screen.OtherUserProfile.createRoute(userId)
+                      //                    )
                     }
               }
         })
