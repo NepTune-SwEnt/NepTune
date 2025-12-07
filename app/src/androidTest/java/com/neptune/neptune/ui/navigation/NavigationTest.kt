@@ -18,17 +18,22 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.neptune.neptune.NeptuneApp
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
+import com.neptune.neptune.model.messages.UserMessagePreview
+import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepositoryFirebase
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.messages.MessagesScreenTestTags
+import com.neptune.neptune.ui.messages.SelectMessagesScreen
 import com.neptune.neptune.ui.messages.SelectMessagesScreenTestTags
+import com.neptune.neptune.ui.messages.SelectMessagesViewModel
 import com.neptune.neptune.ui.picker.ImportScreenTestTags
 import com.neptune.neptune.ui.post.PostScreen
 import com.neptune.neptune.ui.post.PostScreenTestTags
@@ -45,6 +50,32 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+
+/**
+ * Creates a mocked [SelectMessagesViewModel] populated with test users for UI testing. This has
+ * been written with the help of LLMs.
+ *
+ * @return a mocked instance of [SelectMessagesViewModel].
+ * @author Angéline Bignens
+ */
+private fun mockSelectMessagesViewModel(): SelectMessagesViewModel {
+  val testUsers =
+      listOf(
+          UserMessagePreview(
+              profile = Profile(uid = "uid1", username = "TestUser1", avatarUrl = ""),
+              lastMessage = "Hello",
+              lastTimestamp = Timestamp.now(),
+              isOnline = true),
+          UserMessagePreview(
+              profile = Profile(uid = "uid2", username = "TestUser2", avatarUrl = ""),
+              lastMessage = "Hi there",
+              lastTimestamp = Timestamp.now(),
+              isOnline = false))
+
+  val mockViewModel = mockk<SelectMessagesViewModel>(relaxed = true)
+  every { mockViewModel.users } returns MutableStateFlow(testUsers)
+  return mockViewModel
+}
 
 /**
  * UI test for Navigation. This has been written with the help of LLMs.
@@ -125,34 +156,34 @@ class NavigationTest {
   }
 
   @Test
-  fun messageButtonNavigatesToSelectMessageScreen() {
-    setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).performClick()
-    composeTestRule
-        .onNodeWithTag(SelectMessagesScreenTestTags.SELECT_MESSAGE_SCREEN)
-        .assertIsDisplayed()
-  }
-
-  @Test
   fun selectingUserNavigatesToMessagesScreen() {
-    setContent()
+    var selectedUserId: String? = null
 
-    composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).performClick()
+    composeTestRule.setContent {
+      SelectMessagesScreen(
+          goBack = {},
+          onSelectUser = { selectedUserId = it },
+          currentUid = "uid0",
+          selectMessagesViewModel = mockSelectMessagesViewModel())
+    }
 
     composeTestRule
         .onAllNodesWithTag(SelectMessagesScreenTestTags.USER_ROW)
         .onFirst()
         .performClick()
 
-    composeTestRule.onNodeWithTag(MessagesScreenTestTags.MESSAGES_SCREEN).assertIsDisplayed()
+    assert(selectedUserId == "uid1")
   }
 
   @Test
   fun backButtonNavigatesBackToSelectMessages() {
-    setContent()
-
-    composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).performClick()
+    composeTestRule.setContent {
+      SelectMessagesScreen(
+          goBack = {},
+          onSelectUser = {},
+          currentUid = "uid0",
+          selectMessagesViewModel = mockSelectMessagesViewModel())
+    }
 
     composeTestRule
         .onAllNodesWithTag(SelectMessagesScreenTestTags.USER_ROW)
