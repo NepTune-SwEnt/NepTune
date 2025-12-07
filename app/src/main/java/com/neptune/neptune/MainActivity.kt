@@ -164,7 +164,16 @@ fun NeptuneApp(
                 composable(Screen.Profile.route) {
                   SelfProfileRoute(
                       settings = { navigationActions.navigateTo(Screen.Settings) },
-                      goBack = { navigationActions.goBack() })
+                      goBack = { navigationActions.goBack() },
+                      onFollowersClick = {
+                        navigationActions.navigateTo(
+                            Screen.FollowList.createRoute(FollowListTab.FOLLOWERS))
+                      },
+                      onFollowingClick = {
+                        navigationActions.navigateTo(
+                            Screen.FollowList.createRoute(FollowListTab.FOLLOWING))
+                      },
+                  )
                 }
                 composable(
                     route = Screen.Edit.route + "/{zipFilePath}",
