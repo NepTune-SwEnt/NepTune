@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.firebase.Firebase
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -19,6 +20,12 @@ import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ServerValue
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.database
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -159,6 +166,7 @@ class SignInViewModel(
     _currentUser.value = initialUser
     if (initialUser != null) {
       _signInStatus.value = SignInStatus.SUCCESS
+      setupPresence(initialUser.uid)
       navigateMain()
     } else {
       _signInStatus.value = SignInStatus.SIGNED_OUT
@@ -217,6 +225,7 @@ class SignInViewModel(
       try {
         val authResult = firebaseAuth.signInWithCredential(credential).await()
         _currentUser.value = authResult.user
+        setupPresence(authResult.user!!.uid)
         _signInStatus.value = SignInStatus.SUCCESS
         navigateMain()
       } catch (_: Exception) {
@@ -291,6 +300,7 @@ class SignInViewModel(
       try {
         val result = firebaseAuth.signInWithEmailAndPassword(state.email, state.password).await()
         _currentUser.value = result.user
+        setupPresence(result.user!!.uid)
         _signInStatus.value = SignInStatus.SUCCESS
         _emailAuthUiState.value = EmailAuthUiState() // reset form
         navigateMain()
@@ -309,6 +319,7 @@ class SignInViewModel(
         val result =
             firebaseAuth.createUserWithEmailAndPassword(state.email, state.password).await()
         _currentUser.value = result.user
+        setupPresence(result.user!!.uid)
         _signInStatus.value = SignInStatus.SUCCESS
         _emailAuthUiState.value = EmailAuthUiState()
         navigateMain()
@@ -350,6 +361,39 @@ class SignInViewModel(
   // endregion -------------------------------------------------------------------------------
 
   /**
+   * Functions that changes the state to online when a user is on the app and to offline when a user
+   * log out. This has been written with the help of LLMs.
+   *
+   * @author Angéline Bignens
+   */
+  private fun setupPresence(userId: String) {
+    val db =
+        FirebaseDatabase.getInstance(
+            "https://neptune-e2728-default-rtdb.europe-west1.firebasedatabase.app/")
+    val userStatusRef = db.getReference("/status/$userId")
+
+    val onlineStatus = mapOf("state" to "online", "lastChanged" to ServerValue.TIMESTAMP)
+
+    val offlineStatus = mapOf("state" to "offline", "lastChanged" to ServerValue.TIMESTAMP)
+
+    // When connection changes
+    val connectedRef = db.getReference(".info/connected")
+
+    connectedRef.addValueEventListener(
+        object : ValueEventListener {
+          override fun onDataChange(snapshot: DataSnapshot) {
+            val connected = snapshot.getValue(Boolean::class.java) ?: false
+            if (!connected) return
+
+            // On reconnect, set online AND schedule offline on disconnect
+            userStatusRef.onDisconnect().setValue(offlineStatus)
+            userStatusRef.setValue(onlineStatus)
+          }
+
+          override fun onCancelled(error: DatabaseError) {}
+        })
+  }
+  /**
    * Signs the current user out of Firebase.
    *
    * This function clears the user's session from Firebase Authentication. It then nullifies the
@@ -358,6 +402,12 @@ class SignInViewModel(
    */
   fun signOut() {
     viewModelScope.launch {
+      firebaseAuth.currentUser?.uid?.let { uid ->
+        Firebase.database
+            .getReference("status/$uid")
+            .setValue(mapOf("state" to "offline", "lastChanged" to ServerValue.TIMESTAMP))
+      }
+
       firebaseAuth.signOut()
       _currentUser.value = null
       _signInStatus.value = SignInStatus.SIGNED_OUT
