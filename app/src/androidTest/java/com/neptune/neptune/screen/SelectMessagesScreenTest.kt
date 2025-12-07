@@ -8,6 +8,9 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import com.google.firebase.Timestamp
+import com.neptune.neptune.model.messages.UserMessagePreview
+import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.ui.messages.SelectMessagesScreen
 import com.neptune.neptune.ui.messages.SelectMessagesScreenTestTags
 import com.neptune.neptune.ui.messages.SelectMessagesViewModel
@@ -30,13 +33,52 @@ class SelectMessagesScreenTest {
 
   @Before
   fun setup() {
-    viewModel = SelectMessagesViewModel()
+    val fakeCurrentUid = "currentUser123"
+    val fakeUsers =
+        listOf(
+            UserMessagePreview(
+                profile =
+                    Profile(
+                        uid = "u1",
+                        username = "test1",
+                        name = "Test1",
+                        bio = "Bio1",
+                        avatarUrl = ""),
+                lastMessage = "Hey, how are you?",
+                lastTimestamp = Timestamp.now(),
+                isOnline = true),
+            UserMessagePreview(
+                profile =
+                    Profile(
+                        uid = "u2",
+                        username = "test2",
+                        name = "Test2",
+                        bio = "Bio2",
+                        avatarUrl = ""),
+                lastMessage = "Let’s try the new feature",
+                lastTimestamp = Timestamp.now(),
+                isOnline = false),
+            UserMessagePreview(
+                profile =
+                    Profile(
+                        uid = "u3",
+                        username = "test3",
+                        name = "Test3",
+                        bio = "Bio3",
+                        avatarUrl = ""),
+                lastMessage = null,
+                lastTimestamp = null,
+                isOnline = true))
+    viewModel = SelectMessagesViewModel(currentUid = fakeCurrentUid, initialUsers = fakeUsers)
   }
 
   private fun setContent(goBack: () -> Unit = {}, onSelectUser: (String) -> Unit = {}) {
     composeTestRule.setContent {
       SelectMessagesScreen(
-          goBack = goBack, onSelectUser = onSelectUser, selectMessagesViewModel = viewModel)
+          goBack = goBack,
+          onSelectUser = onSelectUser,
+          currentUid = "currentUser123",
+          selectMessagesViewModel = viewModel)
     }
   }
 
@@ -106,9 +148,14 @@ class SelectMessagesScreenTest {
   /** Tests that when we don't have any conversations the text correctly display */
   @Test
   fun testNoConversationsTextWhenEmpty() {
-    val emptyViewModel = SelectMessagesViewModel(initialUsers = emptyList())
+    val emptyViewModel =
+        SelectMessagesViewModel(currentUid = "currentUser123", initialUsers = emptyList())
     composeTestRule.setContent {
-      SelectMessagesScreen(goBack = {}, onSelectUser = {}, selectMessagesViewModel = emptyViewModel)
+      SelectMessagesScreen(
+          goBack = {},
+          onSelectUser = {},
+          currentUid = "currentUser123",
+          selectMessagesViewModel = emptyViewModel)
     }
 
     composeTestRule
