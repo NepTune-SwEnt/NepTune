@@ -368,8 +368,13 @@ class SignInViewModel(
    */
   private fun setupPresence(userId: String) {
     val db =
-        FirebaseDatabase.getInstance(
-            "https://neptune-e2728-default-rtdb.europe-west1.firebasedatabase.app/")
+        try {
+          FirebaseDatabase.getInstance(
+              "https://neptune-e2728-default-rtdb.europe-west1.firebasedatabase.app/")
+        } catch (_: IllegalStateException) {
+          // Not initialize in unit tests
+          return
+        }
     val userStatusRef = db.getReference("/status/$userId")
 
     val onlineStatus = mapOf("state" to "online", "lastChanged" to ServerValue.TIMESTAMP)
