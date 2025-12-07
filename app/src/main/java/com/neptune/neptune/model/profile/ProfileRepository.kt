@@ -45,6 +45,13 @@ interface ProfileRepository {
   fun observeProfile(uid: String): Flow<Profile?>
 
   /**
+   * Observes all the profiles.
+   *
+   * @return a flow emitting the list of profile, or null if missing *
+   */
+  fun observeAllProfiles(): Flow<List<Profile?>>
+
+  /**
    * Makes the current user unfollow the user with the given uid.
    *
    * @param uid the user ID of the profile to unfollow

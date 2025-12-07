@@ -76,6 +76,26 @@ class ProfileRepositoryFirebase(
     // =====================================================
   }
 
+  /**
+   * Observes all the Profiles. This has been written with the help of LLMs.
+   *
+   * @author Angéline Bignens
+   */
+  override fun observeAllProfiles(): Flow<List<Profile?>> = callbackFlow {
+    val reg =
+        profiles.addSnapshotListener { snap, err ->
+          if (err != null) {
+            trySend(emptyList())
+            return@addSnapshotListener
+          }
+
+          val profilesList = snap?.documents?.map { it.toProfileOrNull() } ?: emptyList()
+          trySend(profilesList)
+        }
+
+    awaitClose { reg.remove() }
+  }
+
   override suspend fun unfollowUser(uid: String) {
     callFollowFunction(targetUid = uid, follow = false)
   }
