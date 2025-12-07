@@ -18,6 +18,7 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -189,6 +190,9 @@ private class FollowToggleTestRepository(
   override fun observeCurrentProfile(): Flow<Profile?> = currentProfileState
 
   override fun observeProfile(uid: String): Flow<Profile?> = otherProfileState
+
+  override fun observeAllProfiles(): Flow<List<Profile?>> =
+      combine(otherProfileState, currentProfileState) { other, current -> listOf(other, current) }
 
   override suspend fun unfollowUser(uid: String) {
     unfollowCalls.add(uid)
