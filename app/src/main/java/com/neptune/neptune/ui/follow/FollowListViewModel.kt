@@ -100,7 +100,7 @@ class FollowListViewModel(
               username = "luca",
               avatarUrl = SAMPLE_AVATAR,
               isFollowedByCurrentUser = true),
-          FollowListUserItem(uid = "u2", username = "nico", avatarUrl = SAMPLE_AVATAR),
+          FollowListUserItem(uid = "u2", username = "longestusername", avatarUrl = SAMPLE_AVATAR),
           FollowListUserItem(
               uid = "u3",
               username = "chiara",
