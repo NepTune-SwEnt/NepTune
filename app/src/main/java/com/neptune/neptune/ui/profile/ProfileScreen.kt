@@ -927,16 +927,16 @@ fun OtherUserProfileRoute(
         }
       }
 
-  val viewModel: OtherProfileViewModel = viewModel(factory = factory)
+  val otherProfileViewModel: OtherProfileViewModel = viewModel(factory = factory)
   val samplesViewModel: ProfileSamplesViewModel = viewModel(factory = samplesFactory)
-  val state by viewModel.uiState.collectAsState()
+  val state by otherProfileViewModel.uiState.collectAsState()
 
   val viewConfig =
       ProfileViewConfig.OtherProfileConfig(
           isFollowing = state.isCurrentUserFollowing,
           isFollowActionInProgress = state.isFollowActionInProgress,
           canFollowTarget = !state.profile.isAnonymousUser && !state.isCurrentUserAnonymous,
-          onFollow = viewModel::onFollow,
+          onFollow = otherProfileViewModel::onFollow,
           errorMessage = state.errorMessage)
 
   ProfileScreen(
