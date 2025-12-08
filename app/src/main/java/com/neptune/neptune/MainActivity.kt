@@ -33,6 +33,7 @@ import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInViewModel
 import com.neptune.neptune.ui.feed.FeedScreen
 import com.neptune.neptune.ui.feed.FeedType
+import com.neptune.neptune.ui.follow.FollowListRoute
 import com.neptune.neptune.ui.follow.FollowListTab
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainViewModel
@@ -338,14 +339,13 @@ fun NeptuneApp(
                           } catch (_: IllegalArgumentException) {
                             FollowListTab.FOLLOWERS
                           }
-                      //                    TODO: implement follow list screen
-                      //                    FollowListScreen(
-                      //                        initialTab = initialTab,
-                      //                        goBack = { navigationActions.goBack() },
-                      //                        navigateToOtherUserProfile = { userId ->
-                      //                            navigationActions.navigateTo(
-                      //                                Screen.OtherUserProfile.createRoute(userId)
-                      //                    )
+                      FollowListRoute(
+                          initialTab = initialTab,
+                          goBack = { navigationActions.goBack() },
+                          navigateToOtherUserProfile = { userId ->
+                            navigationActions.navigateTo(
+                                Screen.OtherUserProfile.createRoute(userId))
+                          })
                     }
               }
         })
