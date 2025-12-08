@@ -90,7 +90,7 @@ class SearchScreenTest {
     val testUser =
         Profile(
             uid = "user123", username = "TestUser", name = "Test Name", bio = "Bio", avatarUrl = "")
-    fakeProfileRepo.addProfile(testUser)
+    fakeProfileRepo.addProfileForTest(testUser)
     composeTestRule.waitForIdle()
 
     // 2. Switch to User Search Mode
