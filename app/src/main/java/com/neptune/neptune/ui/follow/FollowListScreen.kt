@@ -49,10 +49,18 @@ import com.neptune.neptune.ui.theme.NepTuneTheme
 
 object FollowListScreenTestTags {
   const val ROOT = "follow_list/root"
+  const val TOP_BAR = "follow_list/top_bar"
+  const val TITLE = "follow_list/title"
+  const val TAB_ROW = "follow_list/tab_row"
   const val TAB_FOLLOWERS = "follow_list/tab/followers"
   const val TAB_FOLLOWING = "follow_list/tab/following"
   const val LIST = "follow_list/list"
+  const val LIST_LOADING = "follow_list/list/loading"
+  const val LIST_LOADING_INDICATOR = "follow_list/list/loading/indicator"
+  const val LIST_EMPTY = "follow_list/list/empty"
+  const val LIST_EMPTY_REFRESH = "follow_list/list/empty/refresh"
   const val ITEM = "follow_list/item"
+  const val AVATAR = "follow_list/item/avatar"
   const val FOLLOW_BUTTON = "follow_list/item/follow_button"
   const val BACK = "follow_list/back"
 }
@@ -119,7 +127,10 @@ fun FollowListScreen(
   Scaffold(
       topBar = {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(TOP_BAR_PADDING),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .padding(TOP_BAR_PADDING)
+                    .testTag(FollowListScreenTestTags.TOP_BAR),
             verticalAlignment = Alignment.CenterVertically) {
               IconButton(
                   onClick = onBack, modifier = Modifier.testTag(FollowListScreenTestTags.BACK)) {
@@ -134,6 +145,7 @@ fun FollowListScreen(
                         FollowListTab.FOLLOWERS -> "Followers"
                         FollowListTab.FOLLOWING -> "Following"
                       },
+                  modifier = Modifier.testTag(FollowListScreenTestTags.TITLE),
                   style = MaterialTheme.typography.titleMedium,
                   color = NepTuneTheme.colors.onBackground,
               )
@@ -141,53 +153,54 @@ fun FollowListScreen(
       },
       containerColor = NepTuneTheme.colors.background,
       modifier = Modifier.testTag(FollowListScreenTestTags.ROOT)) { paddingValues ->
-        Column(
-            modifier =
-                Modifier.fillMaxSize()
-                    .padding(paddingValues)
-                    .testTag(FollowListScreenTestTags.LIST)) {
-              TabRow(
-                  selectedTabIndex = if (state.activeTab == FollowListTab.FOLLOWERS) 0 else 1,
-                  containerColor = Color.Transparent,
-                  contentColor = NepTuneTheme.colors.onBackground) {
-                    Tab(
-                        selected = state.activeTab == FollowListTab.FOLLOWERS,
-                        onClick = { onTabSelected(FollowListTab.FOLLOWERS) },
-                        modifier = Modifier.testTag(FollowListScreenTestTags.TAB_FOLLOWERS),
-                        text = { Text("Followers") })
-                    Tab(
-                        selected = state.activeTab == FollowListTab.FOLLOWING,
-                        onClick = { onTabSelected(FollowListTab.FOLLOWING) },
-                        modifier = Modifier.testTag(FollowListScreenTestTags.TAB_FOLLOWING),
-                        text = { Text("Following") })
-                  }
-
-              if (isLoading) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                    horizontalArrangement = Arrangement.Center) {
-                      CircularProgressIndicator()
-                    }
-              } else if (list.isEmpty()) {
-                EmptyState(onRefresh = onRefresh)
-              } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(LIST_ITEMS_VERTICAL_SPACING),
-                    contentPadding = PaddingValues(LIST_ITEMS_PADDING)) {
-                      items(list, key = { it.uid }) { user ->
-                        FollowListRow(
-                            user = user,
-                            isFollowersTab = state.activeTab == FollowListTab.FOLLOWERS,
-                            isAnonymous = state.isCurrentUserAnonymous,
-                            onToggleFollow = {
-                              onToggleFollow(user.uid, state.activeTab == FollowListTab.FOLLOWERS)
-                            },
-                            onUserClick = { navigateToOtherUserProfile(user.uid) })
-                      }
-                    }
+        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+          TabRow(
+              modifier = Modifier.testTag(FollowListScreenTestTags.TAB_ROW),
+              selectedTabIndex = if (state.activeTab == FollowListTab.FOLLOWERS) 0 else 1,
+              containerColor = Color.Transparent,
+              contentColor = NepTuneTheme.colors.onBackground) {
+                Tab(
+                    selected = state.activeTab == FollowListTab.FOLLOWERS,
+                    onClick = { onTabSelected(FollowListTab.FOLLOWERS) },
+                    modifier = Modifier.testTag(FollowListScreenTestTags.TAB_FOLLOWERS),
+                    text = { Text("Followers") })
+                Tab(
+                    selected = state.activeTab == FollowListTab.FOLLOWING,
+                    onClick = { onTabSelected(FollowListTab.FOLLOWING) },
+                    modifier = Modifier.testTag(FollowListScreenTestTags.TAB_FOLLOWING),
+                    text = { Text("Following") })
               }
-            }
+
+          if (isLoading) {
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .padding(vertical = 24.dp)
+                        .testTag(FollowListScreenTestTags.LIST_LOADING),
+                horizontalArrangement = Arrangement.Center) {
+                  CircularProgressIndicator(
+                      modifier = Modifier.testTag(FollowListScreenTestTags.LIST_LOADING_INDICATOR))
+                }
+          } else if (list.isEmpty()) {
+            EmptyState(onRefresh = onRefresh)
+          } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().testTag(FollowListScreenTestTags.LIST),
+                verticalArrangement = Arrangement.spacedBy(LIST_ITEMS_VERTICAL_SPACING),
+                contentPadding = PaddingValues(LIST_ITEMS_PADDING)) {
+                  items(list, key = { it.uid }) { user ->
+                    FollowListRow(
+                        user = user,
+                        isFollowersTab = state.activeTab == FollowListTab.FOLLOWERS,
+                        isAnonymous = state.isCurrentUserAnonymous,
+                        onToggleFollow = {
+                          onToggleFollow(user.uid, state.activeTab == FollowListTab.FOLLOWERS)
+                        },
+                        onUserClick = { navigateToOtherUserProfile(user.uid) })
+                  }
+                }
+          }
+        }
       }
 }
 
@@ -207,7 +220,11 @@ private fun FollowListRow(
               .testTag("${FollowListScreenTestTags.ITEM}/${user.uid}"),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(LIST_ITEMS_HORIZONTAL_SPACING)) {
-        Avatar(avatarUrl = user.avatarUrl, username = user.username, onClick = onUserClick)
+        Avatar(
+            avatarUrl = user.avatarUrl,
+            username = user.username,
+            onClick = onUserClick,
+            modifier = Modifier.testTag("${FollowListScreenTestTags.AVATAR}/${user.uid}"))
         Column(modifier = Modifier.weight(1f)) {
           Text(
               text = user.username,
@@ -238,16 +255,22 @@ private fun FollowListRow(
 }
 
 @Composable
-private fun Avatar(avatarUrl: String?, username: String, onClick: () -> Unit) {
+private fun Avatar(
+    avatarUrl: String?,
+    username: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
   val placeholderPainter = rememberVectorPainter(Icons.Default.Person)
-  val modifier =
-      Modifier.size(AVATAR_SIZE)
+  val avatarModifier =
+      modifier
+          .size(AVATAR_SIZE)
           .clip(CircleShape)
           .background(NepTuneTheme.colors.onBackground)
           .clickable(onClick = onClick)
 
   if (avatarUrl.isNullOrBlank()) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+    Box(modifier = avatarModifier, contentAlignment = Alignment.Center) {
       Icon(
           imageVector = Icons.Default.Person,
           contentDescription = "Avatar placeholder",
@@ -257,7 +280,7 @@ private fun Avatar(avatarUrl: String?, username: String, onClick: () -> Unit) {
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current).data(avatarUrl).crossfade(true).build(),
         contentDescription = "Avatar for $username",
-        modifier = modifier,
+        modifier = avatarModifier,
         placeholder = placeholderPainter,
         error = placeholderPainter)
   }
@@ -266,11 +289,15 @@ private fun Avatar(avatarUrl: String?, username: String, onClick: () -> Unit) {
 @Composable
 private fun EmptyState(onRefresh: () -> Unit) {
   Column(
-      modifier = Modifier.fillMaxSize(),
+      modifier = Modifier.fillMaxSize().testTag(FollowListScreenTestTags.LIST_EMPTY),
       verticalArrangement = Arrangement.Center,
       horizontalAlignment = Alignment.CenterHorizontally) {
         Text("Nothing here yet", color = NepTuneTheme.colors.onBackground)
         Spacer(modifier = Modifier.height(LIST_ITEMS_VERTICAL_SPACING))
-        Button(onClick = onRefresh) { Text("Refresh") }
+        Button(
+            onClick = onRefresh,
+            modifier = Modifier.testTag(FollowListScreenTestTags.LIST_EMPTY_REFRESH)) {
+              Text("Refresh")
+            }
       }
 }
