@@ -134,6 +134,10 @@ class FollowListViewModel(
               isFollowedByCurrentUser = true),
       )
 
+  private fun fakeEmptyFollowing(): List<FollowListUserItem> = emptyList()
+
+  private fun fakeEmptyFollowers(): List<FollowListUserItem> = emptyList()
+
   companion object {
     private const val SAMPLE_AVATAR =
         "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80"
