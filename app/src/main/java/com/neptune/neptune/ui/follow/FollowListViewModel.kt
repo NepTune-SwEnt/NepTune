@@ -42,31 +42,40 @@ class FollowListViewModel(
     loadFollowing()
   }
 
-  fun toggleFollow(uid: String, isFromFollowersList: Boolean) {
-    // Mark action in progress
-    _uiState.update { state ->
-      val updated =
-          (if (isFromFollowersList) state.followers else state.following).map {
-            if (it.uid == uid) it.copy(isActionInProgress = true) else it
-          }
-      if (isFromFollowersList) state.copy(followers = updated) else state.copy(following = updated)
-    }
+  private fun currentList(isFollowers: Boolean): List<FollowListUserItem> =
+      if (isFollowers) _uiState.value.followers else _uiState.value.following
 
+  private fun saveList(isFollowers: Boolean, list: List<FollowListUserItem>) {
+    _uiState.update { state ->
+      if (isFollowers) state.copy(followers = list) else state.copy(following = list)
+    }
+  }
+
+  private fun markInProgress(uid: String, isFollowers: Boolean) {
+    val updated =
+        currentList(isFollowers).map {
+          if (it.uid == uid) it.copy(isActionInProgress = true) else it
+        }
+    saveList(isFollowers, updated)
+  }
+
+  private fun toggleFollowFlag(uid: String, isFollowers: Boolean) {
+    val updated =
+        currentList(isFollowers).map {
+          if (it.uid == uid)
+              it.copy(
+                  isFollowedByCurrentUser = !it.isFollowedByCurrentUser, isActionInProgress = false)
+          else it
+        }
+    saveList(isFollowers, updated)
+  }
+
+  fun toggleFollow(uid: String, isFromFollowersList: Boolean) {
+    markInProgress(uid, isFromFollowersList)
     viewModelScope.launch {
-      delay(250) // simulate network latency
+      delay(250)
       // TODO: replace with repo.followUser/unfollowUser calls and rollback on failure
-      _uiState.update { state ->
-        val updated =
-            (if (isFromFollowersList) state.followers else state.following).map {
-              if (it.uid == uid)
-                  it.copy(
-                      isFollowedByCurrentUser = !it.isFollowedByCurrentUser,
-                      isActionInProgress = false)
-              else it
-            }
-        if (isFromFollowersList) state.copy(followers = updated)
-        else state.copy(following = updated)
-      }
+      toggleFollowFlag(uid, isFromFollowersList)
     }
   }
 
