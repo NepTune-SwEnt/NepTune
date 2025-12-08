@@ -1,7 +1,7 @@
 package com.neptune.neptune.ui.follow
 
 data class FollowListUiState(
-    val activeTab: FollowListTab,
+    val activeTab: FollowListTab = FollowListTab.FOLLOWERS,
     val followers: List<FollowListUserItem> = emptyList(),
     val following: List<FollowListUserItem> = emptyList(),
     val isLoadingFollowers: Boolean = false,
