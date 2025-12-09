@@ -7,6 +7,7 @@ import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.neptune.neptune.model.profile.PROFILES_COLLECTION_PATH
+import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepositoryFirebase
 import com.neptune.neptune.model.profile.TAG_WEIGHT_MAX
 import com.neptune.neptune.model.profile.USERNAMES_COLLECTION_PATH
@@ -72,6 +73,7 @@ class ProfileRepositoryFirebaseTest {
 
       repo = ProfileRepositoryFirebase(db)
       cleanupCurrentUserDocs()
+      populateFirestore()
     }
   }
 
@@ -79,6 +81,7 @@ class ProfileRepositoryFirebaseTest {
   fun tearDown() {
     runBlocking {
       cleanupCurrentUserDocs()
+      clearFirestore()
       if (this@ProfileRepositoryFirebaseTest::auth.isInitialized) {
         runCatching { auth.signOut() }
       }
@@ -591,5 +594,113 @@ class ProfileRepositoryFirebaseTest {
 
     // In getCurrentRecoUserProfile, we only keep weight >= 0
     assertEquals(mapOf("rock" to 3.0), tw)
+  }
+
+  // --- Tests for searchUsers ---
+
+  private val testProfiles =
+      listOf(
+          Profile(uid = "user1", username = "testone", name = "First User", subscribers = 10L),
+          Profile(uid = "user2", username = "usertwo", name = "Super Tester", subscribers = 20L),
+          Profile(
+              uid = "user3", username = "anotheruser", name = "User The Third", subscribers = 5L),
+          Profile(
+              uid = "anonUser1",
+              username = "anon123",
+              name = "Anonymous",
+              isAnonymous = true,
+              subscribers = 100L))
+
+  private suspend fun populateFirestore() {
+    testProfiles.forEach { profile ->
+      db.collection(PROFILES_COLLECTION_PATH)
+          .document(profile.uid)
+          .set(profile.toFirestoreMap())
+          .await()
+      if (profile.username.isNotBlank() && !profile.isAnonymous) {
+        db.collection(USERNAMES_COLLECTION_PATH)
+            .document(profile.username)
+            .set(mapOf("uid" to profile.uid))
+            .await()
+      }
+    }
+  }
+
+  private suspend fun clearFirestore() {
+    val profiles = db.collection(PROFILES_COLLECTION_PATH).get().await()
+    profiles.forEach { it.reference.delete().await() }
+    val usernames = db.collection(USERNAMES_COLLECTION_PATH).get().await()
+    usernames.forEach { it.reference.delete().await() }
+  }
+
+  private fun Profile.toFirestoreMap(): Map<String, Any?> {
+    return mapOf(
+        "uid" to uid,
+        "username" to username,
+        "name" to name,
+        "bio" to bio,
+        "avatarUrl" to avatarUrl,
+        "subscribers" to subscribers,
+        "subscriptions" to subscriptions,
+        "likes" to likes,
+        "posts" to posts,
+        "tags" to tags,
+        "tagsWeight" to tagsWeight,
+        "following" to following,
+        "isAnonymous" to isAnonymous)
+  }
+
+  @Test
+  fun searchUsersWithBlankQueryReturnsAllNonAnonymousUsersSorted() = runBlocking {
+    val results = repo.searchUsers("  ")
+
+    assertEquals(3, results.size)
+
+    assertEquals("user2", results[0].uid)
+    assertEquals("user1", results[1].uid)
+    assertEquals("user3", results[2].uid)
+  }
+
+  @Test
+  fun searchUsersWithQueryReturnsMatchingUsersSorted() = runBlocking {
+    val results = repo.searchUsers("user")
+    assertEquals(3, results.size)
+
+    assertEquals("user2", results[0].uid)
+    assertEquals("user1", results[1].uid)
+    assertEquals("user3", results[2].uid)
+  }
+
+  @Test
+  fun searchUsersWithNameQueryReturnsMatchingUsers() = runBlocking {
+    val results = repo.searchUsers("Super")
+
+    assertEquals(1, results.size)
+    assertEquals("user2", results[0].uid)
+  }
+
+  @Test
+  fun searchUsersMergesUsernameAndNameResultsAndDeDuplicates() = runBlocking {
+    val results = repo.searchUsers("test")
+
+    val uids = results.map { it.uid }
+    assertTrue(uids.contains("user1"))
+    assertTrue(uids.contains("user2"))
+    assertEquals(2, results.size)
+
+    assertEquals("user2", results[0].uid)
+    assertEquals("user1", results[1].uid)
+  }
+
+  @Test
+  fun searchUsersEmptyResult() = runBlocking {
+    val results = repo.searchUsers("nonexistent")
+    assertTrue(results.isEmpty())
+  }
+
+  @Test
+  fun searchUsersDoesNotReturnAnonymous() = runBlocking {
+    val results = repo.searchUsers("anon")
+    assertTrue(results.isEmpty())
   }
 }
