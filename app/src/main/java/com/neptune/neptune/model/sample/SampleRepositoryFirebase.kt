@@ -128,6 +128,7 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
       sampleId: String,
       authorId: String,
       authorName: String,
+      authorProfilePicUrl: String,
       text: String
   ) {
     val sampleDoc = samples.document(sampleId)
@@ -142,6 +143,7 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
         mapOf(
             "authorId" to authorId,
             "authorName" to authorName,
+            "authorProfilePicUrl" to authorProfilePicUrl,
             "text" to text,
             "timestamp" to Timestamp.now())
 
@@ -167,11 +169,13 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
                   snap?.documents?.mapNotNull { doc ->
                     val authorId = doc.getString("authorId") ?: return@mapNotNull null
                     val authorName = doc.getString("authorName") ?: ""
+                    val authorProfilePicUrl = doc.getString("authorProfilePicUrl") ?: ""
                     val text = doc.getString("text") ?: ""
                     val timestamp = doc.getTimestamp("timestamp")
                     Comment(
                         authorId = authorId,
                         authorName = authorName,
+                        authorProfilePicUrl = authorProfilePicUrl,
                         text = text,
                         timestamp = timestamp)
                   } ?: emptyList()
