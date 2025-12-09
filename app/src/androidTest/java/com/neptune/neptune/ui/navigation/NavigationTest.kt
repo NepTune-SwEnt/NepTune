@@ -46,7 +46,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
-import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -101,6 +100,11 @@ class NavigationTest {
   private lateinit var repo: ProfileRepositoryFirebase
 
   private fun setContent() {
+    runBlocking {
+      if (auth.currentUser == null) {
+        auth.signInAnonymously().await()
+      }
+    }
     composeTestRule.setContent { NeptuneApp(startDestination = Screen.Main.route) }
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).isDisplayed()
@@ -129,11 +133,6 @@ class NavigationTest {
 
       repo = ProfileRepositoryFirebase(db)
     }
-  }
-
-  @After
-  fun tearDown() {
-    auth.signOut()
   }
 
   @Test

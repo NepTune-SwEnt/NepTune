@@ -1,7 +1,10 @@
 package com.neptune.neptune.ui.messages
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
+import androidx.test.core.app.ApplicationProvider
 import app.cash.turbine.test
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.neptune.neptune.model.messages.MessageRepository
@@ -24,12 +27,15 @@ import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 /**
  * Unit Tests for [SelectMessagesViewModel]. This has been written with the help of LLMs.
  *
  * @author Angéline Bignens
  */
+@RunWith(RobolectricTestRunner::class)
 @OptIn(ExperimentalCoroutinesApi::class)
 class SelectMessagesViewModelTest {
 
@@ -42,6 +48,9 @@ class SelectMessagesViewModelTest {
 
   @Before
   fun setup() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    FirebaseApp.initializeApp(context)
+
     Dispatchers.setMain(testDispatcher)
 
     profileRepo = mockk(relaxed = true)
@@ -236,5 +245,16 @@ class SelectMessagesViewModelTest {
 
     Assert.assertEquals(
         "Unknown ViewModel class: ${UnknownViewModel::class.java.name}", exception.message)
+  }
+
+  /** Test that the SelectMessagesViewModelFactory creates the ViewModel */
+  @Test
+  fun factoryCreatesSelectMessagesViewModel() {
+    val factory = SelectMessagesViewModelFactory("uid")
+
+    val viewModel = factory.create(SelectMessagesViewModel::class.java)
+
+    // Check that the ViewModel is not null
+    Assert.assertNotNull(viewModel)
   }
 }
