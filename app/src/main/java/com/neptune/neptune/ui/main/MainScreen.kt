@@ -841,37 +841,57 @@ fun CommentDialog(
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                       items(comments) { comment ->
                         val username = usernames[comment.authorId] ?: comment.authorName
-                        Column {
-                          Row(
-                              verticalAlignment = Alignment.CenterVertically,
-                              horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(
-                                    text = "${username}:",
-                                    style =
-                                        TextStyle(
-                                            fontSize = 18.sp,
-                                            fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                            fontWeight = FontWeight(300),
-                                            color = NepTuneTheme.colors.onBackground))
-                                Text(
-                                    text = "• " + formatTime(comment.timestamp),
-                                    style =
-                                        TextStyle(
-                                            fontSize = 14.sp,
-                                            fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                            fontWeight = FontWeight(300),
-                                            color =
-                                                NepTuneTheme.colors.onBackground.copy(
-                                                    alpha = 0.9f)))
-                              }
-                          Text(
-                              text = comment.text,
-                              style =
-                                  TextStyle(
-                                      fontSize = 18.sp,
-                                      fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                      fontWeight = FontWeight(300),
-                                      color = NepTuneTheme.colors.onBackground))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                          AsyncImage(
+                              model =
+                                  ImageRequest.Builder(LocalContext.current)
+                                      .data(
+                                          comment.authorProfilePicUrl.ifEmpty {
+                                            R.drawable.profile
+                                          })
+                                      .crossfade(true)
+                                      .build(),
+                              contentDescription = "Profile Picture",
+                              modifier =
+                                  Modifier.size(32.dp)
+                                      .clip(CircleShape)
+                                      .border(1.dp, NepTuneTheme.colors.onBackground, CircleShape),
+                              contentScale = ContentScale.Crop,
+                              placeholder = painterResource(R.drawable.profile),
+                              error = painterResource(R.drawable.profile))
+                          Spacer(Modifier.width(8.dp))
+                          Column {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                  Text(
+                                      text = "${username}:",
+                                      style =
+                                          TextStyle(
+                                              fontSize = 18.sp,
+                                              fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                              fontWeight = FontWeight(300),
+                                              color = NepTuneTheme.colors.onBackground))
+                                  Text(
+                                      text = "• " + formatTime(comment.timestamp),
+                                      style =
+                                          TextStyle(
+                                              fontSize = 14.sp,
+                                              fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                              fontWeight = FontWeight(300),
+                                              color =
+                                                  NepTuneTheme.colors.onBackground.copy(
+                                                      alpha = 0.9f)))
+                                }
+                            Text(
+                                text = comment.text,
+                                style =
+                                    TextStyle(
+                                        fontSize = 18.sp,
+                                        fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                        fontWeight = FontWeight(300),
+                                        color = NepTuneTheme.colors.onBackground))
+                          }
                         }
                       }
                     }
