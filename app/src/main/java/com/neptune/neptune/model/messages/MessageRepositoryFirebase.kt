@@ -1,5 +1,10 @@
 package com.neptune.neptune.model.messages
 
+import android.util.Log
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.neptune.neptune.model.profile.Profile
@@ -40,7 +45,8 @@ class MessageRepositoryFirebase(
                   val previews =
                       snapshot.documents.mapNotNull { doc ->
                         val participants =
-                            doc.get("participants") as? List<String> ?: return@mapNotNull null
+                            (doc["participants"] as? List<*>)?.mapNotNull { it as? String }
+                                ?: return@mapNotNull null
                         val otherUid =
                             participants.firstOrNull { it != currentUid } ?: return@mapNotNull null
 
@@ -71,18 +77,23 @@ class MessageRepositoryFirebase(
   /** Observe online status in real time */
   override fun observeUserOnlineState(uid: String): Flow<Boolean> = callbackFlow {
     val ref =
-        com.google.firebase.database.FirebaseDatabase.getInstance(
+        FirebaseDatabase.getInstance(
                 "https://neptune-e2728-default-rtdb.europe-west1.firebasedatabase.app/")
             .getReference("status/$uid")
 
     val listener =
-        object : com.google.firebase.database.ValueEventListener {
-          override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
+        object : ValueEventListener {
+          override fun onDataChange(snapshot: DataSnapshot) {
             val state = snapshot.child("state").getValue(String::class.java)
             trySend(state == "online")
           }
 
-          override fun onCancelled(error: com.google.firebase.database.DatabaseError) {}
+          // Not needed
+          override fun onCancelled(error: DatabaseError) {
+            Log.w(
+                "MessageRepoFirebase",
+                "observeUserOnlineState listener cancelled: ${error.message}")
+          }
         }
 
     ref.addValueEventListener(listener)

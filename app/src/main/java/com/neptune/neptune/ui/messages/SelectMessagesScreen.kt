@@ -73,7 +73,7 @@ class SelectMessagesViewModelFactory(private val currentUid: String) : ViewModel
     if (modelClass.isAssignableFrom(SelectMessagesViewModel::class.java)) {
       @Suppress("UNCHECKED_CAST") return SelectMessagesViewModel(currentUid) as T
     }
-    throw IllegalArgumentException("Unknown ViewModel class")
+    throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
   }
 }
 

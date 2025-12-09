@@ -1,6 +1,7 @@
 package com.neptune.neptune.ui.authentification
 
 import android.app.Activity
+import android.util.Log
 import androidx.credentials.Credential
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
@@ -395,7 +396,11 @@ class SignInViewModel(
             userStatusRef.setValue(onlineStatus)
           }
 
-          override fun onCancelled(error: DatabaseError) {}
+          // Not needed in our app
+          override fun onCancelled(error: DatabaseError) {
+
+            Log.w("SignInViewModel", "Listener was cancelled: ${error.message}")
+          }
         })
   }
   /**
