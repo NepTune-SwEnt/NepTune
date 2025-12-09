@@ -441,10 +441,14 @@ class ProfileRepositoryFirebase(
 
   /**
    * Searches for users. If [query] is empty, returns a list of all users ordered by subscribers.
-   * Otherwise, returns users whose username OR name starts with the given query, sorted by
-   * subscribers descending (client-side sort for best UX within Firestore limits).
+   * Otherwise, returns users whose username OR name contains the given query, sorted by subscribers
+   * descending.
    *
-   * @param query the prefix to search for, or empty string for all users
+   * WARNING: This is a very inefficient implementation that is not suitable for production. It
+   * downloads all profiles and filters them in memory. For a scalable solution, use a search
+   * service like Algolia or Elasticsearch.
+   *
+   * @param query the string to search for, or empty string for all users
    * @return a list of matching profiles
    */
   override suspend fun searchUsers(query: String): List<Profile> {
@@ -459,32 +463,16 @@ class ProfileRepositoryFirebase(
             .mapNotNull { it.toProfileOrNull() }
             .filter { !it.isAnonymous }
       } else {
-        val normalizedQuery = normalizeUsername(query)
+        val normalizedQuery = query.lowercase()
 
-        // Search by username
-        val usernameResults =
-            profiles
-                .whereGreaterThanOrEqualTo("username", normalizedQuery)
-                .whereLessThan("username", normalizedQuery + "\uf8ff")
-                .limit(MAX_USER_QUERY_RESULTS)
-                .get()
-                .await()
-                .mapNotNull { it.toProfileOrNull() }
+        val allUsers = profiles.get().await().mapNotNull { it.toProfileOrNull() }
 
-        // Search by name
-        val nameResults =
-            profiles
-                .whereGreaterThanOrEqualTo("name", query)
-                .whereLessThan("name", query + "\uf8ff")
-                .limit(MAX_USER_QUERY_RESULTS)
-                .get()
-                .await()
-                .mapNotNull { it.toProfileOrNull() }
-
-        // Merge, deduplicate, filter anonymous, and sort
-        (usernameResults + nameResults)
-            .distinctBy { it.uid }
-            .filter { !it.isAnonymous }
+        allUsers
+            .filter {
+              !it.isAnonymous &&
+                  (it.username.lowercase().contains(normalizedQuery) ||
+                      (it.name ?: "").lowercase().contains(normalizedQuery))
+            }
             .sortedByDescending { it.subscribers }
       }
     } catch (e: Exception) {
