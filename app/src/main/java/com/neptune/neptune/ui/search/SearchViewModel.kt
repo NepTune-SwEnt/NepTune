@@ -209,23 +209,23 @@ open class SearchViewModel(
     viewModelScope.launch {
         try {
             _currentUserFlow
-          .flatMapLatest { user ->
-            if (user != null) {
-              profileRepo.observeProfile(user.uid)
-            } else {
-              flowOf(null)
-            }
-          }
-          .collectLatest { profile ->
-            if (profile != null) {
-              _followingIds.value = profile.following.toSet()
-            } else {
-              _followingIds.value = emptySet()
-            }
-          }
-    } catch (e: Exception) {
+                .flatMapLatest { user ->
+                    if (user != null) {
+                        profileRepo.observeProfile(user.uid)
+                    } else {
+                        flowOf(null)
+                    }
+                }
+                .collectLatest { profile ->
+                    if (profile != null) {
+                        _followingIds.value = profile.following.toSet()
+                    } else {
+                        _followingIds.value = emptySet()
+                    }
+                }
+        } catch (e: Exception) {
             Log.e("SearchViewModel", "Failed to load resources for ${sample.name}", e)
-    }
+        }
     }
     load(useMockData)
   }
@@ -252,10 +252,10 @@ private suspend fun getSampleCoverUrl(storagePath: String): String? {
     return url
 }
 
-  override fun onCleared() {
-    super.onCleared()
-    if (auth != null && authListener != null) {
-      auth.removeAuthStateListener(authListener)
+    override fun onCleared() {
+        super.onCleared()
+        if (auth != null && authListener != null) {
+            auth.removeAuthStateListener(authListener)
     }
   }
 
@@ -334,29 +334,29 @@ private suspend fun getSampleCoverUrl(storagePath: String): String? {
         load(useMockData)
       } catch (e: Exception) {
         Log.e("SearchViewModel", "Error downloading sample: ${e.message}")
-        // optional: log or expose error
+          // optional: log or expose error
       }
     }
   }
 
-  override fun onLikeClick(sample: Sample, isLiked: Boolean) {
-    val sampleId = sample.id
-    viewModelScope.launch {
-        try {
-            this@SearchViewModel.sampleRepo.toggleLike(sample.id, isLiked)
-      val delta = if (isLiked) 1 else -1
-      val updatedSamples =
-          allSamples.value.map { current ->
-            if (current.id == sampleId) {
-              current.copy(likes = current.likes + delta)
-            } else {
-              current
-            }
-          }
-      allSamples.value = updatedSamples
-      applyFilter(query)
-      _likedSamples.value = _likedSamples.value + (sampleId to isLiked)
-    } catch (e: Exception) {
+    override fun onLikeClick(sample: Sample, isLiked: Boolean) {
+        val sampleId = sample.id
+        viewModelScope.launch {
+            try {
+                this@SearchViewModel.sampleRepo.toggleLike(sample.id, isLiked)
+                val delta = if (isLiked) 1 else -1
+                val updatedSamples =
+                    allSamples.value.map { current ->
+                        if (current.id == sampleId) {
+                            current.copy(likes = current.likes + delta)
+                        } else {
+                            current
+                        }
+                    }
+                allSamples.value = updatedSamples
+                applyFilter(query)
+                _likedSamples.value = _likedSamples.value + (sampleId to isLiked)
+            } catch (e: Exception) {
             Log.e("SearchViewModel", "Error toggling like: ${e.message}")
         }
     }
