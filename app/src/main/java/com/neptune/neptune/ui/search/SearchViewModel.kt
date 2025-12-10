@@ -56,7 +56,8 @@ open class SearchViewModel(
     profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
     explicitStorageService: StorageService? = null,
     explicitDownloadsFolder: File? = null,
-    auth: FirebaseAuth? = null
+    auth: FirebaseAuth? = null,
+    private val connectivityObserver: NetworkConnectivityObserver = NetworkConnectivityObserver()
 ) :
     BaseSampleFeedViewModel(
         sampleRepo = sampleRepo,
@@ -114,9 +115,8 @@ open class SearchViewModel(
   val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
 
   init {
-    val observer = NetworkConnectivityObserver()
     viewModelScope.launch {
-      observer.isOnline.collect { isConnected -> _isOnline.value = isConnected }
+      connectivityObserver.isOnline.collect { isConnected -> _isOnline.value = isConnected }
     }
   }
 

@@ -28,6 +28,10 @@ import com.neptune.neptune.ui.search.SearchScreenTestTags
 import com.neptune.neptune.ui.search.SearchScreenTestTags.SAMPLE_LIST
 import com.neptune.neptune.ui.search.SearchScreenTestTagsPerSampleCard
 import com.neptune.neptune.ui.search.SearchViewModel
+import com.neptune.neptune.util.NetworkConnectivityObserver
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert
 import org.junit.Rule
 import org.junit.Test
@@ -56,11 +60,14 @@ class SearchScreenAllTests {
   private fun createTestSearchViewModel(): SearchViewModel {
     val fakeSampleRepo = FakeSampleRepository()
     val fakeProfileRepo = FakeProfileRepository()
+    val mockObserver = mockk<NetworkConnectivityObserver>(relaxed = true)
+    every { mockObserver.isOnline } returns flowOf(true)
     return SearchViewModel(
         sampleRepo = fakeSampleRepo,
         context = appContext,
         useMockData = true,
-        profileRepo = fakeProfileRepo)
+        profileRepo = fakeProfileRepo,
+        connectivityObserver = mockObserver)
   }
 
   /** Advance past the 300ms debounce in SearchScreen */
@@ -75,9 +82,17 @@ class SearchScreenAllTests {
    * Spy VM to count how many times search() is invoked. This subclasses your real SearchViewModel
    * so its dataset & normalization are used.
    */
-  class SpySearchViewModel(repo: SampleRepository, profileRepo: ProfileRepository) :
+  class SpySearchViewModel(
+      repo: SampleRepository,
+      profileRepo: ProfileRepository,
+      connectivityObserver: NetworkConnectivityObserver
+  ) :
       SearchViewModel(
-          sampleRepo = repo, context = appContext, useMockData = true, profileRepo = profileRepo) {
+          sampleRepo = repo,
+          context = appContext,
+          useMockData = true,
+          profileRepo = profileRepo,
+          connectivityObserver = connectivityObserver) {
     val calls = mutableListOf<String>()
 
     override fun search(query: String) {
@@ -187,10 +202,10 @@ class SearchScreenAllTests {
   fun debounceTriggersSearchOnceAfterDelay() {
     val fakeSampleRepo = FakeSampleRepository()
     val fakeProfileRepo = FakeProfileRepository()
-    val vm = SpySearchViewModel(fakeSampleRepo, fakeProfileRepo)
-
+    val mockObserver = mockk<NetworkConnectivityObserver>(relaxed = true)
+    every { mockObserver.isOnline } returns flowOf(true)
+    val vm = SpySearchViewModel(fakeSampleRepo, fakeProfileRepo, mockObserver)
     composeRule.setContent { SearchScreen(searchViewModel = vm, mediaPlayer = fakeMediaPlayer) }
-
     // Rapid typing: only last value should trigger after debounce
     composeRule.onNodeWithTag(ProjectListScreenTestTags.SEARCH_TEXT_FIELD).performTextInput("a")
     composeRule.mainClock.advanceTimeBy(100)
@@ -254,14 +269,14 @@ class SearchScreenAllTests {
     composeRule.waitForIdle()
     composeRule.onNodeWithTag(SearchScreenTestTags.DOWNLOAD_BAR).assertIsDisplayed()
 
-    val progress40 = fetchProgressForTag(SearchScreenTestTags.DOWNLOAD_BAR)
+    val progress40 = fetchProgressForTag()
     Assert.assertEquals(0.4f, progress40, 0.001f)
 
     // 4) 100 -> still visible and progress ~1.0
     composeRule.runOnIdle { vm.downloadProgress.value = 100 }
     composeRule.waitForIdle()
 
-    val progress100 = fetchProgressForTag(SearchScreenTestTags.DOWNLOAD_BAR)
+    val progress100 = fetchProgressForTag()
     Assert.assertEquals(1.0f, progress100, 0.001f)
 
     // 5) back to null → hidden again
@@ -270,8 +285,8 @@ class SearchScreenAllTests {
     composeRule.onNodeWithTag(SearchScreenTestTags.DOWNLOAD_BAR).assertDoesNotExist()
   }
 
-  private fun fetchProgressForTag(tag: String): Float {
-    val node = composeRule.onNodeWithTag(tag).fetchSemanticsNode()
+  private fun fetchProgressForTag(): Float {
+    val node = composeRule.onNodeWithTag(SearchScreenTestTags.DOWNLOAD_BAR).fetchSemanticsNode()
     val info = node.config[SemanticsProperties.ProgressBarRangeInfo]
     return info.current
   }
