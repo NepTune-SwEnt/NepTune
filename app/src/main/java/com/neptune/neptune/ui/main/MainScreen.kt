@@ -270,7 +270,8 @@ fun MainScreen(
             },
             containerColor = NepTuneTheme.colors.background)
         // Comment Overlay (Outside Scaffold content, but inside Box to float over everything)
-        SampleCommentManager(mainViewModel = mainViewModel)
+        SampleCommentManager(
+            mainViewModel = mainViewModel, onProfileClicked = { handleProfileNavigation(it) })
 
         if (downloadProgress != null && downloadProgress != 0) {
           DownloadProgressBar(
@@ -795,7 +796,8 @@ fun CommentDialog(
     usernames: Map<String, String>,
     onDismiss: () -> Unit,
     onAddComment: (sampleId: String, commentText: String) -> Unit,
-    isAnonymous: Boolean = false
+    isAnonymous: Boolean = false,
+    onProfileClicked: (String) -> Unit = {}
 ) {
   var commentText by remember { mutableStateOf("") }
   val listScrollingState = rememberLazyListState()
@@ -841,7 +843,7 @@ fun CommentDialog(
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                       items(comments) { comment ->
                         val username = usernames[comment.authorId] ?: comment.authorName
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(verticalAlignment = Alignment.CenterVertically) { // Added Row
                           AsyncImage(
                               model =
                                   ImageRequest.Builder(LocalContext.current)
@@ -855,7 +857,8 @@ fun CommentDialog(
                               modifier =
                                   Modifier.size(32.dp)
                                       .clip(CircleShape)
-                                      .border(1.dp, NepTuneTheme.colors.onBackground, CircleShape),
+                                      .border(1.dp, NepTuneTheme.colors.onBackground, CircleShape)
+                                      .clickable { onProfileClicked(comment.authorId) },
                               contentScale = ContentScale.Crop,
                               placeholder = painterResource(R.drawable.profile),
                               error = painterResource(R.drawable.profile))
@@ -871,7 +874,9 @@ fun CommentDialog(
                                               fontSize = 18.sp,
                                               fontFamily = FontFamily(Font(R.font.markazi_text)),
                                               fontWeight = FontWeight(300),
-                                              color = NepTuneTheme.colors.onBackground))
+                                              color = NepTuneTheme.colors.onBackground),
+                                      modifier =
+                                          Modifier.clickable { onProfileClicked(comment.authorId) })
                                   Text(
                                       text = "• " + formatTime(comment.timestamp),
                                       style =
