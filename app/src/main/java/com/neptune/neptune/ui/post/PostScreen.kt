@@ -399,7 +399,8 @@ fun PostScreen(
                     enabled =
                         uiState.sample.name.isNotBlank() &&
                             !uiState.isUploading &&
-                            postViewModel.audioExist(),
+                            postViewModel.audioExist() &&
+                            !postViewModel.isAnonymous,
                     modifier =
                         Modifier.fillMaxWidth()
                             .height(55.dp)
@@ -472,7 +473,8 @@ fun ProjectListScreenPreview() {
                 likes = 123,
                 usersLike = emptyList(),
                 comments = 45,
-                downloads = 67))
+                downloads = 67,
+                creationTime = 0L))
       }
 
   val fakeMediaPlayer = NeptuneMediaPlayer()

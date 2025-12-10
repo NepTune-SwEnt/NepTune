@@ -2,6 +2,7 @@
 
 package com.neptune.neptune.screen
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,11 +27,18 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
+import androidx.test.core.app.ApplicationProvider
+import com.neptune.neptune.media.LocalMediaPlayer
+import com.neptune.neptune.media.NeptuneMediaPlayer
+import com.neptune.neptune.model.FakeProfileRepository
+import com.neptune.neptune.model.FakeSampleRepository
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import com.neptune.neptune.model.recommendation.RecoUserProfile
 import com.neptune.neptune.ui.profile.OtherUserProfileRoute
 import com.neptune.neptune.ui.profile.ProfileMode
+import com.neptune.neptune.ui.profile.ProfileSamplesViewModel
 import com.neptune.neptune.ui.profile.ProfileScreen
 import com.neptune.neptune.ui.profile.ProfileScreenTestTags
 import com.neptune.neptune.ui.profile.ProfileViewConfig
@@ -39,10 +47,12 @@ import com.neptune.neptune.ui.profile.profileScreenCallbacks
 import com.neptune.neptune.ui.theme.SampleAppTheme
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
+/** Tests for the ProfileScreen. This has been written with the help of LLMs. */
 class ProfileScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()
@@ -98,6 +108,19 @@ class ProfileScreenTest {
     }
   }
 
+  private fun createFakeSamplesViewModel(
+      initialSamples: List<com.neptune.neptune.model.sample.Sample> = emptyList()
+  ): ProfileSamplesViewModel {
+    val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+    return ProfileSamplesViewModel(
+        ownerId = "owner",
+        sampleRepo = FakeSampleRepository(initialSamples),
+        profileRepo = FakeProfileRepository(),
+        context = context,
+        auth = null,
+        enableActions = false)
+  }
+
   private fun setContentViewMode(
       state: SelfProfileUiState =
           SelfProfileUiState(
@@ -112,15 +135,19 @@ class ProfileScreenTest {
       onEditClick: () -> Unit = {},
       goBack: () -> Unit = {},
       viewConfig: ProfileViewConfig? = null,
+      samplesViewModel: ProfileSamplesViewModel = createFakeSamplesViewModel(),
   ) {
     val config =
         viewConfig ?: ProfileViewConfig.SelfProfileConfig(onEdit = onEditClick, settings = {})
     composeTestRule.setContent {
-      SampleAppTheme {
-        ProfileScreen(
-            uiState = state,
-            callbacks = profileScreenCallbacks(onEditClick = onEditClick, goBackClick = goBack),
-            viewConfig = config)
+      CompositionLocalProvider(LocalMediaPlayer provides NeptuneMediaPlayer()) {
+        SampleAppTheme {
+          ProfileScreen(
+              uiState = state,
+              callbacks = profileScreenCallbacks(onEditClick = onEditClick, goBackClick = goBack),
+              viewConfig = config,
+              profileSamplesViewModel = samplesViewModel)
+        }
       }
     }
     composeTestRule.waitForIdle()
@@ -141,18 +168,22 @@ class ProfileScreenTest {
       onNameChange: (String) -> Unit = {},
       onUsernameChange: (String) -> Unit = {},
       onBioChange: (String) -> Unit = {},
+      samplesViewModel: ProfileSamplesViewModel = createFakeSamplesViewModel(),
   ) {
     composeTestRule.setContent {
-      SampleAppTheme {
-        ProfileScreen(
-            uiState = state,
-            callbacks =
-                profileScreenCallbacks(
-                    onSaveClick = onSaveClick,
-                    onNameChange = onNameChange,
-                    onUsernameChange = onUsernameChange,
-                    onBioChange = onBioChange),
-            viewConfig = ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = {}))
+      CompositionLocalProvider(LocalMediaPlayer provides NeptuneMediaPlayer()) {
+        SampleAppTheme {
+          ProfileScreen(
+              uiState = state,
+              callbacks =
+                  profileScreenCallbacks(
+                      onSaveClick = onSaveClick,
+                      onNameChange = onNameChange,
+                      onUsernameChange = onUsernameChange,
+                      onBioChange = onBioChange),
+              viewConfig = ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = {}),
+              profileSamplesViewModel = samplesViewModel)
+        }
       }
     }
     composeTestRule.waitForIdle()
@@ -419,28 +450,33 @@ class ProfileScreenTest {
     val state =
         mutableStateOf(
             SelfProfileUiState(name = "John", username = "john", bio = "", mode = ProfileMode.EDIT))
+    val samplesViewModel = createFakeSamplesViewModel()
 
     composeTestRule.setContent {
-      SampleAppTheme {
-        ProfileScreen(
-            uiState = state.value,
-            callbacks =
-                profileScreenCallbacks(
-                    onTagInputFieldChange = { s -> state.value = state.value.copy(inputTag = s) },
-                    onTagSubmit = {
-                      val normalized = state.value.inputTag.trim().lowercase()
-                      if (normalized.isNotEmpty()) {
+      CompositionLocalProvider(LocalMediaPlayer provides NeptuneMediaPlayer()) {
+        SampleAppTheme {
+          ProfileScreen(
+              uiState = state.value,
+              callbacks =
+                  profileScreenCallbacks(
+                      onTagInputFieldChange = { s -> state.value = state.value.copy(inputTag = s) },
+                      onTagSubmit = {
+                        val normalized = state.value.inputTag.trim().lowercase()
+                        if (normalized.isNotEmpty()) {
+                          state.value =
+                              state.value.copy(
+                                  tags = state.value.tags + normalized,
+                                  inputTag = "",
+                                  tagError = null)
+                        }
+                      },
+                      onRemoveTag = { t ->
                         state.value =
-                            state.value.copy(
-                                tags = state.value.tags + normalized,
-                                inputTag = "",
-                                tagError = null)
-                      }
-                    },
-                    onRemoveTag = { t ->
-                      state.value = state.value.copy(tags = state.value.tags.filterNot { it == t })
-                    }),
-            viewConfig = ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = {}))
+                            state.value.copy(tags = state.value.tags.filterNot { it == t })
+                      }),
+              viewConfig = ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = {}),
+              profileSamplesViewModel = samplesViewModel)
+        }
       }
     }
 
@@ -466,23 +502,29 @@ class ProfileScreenTest {
                 bio = "",
                 mode = ProfileMode.EDIT,
                 tags = arrayListOf("rock", "edm")))
+    val samplesViewModel = createFakeSamplesViewModel()
 
     composeTestRule.setContent {
-      SampleAppTheme {
-        ProfileScreen(
-            uiState = state.value,
-            callbacks =
-                profileScreenCallbacks(
-                    onTagInputFieldChange = { s -> state.value = state.value.copy(inputTag = s) },
-                    onTagSubmit = {
-                      val n = state.value.inputTag.trim().lowercase()
-                      if (n.isNotEmpty())
-                          state.value = state.value.copy(tags = state.value.tags + n, inputTag = "")
-                    },
-                    onRemoveTag = { t ->
-                      state.value = state.value.copy(tags = state.value.tags.filterNot { it == t })
-                    }),
-            viewConfig = ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = {}))
+      CompositionLocalProvider(LocalMediaPlayer provides NeptuneMediaPlayer()) {
+        SampleAppTheme {
+          ProfileScreen(
+              uiState = state.value,
+              callbacks =
+                  profileScreenCallbacks(
+                      onTagInputFieldChange = { s -> state.value = state.value.copy(inputTag = s) },
+                      onTagSubmit = {
+                        val n = state.value.inputTag.trim().lowercase()
+                        if (n.isNotEmpty())
+                            state.value =
+                                state.value.copy(tags = state.value.tags + n, inputTag = "")
+                      },
+                      onRemoveTag = { t ->
+                        state.value =
+                            state.value.copy(tags = state.value.tags.filterNot { it == t })
+                      }),
+              viewConfig = ProfileViewConfig.SelfProfileConfig(onEdit = {}, settings = {}),
+              profileSamplesViewModel = samplesViewModel)
+        }
       }
     }
 
@@ -650,35 +692,39 @@ class ProfileScreenTest {
     val initialFollowers = 12
     var followRequests = 0
     var remoteUpdate: ((Boolean, Int) -> Unit)? = null
+    val samplesViewModel = createFakeSamplesViewModel()
 
     composeTestRule.setContent {
-      var state by remember {
-        mutableStateOf(
-            SelfProfileUiState(
-                name = "Demo User",
-                username = "demo",
-                subscribers = initialFollowers,
-                subscriptions = 5,
-                likes = 9,
-                posts = 1,
-                mode = ProfileMode.VIEW))
-      }
-      var isFollowing by remember { mutableStateOf(false) }
+      CompositionLocalProvider(LocalMediaPlayer provides NeptuneMediaPlayer()) {
+        var state by remember {
+          mutableStateOf(
+              SelfProfileUiState(
+                  name = "Demo User",
+                  username = "demo",
+                  subscribers = initialFollowers,
+                  subscriptions = 5,
+                  likes = 9,
+                  posts = 1,
+                  mode = ProfileMode.VIEW))
+        }
+        var isFollowing by remember { mutableStateOf(false) }
 
-      remoteUpdate = { following, followerCount ->
-        isFollowing = following
-        state = state.copy(subscribers = followerCount)
-      }
+        remoteUpdate = { following, followerCount ->
+          isFollowing = following
+          state = state.copy(subscribers = followerCount)
+        }
 
-      SampleAppTheme {
-        ProfileScreen(
-            uiState = state,
-            viewConfig =
-                ProfileViewConfig.OtherProfileConfig(
-                    isFollowing = isFollowing,
-                    onFollow = { followRequests++ },
-                    errorMessage = null),
-            callbacks = profileScreenCallbacks(goBackClick = {}))
+        SampleAppTheme {
+          ProfileScreen(
+              uiState = state,
+              viewConfig =
+                  ProfileViewConfig.OtherProfileConfig(
+                      isFollowing = isFollowing,
+                      onFollow = { followRequests++ },
+                      errorMessage = null),
+              callbacks = profileScreenCallbacks(goBackClick = {}),
+              profileSamplesViewModel = samplesViewModel)
+        }
       }
     }
 
@@ -779,7 +825,11 @@ class ProfileScreenTest {
             initialCurrentProfile = Profile(uid = "current-user", following = emptyList()))
 
     withProfileRepository(repo) {
-      composeTestRule.setContent { SampleAppTheme { OtherUserProfileRoute(userId = userId) } }
+      composeTestRule.setContent {
+        CompositionLocalProvider(LocalMediaPlayer provides NeptuneMediaPlayer()) {
+          SampleAppTheme { OtherUserProfileRoute(userId = userId) }
+        }
+      }
 
       composeTestRule.waitForTag(ProfileScreenTestTags.NAME)
       composeTestRule
@@ -811,7 +861,11 @@ class ProfileScreenTest {
                 Profile(uid = "current-user", name = "Viewer", isAnonymous = true))
 
     withProfileRepository(repo) {
-      composeTestRule.setContent { SampleAppTheme { OtherUserProfileRoute(userId = userId) } }
+      composeTestRule.setContent {
+        CompositionLocalProvider(LocalMediaPlayer provides NeptuneMediaPlayer()) {
+          SampleAppTheme { OtherUserProfileRoute(userId = userId) }
+        }
+      }
 
       composeTestRule.waitForTag(ProfileScreenTestTags.NAME)
       composeTestRule
@@ -831,7 +885,11 @@ class ProfileScreenTest {
             initialCurrentProfile = Profile(uid = "current-user", following = emptyList()))
 
     withProfileRepository(repo) {
-      composeTestRule.setContent { SampleAppTheme { OtherUserProfileRoute(userId = userId) } }
+      composeTestRule.setContent {
+        CompositionLocalProvider(LocalMediaPlayer provides NeptuneMediaPlayer()) {
+          SampleAppTheme { OtherUserProfileRoute(userId = userId) }
+        }
+      }
 
       composeTestRule.waitForTag(ProfileScreenTestTags.NAME)
       composeTestRule
@@ -850,7 +908,11 @@ class ProfileScreenTest {
             initialCurrentProfile = Profile(uid = "current-user", name = "Viewer"))
 
     withProfileRepository(repo) {
-      composeTestRule.setContent { SampleAppTheme { OtherUserProfileRoute(userId = userId) } }
+      composeTestRule.setContent {
+        CompositionLocalProvider(LocalMediaPlayer provides NeptuneMediaPlayer()) {
+          SampleAppTheme { OtherUserProfileRoute(userId = userId) }
+        }
+      }
 
       composeTestRule.waitForTag(ProfileScreenTestTags.AVATAR)
       composeTestRule
@@ -874,7 +936,11 @@ class ProfileScreenTest {
 
     withProfileRepository(repo) {
       composeTestRule.setContent {
-        SampleAppTheme { OtherUserProfileRoute(userId = userId, goBack = { goBackCalled = true }) }
+        CompositionLocalProvider(LocalMediaPlayer provides NeptuneMediaPlayer()) {
+          SampleAppTheme {
+            OtherUserProfileRoute(userId = userId, goBack = { goBackCalled = true })
+          }
+        }
       }
 
       composeTestRule.waitForTag(ProfileScreenTestTags.GOBACK_BUTTON)
@@ -885,6 +951,77 @@ class ProfileScreenTest {
       composeTestRule.waitUntil(3_000) { goBackCalled }
       assert(goBackCalled)
     }
+  }
+
+  @Test
+  fun postedSamplesSectionShowsEmptyState() {
+    setContentViewMode(samplesViewModel = createFakeSamplesViewModel())
+
+    composeTestRule.scrollAnyScrollableTo(hasText("Posted samples"))
+    composeTestRule.onNode(hasText("Posted samples"), useUnmergedTree = true).assertExists()
+    composeTestRule.onNode(hasText("No samples posted yet."), useUnmergedTree = true).assertExists()
+    composeTestRule
+        .onAllNodes(hasTestTag("profile/samples/list"), useUnmergedTree = true)
+        .assertCountEquals(0)
+  }
+
+  @Test
+  fun postedSamplesSectionShowsOnlyOwnersSamples() {
+    val ownerSample =
+        com.neptune.neptune.model.sample.Sample(
+            id = "owner-1",
+            name = "Owner Track",
+            description = "Owned",
+            durationSeconds = 90,
+            tags = listOf("rock"),
+            likes = 1,
+            usersLike = emptyList(),
+            comments = 0,
+            downloads = 0,
+            isPublic = true,
+            ownerId = "owner",
+            storagePreviewSamplePath = "preview/owner.mp3")
+    val otherSample =
+        com.neptune.neptune.model.sample.Sample(
+            id = "other-1",
+            name = "Other Track",
+            description = "Not owned",
+            durationSeconds = 45,
+            tags = emptyList(),
+            likes = 0,
+            usersLike = emptyList(),
+            comments = 0,
+            downloads = 0,
+            isPublic = true,
+            ownerId = "other",
+            storagePreviewSamplePath = "preview/other.mp3")
+
+    val samplesViewModel = createFakeSamplesViewModel(listOf(ownerSample, otherSample))
+    setContentViewMode(samplesViewModel = samplesViewModel)
+
+    // Wait for the LazyColumn that renders samples to appear
+    composeTestRule.waitUntil(timeoutMillis = 15_000) {
+      composeTestRule
+          .onAllNodes(hasTestTag("profile/samples/list"), useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    // Scroll the list so the owner sample is composed
+    composeTestRule
+        .onNodeWithTag("profile/samples/list", useUnmergedTree = true)
+        .performScrollToNode(hasText("Owner Track"))
+
+    // Now wait for the item text to exist, then assert
+    composeTestRule.waitUntil(timeoutMillis = 15_000) {
+      composeTestRule
+          .onAllNodes(hasText("Owner Track"), useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    composeTestRule.onNode(hasText("Owner Track"), useUnmergedTree = true).assertIsDisplayed()
+    composeTestRule.onAllNodes(hasText("Other Track"), useUnmergedTree = true).assertCountEquals(0)
   }
 }
 
@@ -912,6 +1049,10 @@ private class FakeOtherProfileRepository(
 
   override fun observeProfile(uid: String): Flow<Profile?> =
       if (uid == targetUserId) otherProfile else MutableStateFlow<Profile?>(null)
+
+  override fun observeAllProfiles(): Flow<List<Profile?>> {
+    return combine(currentProfile, otherProfile) { current, other -> listOf(current, other) }
+  }
 
   override suspend fun unfollowUser(uid: String) {
     unfollowRequests++
@@ -964,4 +1105,18 @@ private class FakeOtherProfileRepository(
   override suspend fun getAvatarUrlByUserId(userId: String): String? = null
 
   override suspend fun getUserNameByUserId(userId: String): String? = null
+
+  override suspend fun searchUsers(query: String): List<Profile> = emptyList()
+
+  override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun recordTagInteraction(
+      tags: List<String>,
+      likeDelta: Int,
+      downloadDelta: Int
+  ) {
+    TODO("Not yet implemented")
+  }
 }

@@ -3,20 +3,19 @@ package com.neptune.neptune.ui.main
 import android.content.Context
 import android.os.Environment
 import android.util.Log
-import androidx.core.net.toUri
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
-import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.R
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
-import com.neptune.neptune.model.sample.Comment
+import com.neptune.neptune.model.recommendation.RecommendationEngine
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryProvider
+import com.neptune.neptune.ui.feed.BaseSampleFeedViewModel
+import com.neptune.neptune.ui.feed.SampleFeedController
 import com.neptune.neptune.util.AudioWaveformExtractor
 import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
@@ -47,28 +46,39 @@ data class SampleResourceState(
  * @property useMockData false by default; true if we want to test with some MockData
  * @author Angéline Bignens
  */
-class MainViewModel(
-    private val repo: SampleRepository = SampleRepositoryProvider.repository,
+open class MainViewModel(
+    sampleRepo: SampleRepository = SampleRepositoryProvider.repository,
     context: Context,
-    private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
-    private var storageService: StorageService =
+    profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
+    storageService: StorageService =
         StorageService(FirebaseStorage.getInstance(context.getString(R.string.storage_path))),
     private val useMockData: Boolean = false,
     downloadsFolder: File =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val waveformExtractor: AudioWaveformExtractor = WaveformExtractor()
-) : ViewModel() {
+    auth: FirebaseAuth? = null,
+    waveformExtractor: AudioWaveformExtractor = WaveformExtractor()
+) :
+    BaseSampleFeedViewModel(
+        sampleRepo = sampleRepo,
+        profileRepo = profileRepo,
+        auth = auth ?: if (useMockData) null else FirebaseAuth.getInstance(),
+        context = context,
+        storageService = storageService,
+        waveformExtractor = waveformExtractor),
+    SampleFeedController {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
   val downloadProgress = MutableStateFlow<Int?>(null)
 
-  private val defaultName = "anonymous"
-  val actions: SampleUiActions? =
+  override val actions: SampleUiActions? =
       if (useMockData) {
         null
       } else {
         SampleUiActions(
-            repo, storageService, downloadsFolder, context, downloadProgress = downloadProgress)
+            sampleRepo,
+            storageService,
+            downloadsFolder,
+            context,
+            downloadProgress = downloadProgress)
       }
 
   val discoverSamples: MutableStateFlow<List<Sample>> = _discoverSamples
@@ -78,7 +88,7 @@ class MainViewModel(
   private val _userAvatar = MutableStateFlow<String?>(null)
   val userAvatar: StateFlow<String?> = _userAvatar.asStateFlow()
 
-  private val _currentUserFlow = MutableStateFlow(auth.currentUser)
+  private val _currentUserFlow = MutableStateFlow(auth?.currentUser)
   private val observingSampleIds = mutableSetOf<String>()
   private val authListener =
       FirebaseAuth.AuthStateListener { firebaseAuth ->
@@ -86,22 +96,16 @@ class MainViewModel(
         observeUserProfile()
       }
 
-  private val _comments = MutableStateFlow<List<Comment>>(emptyList())
-  val comments: StateFlow<List<Comment>> = _comments
-
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
   private val avatarCache = mutableMapOf<String, String?>()
-  private val _usernames = MutableStateFlow<Map<String, String>>(emptyMap())
-  val usernames: StateFlow<Map<String, String>> = _usernames.asStateFlow()
-  private val coverImageCache = mutableMapOf<String, String?>()
-  private val audioUrlCache = mutableMapOf<String, String?>()
   private var allSamplesCache: List<Sample> = emptyList()
-  private val waveformCache = mutableMapOf<String, List<Float>>()
-  private val _sampleResources = MutableStateFlow<Map<String, SampleResourceState>>(emptyMap())
-  val sampleResources = _sampleResources.asStateFlow()
   private val _isRefreshing = MutableStateFlow(false)
   val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+  private val _isAnonymous = MutableStateFlow(auth?.currentUser?.isAnonymous ?: true)
+  val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
+  private val _recommendedSamples = MutableStateFlow<List<Sample>>(emptyList())
+  val recommendedSamples: StateFlow<List<Sample>> = _recommendedSamples
 
   init {
     if (useMockData) {
@@ -110,8 +114,39 @@ class MainViewModel(
     } else {
       loadSamplesFromFirebase()
     }
-    auth.addAuthStateListener(authListener)
+    auth?.addAuthStateListener(authListener)
     observeUserProfile()
+  }
+
+  fun loadRecommendations(limit: Int = 50) {
+    viewModelScope.launch {
+      Log.d("RecoDebug", "loadRecommendations() START, cacheSize=${allSamplesCache.size}")
+      val recoUser = profileRepo.getCurrentRecoUserProfile()
+      if (recoUser == null) {
+        // Fallback when no user or profile: just show latest samples
+        Log.d("RecoDebug", "No recoUser profile (null) – skipping recommendations")
+
+        _recommendedSamples.value = emptyList()
+        return@launch
+      }
+      val candidates = allSamplesCache
+      if (candidates.isEmpty()) {
+        Log.d("RecoDebug", "No candidates (cache empty) – skipping ranking")
+        _recommendedSamples.value = emptyList()
+        return@launch
+      }
+      val ranked =
+          RecommendationEngine.rankSamplesForUser(
+              user = recoUser, candidates = candidates, limit = limit)
+      ranked.forEachIndexed { index, sample ->
+        val score = RecommendationEngine.scoreSample(sample, recoUser, System.currentTimeMillis())
+        Log.d(
+            "RecoDebug",
+            "#$index  id=${sample.id}  name=${sample.name}  score=${"%.4f".format(score)}")
+      }
+      _recommendedSamples.value = ranked
+      _discoverSamples.value = ranked
+    }
   }
 
   private fun loadSamplesFromFirebase() {
@@ -119,7 +154,7 @@ class MainViewModel(
       try {
         val profile = profileRepo.getCurrentProfile()
         val following = profile?.following.orEmpty()
-        repo.observeSamples().collectLatest { updatedSamples ->
+        sampleRepo.observeSamples().collectLatest { updatedSamples ->
           if (allSamplesCache.isEmpty()) {
             allSamplesCache = updatedSamples
             val readySamples = updatedSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
@@ -131,7 +166,7 @@ class MainViewModel(
             }
           } else {
             val existingIds = allSamplesCache.map { it.id }.toSet()
-            val currentUserId = auth.currentUser?.uid
+            val currentUserId = auth?.currentUser?.uid
 
             val samplesToDisplay =
                 updatedSamples.filter { sample ->
@@ -153,6 +188,7 @@ class MainViewModel(
           if (_isRefreshing.value) {
             _isRefreshing.value = false
           }
+          viewModelScope.launch { loadRecommendations() }
         }
       } catch (e: Exception) {
         Log.e("MainViewModel", "Error loading samples", e)
@@ -166,7 +202,7 @@ class MainViewModel(
     viewModelScope.launch {
       try {
         observingSampleIds.add(sampleId)
-        repo
+        sampleRepo
             .observeSample(sampleId)
             .first { updatedSample ->
               updatedSample != null && updatedSample.storagePreviewSamplePath.isNotBlank()
@@ -207,11 +243,11 @@ class MainViewModel(
 
   override fun onCleared() {
     super.onCleared()
-    auth.removeAuthStateListener(authListener)
+    auth?.removeAuthStateListener(authListener)
   }
 
   private fun observeUserProfile() {
-    val currentUser = auth.currentUser
+    val currentUser = auth?.currentUser
     if (currentUser == null) {
       _userAvatar.value = null
       return
@@ -221,6 +257,7 @@ class MainViewModel(
         // Update the user avatar
         val newAvatarUrl = profile?.avatarUrl
         _userAvatar.value = newAvatarUrl
+        _isAnonymous.value = profile?.isAnonymous ?: auth.currentUser?.isAnonymous ?: true
 
         // Update username
         val newUsername = profile?.username
@@ -254,29 +291,8 @@ class MainViewModel(
       }
     }
   }
-  /*
-   * Function to load the username.
-   */
-  fun loadUsername(userId: String) {
-    viewModelScope.launch {
-      // Check cache
-      val cached = _usernames.value[userId]
-      if (cached != null && cached != defaultName) return@launch
 
-      // Fetch latest username
-      val userName = profileRepo.getUserNameByUserId(userId) ?: defaultName
-
-      _usernames.update { it + (userId to userName) }
-    }
-  }
-
-  /** True when [ownerId] matches the currently signed-in Firebase user. */
-  fun isCurrentUser(ownerId: String?): Boolean {
-    val currentUserId = auth.currentUser?.uid ?: return false
-    return !ownerId.isNullOrBlank() && ownerId == currentUserId
-  }
-
-  fun onDownloadSample(sample: Sample) {
+  override fun onDownloadSample(sample: Sample) {
     viewModelScope.launch {
       try {
         actions?.onDownloadClicked(sample)
@@ -287,9 +303,10 @@ class MainViewModel(
     }
   }
 
-  fun onLikeClicked(sample: Sample, isLiked: Boolean) {
+  override fun onLikeClick(sample: Sample, isLiked: Boolean) {
+    if (_isAnonymous.value) return
     viewModelScope.launch {
-      val newState = actions?.onLikeClicked(sample.id, isLiked)
+      val newState = actions?.onLikeClicked(sample, isLiked)
       if (newState != null) {
         _likedSamples.value = _likedSamples.value + (sample.id to newState)
       }
@@ -302,157 +319,37 @@ class MainViewModel(
 
       val updatedStates = mutableMapOf<String, Boolean>()
       for (sample in allSamples) {
-        val liked = repo.hasUserLiked(sample.id)
+        val liked = sampleRepo.hasUserLiked(sample.id)
         updatedStates[sample.id] = liked
       }
       _likedSamples.value = updatedStates
     }
   }
 
-  fun observeCommentsForSample(sampleId: String) {
-    viewModelScope.launch {
-      repo.observeComments(sampleId).collectLatest { list ->
-        // Ensure usernames are loaded for each author
-        list.forEach { comment -> loadUsername(comment.authorId) }
-        _comments.value = list
-      }
-    }
-  }
-
   fun addComment(sampleId: String, text: String) {
+    if (_isAnonymous.value) return
     viewModelScope.launch {
       val profile = profileRepo.getCurrentProfile()
-      val authorId = profile?.uid ?: auth.currentUser?.uid ?: "unknown"
+      val authorId = profile?.uid ?: auth?.currentUser?.uid ?: "unknown"
       val authorName = profile?.username ?: defaultName
-      repo.addComment(sampleId, authorId, authorName, text.trim())
-    }
-  }
-
-  /*
-   * function to get the avatar of the sample owner.
-   */
-  private suspend fun getSampleOwnerAvatar(userId: String): String? {
-    if (avatarCache.containsKey(userId)) {
-      return avatarCache[userId]
-    }
-    val url = profileRepo.getAvatarUrlByUserId(userId)
-    avatarCache[userId] = url
-    return url
-  }
-
-  /*
-   * Function to get the user name.
-   */
-  private suspend fun getUserName(userId: String): String {
-    _usernames.value[userId]?.let {
-      return it
-    }
-
-    val userName = profileRepo.getUserNameByUserId(userId) ?: defaultName
-    _usernames.update { it + (userId to userName) }
-    return userName
-  }
-
-  /*
-   * Function to get the Download URL from the storage path.
-   */
-  private suspend fun getSampleCoverUrl(storagePath: String): String? {
-    if (storagePath.isBlank()) return null
-
-    if (coverImageCache.containsKey(storagePath)) {
-      return coverImageCache[storagePath]
-    }
-    val url = storageService.getDownloadUrl(storagePath)
-    coverImageCache[storagePath] = url
-    return url
-  }
-
-  /*
-   * Function to get the Audio URL from the storage path.
-   */
-  private suspend fun getSampleAudioUrl(sample: Sample): String? {
-    val storagePath = sample.storagePreviewSamplePath
-    if (storagePath.isBlank()) return null
-    if (audioUrlCache.containsKey(storagePath)) {
-      return audioUrlCache[storagePath]
-    }
-    val url = storageService.getDownloadUrl(storagePath)
-    audioUrlCache[storagePath] = url
-    return url
-  }
-
-  /*
-   * Retrieves the waveform for a given Sample.
-   */
-
-  private suspend fun getSampleWaveform(sample: Sample): List<Float> {
-    if (waveformCache.containsKey(sample.id)) {
-      waveformCache[sample.id]?.let {
-        return it
-      }
-    }
-    val audioUrl = getSampleAudioUrl(sample) ?: return emptyList()
-
-    return try {
-      val waveform =
-          waveformExtractor.extractWaveform(
-              context = NepTuneApplication.appContext, uri = audioUrl.toUri(), samplesCount = 100)
-
-      if (waveform.isNotEmpty()) {
-        waveformCache[sample.id] = waveform
-      }
-      waveform
-    } catch (e: Exception) {
-      Log.e("MainViewModel", "Error extracting waveform for list: ${e.message}")
-      emptyList()
-    }
-  }
-
-  /** Function to trigger loading */
-  fun loadSampleResources(sample: Sample) {
-    val currentResources = _sampleResources.value[sample.id]
-    if (currentResources != null &&
-        currentResources.loadedSamplePath == sample.storagePreviewSamplePath) {
-      return
-    }
-
-    viewModelScope.launch {
-      _sampleResources.update { current ->
-        current +
-            (sample.id to
-                (current[sample.id]?.copy(isLoading = true)
-                    ?: SampleResourceState(isLoading = true)))
-      }
-
-      val avatarUrl = getSampleOwnerAvatar(sample.ownerId)
-      val userName = getUserName(sample.ownerId)
-      val coverUrl =
-          if (sample.storageImagePath.isNotBlank()) getSampleCoverUrl(sample.storageImagePath)
-          else null
-      val audioUrl =
-          if (sample.storagePreviewSamplePath.isNotBlank()) getSampleAudioUrl(sample) else null
-      val waveform = getSampleWaveform(sample)
-
-      _sampleResources.update { current ->
-        current +
-            (sample.id to
-                SampleResourceState(
-                    ownerName = userName,
-                    ownerAvatarUrl = avatarUrl,
-                    coverImageUrl = coverUrl,
-                    audioUrl = audioUrl,
-                    waveform = waveform,
-                    isLoading = false,
-                    loadedSamplePath = sample.storagePreviewSamplePath))
-      }
+      sampleRepo.addComment(sampleId, authorId, authorName, text.trim())
     }
   }
 
   /** Function to be called when a refresh is triggered. */
   fun refresh() {
     _isRefreshing.value = true
-    allSamplesCache = emptyList()
+    // allSamplesCache = emptyList()
     loadSamplesFromFirebase()
+  }
+  /** Function to open the comment section. */
+  fun openCommentSection(sample: Sample) {
+    _activeCommentSampleId.value = sample.id
+    observeCommentsForSample(sample.id)
+  }
+  /** Function to close the comment section. */
+  fun closeCommentSection() {
+    _activeCommentSampleId.value = null
   }
 
   // Mock Data
