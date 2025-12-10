@@ -23,10 +23,10 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.database
+import com.neptune.neptune.util.RealtimeDatabaseProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -370,8 +370,7 @@ class SignInViewModel(
   private fun setupPresence(userId: String) {
     val db =
         try {
-          FirebaseDatabase.getInstance(
-              "https://neptune-e2728-default-rtdb.europe-west1.firebasedatabase.app/")
+          RealtimeDatabaseProvider.getDatabase()
         } catch (_: IllegalStateException) {
           // Not initialize in unit tests
           return

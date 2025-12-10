@@ -31,9 +31,6 @@ class SelectMessagesViewModel(
   private val _users = MutableStateFlow(emptyList<UserMessagePreview>())
   val users: StateFlow<List<UserMessagePreview>> = _users.asStateFlow()
 
-  private val _isAnonymous = MutableStateFlow(auth.currentUser?.isAnonymous ?: true)
-  val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
-
   private val userMap = mutableMapOf<String, UserMessagePreview>()
 
   init {
@@ -56,13 +53,17 @@ class SelectMessagesViewModel(
               .filter { !it.isAnonymous } // Exclude anonymous
               .forEach { profile ->
                 val existing = userMap[profile.uid]
-                userMap[profile.uid] =
-                    UserMessagePreview(
-                        profile = profile,
-                        lastMessage = existing?.lastMessage,
-                        lastTimestamp = existing?.lastTimestamp,
-                        isOnline = existing?.isOnline ?: false)
-                observeUserOnline(profile.uid)
+                if (existing == null) {
+                  userMap[profile.uid] =
+                      UserMessagePreview(
+                          profile = profile,
+                          lastMessage = null,
+                          lastTimestamp = null,
+                          isOnline = false)
+                  observeUserOnline(profile.uid)
+                } else {
+                  userMap[profile.uid] = existing.copy(profile = profile)
+                }
               }
           updateUsersState()
         }

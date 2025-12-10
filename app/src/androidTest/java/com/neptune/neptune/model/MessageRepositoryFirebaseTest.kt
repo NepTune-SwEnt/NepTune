@@ -9,6 +9,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.neptune.neptune.model.messages.MessageRepositoryFirebase
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.util.RealtimeDatabaseProvider
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -97,7 +98,7 @@ class MessageRepositoryFirebaseTest {
   }
 
   @Test
-  fun observeUserOnlineState_emitsCorrectValues() = runBlocking {
+  fun observeUserOnlineStateEmitsCorrectValues() = runBlocking {
     val uid = "user123"
 
     // Mock Firebase Realtime Database
@@ -108,10 +109,7 @@ class MessageRepositoryFirebaseTest {
     val listenerSlot = slot<ValueEventListener>()
 
     mockkStatic(FirebaseDatabase::class)
-    every {
-      FirebaseDatabase.getInstance(
-          "https://neptune-e2728-default-rtdb.europe-west1.firebasedatabase.app/")
-    } returns mockDatabase
+    every { RealtimeDatabaseProvider.getDatabase() } returns mockDatabase
 
     every { mockDatabase.getReference("status/$uid") } returns mockRef
     every { mockRef.addValueEventListener(capture(listenerSlot)) } answers { listenerSlot.captured }

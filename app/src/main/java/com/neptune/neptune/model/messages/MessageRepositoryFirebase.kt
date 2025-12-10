@@ -3,12 +3,12 @@ package com.neptune.neptune.model.messages
 import android.util.Log
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.util.RealtimeDatabaseProvider
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -76,10 +76,7 @@ class MessageRepositoryFirebase(
       }
   /** Observe online status in real time */
   override fun observeUserOnlineState(uid: String): Flow<Boolean> = callbackFlow {
-    val ref =
-        FirebaseDatabase.getInstance(
-                "https://neptune-e2728-default-rtdb.europe-west1.firebasedatabase.app/")
-            .getReference("status/$uid")
+    val ref = RealtimeDatabaseProvider.getDatabase().getReference("status/$uid")
 
     val listener =
         object : ValueEventListener {
