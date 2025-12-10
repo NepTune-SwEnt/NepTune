@@ -59,7 +59,7 @@ class SearchViewModelTest {
 
   @Test
   fun integrationLoadSamplesAndIncrementalUpdate() = runBlocking {
-      auth.signInAnonymously().await()
+    auth.signInAnonymously().await()
     clearFirestoreSamples()
 
     val audioPath = "test_samples/audio_${UUID.randomUUID()}.mp3"
