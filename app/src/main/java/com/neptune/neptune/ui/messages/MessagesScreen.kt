@@ -71,6 +71,7 @@ class MessagesViewModelFactory(private val uid: String) : ViewModelProvider.Fact
  * @param uid The ID of the user the conversation belongs to.
  * @param goBack Callback used for navigating back.
  * @param messagesViewModel Injected ViewModel.
+ * @param autoScroll AutoScroll parameter is always true. Can be optionally disabled while testing
  * @author Angéline Bignens
  */
 @Composable
