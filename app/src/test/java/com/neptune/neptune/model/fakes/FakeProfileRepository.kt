@@ -33,6 +33,10 @@ class FakeProfileRepository(
     throw UnsupportedOperationException("Not needed in this test")
   }
 
+  override fun observeAllProfiles(): Flow<List<Profile?>> {
+    throw UnsupportedOperationException("Not needed in this test")
+  }
+
   override suspend fun unfollowUser(uid: String) {
     throw UnsupportedOperationException("Not needed in this test")
   }

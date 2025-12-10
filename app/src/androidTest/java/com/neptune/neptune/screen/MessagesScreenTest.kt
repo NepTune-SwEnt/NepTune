@@ -124,6 +124,33 @@ class MessagesScreenTest {
     assertTrue(backClicked)
   }
 
+  /** Tests that u1 fake data loads correctly */
+  @Test
+  fun messagesScreenLoadsFakeDataForU1() {
+    composeTestRule.setContent { MessagesScreen(uid = "u1", goBack = {}) }
+
+    // Username
+    composeTestRule
+        .onNodeWithTag(MessagesScreenTestTags.USERNAME)
+        .assertIsDisplayed()
+        .assertTextContains("test1")
+
+    // Online indicator
+    composeTestRule.onNodeWithTag(MessagesScreenTestTags.ONLINE_INDICATOR).assertIsDisplayed()
+
+    // Messages
+    composeTestRule.waitUntil(5000) {
+      composeTestRule
+          .onAllNodesWithText("Byebye Sweetie Banana")
+          .fetchSemanticsNodes()
+          .isNotEmpty() &&
+          composeTestRule.onAllNodesWithText("Mikkaaaa").fetchSemanticsNodes().isNotEmpty()
+    }
+
+    composeTestRule.onNodeWithText("Byebye Sweetie Banana").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Mikkaaaa").assertIsDisplayed()
+  }
+
   /** Tests that u2 fake data loads correctly */
   @Test
   fun messagesScreenLoadsFakeDataForU2() {

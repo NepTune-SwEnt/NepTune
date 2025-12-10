@@ -278,11 +278,15 @@ fun NeptuneApp(
                       )
                     }
                 composable(Screen.SelectMessages.route) {
+                  val firebaseUser by signInViewModel.currentUser.collectAsState()
+                  val currentUid = firebaseUser?.uid ?: return@composable // prevent crash
+
                   SelectMessagesScreen(
                       goBack = { navigationActions.goBack() },
                       onSelectUser = { uid ->
                         navigationActions.navigateTo(Screen.Messages.createRoute(uid))
-                      })
+                      },
+                      currentUid = currentUid)
                 }
                 composable(
                     route = Screen.Messages.route,

@@ -82,6 +82,7 @@ class ProfileRepositoryFirebaseTest {
     runBlocking {
       cleanupCurrentUserDocs()
       clearFirestore()
+      cleanupAllProfilesAndUsernames()
       if (this@ProfileRepositoryFirebaseTest::auth.isInitialized) {
         runCatching { auth.signOut() }
       }
@@ -108,6 +109,15 @@ class ProfileRepositoryFirebaseTest {
     for (doc in mine.documents) {
       runCatching { await(usernames.document(doc.id).delete()) }
     }
+  }
+
+  private fun cleanupAllProfilesAndUsernames() = runBlocking {
+    val profiles = db.collection(PROFILES_COLLECTION_PATH)
+    val usernames = db.collection(USERNAMES_COLLECTION_PATH)
+
+    profiles.get().await().documents.forEach { profiles.document(it.id).delete().await() }
+
+    usernames.get().await().documents.forEach { usernames.document(it.id).delete().await() }
   }
 
   private fun getProfileDoc() =
@@ -702,5 +712,28 @@ class ProfileRepositoryFirebaseTest {
   fun searchUsersDoesNotReturnAnonymous() = runBlocking {
     val results = repo.searchUsers("anon")
     assertTrue(results.isEmpty())
+  }
+
+  @Test
+  fun observeAllProfilesUpdatesOnChange() = runBlocking {
+    cleanupAllProfilesAndUsernames()
+    db.collection(PROFILES_COLLECTION_PATH)
+        .document("u1")
+        .set(mapOf("uid" to "u1", "username" to "old", "name" to "old"))
+        .await()
+
+    repo.observeAllProfiles().test {
+      val first = awaitItem()
+      assertEquals(1, first.size)
+      assertEquals("old", first.first()!!.username)
+
+      // update profile
+      db.collection(PROFILES_COLLECTION_PATH).document("u1").update("username", "newName").await()
+
+      val second = awaitItem()
+      assertEquals("newName", second.first()!!.username)
+
+      cancelAndIgnoreRemainingEvents()
+    }
   }
 }

@@ -47,10 +47,12 @@ import com.neptune.neptune.ui.profile.profileScreenCallbacks
 import com.neptune.neptune.ui.theme.SampleAppTheme
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
+/** Tests for the ProfileScreen. This has been written with the help of LLMs. */
 class ProfileScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()
@@ -1047,6 +1049,10 @@ private class FakeOtherProfileRepository(
 
   override fun observeProfile(uid: String): Flow<Profile?> =
       if (uid == targetUserId) otherProfile else MutableStateFlow<Profile?>(null)
+
+  override fun observeAllProfiles(): Flow<List<Profile?>> {
+    return combine(currentProfile, otherProfile) { current, other -> listOf(current, other) }
+  }
 
   override suspend fun unfollowUser(uid: String) {
     unfollowRequests++
