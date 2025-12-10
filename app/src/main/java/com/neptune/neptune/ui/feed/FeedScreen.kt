@@ -181,7 +181,7 @@ private fun FeedContent(
                 val clickHandlers =
                     onClickFunctions(
                         onDownloadClick = { mainViewModel.onDownloadSample(sample) },
-                        onLikeClick = { isLiked -> mainViewModel.onLikeClicked(sample, isLiked) },
+                        onLikeClick = { isLiked -> mainViewModel.onLikeClick(sample, isLiked) },
                         onCommentClick = { mainViewModel.openCommentSection(sample) },
                         onProfileClick = {
                           if (mainViewModel.isCurrentUser(sample.ownerId)) navigateToProfile()

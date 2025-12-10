@@ -4,6 +4,7 @@ import android.net.Uri
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.UsernameTakenException
+import com.neptune.neptune.model.recommendation.RecoUserProfile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +30,10 @@ class FakeProfileRepository(
   override fun observeCurrentProfile(): Flow<Profile?> = state.asStateFlow()
 
   override fun observeProfile(uid: String): Flow<Profile?> {
+    throw UnsupportedOperationException("Not needed in this test")
+  }
+
+  override fun observeAllProfiles(): Flow<List<Profile?>> {
     throw UnsupportedOperationException("Not needed in this test")
   }
 
@@ -131,5 +136,56 @@ class FakeProfileRepository(
   override suspend fun getUserNameByUserId(userId: String): String? {
     val current = state.value
     return if (current?.uid == userId) current.username else null
+  }
+
+  override suspend fun searchUsers(query: String): List<Profile> = emptyList()
+
+  override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
+    val profile = state.value ?: return null
+
+    val tagProfile = mutableMapOf<String, Double>()
+
+    // Use stored tag weights if present
+    if (profile.tagsWeight.isNotEmpty()) {
+      for ((tag, weight) in profile.tagsWeight) {
+        if (weight > 0.0) {
+          tagProfile[tag] = weight
+        }
+      }
+    }
+
+    // Fallback: if no weights, use plain tags with weight = 1f
+    if (tagProfile.isEmpty()) {
+      for (tag in profile.tags) {
+        tagProfile[tag] = 1.0
+      }
+    }
+
+    return RecoUserProfile(uid = profile.uid, tagsWeight = tagProfile.toMap())
+  }
+
+  override suspend fun recordTagInteraction(
+      tags: List<String>,
+      likeDelta: Int,
+      downloadDelta: Int
+  ) {
+    val cur = state.value ?: return
+    if (tags.isEmpty()) return
+
+    // simple scoring: likes count full, downloads half
+    val delta = likeDelta.toDouble() + downloadDelta.toDouble() * 0.5
+    if (delta == 0.0) return
+
+    val newWeights = cur.tagsWeight.toMutableMap()
+    for (tag in tags) {
+      val prev = newWeights[tag] ?: 0.0
+      val updated = (prev + delta).coerceAtLeast(0.0)
+      newWeights[tag] = updated
+    }
+
+    // Keep tag list in sync too
+    val newTags = (cur.tags + tags).distinct()
+
+    state.value = cur.copy(tagsWeight = newWeights, tags = newTags)
   }
 }

@@ -189,7 +189,7 @@ fun MainScreen(
   val followedSamples by mainViewModel.followedSamples.collectAsState()
   val userAvatar by mainViewModel.userAvatar.collectAsState()
   val isAnonymous by mainViewModel.isAnonymous.collectAsState()
-
+  val recommendedSamples by mainViewModel.recommendedSamples.collectAsState()
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
   val wait: Long = 300
   // Depends on the size of the screen
@@ -206,8 +206,10 @@ fun MainScreen(
         Modifier
       }
 
-  if (pullRefreshState.isRefreshing) {
-    LaunchedEffect(true) { mainViewModel.refresh() }
+  LaunchedEffect(pullRefreshState.isRefreshing) {
+    if (pullRefreshState.isRefreshing) {
+      mainViewModel.refresh()
+    }
   }
   LaunchedEffect(isRefreshing) {
     if (isRefreshing) {
@@ -219,7 +221,6 @@ fun MainScreen(
       }
     }
   }
-
   fun onCommentClicked(sample: Sample) {
     mainViewModel.openCommentSection(sample)
   }
@@ -271,7 +272,7 @@ fun MainScreen(
               MainContent(
                   paddingValues = paddingValues,
                   mainViewModel = mainViewModel,
-                  discoverSamples = discoverSamples,
+                  discoverSamples = recommendedSamples.ifEmpty { discoverSamples },
                   followedSamples = followedSamples,
                   maxColumns = maxColumns,
                   onCommentClicked = { onCommentClicked(it) },
@@ -416,7 +417,7 @@ private fun SampleSectionLazyRow(
                   onClickFunctions(
                       onDownloadClick = { mainViewModel.onDownloadSample(sample) },
                       onLikeClick = { isLiked ->
-                        if (!isAnonymous) mainViewModel.onLikeClicked(sample, isLiked)
+                        if (!isAnonymous) mainViewModel.onLikeClick(sample, isLiked)
                       },
                       onCommentClick = { onCommentClick(sample) },
                       onProfileClick = { onProfileClick(sample.ownerId) },

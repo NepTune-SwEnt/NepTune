@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -24,6 +25,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.neptune.neptune.R
 import com.neptune.neptune.ui.theme.NepTuneTheme
+import com.neptune.neptune.ui.util.NeptuneTopBarTestTags.GO_BACK_BUTTON
+
+object NeptuneTopBarTestTags {
+  const val GO_BACK_BUTTON = "goBackButton"
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,12 +56,14 @@ fun NeptuneTopBar(
               textAlign = TextAlign.Center)
         },
         navigationIcon = {
-          IconButton(onClick = goBack, modifier = Modifier.padding(horizontal = 12.dp)) {
-            Icon(
-                imageVector = Icons.Default.ArrowBackIosNew,
-                contentDescription = "Go Back",
-                tint = NepTuneTheme.colors.onBackground)
-          }
+          IconButton(
+              onClick = goBack,
+              modifier = Modifier.padding(horizontal = 12.dp).testTag(GO_BACK_BUTTON)) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBackIosNew,
+                    contentDescription = "Go Back",
+                    tint = NepTuneTheme.colors.onBackground)
+              }
         },
         actions = actions,
         colors =

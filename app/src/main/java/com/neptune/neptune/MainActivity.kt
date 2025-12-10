@@ -33,9 +33,12 @@ import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInViewModel
 import com.neptune.neptune.ui.feed.FeedScreen
 import com.neptune.neptune.ui.feed.FeedType
+import com.neptune.neptune.ui.follow.FollowListRoute
+import com.neptune.neptune.ui.follow.FollowListTab
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.main.factory
+import com.neptune.neptune.ui.messages.MessagesScreen
 import com.neptune.neptune.ui.messages.SelectMessagesScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
@@ -162,7 +165,16 @@ fun NeptuneApp(
                 composable(Screen.Profile.route) {
                   SelfProfileRoute(
                       settings = { navigationActions.navigateTo(Screen.Settings) },
-                      goBack = { navigationActions.goBack() })
+                      goBack = { navigationActions.goBack() },
+                      onFollowersClick = {
+                        navigationActions.navigateTo(
+                            Screen.FollowList.createRoute(FollowListTab.FOLLOWERS))
+                      },
+                      onFollowingClick = {
+                        navigationActions.navigateTo(
+                            Screen.FollowList.createRoute(FollowListTab.FOLLOWING))
+                      },
+                  )
                 }
                 composable(
                     route = Screen.Edit.route + "/{zipFilePath}",
@@ -277,11 +289,23 @@ fun NeptuneApp(
                       )
                     }
                 composable(Screen.SelectMessages.route) {
+                  val firebaseUser by signInViewModel.currentUser.collectAsState()
+                  val currentUid = firebaseUser?.uid ?: return@composable // prevent crash
+
                   SelectMessagesScreen(
                       goBack = { navigationActions.goBack() },
-                      onSelectUser = {} // TODO: Add the Message Screen
-                      )
+                      onSelectUser = { uid ->
+                        navigationActions.navigateTo(Screen.Messages.createRoute(uid))
+                      },
+                      currentUid = currentUid)
                 }
+                composable(
+                    route = Screen.Messages.route,
+                    arguments = listOf(navArgument("uid") { type = NavType.StringType })) {
+                        backStackEntry ->
+                      val uid = backStackEntry.arguments?.getString("uid") ?: return@composable
+                      MessagesScreen(uid = uid, goBack = { navigationActions.goBack() })
+                    }
                 composable(
                     route = Screen.Feed.route,
                     arguments = listOf(navArgument("type") { type = NavType.StringType })) {
@@ -298,6 +322,30 @@ fun NeptuneApp(
                           initialType = feedType,
                           goBack = { navigationActions.goBack() },
                           navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
+                          navigateToOtherUserProfile = { userId ->
+                            navigationActions.navigateTo(
+                                Screen.OtherUserProfile.createRoute(userId))
+                          })
+                    }
+                composable(
+                    route = Screen.FollowList.route,
+                    arguments = listOf(navArgument("initialTab") { type = NavType.StringType })) {
+                        backStackEntry ->
+                      val tabName = backStackEntry.arguments?.getString("initialTab")
+                      val initialTab =
+                          try {
+                            if (tabName != null) {
+                              FollowListTab.valueOf(tabName)
+                            } else {
+                              // By default, show Followers tab
+                              FollowListTab.FOLLOWERS
+                            }
+                          } catch (_: IllegalArgumentException) {
+                            FollowListTab.FOLLOWERS
+                          }
+                      FollowListRoute(
+                          initialTab = initialTab,
+                          goBack = { navigationActions.goBack() },
                           navigateToOtherUserProfile = { userId ->
                             navigationActions.navigateTo(
                                 Screen.OtherUserProfile.createRoute(userId))

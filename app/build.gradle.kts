@@ -123,8 +123,6 @@ fun DependencyHandlerScope.globalTestImplementation(dep: Any) {
 }
 
 dependencies {
-    implementation(libs.tarsos.dsp.core)
-    implementation(libs.tarsos.dsp.jvm)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -132,6 +130,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(platform(libs.compose.bom))
     implementation(libs.androidx.room.external.antlr)
+    implementation(libs.firebase.database.ktx)
     testImplementation(libs.junit)
     globalTestImplementation(libs.androidx.junit)
     globalTestImplementation(libs.androidx.espresso.core)
@@ -174,7 +173,9 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation("com.google.firebase:firebase-analytics")
     implementation(libs.firebase.functions.ktx)
-
+    implementation(fileTree("libs") {
+        include("TarsosDSPKit-release.aar")
+    })
     // ---------- Credential Manager ------------
     implementation(libs.credentials)
     implementation(libs.credentials.play.services.auth)
@@ -225,6 +226,7 @@ dependencies {
     androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
 
     implementation("com.airbnb.android:lottie-compose:6.7.1")
+
 
     // Color picker for Compose from github
     implementation("com.godaddy.android.colorpicker:compose-color-picker:0.7.0")
