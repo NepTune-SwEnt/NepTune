@@ -8,8 +8,10 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.Transaction
 import com.google.firebase.functions.FirebaseFunctions
+import com.neptune.neptune.model.recommendation.RecoUserProfile
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -17,7 +19,10 @@ import kotlinx.coroutines.tasks.await
 
 const val PROFILES_COLLECTION_PATH = "profiles"
 const val USERNAMES_COLLECTION_PATH = "usernames"
+const val GUEST_NAME = "anonymous"
+const val TAG_WEIGHT_MAX = 50.0
 private const val DEFAULT_BIO = "Hello! New NepTune user here!"
+private const val MAX_USER_QUERY_RESULTS = 50L
 
 /**
  * Firebase-backed implementation of [ProfileRepository] using Firestore.
@@ -73,6 +78,26 @@ class ProfileRepositoryFirebase(
     // =====================================================
   }
 
+  /**
+   * Observes all the Profiles. This has been written with the help of LLMs.
+   *
+   * @author Angéline Bignens
+   */
+  override fun observeAllProfiles(): Flow<List<Profile?>> = callbackFlow {
+    val reg =
+        profiles.addSnapshotListener { snap, err ->
+          if (err != null) {
+            trySend(emptyList())
+            return@addSnapshotListener
+          }
+
+          val profilesList = snap?.documents?.map { it.toProfileOrNull() } ?: emptyList()
+          trySend(profilesList)
+        }
+
+    awaitClose { reg.remove() }
+  }
+
   override suspend fun unfollowUser(uid: String) {
     callFollowFunction(targetUid = uid, follow = false)
   }
@@ -102,6 +127,15 @@ class ProfileRepositoryFirebase(
     return if (!exists()) {
       null
     } else {
+      val tagsWeightRaw = get("tagsWeight") as? Map<*, *>
+      val tagsWeight: Map<String, Double> =
+          tagsWeightRaw
+              ?.mapNotNull { (k, v) ->
+                val tag = k as? String ?: return@mapNotNull null
+                val weight = (v as? Number)?.toDouble() ?: return@mapNotNull null
+                tag to weight
+              }
+              ?.toMap() ?: emptyMap()
       Profile(
           uid = id,
           username = getString("username").orEmpty(),
@@ -112,10 +146,35 @@ class ProfileRepositoryFirebase(
           likes = getLong("likes") ?: 0L,
           posts = getLong("posts") ?: 0L,
           tags = (get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+          tagsWeight = tagsWeight,
           avatarUrl = getString("avatarUrl").orEmpty(),
           following = (get("following") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
           isAnonymous = getBoolean("isAnonymous") ?: false)
     }
+  }
+
+  override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
+    val profile = getCurrentProfile()
+
+    // 1) Try to read tagsWeight map
+    val tagsWeightRaw = profile?.tagsWeight
+    val tagsWeight = mutableMapOf<String, Double>()
+    if (tagsWeightRaw?.isNotEmpty() == true) {
+      for ((key, value) in tagsWeightRaw) {
+        val tag = key
+        val weight = (value as? Number)?.toDouble() ?: continue
+        if (weight >= 0) {
+          tagsWeight[tag] = weight
+        }
+      }
+    }
+    if (tagsWeight.isEmpty()) {
+      val tags = profile?.tags ?: emptyList()
+      for (tag in tags) {
+        tagsWeight[tag] = 1.0
+      }
+    }
+    return RecoUserProfile(uid = requireCurrentUid(), tagsWeight = tagsWeight)
   }
 
   /**
@@ -124,6 +183,7 @@ class ProfileRepositoryFirebase(
    */
   override suspend fun ensureProfile(suggestedUsernameBase: String?, name: String?): Profile {
     val uid = requireCurrentUid()
+    val currentUser = auth.currentUser!!
     // Transaction: if profile missing, create it with a free username
     return db.runTransaction<Profile> { tx ->
           val profile = profiles.document(uid)
@@ -132,9 +192,17 @@ class ProfileRepositoryFirebase(
             // Return the profile; if malformed, fail loudly
             snap.toProfileOrNull() ?: throw IllegalStateException("Corrupted profile for uid=$uid")
           } else {
+            val isAnonymous = currentUser.isAnonymous
             val base = toUsernameBase(suggestedUsernameBase?.takeIf { it.isNotBlank() } ?: "user")
-            val username = claimFreeUsername(tx, base, uid)
-            val initialName = name?.takeIf { it.isNotBlank() } ?: username
+            val username: String
+            val initialName: String
+            if (isAnonymous) {
+              username = GUEST_NAME
+              initialName = GUEST_NAME
+            } else {
+              username = claimFreeUsername(tx, base, uid)
+              initialName = name?.takeIf { it.isNotBlank() } ?: username
+            }
 
             // Build the object that will persist and return
             val created =
@@ -166,7 +234,8 @@ class ProfileRepositoryFirebase(
                     "posts" to 0L,
                     "tags" to emptyList<String>(),
                     "following" to emptyList<String>(),
-                    "isAnonymous" to (auth.currentUser?.isAnonymous == true)))
+                    "isAnonymous" to (auth.currentUser?.isAnonymous == true),
+                    "tagsWeight" to emptyMap<String, Double>()))
 
             created
           }
@@ -347,6 +416,88 @@ class ProfileRepositoryFirebase(
     }
   }
 
+  override suspend fun recordTagInteraction(
+      tags: List<String>,
+      likeDelta: Int,
+      downloadDelta: Int
+  ) {
+    if (tags.isEmpty()) return
+
+    val uid = requireCurrentUid()
+    val profileRef = profiles.document(uid)
+
+    val delta = likeDelta * 2.0 + downloadDelta * 1.0
+    if (delta == 0.0) return
+
+    db.runTransaction { tx ->
+          val snap = tx[profileRef]
+          if (!snap.exists()) return@runTransaction
+
+          val raw = snap["tagsWeight"] as? Map<*, *> ?: emptyMap<Any, Any>()
+          val current = mutableMapOf<String, Double>()
+
+          // Safely rehydrate current map
+          for ((k, v) in raw) {
+            val tag = k as? String ?: continue
+            val weight = (v as? Number)?.toDouble() ?: continue
+            current[tag] = weight
+          }
+
+          // Apply delta to each tag
+          for (tag in tags) {
+            val key = normalizeTag(tag) // keep same normalization as your tags
+            val old = current[key] ?: 0.0
+            val updated = (old + delta).coerceIn(0.0, TAG_WEIGHT_MAX)
+            current[key] = updated
+          }
+
+          tx.update(profileRef, "tagsWeight", current as Map<String, Double>)
+        }
+        .await()
+  }
+
   /** Converts an input string to a valid username base (lowercase, alphanumeric + underscores). */
   private fun toUsernameBase(s: String) = s.lowercase().replace("[^a-z0-9_]".toRegex(), "")
+
+  /**
+   * Searches for users. If [query] is empty, returns a list of all users ordered by subscribers.
+   * Otherwise, returns users whose username OR name contains the given query, sorted by subscribers
+   * descending.
+   *
+   * WARNING: This is a very inefficient implementation that is not suitable for production. It
+   * downloads all profiles and filters them in memory. For a scalable solution, use a search
+   * service like Algolia or Elasticsearch.
+   *
+   * @param query the string to search for, or empty string for all users
+   * @return a list of matching profiles
+   */
+  override suspend fun searchUsers(query: String): List<Profile> {
+    return try {
+      if (query.isBlank()) {
+        // Return top 50 users by subscriber count
+        profiles
+            .orderBy("subscribers", Query.Direction.DESCENDING)
+            .limit(50)
+            .get()
+            .await()
+            .mapNotNull { it.toProfileOrNull() }
+            .filter { !it.isAnonymous }
+      } else {
+        val normalizedQuery = query.lowercase()
+
+        val allUsers = profiles.get().await().mapNotNull { it.toProfileOrNull() }
+
+        allUsers
+            .filter {
+              !it.isAnonymous &&
+                  (it.username.lowercase().contains(normalizedQuery) ||
+                      (it.name ?: "").lowercase().contains(normalizedQuery))
+            }
+            .sortedByDescending { it.subscribers }
+      }
+    } catch (e: Exception) {
+      Log.e("ProfileRepository", "Error searching users", e)
+      emptyList()
+    }
+  }
 }

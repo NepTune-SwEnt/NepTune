@@ -1,6 +1,7 @@
 package com.neptune.neptune.model.profile
 
 import android.net.Uri
+import com.neptune.neptune.model.recommendation.RecoUserProfile
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -42,6 +43,13 @@ interface ProfileRepository {
    * @return a flow emitting the profile, or null if missing *
    */
   fun observeProfile(uid: String): Flow<Profile?>
+
+  /**
+   * Observes all the profiles.
+   *
+   * @return a flow emitting the list of profile, or null if missing *
+   */
+  fun observeAllProfiles(): Flow<List<Profile?>>
 
   /**
    * Makes the current user unfollow the user with the given uid.
@@ -155,4 +163,18 @@ interface ProfileRepository {
 
   /** Retrieves the username of a specific user via their ID. */
   suspend fun getUserNameByUserId(userId: String): String?
+
+  /**
+   * Searches for users. If [query] is empty, returns a list of all users (limit applied).
+   * Otherwise, returns users whose username starts with the given query.
+   *
+   * @param query the prefix to search for, or empty string for all users
+   * @return a list of matching profiles
+   */
+  suspend fun searchUsers(query: String): List<Profile>
+  /** Create a profile meant for the recommendation algorithm */
+  suspend fun getCurrentRecoUserProfile(): RecoUserProfile?
+
+  /** Actions to execute when a tag interaction is recorded. */
+  suspend fun recordTagInteraction(tags: List<String>, likeDelta: Int, downloadDelta: Int)
 }

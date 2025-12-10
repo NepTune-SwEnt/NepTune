@@ -9,6 +9,7 @@ import androidx.credentials.exceptions.GetCredentialCancellationException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.database.FirebaseDatabase
 import com.neptune.neptune.ui.authentification.GoogleIdOptionFactory
 import com.neptune.neptune.ui.authentification.SignInStatus
 import com.neptune.neptune.ui.authentification.SignInViewModel
@@ -16,6 +17,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -57,6 +59,10 @@ class SignInViewModelTest {
     val mockGoogleIdOption: GetGoogleIdOption = mockk()
     every { mockGoogleIdOptionFactory.create(any()) } returns mockGoogleIdOption
 
+    mockkStatic(FirebaseDatabase::class)
+    val mockFirebaseDatabase: FirebaseDatabase = mockk(relaxed = true)
+    every { FirebaseDatabase.getInstance() } returns mockFirebaseDatabase
+
     viewModel = SignInViewModel(mockFirebaseAuth, mockGoogleIdOptionFactory)
   }
 
@@ -75,6 +81,7 @@ class SignInViewModelTest {
   fun initializeWhenUserIsSignedInNavigates() {
     val mockUser: FirebaseUser = mockk()
     every { mockFirebaseAuth.currentUser } returns mockUser
+    every { mockUser.uid } returns "testUid"
     var hasNavigated = false
     viewModel.initialize(mockCredentialManager, { hasNavigated = true }, fakeOauthClientId)
     assertEquals(mockUser, viewModel.currentUser.value)
@@ -138,6 +145,7 @@ class SignInViewModelTest {
   fun signOutClearsUserAndSetsStatus() {
     val mockUser: FirebaseUser = mockk()
     every { mockFirebaseAuth.currentUser } returns mockUser
+    every { mockUser.uid } returns "testUid"
     viewModel.initialize(mockCredentialManager, {}, fakeOauthClientId)
     viewModel.signOut()
     testDispatcher.scheduler.advanceUntilIdle()
@@ -150,6 +158,7 @@ class SignInViewModelTest {
   fun beginSignInWhenAlreadySignedInStartsNewFlow() {
     val mockUser: FirebaseUser = mockk()
     every { mockFirebaseAuth.currentUser } returns mockUser
+    every { mockUser.uid } returns "testUid"
     viewModel.initialize(mockCredentialManager, {}, fakeOauthClientId)
     viewModel.beginSignIn(mockActivity)
     assertEquals(SignInStatus.SIGN_IN_REQUESTED, viewModel.signInStatus.value)

@@ -30,7 +30,7 @@ class SearchViewModelTest {
   fun searchWithEmptyQueryLoadsAllSamples() {
     val vm =
         SearchViewModel(
-            repo = fakeSampleRepo,
+            sampleRepo = fakeSampleRepo,
             profileRepo = fakeProfileRepo,
             context = appContext,
             useMockData = true)
@@ -46,7 +46,7 @@ class SearchViewModelTest {
   fun searchMatchesByNameDescriptionAndTagsNature() {
     val vm =
         SearchViewModel(
-            repo = fakeSampleRepo,
+            sampleRepo = fakeSampleRepo,
             profileRepo = fakeProfileRepo,
             context = appContext,
             useMockData = true)
@@ -66,7 +66,7 @@ class SearchViewModelTest {
   fun searchMatchesByTagIgnoringHashAndCase() {
     val vm =
         SearchViewModel(
-            repo = fakeSampleRepo,
+            sampleRepo = fakeSampleRepo,
             profileRepo = fakeProfileRepo,
             context = appContext,
             useMockData = true)
@@ -81,7 +81,7 @@ class SearchViewModelTest {
   fun searchMatchesByDescriptionSea() {
     val vm =
         SearchViewModel(
-            repo = fakeSampleRepo,
+            sampleRepo = fakeSampleRepo,
             profileRepo = fakeProfileRepo,
             context = appContext,
             useMockData = true)
@@ -98,7 +98,7 @@ class SearchViewModelTest {
   fun consecutiveSearchesResetBaseDataEachTime() {
     val vm =
         SearchViewModel(
-            repo = fakeSampleRepo,
+            sampleRepo = fakeSampleRepo,
             profileRepo = fakeProfileRepo,
             context = appContext,
             useMockData = true)
@@ -117,7 +117,7 @@ class SearchViewModelTest {
   fun clearingQueryAfterFilterRestoresAllResults() {
     val vm =
         SearchViewModel(
-            repo = fakeSampleRepo,
+            sampleRepo = fakeSampleRepo,
             profileRepo = fakeProfileRepo,
             context = appContext,
             useMockData = true)
@@ -134,7 +134,7 @@ class SearchViewModelTest {
   fun searchWithNoMatchesReturnsEmptyList() {
     val vm =
         SearchViewModel(
-            repo = fakeSampleRepo,
+            sampleRepo = fakeSampleRepo,
             profileRepo = fakeProfileRepo,
             context = appContext,
             useMockData = true)
@@ -150,7 +150,7 @@ class SearchViewModelTest {
   fun normalizeRemovesNoiseAndLowercases() {
     val vm =
         SearchViewModel(
-            repo = fakeSampleRepo,
+            sampleRepo = fakeSampleRepo,
             profileRepo = fakeProfileRepo,
             context = appContext,
             useMockData = true)
@@ -164,7 +164,7 @@ class SearchViewModelTest {
   fun normalizeTrimsWhitespace() {
     val vm =
         SearchViewModel(
-            repo = fakeSampleRepo,
+            sampleRepo = fakeSampleRepo,
             profileRepo = fakeProfileRepo,
             context = appContext,
             useMockData = true)
@@ -175,7 +175,7 @@ class SearchViewModelTest {
   fun observeCommentsLoadsCommentsIntoViewModel() {
     val vm =
         SearchViewModel(
-            repo = fakeSampleRepo,
+            sampleRepo = fakeSampleRepo,
             profileRepo = fakeProfileRepo,
             context = appContext,
             useMockData = true)
@@ -189,7 +189,7 @@ class SearchViewModelTest {
     fakeSampleRepo.addComment(sampleId, "u1", "Alice", "Nice!", now)
     fakeSampleRepo.addComment(sampleId, "u2", "Bob", "Wow!", yesterday)
 
-    vm.observeCommentsForSample(sampleId)
+    vm.observeCommentsForSamplePublic(sampleId)
 
     val comments = vm.comments.value
     val usernames = vm.usernames.value
@@ -209,14 +209,14 @@ class SearchViewModelTest {
   fun loadUsernameUpdatesUsername() = runTest {
     val vm =
         SearchViewModel(
-            repo = fakeSampleRepo,
+            sampleRepo = fakeSampleRepo,
             profileRepo = fakeProfileRepo,
             context = appContext,
             useMockData = true)
 
     val userId = "u1"
 
-    vm.loadUsername(userId)
+    vm.loadUsernamePublic(userId)
 
     // The fake repo returns the ID as username
     assertEquals("anonymous", vm.usernames.value[userId])
@@ -226,7 +226,7 @@ class SearchViewModelTest {
   fun addCommentAddsCommentAndUpdatesUsernames() = runTest {
     val vm =
         SearchViewModel(
-            repo = fakeSampleRepo,
+            sampleRepo = fakeSampleRepo,
             profileRepo = fakeProfileRepo,
             context = appContext,
             useMockData = true)
@@ -234,7 +234,7 @@ class SearchViewModelTest {
     val sampleId = "21"
 
     // Add a new comment
-    vm.addComment(sampleId, "Hello world")
+    vm.onAddCommentPublic(sampleId, "Hello world")
 
     val comments = vm.comments.value
     val usernames = vm.usernames.value

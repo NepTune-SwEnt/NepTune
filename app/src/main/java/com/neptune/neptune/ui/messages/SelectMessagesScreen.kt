@@ -36,6 +36,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.neptune.neptune.R
@@ -59,6 +61,23 @@ object SelectMessagesScreenTestTags {
 }
 
 /**
+ * Factory used to create a [SelectMessagesViewModel] instance with a specific user ID. This has
+ * been written with the help of LLMs.
+ *
+ * @param currentUid the ID of the current user.
+ * @author Angéline Bignens
+ */
+class SelectMessagesViewModelFactory(private val currentUid: String) : ViewModelProvider.Factory {
+
+  override fun <T : ViewModel> create(modelClass: Class<T>): T {
+    if (modelClass.isAssignableFrom(SelectMessagesViewModel::class.java)) {
+      @Suppress("UNCHECKED_CAST") return SelectMessagesViewModel(currentUid) as T
+    }
+    throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+  }
+}
+
+/**
  * Composable function representing the Select Message Screen. This has been written with the help
  * of LLMs.
  *
@@ -69,7 +88,9 @@ object SelectMessagesScreenTestTags {
 fun SelectMessagesScreen(
     goBack: () -> Unit,
     onSelectUser: (String) -> Unit,
-    selectMessagesViewModel: SelectMessagesViewModel = viewModel()
+    currentUid: String,
+    selectMessagesViewModel: SelectMessagesViewModel =
+        viewModel(factory = SelectMessagesViewModelFactory(currentUid))
 ) {
   val users by selectMessagesViewModel.users.collectAsState()
   Column(
@@ -128,7 +149,7 @@ fun SelectMessagesScreen(
           LazyColumn(
               modifier = Modifier.fillMaxSize().testTag(SelectMessagesScreenTestTags.USER_LIST),
               verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                items(users) { user ->
+                items(users, key = { it.profile.uid }) { user ->
                   UserMessagePreviewRow(user = user, onClick = { onSelectUser(user.uid) })
                 }
               }
@@ -161,13 +182,19 @@ fun UserMessagePreviewRow(user: UserMessagePreview, onClick: () -> Unit) {
           // Online / Offline dot
           Box(
               modifier =
-                  Modifier.size(12.dp)
+                  Modifier.size(14.dp)
                       .clip(CircleShape)
-                      .background(
-                          color =
-                              if (user.isOnline) NepTuneTheme.colors.online
-                              else NepTuneTheme.colors.offline)
-                      .testTag(SelectMessagesScreenTestTags.ONLINE_INDICATOR))
+                      .background(NepTuneTheme.colors.background)
+                      .padding(2.dp)) {
+                Box(
+                    modifier =
+                        Modifier.fillMaxSize()
+                            .clip(CircleShape)
+                            .background(
+                                if (user.isOnline) NepTuneTheme.colors.online
+                                else NepTuneTheme.colors.offline)
+                            .testTag(SelectMessagesScreenTestTags.ONLINE_INDICATOR))
+              }
         }
 
         Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {

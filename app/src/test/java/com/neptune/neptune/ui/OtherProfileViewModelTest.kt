@@ -9,6 +9,7 @@ import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.model.recommendation.RecoUserProfile
 import com.neptune.neptune.ui.profile.OtherProfileViewModel
 import com.neptune.neptune.utils.MainDispatcherRule
 import kotlin.test.assertEquals
@@ -17,6 +18,7 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -189,6 +191,9 @@ private class FollowToggleTestRepository(
 
   override fun observeProfile(uid: String): Flow<Profile?> = otherProfileState
 
+  override fun observeAllProfiles(): Flow<List<Profile?>> =
+      combine(otherProfileState, currentProfileState) { other, current -> listOf(other, current) }
+
   override suspend fun unfollowUser(uid: String) {
     unfollowCalls.add(uid)
   }
@@ -250,5 +255,19 @@ private class FollowToggleTestRepository(
 
   override suspend fun getUserNameByUserId(userId: String): String? {
     throw UnsupportedOperationException("Not needed in this test")
+  }
+
+  override suspend fun searchUsers(query: String): List<Profile> = emptyList()
+
+  override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
+    TODO("Not yet implemented")
+  }
+
+  override suspend fun recordTagInteraction(
+      tags: List<String>,
+      likeDelta: Int,
+      downloadDelta: Int
+  ) {
+    TODO("Not yet implemented")
   }
 }

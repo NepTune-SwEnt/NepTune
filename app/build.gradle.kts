@@ -145,6 +145,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(platform(libs.compose.bom))
     implementation(libs.androidx.room.external.antlr)
+    implementation(libs.firebase.database.ktx)
     testImplementation(libs.junit)
     globalTestImplementation(libs.androidx.junit)
     globalTestImplementation(libs.androidx.espresso.core)
@@ -242,6 +243,8 @@ dependencies {
     implementation("com.airbnb.android:lottie-compose:6.7.1")
 
 
+    // Color picker for Compose from github
+    implementation("com.godaddy.android.colorpicker:compose-color-picker:0.7.0")
 }
 
 tasks.withType<Test> {

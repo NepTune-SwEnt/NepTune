@@ -42,11 +42,13 @@ import com.neptune.neptune.ui.theme.NepTuneTheme
  *   state, such as the current theme. Defaults to the ViewModel provided by `viewModel()`.
  * @param goBack A lambda function to be invoked when the user clicks the back button, typically
  *   used for navigation.
+ * @param goCustomTheme A lambda invoked when the user wants to open the custom theme editor.
  */
 @Composable
 fun SettingsThemeScreen(
     settingsViewModel: SettingsViewModel = viewModel(),
     goBack: () -> Unit = {},
+    goCustomTheme: () -> Unit = {},
 ) {
   Scaffold(
       topBar = {
@@ -68,13 +70,13 @@ fun SettingsThemeScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp),
         ) {
-          item { ThemeSettingsSection(settingsViewModel) }
+          item { ThemeSettingsSection(settingsViewModel, goCustomTheme) }
         }
       }
 }
 
 @Composable
-private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel) {
+private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel, goCustomTheme: () -> Unit) {
   val selectedTheme by settingsViewModel.theme.collectAsState()
 
   Column {
@@ -95,7 +97,12 @@ private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel) {
             Modifier.fillMaxWidth()
                 .selectable(
                     selected = (selectedTheme == theme),
-                    onClick = { settingsViewModel.updateTheme(theme) },
+                    onClick = {
+                      settingsViewModel.updateTheme(theme)
+                      if (theme == ThemeSetting.CUSTOM) {
+                        goCustomTheme()
+                      }
+                    },
                     role = Role.RadioButton)
                 .padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically) {
@@ -110,6 +117,7 @@ private fun ThemeSettingsSection(settingsViewModel: SettingsViewModel) {
                           ThemeSetting.SYSTEM -> "System Default"
                           ThemeSetting.LIGHT -> "Light"
                           ThemeSetting.DARK -> "Dark"
+                          ThemeSetting.CUSTOM -> "Custom"
                         }
                       }(),
                   style =

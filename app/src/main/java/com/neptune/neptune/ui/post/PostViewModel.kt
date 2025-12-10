@@ -44,6 +44,9 @@ class PostViewModel(
   val localImageUri: StateFlow<Uri?> = _localImageUri.asStateFlow()
 
   private val _localZipUri = MutableStateFlow<Uri?>(null)
+  private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+  val isAnonymous: Boolean
+    get() = auth.currentUser?.isAnonymous ?: true
 
   /** Loads a project by its ID and converts it into a Sample. */
   fun loadProject(projectId: String) {
@@ -149,7 +152,7 @@ class PostViewModel(
 
   /** Submits the post */
   fun submitPost() {
-    if (_uiState.value.isUploading) {
+    if (isAnonymous || _uiState.value.isUploading) {
       return
     }
     val currentZipUri = _localZipUri.value

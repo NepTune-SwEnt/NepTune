@@ -1,6 +1,8 @@
 package com.neptune.neptune.ui.navigation
 
 import androidx.navigation.NavHostController
+import com.neptune.neptune.ui.feed.FeedType
+import com.neptune.neptune.ui.follow.FollowListTab
 
 /**
  * Screens used in the app. Each screen is a destination in the navigation graph. Bottom bar and
@@ -16,6 +18,10 @@ sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
     fun createRoute(encodedZipFilePath: String): String {
       return "edit_screen/$encodedZipFilePath"
     }
+  }
+
+  object Feed : Screen("feed/{type}") {
+    fun createRoute(type: FeedType): String = "feed/${type.name}"
   }
 
   object Search : Screen(route = "search")
@@ -34,6 +40,10 @@ sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
     fun createRoute(userId: String) = "other_user_profile/$userId"
   }
 
+  object Messages : Screen("messages/{uid}", showBottomBar = false) {
+    fun createRoute(uid: String) = "messages/$uid"
+  }
+
   object SignIn : Screen(route = "signIn", showBottomBar = false)
 
   object Settings : Screen(route = "setting", showBottomBar = false)
@@ -42,9 +52,15 @@ sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
 
   object SettingsAccount : Screen(route = "settings_account", showBottomBar = false)
 
+  object SettingsCustomTheme : Screen(route = "settings_custom_theme", showBottomBar = false)
+
   object ImportFile : Screen(route = "import_file")
 
   object SelectMessages : Screen(route = "select_messages", showBottomBar = false)
+
+  object FollowList : Screen(route = "follow_list/{initialTab}", showBottomBar = false) {
+    fun createRoute(initialTab: FollowListTab): String = "follow_list/${initialTab.name}"
+  }
 }
 
 /**
@@ -65,15 +81,18 @@ open class NavigationActions(
   fun currentScreen(route: String?): Screen {
     return when {
       route == null -> Screen.SignIn
+      route.startsWith("follow_list/") -> Screen.FollowList
       route.startsWith("edit_screen/") -> Screen.Edit
       route.startsWith("post/") -> Screen.Post
       route.startsWith("project_list/") -> Screen.ProjectList
+      route.startsWith("messages/") -> Screen.Messages
       route == Screen.Main.route -> Screen.Main
       route == Screen.Profile.route -> Screen.Profile
       route == Screen.Search.route -> Screen.Search
       route == Screen.SignIn.route -> Screen.SignIn
       route == Screen.Settings.route -> Screen.Settings
       route == Screen.SettingsTheme.route -> Screen.SettingsTheme
+      route == Screen.SettingsCustomTheme.route -> Screen.SettingsCustomTheme
       route == Screen.SettingsAccount.route -> Screen.SettingsAccount
       route == Screen.ImportFile.route -> Screen.ImportFile
       route == Screen.OtherUserProfile.route -> Screen.OtherUserProfile

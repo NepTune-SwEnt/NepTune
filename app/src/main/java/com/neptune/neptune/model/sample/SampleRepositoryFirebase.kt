@@ -3,9 +3,14 @@ package com.neptune.neptune.model.sample
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import kotlin.String
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
@@ -18,7 +23,7 @@ const val SAMPLES_COLLECTION_PATH = "samples"
  * Handles loading, observing, and updating samples stored under `samples/{sampleId}`. This has been
  * written with the help of LLMs.
  *
- * @author Angéline Bignens
+ * @authors Angéline Bignens, Tony Andriamampianina
  */
 class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleRepository {
   private val samples = db.collection(SAMPLES_COLLECTION_PATH)
@@ -177,7 +182,104 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
 
   /** Adds a new sample (for testing). */
   override suspend fun addSample(sample: Sample) {
-    samples.document(sample.id).set(sample.toMap()).await()
+    val data = sample.toMap().toMutableMap()
+    data["creationTime"] = FieldValue.serverTimestamp()
+    samples.document(sample.id).set(data).await()
+  }
+  /**
+   * Fetches the most recent [limit] samples ordered by creationTime desc. This is only used in
+   * tests, for now, keep it for later use in production.
+   */
+  override suspend fun getLatestSamples(limit: Int): List<Sample> {
+    val snap =
+        samples
+            .orderBy("creationTime", Query.Direction.DESCENDING)
+            .limit(limit.toLong())
+            .get()
+            .await()
+    return snap.documents.mapNotNull { it.toSampleOrNull() }
+  }
+  /**
+   * Fetches trending samples based on a combined popularity score:
+   *
+   * trending = downloads + 2 * likes
+   *
+   * Firestore can't sort by computed fields, so we fetch a batch ordered by downloads, compute
+   * scores locally, and then return the top [limit]. This is only used in tests, for now, keep it
+   * for later use in production.
+   */
+  override suspend fun getTrendingSamples(limit: Int): List<Sample> {
+    // Fetch a big enough window to compute trending properly
+    val snap =
+        samples
+            .orderBy("downloads", Query.Direction.DESCENDING)
+            .limit((limit * 3).toLong()) // fetch more, then filter
+            .get()
+            .await()
+
+    val all = snap.documents.mapNotNull { it.toSampleOrNull() }
+
+    // Compute trending score
+    val scored =
+        all.map { sample ->
+          val score = sample.downloads + sample.likes * 2 // trending formula
+          sample to score
+        }
+
+    // Sort by score desc & return only top "limit"
+    return scored.sortedByDescending { it.second }.take(limit).map { it.first }
+  }
+  /**
+   * Restraint to samples with tags loved by user and sort by recency This is only used in tests,
+   * for now, keep it for later use in production.
+   */
+  override suspend fun getSamplesByTags(tags: List<String>, perTagLimit: Int): List<Sample> =
+      coroutineScope {
+        if (tags.isEmpty()) return@coroutineScope emptyList()
+
+        // Normalize + dedupe tags
+        val distinctTags = tags.map { it.trim().lowercase() }.filter { it.isNotEmpty() }.distinct()
+
+        if (distinctTags.isEmpty()) return@coroutineScope emptyList()
+
+        // Firestore: whereArrayContainsAny supports up to 10 values
+        val chunks = distinctTags.chunked(10)
+
+        val deferredResults =
+            chunks.map { chunk ->
+              async {
+                try {
+                  val snapshot =
+                      samples
+                          .whereArrayContainsAny("tags", chunk)
+                          .orderBy("creationTime", Query.Direction.DESCENDING)
+                          // rough upper bound: perTagLimit * number of tags in this chunk
+                          .limit((perTagLimit * chunk.size).toLong())
+                          .get()
+                          .await()
+
+                  snapshot.documents.mapNotNull { it.toSampleOrNull() }
+                } catch (_: Exception) {
+                  // Fail soft for one chunk, don't kill the whole call
+                  emptyList<Sample>()
+                }
+              }
+            }
+
+        val allSamples = deferredResults.awaitAll().flatten()
+
+        // Deduplicate by id, preserving first (most recent) occurrence
+        val byId = LinkedHashMap<String, Sample>()
+        for (sample in allSamples) {
+          if (!byId.containsKey(sample.id)) {
+            byId[sample.id] = sample
+          }
+        }
+
+        // Final sort by creationTime desc (in case different chunks overlapped)
+        byId.values.sortedByDescending {
+          it.creationTime
+        } // adjust getter if your field is named differently
   }
 
   /** Converts a Firestore [DocumentSnapshot] to a [Sample] instance, or null if missing. */
@@ -200,7 +302,8 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
         usersLike = (get("usersLike") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
         storageZipPath = getString("storageZipPath").orEmpty(),
         storageImagePath = getString("storageImagePath").orEmpty(),
-        storagePreviewSamplePath = getString("storagePreviewSamplePath").orEmpty())
+        storagePreviewSamplePath = getString("storagePreviewSamplePath").orEmpty(),
+        creationTime = getTimestamp("creationTime")?.toDate()?.time ?: 0L)
   }
 
   private fun Sample.toMap(): Map<String, Any> =
