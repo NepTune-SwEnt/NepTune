@@ -9,14 +9,6 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import be.tarsos.dsp.AudioDispatcher
-import be.tarsos.dsp.AudioEvent
-import be.tarsos.dsp.AudioProcessor
-import be.tarsos.dsp.PitchShifter
-import be.tarsos.dsp.io.TarsosDSPAudioFormat
-import be.tarsos.dsp.io.TarsosDSPAudioInputStream
-import be.tarsos.dsp.io.android.AndroidAudioInputStream
-import be.tarsos.dsp.io.android.AudioDispatcherFactory
 import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.project.AudioFileMetadata
@@ -817,45 +809,53 @@ open class SamplerViewModel() : ViewModel() {
     return deferred.await()
   }
 
-  private fun processAudio(
-      currentAudioUri: Uri?,
-      eqBands: List<Float>,
-      reverbWet: Float,
-      reverbSize: Float,
-      reverbWidth: Float,
-      reverbDepth: Float,
-      reverbPredelay: Float,
-      semitones: Int = 0
-  ): Uri? {
+    private external fun pitchShiftNative(samples: FloatArray, semitones: Int): FloatArray
 
-    if (currentAudioUri == null) return null
-
-    // 1. Decode Audio: Convert source URI (MP3/WAV) to raw PCM samples (FloatArray)
-    val audioData = decodeAudioToPCM(currentAudioUri) ?: return null
-    var (samples, sampleRate, channelCount) = audioData
-
-    // 2. Apply EQ: Parametric equalization is applied non-destructively to the samples
-    samples = applyEQFilters(samples, sampleRate, eqBands)
-
-    // 3. Apply pitch shift
-    if (semitones != 0) {
-      Log.d(
-          "SamplerViewModel",
-          "processAudio: semitones=$semitones sampleRate=$sampleRate inSamples=${samples.size} durationSec=${samples.size.toDouble()/sampleRate}")
-      samples = pitchShift(samples, semitones)
-      Log.d("SamplerViewModel", "after pitchShift: samples=${samples.size}")
+    companion object {
+        init {
+            try {
+                System.loadLibrary("sampler_jni")
+                Log.d("SamplerViewModel", "Librairie Native SoundTouch chargée.")
+            } catch (e: Exception) {
+                Log.e("SamplerViewModel", "Échec du chargement de la librairie native: ${e.message}")
+            }
+        }
     }
 
-    // 3. Apply Reverb: Reverb is applied on top of the EQ'd signal
+    private fun processAudio(
+        currentAudioUri: Uri?,
+        eqBands: List<Float>,
+        reverbWet: Float,
+        reverbSize: Float,
+        reverbWidth: Float,
+        reverbDepth: Float,
+        reverbPredelay: Float,
+        semitones: Int = 0
+    ): Uri? {
+
+        if (currentAudioUri == null) return null
+
+        val audioData = decodeAudioToPCM(currentAudioUri) ?: return null
+        var (samples, sampleRate, channelCount) = audioData
+
+        samples = applyEQFilters(samples, sampleRate, eqBands)
+
+        if (semitones != 0) {
+            Log.d(
+                "SamplerViewModel",
+                "processAudio: Démarrage PitchShift SoundTouch (semitones=$semitones)...")
+
+            samples = pitchShiftNative(samples, semitones)
+
+            Log.d("SamplerViewModel", "après pitchShift: échantillons=${samples.size} (durée conservée!)")
+        }
+
     samples =
         applyReverb(
             samples, sampleRate, reverbWet, reverbSize, reverbWidth, reverbDepth, reverbPredelay)
 
-    // 4. Encode and Save: Prepare the output file path
     val originalName = currentAudioUri.lastPathSegment ?: DEFAULT_AUDIO_BASENAME
     val base = originalName.substringBeforeLast(".")
-    // Output file is saved in the app's cache directory (safe location for temporary/processed
-    // files)
     val out = File(context.cacheDir, "${base}_processed.wav")
 
     Log.d(
