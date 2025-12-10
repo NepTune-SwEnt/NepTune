@@ -3,7 +3,6 @@ package com.neptune.neptune.ui.follow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -23,7 +22,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -38,12 +36,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.neptune.neptune.R
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
@@ -71,6 +76,12 @@ private val LIST_ITEMS_VERTICAL_SPACING = 8.dp
 private val LIST_ITEMS_HORIZONTAL_SPACING = 14.dp
 private val AVATAR_SIZE = 44.dp
 private val CIRCULAR_PROGRESS_SIZE = 16.dp
+
+private fun appTextStyle(fontSize: TextUnit = 18.sp) =
+    TextStyle(
+        fontSize = fontSize,
+        fontWeight = FontWeight(400),
+        fontFamily = FontFamily(Font(R.font.markazi_text)))
 
 @Composable
 fun FollowListRoute(
@@ -146,7 +157,7 @@ fun FollowListScreen(
                         FollowListTab.FOLLOWING -> "Following"
                       },
                   modifier = Modifier.testTag(FollowListScreenTestTags.TITLE),
-                  style = MaterialTheme.typography.titleMedium,
+                  style = appTextStyle(40.sp),
                   color = NepTuneTheme.colors.onBackground,
               )
             }
@@ -163,12 +174,12 @@ fun FollowListScreen(
                     selected = state.activeTab == FollowListTab.FOLLOWERS,
                     onClick = { onTabSelected(FollowListTab.FOLLOWERS) },
                     modifier = Modifier.testTag(FollowListScreenTestTags.TAB_FOLLOWERS),
-                    text = { Text("Followers") })
+                    text = { Text("Followers", style = appTextStyle()) })
                 Tab(
                     selected = state.activeTab == FollowListTab.FOLLOWING,
                     onClick = { onTabSelected(FollowListTab.FOLLOWING) },
                     modifier = Modifier.testTag(FollowListScreenTestTags.TAB_FOLLOWING),
-                    text = { Text("Following") })
+                    text = { Text("Following", style = appTextStyle()) })
               }
 
           if (isLoading) {
@@ -228,7 +239,7 @@ private fun FollowListRow(
         Column(modifier = Modifier.weight(1f)) {
           Text(
               text = user.username,
-              style = MaterialTheme.typography.bodyLarge,
+              style = appTextStyle(),
               color = NepTuneTheme.colors.onBackground,
               modifier = Modifier.clickable(onClick = onUserClick))
         }
@@ -248,7 +259,7 @@ private fun FollowListRow(
                 CircularProgressIndicator(
                     modifier = Modifier.size(CIRCULAR_PROGRESS_SIZE), color = Color.White)
               } else {
-                Text(buttonLabel)
+                Text(buttonLabel, style = appTextStyle())
               }
             }
       }
@@ -269,21 +280,13 @@ private fun Avatar(
           .background(NepTuneTheme.colors.onBackground)
           .clickable(onClick = onClick)
 
-  if (avatarUrl.isNullOrBlank()) {
-    Box(modifier = avatarModifier, contentAlignment = Alignment.Center) {
-      Icon(
-          imageVector = Icons.Default.Person,
-          contentDescription = "Avatar placeholder",
-          tint = NepTuneTheme.colors.onBackground)
-    }
-  } else {
-    AsyncImage(
-        model = ImageRequest.Builder(LocalContext.current).data(avatarUrl).crossfade(true).build(),
-        contentDescription = "Avatar for $username",
-        modifier = avatarModifier,
-        placeholder = placeholderPainter,
-        error = placeholderPainter)
-  }
+  val model = avatarUrl?.takeUnless { it.isEmpty() } ?: R.drawable.profile
+  AsyncImage(
+      model = ImageRequest.Builder(LocalContext.current).data(model).crossfade(true).build(),
+      contentDescription = "Avatar for $username",
+      modifier = avatarModifier,
+      placeholder = placeholderPainter,
+      error = placeholderPainter)
 }
 
 @Composable
@@ -292,12 +295,12 @@ private fun EmptyState(onRefresh: () -> Unit) {
       modifier = Modifier.fillMaxSize().testTag(FollowListScreenTestTags.LIST_EMPTY),
       verticalArrangement = Arrangement.Center,
       horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("Nothing here yet", color = NepTuneTheme.colors.onBackground)
+        Text("Nothing here yet", color = NepTuneTheme.colors.onBackground, style = appTextStyle())
         Spacer(modifier = Modifier.height(LIST_ITEMS_VERTICAL_SPACING))
         Button(
             onClick = onRefresh,
             modifier = Modifier.testTag(FollowListScreenTestTags.LIST_EMPTY_REFRESH)) {
-              Text("Refresh")
+              Text("Refresh", style = appTextStyle())
             }
       }
 }

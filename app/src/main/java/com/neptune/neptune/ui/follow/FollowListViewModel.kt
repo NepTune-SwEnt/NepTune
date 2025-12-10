@@ -38,8 +38,11 @@ class FollowListViewModel(
   }
 
   fun refresh() {
-    loadFollowers()
-    loadFollowing()
+    if (_uiState.value.isCurrentUserAnonymous) return
+    when (_uiState.value.activeTab) {
+      FollowListTab.FOLLOWERS -> loadFollowers()
+      FollowListTab.FOLLOWING -> loadFollowing()
+    }
   }
 
   private fun currentList(isFollowers: Boolean): List<FollowListUserItem> =
@@ -142,10 +145,6 @@ class FollowListViewModel(
               avatarUrl = SAMPLE_AVATAR,
               isFollowedByCurrentUser = true),
       )
-
-  private fun fakeEmptyFollowing(): List<FollowListUserItem> = emptyList()
-
-  private fun fakeEmptyFollowers(): List<FollowListUserItem> = emptyList()
 
   companion object {
     private const val SAMPLE_AVATAR =
