@@ -12,12 +12,17 @@ import kotlinx.coroutines.flow.flowOf
 class FakeProfileRepository(initial: Profile? = null) : ProfileRepository {
 
   private var profile: Profile? = initial
+  private val profiles = mutableListOf<Profile>()
 
   // Map userId -> username for testing
   private val usernames = mutableMapOf<String, String>()
 
   fun setUsernameForTest(userId: String, username: String) {
     usernames[userId] = username
+  }
+
+  fun addProfileForTest(profile: Profile) {
+    profiles.add(profile)
   }
 
   override suspend fun getCurrentProfile(): Profile? = profile
@@ -31,11 +36,11 @@ class FakeProfileRepository(initial: Profile? = null) : ProfileRepository {
   }
 
   override suspend fun unfollowUser(uid: String) {
-    throw UnsupportedOperationException("Not needed in this test")
+    // No-op for now
   }
 
   override suspend fun followUser(uid: String) {
-    throw UnsupportedOperationException("Not needed in this test")
+    // No-op for now
   }
 
   override suspend fun ensureProfile(
@@ -107,6 +112,10 @@ class FakeProfileRepository(initial: Profile? = null) : ProfileRepository {
 
     // Otherwise check test usernames map
     return usernames[userId]
+  }
+
+  override suspend fun searchUsers(query: String): List<Profile> {
+    return profiles.filter { it.username.contains(query, ignoreCase = true) }
   }
 
   override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {

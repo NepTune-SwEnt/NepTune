@@ -157,6 +157,14 @@ interface ProfileRepository {
   /** Retrieves the username of a specific user via their ID. */
   suspend fun getUserNameByUserId(userId: String): String?
 
+  /**
+   * Searches for users. If [query] is empty, returns a list of all users (limit applied).
+   * Otherwise, returns users whose username starts with the given query.
+   *
+   * @param query the prefix to search for, or empty string for all users
+   * @return a list of matching profiles
+   */
+  suspend fun searchUsers(query: String): List<Profile>
   /** Create a profile meant for the recommendation algorithm */
   suspend fun getCurrentRecoUserProfile(): RecoUserProfile?
 
