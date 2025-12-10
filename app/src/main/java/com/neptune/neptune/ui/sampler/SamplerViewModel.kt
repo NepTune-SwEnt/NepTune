@@ -837,34 +837,33 @@ open class SamplerViewModel() : ViewModel() {
     return deferred.await()
   }
 
-    private external fun pitchShiftNative(samples: FloatArray, semitones: Int): FloatArray
+  private external fun pitchShiftNative(samples: FloatArray, semitones: Int): FloatArray
 
-    companion object {
-        init {
-            try {
-                System.loadLibrary("sampler_jni")
-                Log.d("SamplerViewModel", "Librairie Native SoundTouch chargée.")
-            } catch (e: Exception) {
-                Log.e("SamplerViewModel", "Échec du chargement de la librairie native: ${e.message}")
-            }
-        }
+  companion object {
+    init {
+      try {
+        System.loadLibrary("sampler_jni")
+        Log.d("SamplerViewModel", "Librairie Native SoundTouch chargée.")
+      } catch (e: Exception) {
+        Log.e("SamplerViewModel", "Échec du chargement de la librairie native: ${e.message}")
+      }
     }
+  }
 
-    private fun processAudio(
-        currentAudioUri: Uri?,
-        eqBands: List<Float>,
-        reverbWet: Float,
-        reverbSize: Float,
-        reverbWidth: Float,
-        reverbDepth: Float,
-        reverbPredelay: Float,
-        semitones: Int = 0,
-        attack: Float = 0f,
-        decay: Float = 0f,
-        sustain: Float = 1f,
-        release: Float = 0f
-
-    ): Uri? {
+  private fun processAudio(
+      currentAudioUri: Uri?,
+      eqBands: List<Float>,
+      reverbWet: Float,
+      reverbSize: Float,
+      reverbWidth: Float,
+      reverbDepth: Float,
+      reverbPredelay: Float,
+      semitones: Int = 0,
+      attack: Float = 0f,
+      decay: Float = 0f,
+      sustain: Float = 1f,
+      release: Float = 0f
+  ): Uri? {
     if (currentAudioUri == null) return null
 
     // 1. Decode Audio: Convert source URI (MP3/WAV) to raw PCM samples (FloatArray)
@@ -874,15 +873,15 @@ open class SamplerViewModel() : ViewModel() {
     // 2. Apply EQ: Parametric equalization is applied non-destructively to the samples
     samples = applyEQFilters(samples, sampleRate, eqBands)
 
-        if (semitones != 0) {
-            Log.d(
-                "SamplerViewModel",
-                "processAudio: Démarrage PitchShift SoundTouch (semitones=$semitones)...")
+    if (semitones != 0) {
+      Log.d(
+          "SamplerViewModel",
+          "processAudio: Démarrage PitchShift SoundTouch (semitones=$semitones)...")
 
-            samples = pitchShiftNative(samples, semitones)
+      samples = pitchShiftNative(samples, semitones)
 
-            Log.d("SamplerViewModel", "après pitchShift: échantillons=${samples.size} (durée conservée!)")
-        }
+      Log.d("SamplerViewModel", "après pitchShift: échantillons=${samples.size} (durée conservée!)")
+    }
     samples = applyADSR(samples, sampleRate, attack, decay, sustain, release)
 
     // 3. Apply Reverb: Reverb is applied on top of the EQ'd signal
