@@ -316,13 +316,13 @@ private suspend fun getSampleCoverUrl(storagePath: String): String? {
     viewModelScope.launch {
         try {
             this@SearchViewModel.sampleRepo.observeSamples().collectLatest { samples ->
-        val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
-        allSamples.value = readySamples
-        readySamples.forEach { loadSampleResources(it) }
-        applyFilter(query)
-        refreshLikeStates()
-      }
-            }catch (e: Exception) {
+                val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
+                allSamples.value = readySamples
+                readySamples.forEach { loadSampleResources(it) }
+                applyFilter(query)
+                refreshLikeStates()
+            }
+        }catch (e: Exception) {
                 Log.e("SearchViewModel", "Error loading samples (Offline?)", e)
             }
         }
