@@ -70,8 +70,8 @@ interface SampleRepository {
       sampleId: String,
       authorId: String,
       authorName: String,
-      authorProfilePicUrl: String,
-      text: String
+      text: String,
+      authorProfilePicUrl: String = "",
   )
 
   /**
