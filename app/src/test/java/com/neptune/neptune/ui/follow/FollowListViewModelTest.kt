@@ -60,7 +60,7 @@ class FollowListViewModelTest {
       }
 
   @Test
-  fun refreshPopulatesFollowersAndFollowing() =
+  fun refreshLoadsActiveTabOnlyThenLoadsOtherWhenRequested() =
       runTest(dispatcher) {
         mockAuth()
         val viewModel =
@@ -69,11 +69,23 @@ class FollowListViewModelTest {
 
         advanceUntilIdle()
 
-        val state = viewModel.uiState.value
-        assertEquals(5, state.followers.size)
-        assertEquals(4, state.following.size)
-        assertFalse(state.isLoadingFollowers)
-        assertFalse(state.isLoadingFollowing)
+        // Initial load (followers tab active) populates only followers
+        val afterFollowersLoad = viewModel.uiState.value
+        assertEquals(5, afterFollowersLoad.followers.size)
+        assertEquals(0, afterFollowersLoad.following.size)
+        assertFalse(afterFollowersLoad.isLoadingFollowers)
+        assertFalse(afterFollowersLoad.isLoadingFollowing)
+
+        // Switch to following tab and refresh to load that list
+        viewModel.selectTab(FollowListTab.FOLLOWING)
+        viewModel.refresh()
+        advanceUntilIdle()
+
+        val afterFollowingLoad = viewModel.uiState.value
+        assertEquals(4, afterFollowingLoad.following.size)
+        assertEquals(5, afterFollowingLoad.followers.size)
+        assertFalse(afterFollowingLoad.isLoadingFollowers)
+        assertFalse(afterFollowingLoad.isLoadingFollowing)
       }
 
   @Test
