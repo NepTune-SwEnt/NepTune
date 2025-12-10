@@ -69,10 +69,10 @@ import com.neptune.neptune.R
 import com.neptune.neptune.data.rememberImagePickerLauncher
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
-import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.feed.sampleFeedItems
 import com.neptune.neptune.ui.main.CommentDialog
+import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.NetworkConnectivityObserver
 
@@ -281,7 +281,7 @@ private fun ProfileViewContent(
     localAvatarUri: Uri?,
     goBack: () -> Unit,
     viewConfig: ProfileViewConfig,
-    profileSamplesViewModel: ProfileSamplesViewModel
+    profileSamplesViewModel: ProfileSamplesViewModel,
     isOnline: Boolean = true,
     isUserLoggedIn: Boolean = true
 ) {
@@ -325,143 +325,144 @@ private fun ProfileViewContent(
             Modifier.fillMaxSize()
                 .padding(innerPadding)
                 .testTag(ProfileScreenTestTags.VIEW_CONTENT)) {
-            Column(modifier = Modifier.fillMaxSize()) {
+              Column(modifier = Modifier.fillMaxSize()) {
                 if (!isOnline && isUserLoggedIn) {
-                    OfflineBanner()
+                  OfflineBanner()
                 }
-              LazyColumn(
-                  modifier =
-                      Modifier.fillMaxSize().padding(bottom = 88.dp).then(samplesListTagModifier),
-                  horizontalAlignment = Alignment.CenterHorizontally,
-              ) {
-                item { Spacer(Modifier.height(AvatarVerticalSpacing)) }
+                LazyColumn(
+                    modifier =
+                        Modifier.fillMaxSize().padding(bottom = 88.dp).then(samplesListTagModifier),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                  item { Spacer(Modifier.height(AvatarVerticalSpacing)) }
 
-                // Avatar image
-                item {
-                  val avatarModel =
-                      localAvatarUri ?: state.avatarUrl ?: R.drawable.ic_avatar_placeholder
-                  Avatar(
-                      avatarModel,
-                      modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
-                      showEditPencil = false)
-                }
-
-                item { Spacer(Modifier.height(AvatarVerticalSpacing)) }
-
-                // Name and username
-                item {
-                  Text(
-                      text = state.name,
-                      color = NepTuneTheme.colors.onBackground,
-                      style = MaterialTheme.typography.headlineMedium,
-                      textAlign = TextAlign.Center,
-                      modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
-                }
-                item {
-                  Text(
-                      text = "@${state.username}",
-                      color = NepTuneTheme.colors.onBackground,
-                      style = MaterialTheme.typography.bodyMedium,
-                      modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
-                }
-                item { Spacer(Modifier.height(SectionVerticalSpacing)) }
-
-                // Stats row
-                item {
-                  StatRow(
-                      state = state,
-                      onFollowersClick = viewConfig.onFollowersClick,
-                      onFollowingClick = viewConfig.onFollowingClick)
-                }
-                item { Spacer(Modifier.height(SectionVerticalSpacing)) }
-
-                // if view mode is for other users profile, show follow button
-                viewConfig.belowStatsButton?.let { button -> item { button() } }
-
-                // Bio
-                item {
-                  Text(
-                      text = if (state.bio != "") "“${state.bio}”" else "",
-                      color = NepTuneTheme.colors.onBackground,
-                      style = MaterialTheme.typography.titleLarge,
-                      textAlign = TextAlign.Center,
-                      modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
-                }
-
-                // Tags
-                if (state.tags.isNotEmpty()) {
-                  item { Spacer(Modifier.height(TagsSpacing)) }
+                  // Avatar image
                   item {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(TagsSpacing),
-                        verticalArrangement = Arrangement.spacedBy(TagsSpacing),
-                        modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_VIEW_SECTION)) {
-                          state.tags.forEach { tag ->
-                            InputChip(
-                                selected = false,
-                                onClick = {},
-                                enabled = false,
-                                label = { Text(tag) },
-                                colors =
-                                    InputChipDefaults.inputChipColors(
-                                        disabledContainerColor = NepTuneTheme.colors.cardBackground,
-                                        disabledLabelColor = NepTuneTheme.colors.onBackground),
-                                border =
-                                    InputChipDefaults.inputChipBorder(
-                                        borderWidth = 0.dp, enabled = false, selected = false))
-                          }
-                        }
+                    val avatarModel =
+                        localAvatarUri ?: state.avatarUrl ?: R.drawable.ic_avatar_placeholder
+                    Avatar(
+                        model = avatarModel,
+                        modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
+                        showEditPencil = false)
                   }
-                }
 
-                item { Spacer(Modifier.height(SectionVerticalSpacing)) }
+                  item { Spacer(Modifier.height(AvatarVerticalSpacing)) }
 
-                // Posted samples section
-                item {
-                  Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Posted samples",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = NepTuneTheme.colors.onBackground)
-                    Spacer(Modifier.height(SamplesSpacing))
-                  }
-                }
-
-                if (samples.isEmpty()) {
+                  // Name and username
                   item {
                     Text(
-                        text = "No samples posted yet.",
+                        text = state.name,
+                        color = NepTuneTheme.colors.onBackground,
+                        style = MaterialTheme.typography.headlineMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
+                  }
+                  item {
+                    Text(
+                        text = "@${state.username}",
+                        color = NepTuneTheme.colors.onBackground,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = NepTuneTheme.colors.onBackground)
+                        modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
                   }
-                } else {
-                  sampleFeedItems(
-                      samples = samples,
-                      controller = profileSamplesViewModel,
-                      mediaPlayer = mediaPlayer,
-                      likedSamples = likedSamples,
-                      sampleResources = sampleResources,
-                      navigateToProfile = {},
-                      navigateToOtherUserProfile = {},
-                      testTagsForSample = {
-                        object : BaseSampleTestTags {
-                          override val prefix = "sampleList"
-                        }
-                      },
-                      width = cardWidth,
-                      height = cardHeight)
-                }
-              }
+                  item { Spacer(Modifier.height(SectionVerticalSpacing)) }
 
-              activeCommentSampleId?.let { activeId ->
-                CommentDialog(
-                    sampleId = activeId,
-                    comments = comments,
-                    usernames = usernames,
-                    onDismiss = { profileSamplesViewModel.resetCommentSampleId() },
-                    onAddComment = { id, text -> profileSamplesViewModel.onAddComment(id, text) })
-              }
+                  // Stats row
+                  item {
+                    StatRow(
+                        state = state,
+                        onFollowersClick = viewConfig.onFollowersClick,
+                        onFollowingClick = viewConfig.onFollowingClick)
+                  }
+                  item { Spacer(Modifier.height(SectionVerticalSpacing)) }
+
+                  // if view mode is for other users profile, show follow button
+                  viewConfig.belowStatsButton?.let { button -> item { button() } }
+
+                  // Bio
+                  item {
+                    Text(
+                        text = if (state.bio != "") "“${state.bio}”" else "",
+                        color = NepTuneTheme.colors.onBackground,
+                        style = MaterialTheme.typography.titleLarge,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
+                  }
+
+                  // Tags
+                  if (state.tags.isNotEmpty()) {
+                    item { Spacer(Modifier.height(TagsSpacing)) }
+                    item {
+                      FlowRow(
+                          horizontalArrangement = Arrangement.spacedBy(TagsSpacing),
+                          verticalArrangement = Arrangement.spacedBy(TagsSpacing),
+                          modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_VIEW_SECTION)) {
+                            state.tags.forEach { tag ->
+                              InputChip(
+                                  selected = false,
+                                  onClick = {},
+                                  enabled = false,
+                                  label = { Text(tag) },
+                                  colors =
+                                      InputChipDefaults.inputChipColors(
+                                          disabledContainerColor =
+                                              NepTuneTheme.colors.cardBackground,
+                                          disabledLabelColor = NepTuneTheme.colors.onBackground),
+                                  border =
+                                      InputChipDefaults.inputChipBorder(
+                                          borderWidth = 0.dp, enabled = false, selected = false))
+                            }
+                          }
+                    }
+                  }
+
+                  item { Spacer(Modifier.height(SectionVerticalSpacing)) }
+
+                  // Posted samples section
+                  item {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                      Text(
+                          text = "Posted samples",
+                          style = MaterialTheme.typography.headlineSmall,
+                          color = NepTuneTheme.colors.onBackground)
+                      Spacer(Modifier.height(SamplesSpacing))
+                    }
+                  }
+
+                  if (samples.isEmpty()) {
+                    item {
+                      Text(
+                          text = "No samples posted yet.",
+                          style = MaterialTheme.typography.bodyMedium,
+                          color = NepTuneTheme.colors.onBackground)
+                    }
+                  } else {
+                    sampleFeedItems(
+                        samples = samples,
+                        controller = profileSamplesViewModel,
+                        mediaPlayer = mediaPlayer,
+                        likedSamples = likedSamples,
+                        sampleResources = sampleResources,
+                        navigateToProfile = {},
+                        navigateToOtherUserProfile = {},
+                        testTagsForSample = {
+                          object : BaseSampleTestTags {
+                            override val prefix = "sampleList"
+                          }
+                        },
+                        width = cardWidth,
+                        height = cardHeight)
+                  }
                 }
+
+                activeCommentSampleId?.let { activeId ->
+                  CommentDialog(
+                      sampleId = activeId,
+                      comments = comments,
+                      usernames = usernames,
+                      onDismiss = { profileSamplesViewModel.resetCommentSampleId() },
+                      onAddComment = { id, text -> profileSamplesViewModel.onAddComment(id, text) })
+                }
+              }
 
               // if mode is self profile, show edit button
               viewConfig.bottomScreenButton?.invoke(Modifier.align(Alignment.BottomCenter))
@@ -745,9 +746,9 @@ private fun StatRow(
  */
 @Composable
 fun Avatar(
+    modifier: Modifier = Modifier,
     model: Any,
     sizeDp: Int = 120,
-    modifier: Modifier = Modifier,
     showEditPencil: Boolean,
     onEditClick: () -> Unit = {}
 ) {
@@ -889,8 +890,7 @@ fun SelfProfileRoute(
               onFollowersClick()
             }
           },
-          isOnline = isOnline
-      )
+          isOnline = isOnline)
 
   ProfileScreen(
       uiState = state,
@@ -953,9 +953,9 @@ fun OtherUserProfileRoute(
   val otherProfileViewModel: OtherProfileViewModel = viewModel(factory = factory)
   val samplesViewModel: ProfileSamplesViewModel = viewModel(factory = samplesFactory)
   val state by otherProfileViewModel.uiState.collectAsState()
-    val isOnline by remember { NetworkConnectivityObserver().isOnline }.collectAsState(initial = true)
+  val isOnline by remember { NetworkConnectivityObserver().isOnline }.collectAsState(initial = true)
 
-    val viewConfig =
+  val viewConfig =
       ProfileViewConfig.OtherProfileConfig(
           isFollowing = state.isCurrentUserFollowing,
           isFollowActionInProgress = state.isFollowActionInProgress,

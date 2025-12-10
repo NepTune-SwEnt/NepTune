@@ -22,11 +22,6 @@ import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.neptune.neptune.util.NetworkConnectivityObserver
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ServerValue
-import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.database
 import com.neptune.neptune.util.RealtimeDatabaseProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -181,8 +176,8 @@ class SignInViewModel(
         if (isNetworkAvailable) {
           // logged and network
           _signInStatus.value = SignInStatus.SUCCESS
-            setupPresence(initialUser.uid)
-            navigateMain()
+          setupPresence(initialUser.uid)
+          navigateMain()
         } else {
           // logged but no network
           signOut()

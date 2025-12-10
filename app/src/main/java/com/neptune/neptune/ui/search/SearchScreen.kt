@@ -180,85 +180,86 @@ fun SearchScreen(
   val comments by searchViewModel.comments.collectAsState()
   val isOnline by searchViewModel.isOnline.collectAsState()
   Box(modifier = Modifier.fillMaxSize()) {
-      if (!isOnline) {
-          OfflineScreen()
-      } else {
-    Scaffold(
-        containerColor = NepTuneTheme.colors.background,
-        modifier = Modifier.testTag(SearchScreenTestTags.SEARCH_SCREEN),
-        topBar = {
-          Row(
-              modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-              verticalAlignment = Alignment.CenterVertically,
-              horizontalArrangement = Arrangement.SpaceBetween) {
-                // SearchBar (Takes all remaining space)
-                Box(modifier = Modifier.weight(1f)) {
-                  SearchBar(
-                      searchText,
-                      { searchText = it },
-                      SearchScreenTestTags.SEARCH_BAR,
-                      whatToSearchFor)
-                }
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                val roundShapePercentage = 50
-                OutlinedButton(
-                    onClick = { searchViewModel.toggleSearchType() },
-                    border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground),
-                    shape = RoundedCornerShape(roundShapePercentage),
-                    colors =
-                        ButtonDefaults.outlinedButtonColors(
-                            contentColor = NepTuneTheme.colors.onBackground),
-                    modifier = Modifier.height(36.dp).width(100.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp)) {
-                      Text(
-                          text = "See ${searchType.toggle().title}",
-                          style =
-                              TextStyle(
-                                  fontSize = 16.sp,
-                                  fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                  fontWeight = FontWeight.Bold,
-                                  textAlign = androidx.compose.ui.text.style.TextAlign.Center),
-                          maxLines = 1)
-                    }
-              }
-        },
-        content = { pd ->
-          if (searchType == SearchType.SAMPLES) {
-            ScrollableColumnOfSamples(
-                samples = samples,
-                searchViewModel = searchViewModel,
-                modifier = Modifier.padding(pd),
-                mediaPlayer = mediaPlayer,
-                likedSamples = likedSamples,
-                activeCommentSampleId = activeCommentSampleId,
-                comments = comments,
-                navigateToProfile = navigateToProfile,
-                navigateToOtherUserProfile = navigateToOtherUserProfile,
-                sampleResources = sampleResources)
-          } else {
-            ScrollableColumnOfUsers(
-                users = userResults,
-                followingIds = followingIds,
-                currentUserId = currentUserProfile?.uid ?: "",
-                onFollowToggle = { uid, isFollowing ->
-                  searchViewModel.toggleFollow(uid, isFollowing)
-                },
-                navigateToOtherUserProfile = { uid ->
-                  if (searchViewModel.isCurrentUser(uid)) {
-                    navigateToProfile()
-                  } else {
-                    navigateToOtherUserProfile(uid)
+    if (!isOnline) {
+      OfflineScreen()
+    } else {
+      Scaffold(
+          containerColor = NepTuneTheme.colors.background,
+          modifier = Modifier.testTag(SearchScreenTestTags.SEARCH_SCREEN),
+          topBar = {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween) {
+                  // SearchBar (Takes all remaining space)
+                  Box(modifier = Modifier.weight(1f)) {
+                    SearchBar(
+                        searchText,
+                        { searchText = it },
+                        SearchScreenTestTags.SEARCH_BAR,
+                        whatToSearchFor)
                   }
-                },
-                modifier = Modifier.padding(pd))
-          }
-        })
-    if (downloadProgress != null && downloadProgress != 0) {
-      DownloadProgressBar(downloadProgress = downloadProgress!!, SearchScreenTestTags.DOWNLOAD_BAR)
+
+                  Spacer(modifier = Modifier.width(8.dp))
+
+                  val roundShapePercentage = 50
+                  OutlinedButton(
+                      onClick = { searchViewModel.toggleSearchType() },
+                      border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground),
+                      shape = RoundedCornerShape(roundShapePercentage),
+                      colors =
+                          ButtonDefaults.outlinedButtonColors(
+                              contentColor = NepTuneTheme.colors.onBackground),
+                      modifier = Modifier.height(36.dp).width(100.dp),
+                      contentPadding = PaddingValues(horizontal = 8.dp)) {
+                        Text(
+                            text = "See ${searchType.toggle().title}",
+                            style =
+                                TextStyle(
+                                    fontSize = 16.sp,
+                                    fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center),
+                            maxLines = 1)
+                      }
+                }
+          },
+          content = { pd ->
+            if (searchType == SearchType.SAMPLES) {
+              ScrollableColumnOfSamples(
+                  samples = samples,
+                  searchViewModel = searchViewModel,
+                  modifier = Modifier.padding(pd),
+                  mediaPlayer = mediaPlayer,
+                  likedSamples = likedSamples,
+                  activeCommentSampleId = activeCommentSampleId,
+                  comments = comments,
+                  navigateToProfile = navigateToProfile,
+                  navigateToOtherUserProfile = navigateToOtherUserProfile,
+                  sampleResources = sampleResources)
+            } else {
+              ScrollableColumnOfUsers(
+                  users = userResults,
+                  followingIds = followingIds,
+                  currentUserId = currentUserProfile?.uid ?: "",
+                  onFollowToggle = { uid, isFollowing ->
+                    searchViewModel.toggleFollow(uid, isFollowing)
+                  },
+                  navigateToOtherUserProfile = { uid ->
+                    if (searchViewModel.isCurrentUser(uid)) {
+                      navigateToProfile()
+                    } else {
+                      navigateToOtherUserProfile(uid)
+                    }
+                  },
+                  modifier = Modifier.padding(pd))
+            }
+          })
+      if (downloadProgress != null && downloadProgress != 0) {
+        DownloadProgressBar(
+            downloadProgress = downloadProgress!!, SearchScreenTestTags.DOWNLOAD_BAR)
+      }
     }
-          }
   }
 }
 
