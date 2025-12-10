@@ -257,7 +257,8 @@ private fun FollowListRow(
             modifier = Modifier.testTag(FollowListScreenTestTags.FOLLOW_BUTTON)) {
               if (user.isActionInProgress) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(CIRCULAR_PROGRESS_SIZE), color = Color.White)
+                    modifier = Modifier.size(CIRCULAR_PROGRESS_SIZE),
+                    color = NepTuneTheme.colors.onBackground)
               } else {
                 Text(buttonLabel, style = appTextStyle())
               }
