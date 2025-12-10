@@ -7,6 +7,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
 import com.neptune.neptune.R
 import com.neptune.neptune.data.storage.StorageService
+import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.model.sample.Sample
@@ -18,11 +19,26 @@ import com.neptune.neptune.ui.main.SampleUiActions
 import com.neptune.neptune.util.DownloadDirectoryProvider
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 const val NATURE_TAG = "#nature"
+
+enum class SearchType(val title: String) {
+  SAMPLES("Samples"),
+  USERS("Users");
+
+  fun toggle(): SearchType {
+    return if (this == SAMPLES) USERS else SAMPLES
+  }
+}
 /**
  * Search ViewModel Handles search logic, data loading, and user interactions for the Search Screen.
  * Uses: SampleRepository to fetch samples and manage likes/comments. Includes: Firebase
@@ -65,7 +81,76 @@ open class SearchViewModel(
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
   private val allSamples = MutableStateFlow<List<Sample>>(emptyList())
+  // Search Type State
+  private val _searchType = MutableStateFlow(SearchType.SAMPLES)
+  val searchType: StateFlow<SearchType> = _searchType.asStateFlow()
 
+  // User search results
+  private val _userResults = MutableStateFlow<List<Profile>>(emptyList())
+  val userResults: StateFlow<List<Profile>> = _userResults.asStateFlow()
+
+  // Current User Profile (to track following list)
+  // Logic: Observe the current user flow. If a user is logged in, observe their profile.
+  // If no user is logged in, emit null.
+  val currentUserProfile: StateFlow<Profile?> =
+      _currentUserFlow
+          .flatMapLatest { user ->
+            if (user == null) {
+              flowOf(null)
+            } else {
+              profileRepo.observeProfile(user.uid)
+            }
+          }
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+  // Local state for following IDs to ensure instant UI updates
+  private val _followingIds = MutableStateFlow<Set<String>>(emptySet())
+  val followingIds: StateFlow<Set<String>> = _followingIds.asStateFlow()
+
+  fun toggleSearchType() {
+    _searchType.update { it.toggle() }
+    // Re-trigger search with the new type
+    search(query)
+  }
+
+  fun toggleFollow(userId: String, isFollowing: Boolean) {
+    // 1. Optimistic update for the Button (following state) to keep UI responsive
+    val currentFollowing = _followingIds.value
+    val newFollowing =
+        if (isFollowing) {
+          currentFollowing - userId
+        } else {
+          currentFollowing + userId
+        }
+    _followingIds.value = newFollowing
+
+    // 2. Perform network request and update follower count ONLY after processing
+    viewModelScope.launch {
+      try {
+        if (isFollowing) {
+          profileRepo.unfollowUser(userId)
+        } else {
+          profileRepo.followUser(userId)
+        }
+
+        // Action processed successfully: Now update the follower count in the list
+        _userResults.update { currentList ->
+          currentList.map { profile ->
+            if (profile.uid == userId) {
+              val newCount = if (isFollowing) profile.subscribers - 1 else profile.subscribers + 1
+              profile.copy(subscribers = newCount)
+            } else {
+              profile
+            }
+          }
+        }
+      } catch (e: Exception) {
+        Log.e("SearchViewModel", "Failed to toggle follow for $userId", e)
+        // Revert optimistic button update on failure
+        _followingIds.value = currentFollowing
+      }
+    }
+  }
   // ---------- Actions (download, etc.) – disabled in tests ----------
   val downloadProgress = MutableStateFlow<Int?>(null)
 
@@ -96,6 +181,27 @@ open class SearchViewModel(
     if (auth != null && authListener != null) {
       auth.addAuthStateListener(authListener)
     }
+
+    // Observe current user profile to keep following list in sync with server
+    // FIX: Using flatMapLatest to safely handle the case where currentUser is null
+    viewModelScope.launch {
+      _currentUserFlow
+          .flatMapLatest { user ->
+            if (user != null) {
+              profileRepo.observeProfile(user.uid)
+            } else {
+              flowOf(null)
+            }
+          }
+          .collectLatest { profile ->
+            if (profile != null) {
+              _followingIds.value = profile.following.toSet()
+            } else {
+              _followingIds.value = emptySet()
+            }
+          }
+    }
+
     load(useMockData)
   }
 
@@ -210,7 +316,19 @@ open class SearchViewModel(
 
   open fun search(query: String) {
     this.query = query
-    applyFilter(query)
+    viewModelScope.launch {
+      if (_searchType.value == SearchType.SAMPLES) {
+        applyFilter(query)
+      } else {
+        // Perform user search via ProfileRepository
+        try {
+          _userResults.value = profileRepo.searchUsers(query)
+        } catch (e: Exception) {
+          Log.e("SearchViewModel", "User search failed", e)
+          _userResults.value = emptyList()
+        }
+      }
+    }
   }
 
   // Normalizes text by converting it to lowercase and removing non-alphanumeric characters.
