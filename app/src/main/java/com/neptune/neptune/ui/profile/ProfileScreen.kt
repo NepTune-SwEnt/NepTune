@@ -183,11 +183,15 @@ sealed interface ProfileViewConfig {
   val topBarContent: (@Composable () -> Unit)?
   val belowStatsButton: (@Composable () -> Unit)?
   val bottomScreenButton: (@Composable (modifier: Modifier) -> Unit)?
+  val onFollowingClick: (() -> Unit)?
+  val onFollowersClick: (() -> Unit)?
 
   data class SelfProfileConfig(
       private val onEdit: () -> Unit,
       private val settings: () -> Unit,
       val canEditProfile: Boolean = true,
+      override val onFollowingClick: (() -> Unit)? = null,
+      override val onFollowersClick: (() -> Unit)? = null,
   ) : ProfileViewConfig {
     override val topBarContent = @Composable { SettingsButton(settings) }
     override val belowStatsButton = null
@@ -215,6 +219,8 @@ sealed interface ProfileViewConfig {
       val canFollowTarget: Boolean = true,
       private val onFollow: () -> Unit,
       private val errorMessage: String?,
+      override val onFollowingClick: (() -> Unit)? = null,
+      override val onFollowersClick: (() -> Unit)? = null,
   ) : ProfileViewConfig {
     override val topBarContent = null
     override val belowStatsButton: @Composable () -> Unit = composable@{
@@ -345,7 +351,12 @@ private fun ProfileViewContent(
                 item { Spacer(Modifier.height(SectionVerticalSpacing)) }
 
                 // Stats row
-                item { StatRow(state) }
+                item {
+                  StatRow(
+                      state = state,
+                      onFollowersClick = viewConfig.onFollowersClick,
+                      onFollowingClick = viewConfig.onFollowingClick)
+                }
                 item { Spacer(Modifier.height(SectionVerticalSpacing)) }
 
                 // if view mode is for other users profile, show follow button
@@ -660,7 +671,11 @@ fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, testTag:
 }
 
 @Composable
-private fun StatRow(state: SelfProfileUiState) {
+private fun StatRow(
+    state: SelfProfileUiState,
+    onFollowersClick: (() -> Unit)? = null,
+    onFollowingClick: (() -> Unit)? = null
+) {
   Row(Modifier.fillMaxWidth()) {
     StatBlock(
         label = "Posts",
@@ -675,12 +690,26 @@ private fun StatRow(state: SelfProfileUiState) {
     StatBlock(
         label = "Followers",
         value = state.subscribers,
-        modifier = Modifier.weight(1f),
+        modifier =
+            Modifier.weight(1f).let { base ->
+              if (!state.isAnonymousUser && onFollowersClick != null) {
+                base.clickable { onFollowersClick() }
+              } else {
+                base
+              }
+            },
         testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
     StatBlock(
         label = "Following",
         value = state.subscriptions,
-        modifier = Modifier.weight(1f),
+        modifier =
+            Modifier.weight(1f).let { base ->
+              if (!state.isAnonymousUser && onFollowingClick != null) {
+                base.clickable { onFollowingClick() }
+              } else {
+                base
+              }
+            },
         testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
   }
 }
@@ -771,8 +800,12 @@ fun EditableTagChip(tagText: String, onRemove: (String) -> Unit, modifier: Modif
  * This method was made using AI assistance
  */
 @Composable
-fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
-
+fun SelfProfileRoute(
+    settings: () -> Unit = {},
+    goBack: () -> Unit = {},
+    onFollowersClick: () -> Unit = {},
+    onFollowingClick: () -> Unit = {}
+) {
   val context = LocalContext.current.applicationContext
   val auth = FirebaseAuth.getInstance()
   val ownerId = auth.currentUser?.uid.orEmpty()
@@ -825,7 +858,18 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
       ProfileViewConfig.SelfProfileConfig(
           onEdit = viewModel::onEditClick,
           settings = settings,
-          canEditProfile = !state.isAnonymousUser)
+          canEditProfile = !state.isAnonymousUser,
+          onFollowingClick = {
+            if (!state.isAnonymousUser) {
+              onFollowingClick()
+            }
+          },
+          onFollowersClick = {
+            if (!state.isAnonymousUser) {
+              onFollowersClick()
+            }
+          },
+      )
 
   ProfileScreen(
       uiState = state,
@@ -883,16 +927,16 @@ fun OtherUserProfileRoute(
         }
       }
 
-  val viewModel: OtherProfileViewModel = viewModel(factory = factory)
+  val otherProfileViewModel: OtherProfileViewModel = viewModel(factory = factory)
   val samplesViewModel: ProfileSamplesViewModel = viewModel(factory = samplesFactory)
-  val state by viewModel.uiState.collectAsState()
+  val state by otherProfileViewModel.uiState.collectAsState()
 
   val viewConfig =
       ProfileViewConfig.OtherProfileConfig(
           isFollowing = state.isCurrentUserFollowing,
           isFollowActionInProgress = state.isFollowActionInProgress,
           canFollowTarget = !state.profile.isAnonymousUser && !state.isCurrentUserAnonymous,
-          onFollow = viewModel::onFollow,
+          onFollow = otherProfileViewModel::onFollow,
           errorMessage = state.errorMessage)
 
   ProfileScreen(

@@ -32,7 +32,7 @@ class FakeProfileRepository(initial: Profile? = null) : ProfileRepository {
   override fun observeCurrentProfile(): Flow<Profile?> = flowOf(profile)
 
   override fun observeProfile(uid: String): Flow<Profile?> {
-    throw UnsupportedOperationException("Not needed in this test")
+    return flowOf(profile)
   }
 
   override fun observeAllProfiles(): Flow<List<Profile?>> {
