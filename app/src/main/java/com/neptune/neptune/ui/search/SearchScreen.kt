@@ -233,36 +233,38 @@ fun SearchScreen(
                   if (!isOnline) {
                       OfflineBanner()
                   }
-            if (searchType == SearchType.SAMPLES) {
-              ScrollableColumnOfSamples(
-                  samples = samples,
-                  searchViewModel = searchViewModel,
-                  modifier = Modifier.padding(pd),
-                  mediaPlayer = mediaPlayer,
-                  likedSamples = likedSamples,
-                  activeCommentSampleId = activeCommentSampleId,
-                  comments = comments,
-                  navigateToProfile = navigateToProfile,
-                  navigateToOtherUserProfile = navigateToOtherUserProfile,
-                  sampleResources = sampleResources)
-            } else {
-              ScrollableColumnOfUsers(
-                  users = userResults,
-                  followingIds = followingIds,
-                  currentUserId = currentUserProfile?.uid ?: "",
-                  onFollowToggle = { uid, isFollowing ->
-                    searchViewModel.toggleFollow(uid, isFollowing)
-                  },
-                  navigateToOtherUserProfile = { uid ->
-                    if (searchViewModel.isCurrentUser(uid)) {
-                      navigateToProfile()
-                    } else {
-                      navigateToOtherUserProfile(uid)
-                    }
-                  },
-                  modifier = Modifier.padding(pd))
-            }
+                  if (searchType == SearchType.SAMPLES) {
+                      ScrollableColumnOfSamples(
+                          samples = samples,
+                          searchViewModel = searchViewModel,
+                          modifier = Modifier.padding(pd),
+                          mediaPlayer = mediaPlayer,
+                          likedSamples = likedSamples,
+                          activeCommentSampleId = activeCommentSampleId,
+                          comments = comments,
+                          navigateToProfile = navigateToProfile,
+                          navigateToOtherUserProfile = navigateToOtherUserProfile,
+                          sampleResources = sampleResources
+                      )
+                  } else {
+                      ScrollableColumnOfUsers(
+                          users = userResults,
+                          followingIds = followingIds,
+                          currentUserId = currentUserProfile?.uid ?: "",
+                          onFollowToggle = { uid, isFollowing ->
+                              searchViewModel.toggleFollow(uid, isFollowing)
+                          },
+                          navigateToOtherUserProfile = { uid ->
+                              if (searchViewModel.isCurrentUser(uid)) {
+                                  navigateToProfile()
+                              } else {
+                                  navigateToOtherUserProfile(uid)
+                              }
+                          },
+                          modifier = Modifier.padding(pd)
+                      )
                   }
+              }
           })
       if (downloadProgress != null && downloadProgress != 0) {
         DownloadProgressBar(

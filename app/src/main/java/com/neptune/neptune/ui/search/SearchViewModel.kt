@@ -30,6 +30,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.collections.forEach
+import kotlin.collections.ifEmpty
 import kotlin.collections.set
 
 const val NATURE_TAG = "#nature"
@@ -120,7 +122,13 @@ open class SearchViewModel(
     try {
       val observer = NetworkConnectivityObserver()
       viewModelScope.launch {
-        observer.isOnline.collect { isConnected -> _isOnline.value = isConnected }
+        observer.isOnline.collectLatest { isConnected ->
+          _isOnline.value = isConnected
+          if (isConnected) {
+            load(useMockData)
+            refreshAllResources()
+          }
+        }
       }
     } catch (e: Exception) {
       Log.e("SearchViewModel", "Network observer init failed", e)
@@ -232,6 +240,11 @@ open class SearchViewModel(
     load(useMockData)
   }
 
+    private fun refreshAllResources() {
+        val currentList = allSamplesCache.ifEmpty { allSamples.value }
+        currentList.forEach { sample -> loadSampleResources(sample) }
+    }
+
 private suspend fun getSampleOwnerAvatar(userId: String): String? {
     if (avatarCache.containsKey(userId)) return avatarCache[userId]
     val url = profileRepo.getAvatarUrlByUserId(userId)
@@ -254,12 +267,95 @@ private suspend fun getSampleCoverUrl(storagePath: String): String? {
     return url
 }
 
+  private suspend fun getSampleAudioUrl(sample: Sample): String? {
+    val storagePath = sample.storagePreviewSamplePath
+    if (storagePath.isBlank()) return null
+    if (audioUrlCache.containsKey(storagePath)) return audioUrlCache[storagePath]
+
+    val url = actions?.getDownloadUrl(storagePath) ?: return null
+    audioUrlCache[storagePath] = url
+    return url
+  }
+
+  private suspend fun getSampleWaveform(sample: Sample): List<Float> {
+    if (waveformCache.containsKey(sample.id))
+        waveformCache[sample.id]?.let {
+          return it
+        }
+
+    val audioUrl = getSampleAudioUrl(sample) ?: return emptyList()
+
+    return try {
+      val waveform =
+          WaveformExtractor()
+              .extractWaveform(context = context, uri = audioUrl.toUri(), samplesCount = 100)
+      if (waveform.isNotEmpty()) {
+        waveformCache[sample.id] = waveform
+      }
+      waveform
+    } catch (e: Exception) {
+      Log.e("SearchViewModel", "Waveform error: ${e.message}")
+      emptyList()
+    }
+  }
+
+  /** Function to trigger loading */
+  fun loadSampleResources(sample: Sample) {
+    val currentResources = _sampleResources.value[sample.id]
+    val isAudioMissing =
+        sample.storagePreviewSamplePath.isNotBlank() && currentResources?.audioUrl == null
+    if (!isAudioMissing &&
+        currentResources != null &&
+        currentResources.loadedSamplePath == sample.storagePreviewSamplePath) {
+      return
+    }
+
+    viewModelScope.launch {
+      try {
+        _sampleResources.update { current ->
+          current +
+              (sample.id to
+                  (current[sample.id]?.copy(isLoading = true)
+                      ?: SampleResourceState(isLoading = true)))
+        }
+
+        val avatarUrl = getSampleOwnerAvatar(sample.ownerId)
+        val userName = getUserName(sample.ownerId)
+        val coverUrl =
+            if (sample.storageImagePath.isNotBlank()) getSampleCoverUrl(sample.storageImagePath)
+            else null
+        val audioUrl =
+            if (sample.storagePreviewSamplePath.isNotBlank()) getSampleAudioUrl(sample) else null
+        val waveform = getSampleWaveform(sample)
+
+        _sampleResources.update { current ->
+          current +
+              (sample.id to
+                  SampleResourceState(
+                      ownerName = userName,
+                      ownerAvatarUrl = avatarUrl,
+                      coverImageUrl = coverUrl,
+                      audioUrl = audioUrl,
+                      waveform = waveform,
+                      isLoading = false,
+                      loadedSamplePath = sample.storagePreviewSamplePath))
+        }
+      } catch (e: Exception) {
+        Log.e("SearchViewModel", "Failed to load resources for ${sample.name}", e)
+        _sampleResources.update { current ->
+          val state = current[sample.id] ?: SampleResourceState()
+          current + (sample.id to state.copy(isLoading = false))
+        }
+      }
+    }
+  }
+
     override fun onCleared() {
         super.onCleared()
         if (auth != null && authListener != null) {
             auth.removeAuthStateListener(authListener)
+        }
     }
-  }
 
   // ---------- Data loading ----------
 
