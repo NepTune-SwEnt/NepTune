@@ -66,11 +66,12 @@ open class SearchViewModel(
     SampleFeedController {
 
   // ---------- Firebase auth (disabled in tests when useMockData = true) ----------
+  private val effectiveAuth = if (useMockData) null else auth ?: FirebaseAuth.getInstance()
 
   private val _currentUserFlow = MutableStateFlow(auth?.currentUser)
 
   private val authListener: FirebaseAuth.AuthStateListener? =
-      auth?.let {
+      effectiveAuth?.let {
         FirebaseAuth.AuthStateListener { fbAuth ->
           _currentUserFlow.value = fbAuth.currentUser
           if (fbAuth.currentUser != null) {
@@ -122,8 +123,8 @@ open class SearchViewModel(
   val followingIds: StateFlow<Set<String>> = _followingIds.asStateFlow()
 
   init {
-    if (auth != null && authListener != null) {
-      auth.addAuthStateListener(authListener)
+    if (effectiveAuth != null && authListener != null) {
+      effectiveAuth.addAuthStateListener(authListener)
     }
     viewModelScope.launch {
       try {

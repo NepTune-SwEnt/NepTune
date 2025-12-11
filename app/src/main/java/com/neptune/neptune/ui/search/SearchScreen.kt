@@ -238,8 +238,7 @@ fun SearchScreen(
                       } else {
                         navigateToOtherUserProfile(uid)
                       }
-                    },
-                    modifier = Modifier.padding(pd))
+                    })
               }
             }
           })
@@ -258,12 +257,10 @@ fun ScrollableColumnOfUsers(
     currentUserId: String,
     onFollowToggle: (String, Boolean) -> Unit,
     navigateToOtherUserProfile: (String) -> Unit,
-    modifier: Modifier = Modifier
 ) {
   LazyColumn(
       modifier =
-          modifier
-              .testTag(SearchScreenTestTags.USER_LIST)
+          Modifier.testTag(SearchScreenTestTags.USER_LIST)
               .fillMaxSize()
               .background(NepTuneTheme.colors.background),
       verticalArrangement = Arrangement.spacedBy(8.dp),
