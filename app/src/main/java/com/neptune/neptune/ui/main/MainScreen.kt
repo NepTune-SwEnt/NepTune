@@ -116,7 +116,7 @@ object MainScreenTestTags : BaseSampleTestTags {
 
   // Top Bar
   const val TOP_BAR = "topBar"
-  const val TOP_BAR_TITLE = "topBarTitle"
+  const val TOP_BAR_LOGO = "topBarLogo"
 
   // Sample Card
   override val SAMPLE_CARD
@@ -405,6 +405,8 @@ private fun MainTopAppBar(
     navigateToSelectMessages: () -> Unit,
     navigateToProfile: () -> Unit
 ) {
+  val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+  val logoSize = screenWidth * 0.3f
   Column {
     CenterAlignedTopAppBar(
         modifier = Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
@@ -425,17 +427,13 @@ private fun MainTopAppBar(
               }
         },
         title = {
-          Text(
-              text = "NepTune",
-              style =
-                  TextStyle(
-                      fontSize = 45.sp,
-                      fontFamily = FontFamily(Font(R.font.lily_script_one)),
-                      fontWeight = FontWeight(149),
-                      color = NepTuneTheme.colors.onBackground,
-                  ),
-              modifier = Modifier.padding(25.dp).testTag(MainScreenTestTags.TOP_BAR_TITLE),
-              textAlign = TextAlign.Center)
+          Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Image(
+                painter = painterResource(id = R.drawable.neptune_logo),
+                contentDescription = "NepTune Logo",
+                modifier = Modifier.size(logoSize).testTag(MainScreenTestTags.TOP_BAR_LOGO),
+                contentScale = ContentScale.Fit)
+          }
         },
         actions = {
           // Profile Button
