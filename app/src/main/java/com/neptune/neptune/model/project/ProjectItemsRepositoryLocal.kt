@@ -17,6 +17,7 @@ class ProjectItemsRepositoryLocal(context: Context) : ProjectItemsRepository {
   private val projectsFile = File(context.filesDir, "projects.json")
   private val gson = Gson()
   private val mutex = Mutex()
+  private val appContext = context.applicationContext
 
   init {
     if (!projectsFile.exists()) {
@@ -73,10 +74,36 @@ class ProjectItemsRepositoryLocal(context: Context) : ProjectItemsRepository {
   override suspend fun deleteProject(projectID: String) =
       mutex.withLock {
         val projects = readProjects()
-        if (projects.remove(projectID) == null) {
-          throw NoSuchElementException("Project with ID $projectID not found")
-        }
+        val removed =
+            projects.remove(projectID)
+                ?: throw NoSuchElementException("Project with ID $projectID not found")
         writeProjects(projects)
+
+        // Delete associated local files (project zip, audio preview, image preview) if they exist.
+        val pathsToDelete =
+            listOfNotNull(
+                removed.projectFileLocalPath,
+                removed.audioPreviewLocalPath,
+                removed.imagePreviewLocalPath)
+
+        pathsToDelete.forEach { path ->
+          try {
+            val file = if (File(path).isAbsolute) File(path) else File(appContext.filesDir, path)
+            if (file.exists()) {
+              // Try normal delete; if it fails and it's a directory, try deleteRecursively
+              val deleted = file.delete()
+              if (!deleted && file.exists()) {
+                try {
+                  file.deleteRecursively()
+                } catch (_: Exception) {
+                  // ignore failures to delete
+                }
+              }
+            }
+          } catch (_: Exception) {
+            // ignore any exception while deleting files
+          }
+        }
       }
 
   /**
