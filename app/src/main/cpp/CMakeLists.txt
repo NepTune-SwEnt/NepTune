@@ -2,8 +2,7 @@ cmake_minimum_required(VERSION 3.22.1)
 
 set(SOUNDTOUCH_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/soundtouch)
 
-# ---------- DEFINITIONS IMPORTANTES ----------
-# On met une valeur explicite = 1
+# ---------- DEFINITIONS ----------
 add_compile_definitions(
         SOUNDTOUCH_DISABLE_X86_OPTIMIZATIONS=1
         SOUNDTOUCH_DISABLE_NEON=1
@@ -17,8 +16,7 @@ add_compile_definitions(
 # ---------- FLAGS ----------
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -O3")
 
-# ---------- SOURCES SÉCURISÉS ----------
-# Liste explicite, AUCUN fichier x86
+# ---------- SOURCES ----------
 set(SOUNDTOUCH_SOURCES
         ${SOUNDTOUCH_SRC_DIR}/AAFilter.cpp
         ${SOUNDTOUCH_SRC_DIR}/FIFOSampleBuffer.cpp
@@ -33,7 +31,6 @@ set(SOUNDTOUCH_SOURCES
         ${SOUNDTOUCH_SRC_DIR}/cpu_detect_stub.cpp
 )
 
-# Par sécurité on force la suppression si jamais Android Studio
 list(REMOVE_ITEM SOUNDTOUCH_SOURCES
         ${SOUNDTOUCH_SRC_DIR}/cpu_detect_x86.cpp
         ${SOUNDTOUCH_SRC_DIR}/cpu_detect_x86_64.cpp

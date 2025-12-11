@@ -20,7 +20,7 @@ Java_com_neptune_neptune_ui_sampler_SamplerViewModel_pitchShiftNative(
     jfloat* samplesPtr = env->GetFloatArrayElements(inputSamples, NULL);
 
     if (samplesPtr == nullptr) {
-        LOGD("samplesPtr est null !");
+        LOGD("samplesPtr null !");
         return nullptr;
     }
 
@@ -69,7 +69,7 @@ Java_com_neptune_neptune_ui_sampler_SamplerViewModel_pitchShiftNative(
         env->SetFloatArrayRegion(outputArray, 0, outputLength, outputData.data());
     }
 
-    LOGD("PitchShift Native terminé: Input=%d, Output=%d échantillons", arrayLength, outputLength);
+    LOGD("PitchShift Native done: Input=%d, Output=%d samples", arrayLength, outputLength);
 
     return outputArray;
 }

@@ -845,7 +845,8 @@ open class SamplerViewModel() : ViewModel() {
         System.loadLibrary("sampler_jni")
         Log.d("SamplerViewModel", "Native SoundTouch library loaded.")
       } catch (e: Exception) {
-        Log.w("SamplerViewModel", "Lib native not loaded (JVM test or environnement outside Android)")
+        Log.w(
+            "SamplerViewModel", "Lib native not loaded (JVM test or environnement outside Android)")
       }
     }
   }
@@ -875,12 +876,11 @@ open class SamplerViewModel() : ViewModel() {
 
     if (semitones != 0) {
       Log.d(
-          "SamplerViewModel",
-          "processAudio: Démarrage PitchShift SoundTouch (semitones=$semitones)...")
+          "SamplerViewModel", "processAudio: Start PitchShift SoundTouch (semitones=$semitones)...")
 
       samples = pitchShiftNative(samples, semitones)
 
-      Log.d("SamplerViewModel", "après pitchShift: échantillons=${samples.size} (durée conservée!)")
+      Log.d("SamplerViewModel", "after pitchShift: samples=${samples.size}")
     }
     samples = applyADSR(samples, sampleRate, attack, decay, sustain, release)
 
