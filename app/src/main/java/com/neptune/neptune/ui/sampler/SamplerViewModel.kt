@@ -828,7 +828,7 @@ open class SamplerViewModel() : ViewModel() {
     }
   }
 
-  suspend fun audioBuilding(): Uri? {
+  open suspend fun audioBuilding(): Uri? {
     val state = _uiState.value
     val originalUri =
         state.originalAudioUri ?: return null // Guards against missing original file URI

@@ -8,6 +8,7 @@ import io.mockk.*
 import java.io.File
 import junit.framework.Assert.*
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -77,5 +78,41 @@ class SamplerViewModelSaveProjectTest {
     vm.saveProjectDataSync(zip.absolutePath)
 
     verify { anyConstructed<ProjectWriter>().writeProject(zip, any(), listOf(tmpAudio)) }
+  }
+
+  @Test
+  fun saveProjectData_createsPreviewFile_and_updatesProject() = runBlocking {
+    val vm =
+        object : SamplerViewModel() {
+          override suspend fun audioBuilding(): android.net.Uri? {
+            val preview = File(context.cacheDir, "temp_preview.mp3").apply { writeText("preview") }
+            return android.net.Uri.fromFile(preview)
+          }
+        }
+
+    // Mock ProjectWriter to avoid actual ZIP creation
+    mockkConstructor(ProjectWriter::class)
+    every { anyConstructed<ProjectWriter>().writeProject(any(), any(), any()) } just Runs
+
+    // Prepare a fake project entry so saveProjectData can find it
+    val zip = File.createTempFile("dest", ".zip")
+    val zipUri = zip.toURI().toString()
+    val projectsRepo = com.neptune.neptune.model.project.ProjectItemsRepositoryLocal(context)
+    val project =
+        com.neptune.neptune.model.project.ProjectItem(
+            uid = "p1", name = "proj", projectFileLocalPath = zipUri)
+    projectsRepo.addProject(project)
+
+    val job = vm.saveProjectData(zipUri)
+    job.join()
+
+    val previewsDir = File(context.cacheDir, "previews")
+    val savedPreview = File(previewsDir, "p1.mp3")
+
+    assertTrue(savedPreview.exists())
+
+    val updated = projectsRepo.findProjectWithProjectFile(zipUri)
+    assertNotNull(updated.audioPreviewLocalPath)
+    assertEquals(savedPreview.toURI().toString(), updated.audioPreviewLocalPath)
   }
 }
