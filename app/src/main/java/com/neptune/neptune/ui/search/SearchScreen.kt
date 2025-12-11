@@ -10,7 +10,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -68,7 +67,6 @@ import com.neptune.neptune.ui.feed.sampleFeedItems
 import com.neptune.neptune.ui.main.CommentDialog
 import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.main.SampleResourceState
-import com.neptune.neptune.ui.main.onClickFunctions
 import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.projectlist.SearchBar
 import com.neptune.neptune.ui.theme.NepTuneTheme
@@ -226,42 +224,40 @@ fun SearchScreen(
                 }
           },
           content = { pd ->
-              Column(modifier = Modifier.fillMaxSize().padding(pd)) {
-                  if (!isOnline) {
-                      OfflineBanner()
-                  }
-                  if (searchType == SearchType.SAMPLES) {
-                      ScrollableColumnOfSamples(
-                          samples = samples,
-                          searchViewModel = searchViewModel,
-                          modifier = Modifier.padding(pd),
-                          mediaPlayer = mediaPlayer,
-                          likedSamples = likedSamples,
-                          activeCommentSampleId = activeCommentSampleId,
-                          comments = comments,
-                          navigateToProfile = navigateToProfile,
-                          navigateToOtherUserProfile = navigateToOtherUserProfile,
-                          sampleResources = sampleResources
-                      )
-                  } else {
-                      ScrollableColumnOfUsers(
-                          users = userResults,
-                          followingIds = followingIds,
-                          currentUserId = currentUserProfile?.uid ?: "",
-                          onFollowToggle = { uid, isFollowing ->
-                              searchViewModel.toggleFollow(uid, isFollowing)
-                          },
-                          navigateToOtherUserProfile = { uid ->
-                              if (searchViewModel.isCurrentUser(uid)) {
-                                  navigateToProfile()
-                              } else {
-                                  navigateToOtherUserProfile(uid)
-                              }
-                          },
-                          modifier = Modifier.padding(pd)
-                      )
-                  }
+            Column(modifier = Modifier.fillMaxSize().padding(pd)) {
+              if (!isOnline) {
+                OfflineBanner()
               }
+              if (searchType == SearchType.SAMPLES) {
+                ScrollableColumnOfSamples(
+                    samples = samples,
+                    searchViewModel = searchViewModel,
+                    modifier = Modifier.padding(pd),
+                    mediaPlayer = mediaPlayer,
+                    likedSamples = likedSamples,
+                    activeCommentSampleId = activeCommentSampleId,
+                    comments = comments,
+                    navigateToProfile = navigateToProfile,
+                    navigateToOtherUserProfile = navigateToOtherUserProfile,
+                    sampleResources = sampleResources)
+              } else {
+                ScrollableColumnOfUsers(
+                    users = userResults,
+                    followingIds = followingIds,
+                    currentUserId = currentUserProfile?.uid ?: "",
+                    onFollowToggle = { uid, isFollowing ->
+                      searchViewModel.toggleFollow(uid, isFollowing)
+                    },
+                    navigateToOtherUserProfile = { uid ->
+                      if (searchViewModel.isCurrentUser(uid)) {
+                        navigateToProfile()
+                      } else {
+                        navigateToOtherUserProfile(uid)
+                      }
+                    },
+                    modifier = Modifier.padding(pd))
+              }
+            }
           })
       if (downloadProgress != null && downloadProgress != 0) {
         DownloadProgressBar(

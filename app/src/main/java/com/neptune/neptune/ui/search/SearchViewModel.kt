@@ -1,7 +1,6 @@
 package com.neptune.neptune.ui.search
 
 import android.content.Context
-import android.os.Environment
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -19,8 +18,8 @@ import com.neptune.neptune.ui.feed.BaseSampleFeedViewModel
 import com.neptune.neptune.ui.feed.SampleFeedController
 import com.neptune.neptune.ui.main.SampleUiActions
 import com.neptune.neptune.util.DownloadDirectoryProvider
-import com.neptune.neptune.util.NetworkConnectivityObserver
 import java.io.File
+import kotlin.collections.forEach
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -32,9 +31,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.collections.forEach
-import kotlin.collections.ifEmpty
-import kotlin.collections.set
 
 const val NATURE_TAG = "#nature"
 
@@ -55,7 +51,6 @@ enum class SearchType(val title: String) {
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 open class SearchViewModel(
-    private val repo: SampleRepository = SampleRepositoryProvider.repository,
     sampleRepo: SampleRepository = SampleRepositoryProvider.repository,
     context: Context,
     private val useMockData: Boolean = false,
@@ -99,8 +94,8 @@ open class SearchViewModel(
   private val _searchType = MutableStateFlow(SearchType.SAMPLES)
   val searchType: StateFlow<SearchType> = _searchType.asStateFlow()
 
-    private val _isAnonymous = MutableStateFlow(auth.currentUser?.isAnonymous ?: true)
-    val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
+  private val _isAnonymous = MutableStateFlow(auth?.currentUser?.isAnonymous ?: true)
+  val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
   // User search results
   private val _userResults = MutableStateFlow<List<Profile>>(emptyList())
   val userResults: StateFlow<List<Profile>> = _userResults.asStateFlow()
@@ -123,28 +118,23 @@ open class SearchViewModel(
   // Local state for following IDs to ensure instant UI updates
   private val _followingIds = MutableStateFlow<Set<String>>(emptySet())
   val followingIds: StateFlow<Set<String>> = _followingIds.asStateFlow()
-  private val _isOnline = MutableStateFlow(true)
-  val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
-  val isUserLoggedIn: Boolean
-    get() = auth.currentUser != null
 
   init {
     viewModelScope.launch {
-      try {
-        val observer = NetworkConnectivityObserver()
-        observer.isOnline.collectLatest { isConnected ->
-          _isOnline.value = isConnected
-          if (isConnected) {
-            load(useMockData)
-            refreshAllResources()
-          }
+      isOnline.collectLatest { isConnected ->
+        if (isConnected) {
+          load(useMockData)
+          refreshAllResources()
         }
-      } catch (e: Exception) {
-        Log.e("SearchViewModel", "Network observer init failed", e)
       }
     }
-    if (firebaseAuth != null && authListener != null) {
-      firebaseAuth.addAuthStateListener(authListener)
+    if (auth != null && authListener != null) {
+      auth.addAuthStateListener(authListener)
+    }
+    viewModelScope.launch {
+      currentUserProfile.collectLatest { profile ->
+        _followingIds.value = profile?.following?.toSet() ?: emptySet()
+      }
     }
     load(useMockData)
   }
@@ -220,156 +210,17 @@ open class SearchViewModel(
             downloadProgress = downloadProgress)
       }
 
-  init {
+  private fun refreshAllResources() {
+    val currentList = allSamples.value
+    currentList.forEach { sample -> loadSampleResources(sample) }
+  }
+
+  override fun onCleared() {
+    super.onCleared()
     if (auth != null && authListener != null) {
-      auth.addAuthStateListener(authListener)
-    }
-
-    // Observe current user profile to keep following list in sync with server
-    // FIX: Using flatMapLatest to safely handle the case where currentUser is null
-    viewModelScope.launch {
-        try {
-            _currentUserFlow
-                .flatMapLatest { user ->
-                    if (user != null) {
-                        profileRepo.observeProfile(user.uid)
-                    } else {
-                        flowOf(null)
-                    }
-                }
-                .collectLatest { profile ->
-                    if (profile != null) {
-                        _followingIds.value = profile.following.toSet()
-                    } else {
-                        _followingIds.value = emptySet()
-                    }
-                }
-        } catch (e: Exception) {
-            Log.e("SearchViewModel", "Failed to load resources for ${sample.name}", e)
-        }
-    }
-    load(useMockData)
-  }
-
-    private fun refreshAllResources() {
-        val currentList = allSamplesCache.ifEmpty { allSamples.value }
-        currentList.forEach { sample -> loadSampleResources(sample) }
-    }
-
-private suspend fun getSampleOwnerAvatar(userId: String): String? {
-    if (avatarCache.containsKey(userId)) return avatarCache[userId]
-    val url = profileRepo.getAvatarUrlByUserId(userId)
-    avatarCache[userId] = url
-    return url
-}
-
-private suspend fun getUserName(userId: String): String {
-    if (userNameCache.containsKey(userId)) return userNameCache[userId] ?: "Anonymous"
-    val userName = profileRepo.getUserNameByUserId(userId) ?: "Anonymous"
-    userNameCache[userId] = userName
-    return userName
-}
-
-private suspend fun getSampleCoverUrl(storagePath: String): String? {
-    if (storagePath.isBlank()) return null
-    if (coverImageCache.containsKey(storagePath)) return coverImageCache[storagePath]
-    val url = actions?.getDownloadUrl(storagePath) ?: return null
-    coverImageCache[storagePath] = url
-    return url
-}
-
-  private suspend fun getSampleAudioUrl(sample: Sample): String? {
-    val storagePath = sample.storagePreviewSamplePath
-    if (storagePath.isBlank()) return null
-    if (audioUrlCache.containsKey(storagePath)) return audioUrlCache[storagePath]
-
-    val url = actions?.getDownloadUrl(storagePath) ?: return null
-    audioUrlCache[storagePath] = url
-    return url
-  }
-
-  private suspend fun getSampleWaveform(sample: Sample): List<Float> {
-    if (waveformCache.containsKey(sample.id))
-        waveformCache[sample.id]?.let {
-          return it
-        }
-
-    val audioUrl = getSampleAudioUrl(sample) ?: return emptyList()
-
-    return try {
-      val waveform =
-          WaveformExtractor()
-              .extractWaveform(
-                  context = NepTuneApplication.appContext,
-                  uri = audioUrl.toUri(),
-                  samplesCount = 100)
-      if (waveform.isNotEmpty()) {
-        waveformCache[sample.id] = waveform
-      }
-      waveform
-    } catch (e: Exception) {
-      Log.e("SearchViewModel", "Waveform error: ${e.message}")
-      emptyList()
+      auth.removeAuthStateListener(authListener)
     }
   }
-
-  /** Function to trigger loading */
-  fun loadSampleResources(sample: Sample) {
-    val currentResources = _sampleResources.value[sample.id]
-    val isAudioMissing =
-        sample.storagePreviewSamplePath.isNotBlank() && currentResources?.audioUrl == null
-    if (!isAudioMissing &&
-        currentResources != null &&
-        currentResources.loadedSamplePath == sample.storagePreviewSamplePath) {
-      return
-    }
-
-    viewModelScope.launch {
-      try {
-        _sampleResources.update { current ->
-          current +
-              (sample.id to
-                  (current[sample.id]?.copy(isLoading = true)
-                      ?: SampleResourceState(isLoading = true)))
-        }
-
-        val avatarUrl = getSampleOwnerAvatar(sample.ownerId)
-        val userName = getUserName(sample.ownerId)
-        val coverUrl =
-            if (sample.storageImagePath.isNotBlank()) getSampleCoverUrl(sample.storageImagePath)
-            else null
-        val audioUrl =
-            if (sample.storagePreviewSamplePath.isNotBlank()) getSampleAudioUrl(sample) else null
-        val waveform = getSampleWaveform(sample)
-
-        _sampleResources.update { current ->
-          current +
-              (sample.id to
-                  SampleResourceState(
-                      ownerName = userName,
-                      ownerAvatarUrl = avatarUrl,
-                      coverImageUrl = coverUrl,
-                      audioUrl = audioUrl,
-                      waveform = waveform,
-                      isLoading = false,
-                      loadedSamplePath = sample.storagePreviewSamplePath))
-        }
-      } catch (e: Exception) {
-        Log.e("SearchViewModel", "Failed to load resources for ${sample.name}", e)
-        _sampleResources.update { current ->
-          val state = current[sample.id] ?: SampleResourceState()
-          current + (sample.id to state.copy(isLoading = false))
-        }
-      }
-    }
-  }
-
-    override fun onCleared() {
-        super.onCleared()
-        if (auth != null && authListener != null) {
-            auth.removeAuthStateListener(authListener)
-        }
-    }
 
   // ---------- Data loading ----------
 
@@ -424,21 +275,21 @@ private suspend fun getSampleCoverUrl(storagePath: String): String? {
   }
 
   fun loadSamplesFromFirebase() {
-    if (auth.currentUser == null) return
+    if (auth?.currentUser == null) return
     viewModelScope.launch {
-        try {
-            this@SearchViewModel.sampleRepo.observeSamples().collectLatest { samples ->
-                val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
-                allSamples.value = readySamples
-                readySamples.forEach { loadSampleResources(it) }
-                applyFilter(query)
-                refreshLikeStates()
-            }
-        }catch (e: Exception) {
-                Log.e("SearchViewModel", "Error loading samples (Offline?)", e)
-            }
+      try {
+        this@SearchViewModel.sampleRepo.observeSamples().collectLatest { samples ->
+          val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
+          allSamples.value = readySamples
+          readySamples.forEach { loadSampleResources(it) }
+          applyFilter(query)
+          refreshLikeStates()
         }
+      } catch (e: Exception) {
+        Log.e("SearchViewModel", "Error loading samples (Offline?)", e)
+      }
     }
+  }
 
   // ---------- Public API used by UI ----------
 
@@ -450,88 +301,40 @@ private suspend fun getSampleCoverUrl(storagePath: String): String? {
         load(useMockData)
       } catch (e: Exception) {
         Log.e("SearchViewModel", "Error downloading sample: ${e.message}")
-          // optional: log or expose error
+        // optional: log or expose error
       }
     }
   }
 
-    override fun onLikeClick(sample: Sample, isLiked: Boolean) {
-        val sampleId = sample.id
-        viewModelScope.launch {
-            try {
-                this@SearchViewModel.sampleRepo.toggleLike(sample.id, isLiked)
-                val delta = if (isLiked) 1 else -1
-                val updatedSamples =
-                    allSamples.value.map { current ->
-                        if (current.id == sampleId) {
-                            current.copy(likes = current.likes + delta)
-                        } else {
-                            current
-                        }
-                    }
-                allSamples.value = updatedSamples
-                applyFilter(query)
-                _likedSamples.value = _likedSamples.value + (sampleId to isLiked)
-            } catch (e: Exception) {
-            Log.e("SearchViewModel", "Error toggling like: ${e.message}")
-        }
-    }
+  override fun onLikeClick(sample: Sample, isLiked: Boolean) {
+    val sampleId = sample.id
+    viewModelScope.launch {
+      try {
+        this@SearchViewModel.sampleRepo.toggleLike(sample.id, isLiked)
+        val delta = if (isLiked) 1 else -1
+        val updatedSamples =
+            allSamples.value.map { current ->
+              if (current.id == sampleId) {
+                current.copy(likes = current.likes + delta)
+              } else {
+                current
+              }
+            }
+        allSamples.value = updatedSamples
+        applyFilter(query)
+        _likedSamples.value = _likedSamples.value + (sampleId to isLiked)
+      } catch (e: Exception) {
+        Log.e("SearchViewModel", "Error toggling like: ${e.message}")
       }
+    }
+  }
 
   fun refreshLikeStates() {
-      refreshLikeStates(_samples.value, _likedSamples)
-  }
-
-  fun observeCommentsForSample(sampleId: String) {
-    viewModelScope.launch {
-      try {
-        repo.observeComments(sampleId).collectLatest { list ->
-          // Ensure usernames are loaded for each author
-          list.forEach { comment -> loadUsername(comment.authorId) }
-          _comments.value = list
-        }
-      } catch (e: Exception) {
-        Log.e("SearchViewModel", "Error observing comments", e)
-      }
-    }
-  }
-
-  /*
-   * Function to load the user name.
-   */
-  fun loadUsername(userId: String) {
-    viewModelScope.launch {
-      try {
-        // Check cache first
-        val cached = _usernames.value[userId]
-        if (cached != null && cached != defaultName) return@launch
-
-        // Fetch latest username
-        val userName = profileRepo.getUserNameByUserId(userId) ?: defaultName
-
-        _usernames.update { it + (userId to userName) }
-      } catch (e: Exception) {
-        Log.w("SearchViewModel", "Error loading username for $userId", e)
-      }
-    }
-  }
-
-  fun resetCommentSampleId() {
-    _activeCommentSampleId.value = null
+    refreshLikeStates(_samples.value, _likedSamples)
   }
 
   fun addComment(sampleId: String, text: String) {
-    viewModelScope.launch {
-      try {
-        val profile = profileRepo.getCurrentProfile()
-        val authorId = profile?.uid ?: auth.currentUser?.uid ?: "unknown"
-        val authorName = profile?.username ?: defaultName
-        repo.addComment(sampleId, authorId, authorName, text.trim())
-        observeCommentsForSample(sampleId)
-      } catch (e: Exception) {
-        Log.e("SearchViewModel", "Error adding comment", e)
-      }
-    }
+    onAddComment(sampleId, text)
   }
 
   open fun search(query: String) {

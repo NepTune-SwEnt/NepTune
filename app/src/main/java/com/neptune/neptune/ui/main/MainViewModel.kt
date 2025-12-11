@@ -17,7 +17,6 @@ import com.neptune.neptune.model.sample.SampleRepositoryProvider
 import com.neptune.neptune.ui.feed.BaseSampleFeedViewModel
 import com.neptune.neptune.ui.feed.SampleFeedController
 import com.neptune.neptune.util.AudioWaveformExtractor
-import com.neptune.neptune.util.NetworkConnectivityObserver
 import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -99,7 +98,6 @@ open class MainViewModel(
 
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
-  private val avatarCache = mutableMapOf<String, String?>()
   private var allSamplesCache: List<Sample> = emptyList()
   private val _isRefreshing = MutableStateFlow(false)
   val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
@@ -107,11 +105,6 @@ open class MainViewModel(
   val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
   private val _recommendedSamples = MutableStateFlow<List<Sample>>(emptyList())
   val recommendedSamples: StateFlow<List<Sample>> = _recommendedSamples
-  private val _isOnline = MutableStateFlow(true)
-  val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
-
-  val isUserLoggedIn: Boolean
-    get() = auth?.currentUser != null
 
   init {
     if (useMockData) {
@@ -122,10 +115,6 @@ open class MainViewModel(
     }
     auth?.addAuthStateListener(authListener)
     observeUserProfile()
-    val observer = NetworkConnectivityObserver()
-    viewModelScope.launch {
-      observer.isOnline.collect { isConnected -> _isOnline.value = isConnected }
-    }
   }
 
   fun loadRecommendations(limit: Int = 50) {
@@ -282,7 +271,7 @@ open class MainViewModel(
 
           // Update avatar for samplers owned by current user
           val currentUserId = auth.currentUser?.uid ?: return@collectLatest
-          avatarCache[currentUserId] = newAvatarUrl
+          updateAvatarCache(currentUserId, newAvatarUrl)
           _sampleResources.update { currentResources ->
             val updatedResources = currentResources.toMutableMap()
             val allLoadedSamples = _discoverSamples.value + _followedSamples.value
@@ -322,7 +311,7 @@ open class MainViewModel(
     if (_isAnonymous.value) return
     viewModelScope.launch {
       try {
-          val newState = actions?.onLikeClicked(sample, isLiked)
+        val newState = actions?.onLikeClicked(sample, isLiked)
         if (newState != null) {
           _likedSamples.value = _likedSamples.value + (sample.id to newState)
         }
@@ -333,162 +322,13 @@ open class MainViewModel(
   }
 
   fun refreshLikeStates() {
-    viewModelScope.launch {
-      try {
-        val allSamples = _discoverSamples.value + _followedSamples.value
-
-        val updatedStates = mutableMapOf<String, Boolean>()
-        for (sample in allSamples) {
-          val liked = sampleRepo.hasUserLiked(sample.id)
-          updatedStates[sample.id] = liked
-        }
-        _likedSamples.value = updatedStates
-      } catch (e: Exception) {
-        Log.e("MainViewModel", "Error refreshing likes", e)
-      }
-    }
+    val allSamples = _discoverSamples.value + _followedSamples.value
+    super.refreshLikeStates(allSamples, _likedSamples)
   }
 
   fun addComment(sampleId: String, text: String) {
     if (_isAnonymous.value) return
-    viewModelScope.launch {
-      try {
-        val profile = profileRepo.getCurrentProfile()
-        val authorId = profile?.uid ?: auth?.currentUser?.uid ?: "unknown"
-        val authorName = profile?.username ?: defaultName
-          sampleRepo.addComment(sampleId, authorId, authorName, text.trim())
-      } catch (e: Exception) {
-        Log.e("MainViewModel", "Failed to add comment: ${e.message}")
-      }
-    }
-  }
-
-  /*
-   * function to get the avatar of the sample owner.
-   */
-  private suspend fun getSampleOwnerAvatar(userId: String): String? {
-    if (avatarCache.containsKey(userId)) {
-      return avatarCache[userId]
-    }
-    val url = profileRepo.getAvatarUrlByUserId(userId)
-    avatarCache[userId] = url
-    return url
-  }
-
-  /*
-   * Function to get the user name.
-   */
-  private suspend fun getUserName(userId: String): String {
-    _usernames.value[userId]?.let {
-      return it
-    }
-
-    val userName = profileRepo.getUserNameByUserId(userId) ?: defaultName
-    _usernames.update { it + (userId to userName) }
-    return userName
-  }
-
-  /*
-   * Function to get the Download URL from the storage path.
-   */
-  private suspend fun getSampleCoverUrl(storagePath: String): String? {
-    if (storagePath.isBlank()) return null
-
-    if (coverImageCache.containsKey(storagePath)) {
-      return coverImageCache[storagePath]
-    }
-    val url = storageService.getDownloadUrl(storagePath)
-    coverImageCache[storagePath] = url
-    return url
-  }
-
-  /*
-   * Function to get the Audio URL from the storage path.
-   */
-  private suspend fun getSampleAudioUrl(sample: Sample): String? {
-    val storagePath = sample.storagePreviewSamplePath
-    if (storagePath.isBlank()) return null
-    if (audioUrlCache.containsKey(storagePath)) {
-      return audioUrlCache[storagePath]
-    }
-    val url = storageService.getDownloadUrl(storagePath)
-    audioUrlCache[storagePath] = url
-    return url
-  }
-
-  /*
-   * Retrieves the waveform for a given Sample.
-   */
-
-  private suspend fun getSampleWaveform(sample: Sample): List<Float> {
-    if (waveformCache.containsKey(sample.id)) {
-      waveformCache[sample.id]?.let {
-        return it
-      }
-    }
-    val audioUrl = getSampleAudioUrl(sample) ?: return emptyList()
-
-    return try {
-      val waveform =
-          waveformExtractor.extractWaveform(
-              context = NepTuneApplication.appContext, uri = audioUrl.toUri(), samplesCount = 100)
-
-      if (waveform.isNotEmpty()) {
-        waveformCache[sample.id] = waveform
-      }
-      waveform
-    } catch (e: Exception) {
-      Log.e("MainViewModel", "Error extracting waveform for list: ${e.message}")
-      emptyList()
-    }
-  }
-
-  /** Function to trigger loading */
-  fun loadSampleResources(sample: Sample) {
-    val currentResources = _sampleResources.value[sample.id]
-    if (currentResources != null &&
-        currentResources.loadedSamplePath == sample.storagePreviewSamplePath) {
-      return
-    }
-
-    viewModelScope.launch {
-      try {
-        _sampleResources.update { current ->
-          current +
-              (sample.id to
-                  (current[sample.id]?.copy(isLoading = true)
-                      ?: SampleResourceState(isLoading = true)))
-        }
-
-        val avatarUrl = getSampleOwnerAvatar(sample.ownerId)
-        val userName = getUserName(sample.ownerId)
-        val coverUrl =
-            if (sample.storageImagePath.isNotBlank()) getSampleCoverUrl(sample.storageImagePath)
-            else null
-        val audioUrl =
-            if (sample.storagePreviewSamplePath.isNotBlank()) getSampleAudioUrl(sample) else null
-        val waveform = getSampleWaveform(sample)
-
-        _sampleResources.update { current ->
-          current +
-              (sample.id to
-                  SampleResourceState(
-                      ownerName = userName,
-                      ownerAvatarUrl = avatarUrl,
-                      coverImageUrl = coverUrl,
-                      audioUrl = audioUrl,
-                      waveform = waveform,
-                      isLoading = false,
-                      loadedSamplePath = sample.storagePreviewSamplePath))
-        }
-      } catch (e: Exception) {
-        Log.w("MainViewModel", "Failed to load resources for sample ${sample.id}: ${e.message}")
-        _sampleResources.update { current ->
-          current +
-              (sample.id to (current[sample.id]?.copy(isLoading = false) ?: SampleResourceState()))
-        }
-      }
-    }
+    onAddComment(sampleId, text)
   }
 
   /** Function to be called when a refresh is triggered. */
@@ -506,12 +346,11 @@ open class MainViewModel(
 
   /** Function to open the comment section. */
   fun openCommentSection(sample: Sample) {
-    _activeCommentSampleId.value = sample.id
-    observeCommentsForSample(sample.id)
+    onCommentClicked(sample)
   }
   /** Function to close the comment section. */
   fun closeCommentSection() {
-    _activeCommentSampleId.value = null
+    resetCommentSampleId()
   }
 
   // Mock Data

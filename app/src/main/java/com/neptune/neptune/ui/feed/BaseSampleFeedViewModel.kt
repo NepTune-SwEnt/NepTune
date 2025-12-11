@@ -1,12 +1,12 @@
 package com.neptune.neptune.ui.feed
 
-import android.content.Context
 import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.sample.Comment
@@ -15,6 +15,7 @@ import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.ui.main.SampleResourceState
 import com.neptune.neptune.ui.main.SampleUiActions
 import com.neptune.neptune.util.AudioWaveformExtractor
+import com.neptune.neptune.util.NetworkConnectivityObserver
 import com.neptune.neptune.util.WaveformExtractor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,7 +32,6 @@ abstract class BaseSampleFeedViewModel(
     protected val sampleRepo: SampleRepository,
     protected val profileRepo: ProfileRepository,
     protected val auth: FirebaseAuth? = null,
-    protected val context: Context,
     private val storageService: StorageService? = null,
     private val waveformExtractor: AudioWaveformExtractor = WaveformExtractor()
 ) : ViewModel(), SampleFeedController {
@@ -51,6 +51,23 @@ abstract class BaseSampleFeedViewModel(
   private val coverImageCache = mutableMapOf<String, String?>()
   private val audioUrlCache = mutableMapOf<String, String?>()
   private val waveformCache = mutableMapOf<String, List<Float>>()
+  private val _isOnline = MutableStateFlow(true)
+  val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+  val isUserLoggedIn: Boolean
+    get() = auth?.currentUser != null
+
+  init {
+    // Initialisation unique du monitoring réseau
+    viewModelScope.launch {
+      try {
+        NetworkConnectivityObserver().isOnline.collectLatest { connected ->
+          _isOnline.value = connected
+        }
+      } catch (e: Exception) {
+        Log.e("BaseViewModel", "Error initializing connectivity observer", e)
+      }
+    }
+  }
 
   override fun onCommentClicked(sample: Sample) {
     observeCommentsForSample(sample.id)
@@ -186,7 +203,7 @@ abstract class BaseSampleFeedViewModel(
     return try {
       val waveform =
           waveformExtractor.extractWaveform(
-              context = context, uri = audioUrl.toUri(), samplesCount = 100)
+              context = NepTuneApplication.appContext, uri = audioUrl.toUri(), samplesCount = 100)
       if (waveform.isNotEmpty()) {
         waveformCache[sample.id] = waveform
       }
@@ -195,6 +212,11 @@ abstract class BaseSampleFeedViewModel(
       Log.e("BaseSampleFeedViewModel", "Waveform error: ${e.message}")
       emptyList()
     }
+  }
+
+  /** Updates the avatar URL cache for the given [userId] with the provided [url]. */
+  protected fun updateAvatarCache(userId: String, url: String?) {
+    avatarCache[userId] = url
   }
 
   /**
