@@ -1,8 +1,5 @@
 package com.neptune.neptune.ui
 
-import android.app.Application
-import android.content.Context
-import androidx.test.core.app.ApplicationProvider
 import com.google.firebase.Timestamp
 import com.neptune.neptune.model.fakes.FakeProfileRepository
 import com.neptune.neptune.model.fakes.FakeSampleRepository
