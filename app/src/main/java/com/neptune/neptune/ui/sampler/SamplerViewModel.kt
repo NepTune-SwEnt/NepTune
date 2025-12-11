@@ -19,6 +19,7 @@ import com.neptune.neptune.model.project.ProjectExtractor
 import com.neptune.neptune.model.project.ProjectItemsRepositoryLocal
 import com.neptune.neptune.model.project.ProjectWriter
 import com.neptune.neptune.model.project.SamplerProjectData
+import com.neptune.neptune.ui.sampler.SamplerViewModel.AudioProcessor
 import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
 import java.io.FileOutputStream
@@ -113,6 +114,8 @@ open class SamplerViewModel() : ViewModel(), AudioPreviewGenerator {
   val context: Context = NepTuneApplication.appContext
 
   open val mediaPlayer = NeptuneMediaPlayer()
+
+  private val audioProcessor: AudioProcessor = NativeAudioProcessor()
 
   init {
     mediaPlayer.setOnCompletionListener {
@@ -859,6 +862,8 @@ open class SamplerViewModel() : ViewModel(), AudioPreviewGenerator {
                   reverbWidth = state.reverbWidth,
                   reverbDepth = state.reverbDepth,
                   reverbPredelay = state.reverbPredelay,
+                  semitones = semitones,
+                  audioProcessor = audioProcessor,
                   attack = state.attack,
                   decay = state.decay,
                   sustain = state.sustain,
@@ -880,7 +885,7 @@ open class SamplerViewModel() : ViewModel(), AudioPreviewGenerator {
     return deferred.await()
   }
 
-  private fun processAudio(
+  internal fun processAudio(
       currentAudioUri: Uri?,
       eqBands: List<Float>,
       reverbWet: Float,
@@ -888,12 +893,13 @@ open class SamplerViewModel() : ViewModel(), AudioPreviewGenerator {
       reverbWidth: Float,
       reverbDepth: Float,
       reverbPredelay: Float,
+      audioProcessor: AudioProcessor,
+      semitones: Int = 0,
       attack: Float = 0f,
       decay: Float = 0f,
       sustain: Float = 1f,
       release: Float = 0f
   ): Uri? {
-
     if (currentAudioUri == null) return null
 
     // 1. Decode Audio: Convert source URI (MP3/WAV) to raw PCM samples (FloatArray)
@@ -903,6 +909,9 @@ open class SamplerViewModel() : ViewModel(), AudioPreviewGenerator {
     // 2. Apply EQ: Parametric equalization is applied non-destructively to the samples
     samples = applyEQFilters(samples, sampleRate, eqBands)
 
+    if (semitones != 0) {
+      samples = audioProcessor.pitchShift(samples, semitones)
+    }
     samples = applyADSR(samples, sampleRate, attack, decay, sustain, release)
 
     // 3. Apply Reverb: Reverb is applied on top of the EQ'd signal
@@ -926,6 +935,10 @@ open class SamplerViewModel() : ViewModel(), AudioPreviewGenerator {
     Log.d("SamplerViewModel", "WAV file written: frames=${samples.size / channelCount}")
 
     return Uri.fromFile(out) // Return the URI of the newly processed file
+  }
+
+  interface AudioProcessor {
+    fun pitchShift(samples: FloatArray, semitones: Int): FloatArray
   }
 
   fun equalizeAudio(audioUri: Uri?, eqBands: List<Float>) {
@@ -988,7 +1001,7 @@ open class SamplerViewModel() : ViewModel(), AudioPreviewGenerator {
    * Internal function to decode audio files (MP3/WAV) into raw PCM float samples (normalized -1.0
    * to 1.0). Uses Android's MediaCodec and MediaExtractor for low-level decoding.
    */
-  internal fun decodeAudioToPCM(uri: Uri): Triple<FloatArray, Int, Int>? {
+  internal open fun decodeAudioToPCM(uri: Uri): Triple<FloatArray, Int, Int>? {
     val extractor = MediaExtractor()
     try {
       extractor.setDataSource(context, uri, null)
@@ -1446,5 +1459,25 @@ open class SamplerViewModel() : ViewModel(), AudioPreviewGenerator {
           }
     }
     return samples.mapIndexed { index, sample -> sample * envelope[index] }.toFloatArray()
+  }
+}
+
+class NativeAudioProcessor : AudioProcessor {
+  private external fun pitchShiftNative(samples: FloatArray, semitones: Int): FloatArray
+
+  companion object {
+    init {
+      try {
+        System.loadLibrary("sampler_jni")
+        Log.d("SamplerViewModel", "Native SoundTouch library loaded.")
+      } catch (e: UnsatisfiedLinkError) {
+        Log.w(
+            "SamplerViewModel", "Lib native not loaded (JVM test or environnement outside Android)")
+      }
+    }
+  }
+
+  override fun pitchShift(samples: FloatArray, semitones: Int): FloatArray {
+    return pitchShiftNative(samples, semitones)
   }
 }
