@@ -1,6 +1,5 @@
 package com.neptune.neptune.ui.search
 
-import android.content.Context
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -52,7 +51,6 @@ enum class SearchType(val title: String) {
 @OptIn(ExperimentalCoroutinesApi::class)
 open class SearchViewModel(
     sampleRepo: SampleRepository = SampleRepositoryProvider.repository,
-    context: Context,
     private val useMockData: Boolean = false,
     profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
     explicitStorageService: StorageService? = null,
@@ -62,7 +60,6 @@ open class SearchViewModel(
     BaseSampleFeedViewModel(
         sampleRepo = sampleRepo,
         profileRepo = profileRepo,
-        context = context,
         auth = if (useMockData) null else auth ?: FirebaseAuth.getInstance(),
         storageService = explicitStorageService),
     SampleFeedController {
@@ -200,13 +197,14 @@ open class SearchViewModel(
                 }
 
         val downloadsFolder =
-            DownloadDirectoryProvider.resolveDownloadsDir(context, explicitDownloadsFolder)
+            DownloadDirectoryProvider.resolveDownloadsDir(
+                NepTuneApplication.appContext, explicitDownloadsFolder)
 
         SampleUiActions(
             sampleRepo,
             storageService,
             downloadsFolder,
-            context,
+            NepTuneApplication.appContext,
             downloadProgress = downloadProgress)
       }
 

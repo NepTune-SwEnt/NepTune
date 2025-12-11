@@ -14,7 +14,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
-import com.neptune.neptune.NepTuneApplication.Companion.appContext
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.fakes.FakeProfileRepository
 import com.neptune.neptune.model.fakes.FakeSampleRepository
@@ -57,10 +56,7 @@ class SearchScreenAllTests {
     val fakeSampleRepo = FakeSampleRepository()
     val fakeProfileRepo = FakeProfileRepository()
     return SearchViewModel(
-        sampleRepo = fakeSampleRepo,
-        context = appContext,
-        useMockData = true,
-        profileRepo = fakeProfileRepo)
+        sampleRepo = fakeSampleRepo, useMockData = true, profileRepo = fakeProfileRepo)
   }
 
   /** Advance past the 300ms debounce in SearchScreen */
@@ -76,8 +72,7 @@ class SearchScreenAllTests {
    * so its dataset & normalization are used.
    */
   class SpySearchViewModel(repo: SampleRepository, profileRepo: ProfileRepository) :
-      SearchViewModel(
-          sampleRepo = repo, context = appContext, useMockData = true, profileRepo = profileRepo) {
+      SearchViewModel(sampleRepo = repo, useMockData = true, profileRepo = profileRepo) {
     val calls = mutableListOf<String>()
 
     override fun search(query: String) {
@@ -315,10 +310,7 @@ class SearchScreenAllTests {
     val vm =
         object :
             SearchViewModel(
-                sampleRepo = fakeSampleRepo,
-                context = appContext,
-                useMockData = true,
-                profileRepo = fakeProfileRepo) {
+                sampleRepo = fakeSampleRepo, useMockData = true, profileRepo = fakeProfileRepo) {
           override fun isCurrentUser(ownerId: String): Boolean = ownerId == "current-user"
         }
     val sample =

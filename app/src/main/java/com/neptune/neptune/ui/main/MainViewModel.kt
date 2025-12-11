@@ -1,11 +1,11 @@
 package com.neptune.neptune.ui.main
 
-import android.content.Context
 import android.os.Environment
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.R
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
@@ -48,10 +48,11 @@ data class SampleResourceState(
  */
 open class MainViewModel(
     sampleRepo: SampleRepository = SampleRepositoryProvider.repository,
-    context: Context,
     profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
     storageService: StorageService =
-        StorageService(FirebaseStorage.getInstance(context.getString(R.string.storage_path))),
+        StorageService(
+            FirebaseStorage.getInstance(
+                NepTuneApplication.appContext.getString(R.string.storage_path))),
     private val useMockData: Boolean = false,
     downloadsFolder: File =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
@@ -62,7 +63,6 @@ open class MainViewModel(
         sampleRepo = sampleRepo,
         profileRepo = profileRepo,
         auth = auth ?: if (useMockData) null else FirebaseAuth.getInstance(),
-        context = context,
         storageService = storageService,
         waveformExtractor = waveformExtractor),
     SampleFeedController {
@@ -77,7 +77,7 @@ open class MainViewModel(
             sampleRepo,
             storageService,
             downloadsFolder,
-            context,
+            NepTuneApplication.appContext,
             downloadProgress = downloadProgress)
       }
 
