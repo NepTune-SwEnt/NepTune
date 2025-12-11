@@ -6,6 +6,7 @@
 package com.neptune.neptune.model.project
 
 import android.content.Context
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.File
@@ -86,10 +87,12 @@ class ProjectItemsRepositoryLocal(context: Context) : ProjectItemsRepository {
                 removed.audioPreviewLocalPath,
                 removed.imagePreviewLocalPath)
 
+        Log.d("ProjectItemsRepositoryLocal", "Deleting files: $pathsToDelete")
         pathsToDelete.forEach { path ->
           try {
-            val file = if (File(path).isAbsolute) File(path) else File(appContext.filesDir, path)
+            val file = File(path.removePrefix("file:"))
             if (file.exists()) {
+              Log.d("ProjectItemsRepositoryLocal", "Deleting file: $file")
               // Try normal delete; if it fails and it's a directory, try deleteRecursively
               val deleted = file.delete()
               if (!deleted && file.exists()) {
@@ -99,9 +102,12 @@ class ProjectItemsRepositoryLocal(context: Context) : ProjectItemsRepository {
                   // ignore failures to delete
                 }
               }
+            } else {
+              Log.d("ProjectItemsRepositoryLocal", "Failed to delete file: $path, does not exist")
             }
           } catch (_: Exception) {
             // ignore any exception while deleting files
+            Log.d("ProjectItemsRepositoryLocal", "Failed to delete file: $path")
           }
         }
       }
