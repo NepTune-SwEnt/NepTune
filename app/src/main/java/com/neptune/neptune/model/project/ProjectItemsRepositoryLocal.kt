@@ -78,4 +78,12 @@ class ProjectItemsRepositoryLocal(context: Context) : ProjectItemsRepository {
         }
         writeProjects(projects)
       }
+
+  override suspend fun findProjectWithProjectFile(projectFile: String): ProjectItem =
+      mutex.withLock {
+        val projects = readProjects()
+        projects.values.firstOrNull { it.projectFileLocalPath == projectFile }
+            ?: throw NoSuchElementException("Project with projectFile $projectFile not found")
+      }
+
 }
