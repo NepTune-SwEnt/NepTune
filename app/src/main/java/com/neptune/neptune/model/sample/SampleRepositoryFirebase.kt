@@ -128,8 +128,8 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
       sampleId: String,
       authorId: String,
       authorName: String,
-      authorProfilePicUrl: String,
-      text: String
+      text: String,
+      authorProfilePicUrl: String
   ) {
     val sampleDoc = samples.document(sampleId)
     val snapshot = sampleDoc.get().await()

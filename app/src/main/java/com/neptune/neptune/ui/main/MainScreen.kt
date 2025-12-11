@@ -154,6 +154,7 @@ object MainScreenTestTags : BaseSampleTestTags {
   const val COMMENT_TEXT_FIELD = "commentTextField"
   const val COMMENT_POST_BUTTON = "commentPostButton"
   const val COMMENT_LIST = "commentList"
+  const val COMMENT_PICTURE = "commentPicture"
 }
 
 fun factory(application: Application) =
@@ -843,7 +844,7 @@ fun CommentDialog(
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                       items(comments) { comment ->
                         val username = usernames[comment.authorId] ?: comment.authorName
-                        Row(verticalAlignment = Alignment.CenterVertically) { // Added Row
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                           AsyncImage(
                               model =
                                   ImageRequest.Builder(LocalContext.current)
@@ -858,7 +859,8 @@ fun CommentDialog(
                                   Modifier.size(32.dp)
                                       .clip(CircleShape)
                                       .border(1.dp, NepTuneTheme.colors.onBackground, CircleShape)
-                                      .clickable { onProfileClicked(comment.authorId) },
+                                      .clickable { onProfileClicked(comment.authorId) }
+                                      .testTag(MainScreenTestTags.COMMENT_PICTURE),
                               contentScale = ContentScale.Crop,
                               placeholder = painterResource(R.drawable.profile),
                               error = painterResource(R.drawable.profile))
