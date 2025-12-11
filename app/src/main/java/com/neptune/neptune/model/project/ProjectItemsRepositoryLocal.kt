@@ -85,7 +85,7 @@ class ProjectItemsRepositoryLocal(context: Context) : ProjectItemsRepository {
    * @param projectFile The project file as string to find.
    * @return The project item corresponding to the provided project file.
    */
-  override suspend fun findProjectWithProjectFile(projectFile: String): ProjectItem =
+  suspend fun findProjectWithProjectFile(projectFile: String): ProjectItem =
       mutex.withLock {
         val projects = readProjects()
         projects.values.firstOrNull { it.projectFileLocalPath == projectFile }
