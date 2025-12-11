@@ -93,20 +93,16 @@ class ProjectItemsRepositoryLocal(context: Context) : ProjectItemsRepository {
             val file = File(path.removePrefix("file:"))
             if (file.exists()) {
               Log.d("ProjectItemsRepositoryLocal", "Deleting file: $file")
-              // Try normal delete; if it fails and it's a directory, try deleteRecursively
               val deleted = file.delete()
-              if (!deleted && file.exists()) {
-                try {
-                  file.deleteRecursively()
-                } catch (_: Exception) {
-                  // ignore failures to delete
-                }
+              if (deleted) {
+                Log.d("ProjectItemsRepositoryLocal", "Deleted file: $path")
+              } else {
+                Log.d("ProjectItemsRepositoryLocal", "Failed to delete file: $path")
               }
             } else {
               Log.d("ProjectItemsRepositoryLocal", "Failed to delete file: $path, does not exist")
             }
           } catch (_: Exception) {
-            // ignore any exception while deleting files
             Log.d("ProjectItemsRepositoryLocal", "Failed to delete file: $path")
           }
         }
