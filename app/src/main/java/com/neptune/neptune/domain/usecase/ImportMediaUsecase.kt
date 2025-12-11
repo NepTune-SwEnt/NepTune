@@ -8,6 +8,7 @@ import com.neptune.neptune.data.NeptunePackager
 import com.neptune.neptune.domain.model.MediaItem
 import com.neptune.neptune.domain.port.FileImporter
 import com.neptune.neptune.domain.port.MediaRepository
+import com.neptune.neptune.media.AudioPreviewGenerator
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepositoryLocal
 import com.neptune.neptune.ui.sampler.SamplerViewModel
@@ -16,17 +17,13 @@ import java.io.FileOutputStream
 import java.net.URI
 import java.util.UUID
 
-// Small adapter interface so tests can inject a fake sampler that returns a temp preview Uri
-interface SamplerProvider {
-  fun loadProjectData(zipFilePath: String)
-
-  suspend fun audioBuilding(): Uri?
-}
-
 open class ImportMediaUseCase(
     private val importer: FileImporter,
     private val repo: MediaRepository,
-    private val packager: NeptunePackager
+    private val packager: NeptunePackager,
+    // factory used to obtain fresh AudioPreviewGenerator instances (kept default for
+    // backward-compatibility)
+    private val audioPreviewGeneratorFactory: () -> AudioPreviewGenerator = { SamplerViewModel() }
 ) {
   suspend operator fun invoke(sourceUriString: String): MediaItem {
     val probe = importer.importFile(URI(sourceUriString))
@@ -44,19 +41,8 @@ open class ImportMediaUseCase(
     return finalizeImport(localAudio, probe.durationMs)
   }
 
-  // Make this protected/open so tests can override and inject a fake SamplerProvider
-  protected open fun createSamplerProvider(): SamplerProvider =
-      object : SamplerProvider {
-        private val sampler = SamplerViewModel()
-
-        override fun loadProjectData(zipFilePath: String) {
-          sampler.loadProjectData(zipFilePath)
-        }
-
-        override suspend fun audioBuilding(): Uri? {
-          return sampler.audioBuilding()
-        }
-      }
+  // Make this protected/open so tests can override the factory if needed
+  protected open fun createAudioPreviewGenerator(): AudioPreviewGenerator = audioPreviewGeneratorFactory()
 
   private suspend fun finalizeImport(localAudio: File, durationMs: Long?): MediaItem {
     val projectZip =
@@ -74,9 +60,9 @@ open class ImportMediaUseCase(
 
     val projectZipPath: String = projectZip.toURI().toString()
     val projectsJsonRepo = ProjectItemsRepositoryLocal(appContext)
-    val sampler = createSamplerProvider()
-    sampler.loadProjectData(projectZipPath)
-    val tempPreviewUri: Uri? = sampler.audioBuilding()
+    val previewGenerator = createAudioPreviewGenerator()
+    previewGenerator.loadProjectData(projectZipPath)
+    val tempPreviewUri: Uri? = previewGenerator.audioBuilding()
 
     // Copy the preview file (if any) from the temporary Uri into a dedicated "previews" folder
     val audioPreviewLocalPath: String = run {

@@ -11,6 +11,7 @@ import android.webkit.MimeTypeMap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.neptune.neptune.NepTuneApplication
+import com.neptune.neptune.media.AudioPreviewGenerator
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.project.AudioFileMetadata
 import com.neptune.neptune.model.project.ParameterMetadata
@@ -22,7 +23,6 @@ import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
-import kotlin.math.*
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.pow
@@ -108,7 +108,7 @@ data class SamplerUiState(
     get() = "$pitchNote$pitchOctave"
 }
 
-open class SamplerViewModel() : ViewModel() {
+open class SamplerViewModel() : ViewModel(), AudioPreviewGenerator {
 
   val context: Context = NepTuneApplication.appContext
 
@@ -535,7 +535,7 @@ open class SamplerViewModel() : ViewModel() {
     }
   }
 
-  open fun loadProjectData(zipFilePath: String) {
+  override fun loadProjectData(zipFilePath: String) {
     viewModelScope.launch {
       try {
         val cleanPath = zipFilePath.removePrefix("file:").removePrefix("file://")
@@ -828,7 +828,7 @@ open class SamplerViewModel() : ViewModel() {
     }
   }
 
-  open suspend fun audioBuilding(): Uri? {
+  override suspend fun audioBuilding(): Uri? {
     val state = _uiState.value
     val originalUri =
         state.originalAudioUri ?: return null // Guards against missing original file URI
@@ -844,10 +844,6 @@ open class SamplerViewModel() : ViewModel() {
               Log.e("SamplerViewModel", "audioBuilding failed: ${e.message}", e)
               deferred.complete(null) // Complete the Deferred with null on failure
             }
-
-    val semitones =
-        computeSemitoneShift(
-            state.inputPitchNote, state.inputPitchOctave, state.pitchNote, state.pitchOctave)
 
     // Launch the main processing coroutine
     viewModelScope.launch(context) {
