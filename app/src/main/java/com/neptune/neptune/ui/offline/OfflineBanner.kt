@@ -29,9 +29,10 @@ import androidx.compose.ui.unit.sp
  */
 @Composable
 fun OfflineBanner() {
+  val warningColor = Color.Red
   Surface(
       modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-      color = Color.Red,
+      color = warningColor,
       shape = RoundedCornerShape(12.dp),
       tonalElevation = 4.dp,
       shadowElevation = 4.dp) {

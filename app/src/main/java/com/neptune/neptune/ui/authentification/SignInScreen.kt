@@ -64,7 +64,7 @@ object SignInScreenTags {
   const val TOGGLE_REGISTER = "toggleRegisterButton"
   const val SUBMIT_EMAIL = "submitEmailButton"
   const val ANONYMOUS_BUTTON = "anonymousSignInButton"
-  const val OFFLINE_BUTON = "offlineSignInButton"
+  const val OFFLINE_BUTTON = "offlineSignInButton"
 
   // Top Bar
   const val TOP_BAR = "topBar"
@@ -192,7 +192,7 @@ fun SignInScreen(
             ElevatedButton(
                 onClick = { signInViewModel.signInOffline() },
                 enabled = !emailState.loading,
-                modifier = Modifier.fillMaxWidth().testTag(SignInScreenTags.OFFLINE_BUTON)) {
+                modifier = Modifier.fillMaxWidth().testTag(SignInScreenTags.OFFLINE_BUTTON)) {
                   Text("Continue in Offline Mode")
                 }
           }
