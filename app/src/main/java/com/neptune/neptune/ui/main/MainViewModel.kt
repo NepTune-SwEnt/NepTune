@@ -119,32 +119,36 @@ open class MainViewModel(
 
   fun loadRecommendations(limit: Int = 50) {
     viewModelScope.launch {
-      Log.d("RecoDebug", "loadRecommendations() START, cacheSize=${allSamplesCache.size}")
-      val recoUser = profileRepo.getCurrentRecoUserProfile()
-      if (recoUser == null) {
-        // Fallback when no user or profile: just show latest samples
-        Log.d("RecoDebug", "No recoUser profile (null) – skipping recommendations")
+      try {
+        Log.d("RecoDebug", "loadRecommendations() START, cacheSize=${allSamplesCache.size}")
+        val recoUser = profileRepo.getCurrentRecoUserProfile()
+        if (recoUser == null) {
+          // Fallback when no user or profile: just show latest samples
+          Log.d("RecoDebug", "No recoUser profile (null) – skipping recommendations")
 
-        _recommendedSamples.value = emptyList()
-        return@launch
+          _recommendedSamples.value = emptyList()
+          return@launch
+        }
+        val candidates = allSamplesCache
+        if (candidates.isEmpty()) {
+          Log.d("RecoDebug", "No candidates (cache empty) – skipping ranking")
+          _recommendedSamples.value = emptyList()
+          return@launch
+        }
+        val ranked =
+            RecommendationEngine.rankSamplesForUser(
+                user = recoUser, candidates = candidates, limit = limit)
+        ranked.forEachIndexed { index, sample ->
+          val score = RecommendationEngine.scoreSample(sample, recoUser, System.currentTimeMillis())
+          Log.d(
+              "RecoDebug",
+              "#$index  id=${sample.id}  name=${sample.name}  score=${"%.4f".format(score)}")
+        }
+        _recommendedSamples.value = ranked
+        _discoverSamples.value = ranked
+      } catch (e: Exception) {
+        Log.e("MainViewModel", "Error loading recommendations: ${e.message}")
       }
-      val candidates = allSamplesCache
-      if (candidates.isEmpty()) {
-        Log.d("RecoDebug", "No candidates (cache empty) – skipping ranking")
-        _recommendedSamples.value = emptyList()
-        return@launch
-      }
-      val ranked =
-          RecommendationEngine.rankSamplesForUser(
-              user = recoUser, candidates = candidates, limit = limit)
-      ranked.forEachIndexed { index, sample ->
-        val score = RecommendationEngine.scoreSample(sample, recoUser, System.currentTimeMillis())
-        Log.d(
-            "RecoDebug",
-            "#$index  id=${sample.id}  name=${sample.name}  score=${"%.4f".format(score)}")
-      }
-      _recommendedSamples.value = ranked
-      _discoverSamples.value = ranked
     }
   }
 

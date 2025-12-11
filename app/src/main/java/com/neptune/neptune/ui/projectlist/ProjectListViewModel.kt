@@ -65,14 +65,16 @@ class ProjectListViewModel(
     get() = auth?.currentUser != null
 
   init {
-    try {
     viewModelScope.launch {
-      connectivityObserver.isOnline.collectLatest { connected ->
-        _isOnline.value = connected
-        refreshProjects()
+      try {
+
+        connectivityObserver.isOnline.collectLatest { connected ->
+          _isOnline.value = connected
+          refreshProjects()
+        }
+      } catch (e: Exception) {
+        Log.e("ProjectListViewModel", "Network observer error", e)
       }
-    } } catch (e: Exception) {
-      Log.e("ProjectListViewModel", "Network observer error", e)
     }
     viewModelScope.launch {
       try {
@@ -80,7 +82,8 @@ class ProjectListViewModel(
       } catch (e: Exception) {
         Log.e("ProjectListViewModel", "Library observer error", e)
       }
-    }  }
+    }
+  }
 
   /** Refreshes the list of projects by fetching them from the repository. */
   fun refreshProjects() {

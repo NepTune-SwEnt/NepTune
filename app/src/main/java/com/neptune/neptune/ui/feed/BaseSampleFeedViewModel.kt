@@ -80,30 +80,42 @@ abstract class BaseSampleFeedViewModel(
 
   override fun onAddComment(sampleId: String, text: String) {
     viewModelScope.launch {
-      val profile = profileRepo.getCurrentProfile()
-      val authorId = profile?.uid ?: "unknown"
-      val authorName = profile?.username ?: defaultName
-      sampleRepo.addComment(sampleId, authorId, authorName, text.trim())
-      observeCommentsForSample(sampleId)
+      try {
+        val profile = profileRepo.getCurrentProfile()
+        val authorId = profile?.uid ?: "unknown"
+        val authorName = profile?.username ?: defaultName
+        sampleRepo.addComment(sampleId, authorId, authorName, text.trim())
+        observeCommentsForSample(sampleId)
+      } catch (e: Exception) {
+        Log.e("BaseSampleFeedViewModel", "Error adding comment: ${e.message}")
+      }
     }
   }
 
   protected open fun observeCommentsForSample(sampleId: String) {
     viewModelScope.launch {
-      sampleRepo.observeComments(sampleId).collectLatest { list ->
-        list.forEach { comment -> loadUsername(comment.authorId) }
-        _comments.value = list
+      try {
+        sampleRepo.observeComments(sampleId).collectLatest { list ->
+          list.forEach { comment -> loadUsername(comment.authorId) }
+          _comments.value = list
+        }
+      } catch (e: Exception) {
+        Log.e("BaseSampleFeedViewModel", "Error observing comments: ${e.message}")
       }
     }
   }
 
   protected open fun loadUsername(userId: String) {
     viewModelScope.launch {
-      val cached = _usernames.value[userId]
-      if (cached != null && cached != defaultName) return@launch
+      try {
+        val cached = _usernames.value[userId]
+        if (cached != null && cached != defaultName) return@launch
 
-      val userName = profileRepo.getUserNameByUserId(userId) ?: defaultName
-      _usernames.update { it + (userId to userName) }
+        val userName = profileRepo.getUserNameByUserId(userId) ?: defaultName
+        _usernames.update { it + (userId to userName) }
+      } catch (e: Exception) {
+        Log.e("BaseSampleFeedViewModel", "Error loading username: ${e.message}")
+      }
     }
   }
 
@@ -116,33 +128,43 @@ abstract class BaseSampleFeedViewModel(
     }
 
     viewModelScope.launch {
-      _sampleResources.update { current ->
-        current +
-            (sample.id to
-                (current[sample.id]?.copy(isLoading = true)
-                    ?: SampleResourceState(isLoading = true)))
-      }
+      try {
+        _sampleResources.update { current ->
+          current +
+              (sample.id to
+                  (current[sample.id]?.copy(isLoading = true)
+                      ?: SampleResourceState(isLoading = true)))
+        }
 
-      val avatarUrl = getSampleOwnerAvatar(sample.ownerId)
-      val userName = getUserName(sample.ownerId)
-      val coverUrl =
-          if (sample.storageImagePath.isNotBlank()) getSampleCoverUrl(sample.storageImagePath)
-          else null
-      val audioUrl =
-          if (sample.storagePreviewSamplePath.isNotBlank()) getSampleAudioUrl(sample) else null
-      val waveform = getSampleWaveform(sample)
+        val avatarUrl = getSampleOwnerAvatar(sample.ownerId)
+        val userName = getUserName(sample.ownerId)
+        val coverUrl =
+            if (sample.storageImagePath.isNotBlank()) getSampleCoverUrl(sample.storageImagePath)
+            else null
+        val audioUrl =
+            if (sample.storagePreviewSamplePath.isNotBlank()) getSampleAudioUrl(sample) else null
+        val waveform = getSampleWaveform(sample)
 
-      _sampleResources.update { current ->
-        current +
-            (sample.id to
-                SampleResourceState(
-                    ownerName = userName,
-                    ownerAvatarUrl = avatarUrl,
-                    coverImageUrl = coverUrl,
-                    audioUrl = audioUrl,
-                    waveform = waveform,
-                    isLoading = false,
-                    loadedSamplePath = sample.storagePreviewSamplePath))
+        _sampleResources.update { current ->
+          current +
+              (sample.id to
+                  SampleResourceState(
+                      ownerName = userName,
+                      ownerAvatarUrl = avatarUrl,
+                      coverImageUrl = coverUrl,
+                      audioUrl = audioUrl,
+                      waveform = waveform,
+                      isLoading = false,
+                      loadedSamplePath = sample.storagePreviewSamplePath))
+        }
+      } catch (e: Exception) {
+        Log.e("BaseSampleFeedViewModel", "Error loading sample resources: ${e.message}")
+        _sampleResources.update { current ->
+          current +
+              (sample.id to
+                  (current[sample.id]?.copy(isLoading = false)
+                      ?: SampleResourceState(isLoading = false)))
+        }
       }
     }
   }
@@ -228,12 +250,16 @@ abstract class BaseSampleFeedViewModel(
       likedSamplesState: MutableStateFlow<Map<String, Boolean>>
   ) {
     viewModelScope.launch {
-      val updatedStates = mutableMapOf<String, Boolean>()
-      for (sample in samples) {
-        val liked = this@BaseSampleFeedViewModel.sampleRepo.hasUserLiked(sample.id)
-        updatedStates[sample.id] = liked
+      try {
+        val updatedStates = mutableMapOf<String, Boolean>()
+        for (sample in samples) {
+          val liked = this@BaseSampleFeedViewModel.sampleRepo.hasUserLiked(sample.id)
+          updatedStates[sample.id] = liked
+        }
+        likedSamplesState.value = updatedStates
+      } catch (e: Exception) {
+        Log.e("BaseSampleFeedViewModel", "Error refreshing like states: ${e.message}")
       }
-      likedSamplesState.value = updatedStates
     }
   }
 

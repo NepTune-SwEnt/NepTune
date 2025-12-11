@@ -110,9 +110,10 @@ open class SearchViewModel(
             } else {
               profileRepo.observeProfile(user.uid)
             }
-          }.catch { e ->
-              Log.e("SearchViewModel", "Error observing profile", e)
-              emit(null)
+          }
+          .catch { e ->
+            Log.e("SearchViewModel", "Error observing profile", e)
+            emit(null)
           }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
@@ -125,8 +126,12 @@ open class SearchViewModel(
       auth.addAuthStateListener(authListener)
     }
     viewModelScope.launch {
-      currentUserProfile.collectLatest { profile ->
-        _followingIds.value = profile?.following?.toSet() ?: emptySet()
+      try {
+        currentUserProfile.collectLatest { profile ->
+          _followingIds.value = profile?.following?.toSet() ?: emptySet()
+        }
+      } catch (e: Exception) {
+        Log.e("SearchViewModel", "Error collecting current user profile", e)
       }
     }
     load(useMockData)
