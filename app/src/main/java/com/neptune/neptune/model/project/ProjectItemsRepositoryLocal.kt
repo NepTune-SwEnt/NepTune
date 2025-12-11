@@ -79,6 +79,12 @@ class ProjectItemsRepositoryLocal(context: Context) : ProjectItemsRepository {
         writeProjects(projects)
       }
 
+  /**
+   * Find project by project file.
+   *
+   * @param projectFile The project file as string to find.
+   * @return The project item corresponding to the provided project file.
+   */
   override suspend fun findProjectWithProjectFile(projectFile: String): ProjectItem =
       mutex.withLock {
         val projects = readProjects()
