@@ -65,7 +65,7 @@ class SearchScreenAllTests {
         sampleRepo = fakeSampleRepo,
         useMockData = true,
         profileRepo = fakeProfileRepo,
-        connectivityObserver = mockObserver)
+    )
   }
 
   /** Advance past the 300ms debounce in SearchScreen */
@@ -89,7 +89,7 @@ class SearchScreenAllTests {
           sampleRepo = repo,
           useMockData = true,
           profileRepo = profileRepo,
-          connectivityObserver = connectivityObserver) {
+      ) {
     val calls = mutableListOf<String>()
 
     override fun search(query: String) {
