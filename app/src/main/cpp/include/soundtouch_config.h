@@ -1,7 +1,3 @@
-//
-// Created by Admin on 10/12/2025.
-//
-
 #ifndef NEPTUNE_SOUNDTOUCH_CONFIG_H
 #define SOUNDTOUCH_CONFIG_H
 #warning "SoundTouch config included!"

@@ -1,7 +1,7 @@
 #include <jni.h>
 #include <vector>
 #include <android/log.h>
-#include "soundtouch/SoundTouch.h" // Inclut la librairie SoundTouch
+#include "soundtouch/SoundTouch.h"
 
 #define LOG_TAG "NativeSoundTouch"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
@@ -10,7 +10,7 @@ using namespace soundtouch;
 
 
 extern "C" JNIEXPORT jfloatArray JNICALL
-Java_com_neptune_neptune_ui_sampler_SamplerViewModel_pitchShiftNative(
+Java_com_neptune_neptune_ui_sampler_NativeAudioProcessor_pitchShiftNative(
         JNIEnv* env,
         jobject /* this */,
         jfloatArray inputSamples,
@@ -20,12 +20,13 @@ Java_com_neptune_neptune_ui_sampler_SamplerViewModel_pitchShiftNative(
     jfloat* samplesPtr = env->GetFloatArrayElements(inputSamples, NULL);
 
     if (samplesPtr == nullptr) {
-        LOGD("samplesPtr null !");
+        LOGD("samplesPtr is null !");
         return nullptr;
     }
 
     const int sampleRate = 44100;
     const int numChannels = 1;
+    const int sampleSegment = 1024;
 
     SoundTouch soundTouch;
 
@@ -45,11 +46,11 @@ Java_com_neptune_neptune_ui_sampler_SamplerViewModel_pitchShiftNative(
     soundTouch.flush();
 
     std::vector<float> outputData;
-    SAMPLETYPE tempBuffer[1024];
+    SAMPLETYPE tempBuffer[sampleSegment];
 
-    int nSamples;
+    uint nSamples;
     do {
-        nSamples = soundTouch.receiveSamples(tempBuffer, 1024);
+        nSamples = soundTouch.receiveSamples(tempBuffer, sampleSegment);
 
         if (nSamples > 0) {
             outputData.insert(
@@ -58,7 +59,7 @@ Java_com_neptune_neptune_ui_sampler_SamplerViewModel_pitchShiftNative(
                     tempBuffer + nSamples
             );
         }
-    } while (nSamples != 0);
+    } while (nSamples > 0);
 
     env->ReleaseFloatArrayElements(inputSamples, samplesPtr, JNI_ABORT);
 
