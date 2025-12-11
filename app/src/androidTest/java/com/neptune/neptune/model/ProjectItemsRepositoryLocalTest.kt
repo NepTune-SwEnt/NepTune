@@ -110,13 +110,13 @@ class ProjectItemsRepositoryLocalTest {
     assertThat(imageFile.exists()).isTrue()
 
     // Add project referencing the files using absolute paths
-    val project = ProjectItem(
-      uid = projectId,
-      name = "Project with files",
-      projectFileLocalPath = zipFile.absolutePath,
-      audioPreviewLocalPath = audioFile.absolutePath,
-      imagePreviewLocalPath = imageFile.absolutePath
-    )
+    val project =
+        ProjectItem(
+            uid = projectId,
+            name = "Project with files",
+            projectFileLocalPath = zipFile.absolutePath,
+            audioPreviewLocalPath = audioFile.absolutePath,
+            imagePreviewLocalPath = imageFile.absolutePath)
     repository.addProject(project)
 
     // Delete project

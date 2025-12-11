@@ -259,6 +259,7 @@ fun ProjectListItem(
                         Log.e("ProjectListItem", "Error playing preview for ${project.uid}", e)
                       }
                     },
+                    modifier = Modifier.testTag("play_${project.uid}"),
                     content = {
                       Icon(
                           Icons.Default.PlayArrow,

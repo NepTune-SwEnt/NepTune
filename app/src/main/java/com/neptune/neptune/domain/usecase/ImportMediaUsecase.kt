@@ -19,6 +19,7 @@ import java.util.UUID
 // Small adapter interface so tests can inject a fake sampler that returns a temp preview Uri
 interface SamplerProvider {
   fun loadProjectData(zipFilePath: String)
+
   suspend fun audioBuilding(): Uri?
 }
 
@@ -47,6 +48,7 @@ open class ImportMediaUseCase(
   protected open fun createSamplerProvider(): SamplerProvider =
       object : SamplerProvider {
         private val sampler = SamplerViewModel()
+
         override fun loadProjectData(zipFilePath: String) {
           sampler.loadProjectData(zipFilePath)
         }

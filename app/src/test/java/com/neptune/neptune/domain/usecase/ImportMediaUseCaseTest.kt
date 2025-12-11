@@ -90,20 +90,22 @@ class ImportMediaUseCaseTest {
 
     // Create a temp preview file that the fake SamplerViewModel will return
     val previewFile = File(ctx.cacheDir, "temp_preview.mp3").apply { writeText("preview") }
-    val fakeProvider = object : SamplerProvider {
-      override fun loadProjectData(zipFilePath: String) {
-        // no-op
-      }
+    val fakeProvider =
+        object : SamplerProvider {
+          override fun loadProjectData(zipFilePath: String) {
+            // no-op
+          }
 
-      override suspend fun audioBuilding(): Uri? {
-        return Uri.fromFile(previewFile)
-      }
-    }
+          override suspend fun audioBuilding(): Uri? {
+            return Uri.fromFile(previewFile)
+          }
+        }
 
     // Subclass the usecase to inject the fake SamplerProvider
-    val uc = object : ImportMediaUseCase(importer, repo, packager) {
-      override fun createSamplerProvider(): SamplerProvider = fakeProvider
-    }
+    val uc =
+        object : ImportMediaUseCase(importer, repo, packager) {
+          override fun createSamplerProvider(): SamplerProvider = fakeProvider
+        }
 
     val item = uc("content://picked")
 
