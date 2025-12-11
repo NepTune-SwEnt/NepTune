@@ -81,7 +81,7 @@ jobs:
 
       # Install Firebase CLI
       - name: Install Firebase CLI
-        run: npm install -g firebase-tools
+        run: npm install -g firebase-tools@14.27.0
 
       # Check formatting
       - name: KTFmt Check
@@ -117,9 +117,9 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install firebase-tools
+      - name: Install firebase-tools v14
         run: |
-          npm i -g firebase-tools
+          npm i -g firebase-tools@14.27.0
 
       # Install functions dependencies and build them
       - name: Install and build Cloud Functions
