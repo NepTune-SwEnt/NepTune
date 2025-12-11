@@ -18,6 +18,7 @@ import com.neptune.neptune.ui.feed.SampleFeedController
 import com.neptune.neptune.ui.main.SampleUiActions
 import com.neptune.neptune.util.DownloadDirectoryProvider
 import java.io.File
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -46,6 +47,7 @@ enum class SearchType(val title: String) {
  *
  * written with assistance from ChatGPT
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 open class SearchViewModel(
     sampleRepo: SampleRepository = SampleRepositoryProvider.repository,
     context: Context,
@@ -92,6 +94,7 @@ open class SearchViewModel(
   // Current User Profile (to track following list)
   // Logic: Observe the current user flow. If a user is logged in, observe their profile.
   // If no user is logged in, emit null.
+  @OptIn(ExperimentalCoroutinesApi::class)
   val currentUserProfile: StateFlow<Profile?> =
       _currentUserFlow
           .flatMapLatest { user ->
@@ -267,7 +270,13 @@ open class SearchViewModel(
   fun loadSamplesFromFirebase() {
     viewModelScope.launch {
       this@SearchViewModel.sampleRepo.observeSamples().collectLatest { samples ->
-        val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
+        val currentUserId = auth?.currentUser?.uid
+        val following = _followingIds.value
+        val visibleSamples =
+            samples.filter { sample ->
+              sample.isPublic || sample.ownerId == currentUserId || (sample.ownerId in following)
+            }
+        val readySamples = visibleSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
         allSamples.value = readySamples
         readySamples.forEach { loadSampleResources(it) }
         applyFilter(query)

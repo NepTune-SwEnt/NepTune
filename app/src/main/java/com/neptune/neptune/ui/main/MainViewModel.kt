@@ -153,14 +153,19 @@ open class MainViewModel(
     viewModelScope.launch {
       try {
         val profile = profileRepo.getCurrentProfile()
+        val currentUserId = auth?.currentUser?.uid
         val following = profile?.following.orEmpty()
-        sampleRepo.observeSamples().collectLatest { updatedSamples ->
+        sampleRepo.observeSamples().collectLatest { rawSamples ->
+          val visibleSamples =
+              rawSamples.filter { sample ->
+                sample.isPublic || sample.ownerId == currentUserId || (sample.ownerId in following)
+              }
           if (allSamplesCache.isEmpty()) {
-            allSamplesCache = updatedSamples
-            val readySamples = updatedSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
+            allSamplesCache = visibleSamples
+            val readySamples = visibleSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
             updateLists(readySamples, following)
 
-            val pendingSamples = updatedSamples.filter { it.storagePreviewSamplePath.isBlank() }
+            val pendingSamples = visibleSamples.filter { it.storagePreviewSamplePath.isBlank() }
             pendingSamples.forEach { pendingSample ->
               watchPendingSample(pendingSample.id, following)
             }
@@ -169,7 +174,7 @@ open class MainViewModel(
             val currentUserId = auth?.currentUser?.uid
 
             val samplesToDisplay =
-                updatedSamples.filter { sample ->
+                visibleSamples.filter { sample ->
                   val isExisting = sample.id in existingIds
                   val isMine = sample.ownerId == currentUserId
 
