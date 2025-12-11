@@ -217,7 +217,6 @@ fun SearchScreen(
                 ScrollableColumnOfSamples(
                     samples = samples,
                     searchViewModel = searchViewModel,
-                    modifier = Modifier.padding(pd),
                     mediaPlayer = mediaPlayer,
                     likedSamples = likedSamples,
                     activeCommentSampleId = activeCommentSampleId,
@@ -341,7 +340,6 @@ fun ScrollableColumnOfUsers(
 
 @Composable
 fun ScrollableColumnOfSamples(
-    modifier: Modifier = Modifier,
     samples: List<Sample>,
     searchViewModel: SearchViewModel,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
@@ -362,8 +360,7 @@ fun ScrollableColumnOfSamples(
   // Ensure the possibility to like in local
   LazyColumn(
       modifier =
-          modifier
-              .testTag(SearchScreenTestTags.SAMPLE_LIST)
+          Modifier.testTag(SearchScreenTestTags.SAMPLE_LIST)
               .fillMaxSize()
               .background(NepTuneTheme.colors.background),
       horizontalAlignment = Alignment.CenterHorizontally) {
