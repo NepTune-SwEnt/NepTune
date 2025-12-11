@@ -73,7 +73,6 @@ class SearchViewModelTest {
     val viewModel =
         SearchViewModel(
             sampleRepo = realRepo,
-            context = context,
             useMockData = false,
             profileRepo = ProfileRepositoryProvider.repository,
             explicitStorageService = realStorageService,

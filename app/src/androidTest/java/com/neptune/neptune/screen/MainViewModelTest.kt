@@ -2,7 +2,6 @@ package com.neptune.neptune.screen
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.neptune.neptune.NepTuneApplication.Companion.appContext
 import com.neptune.neptune.model.FakeProfileRepository
 import com.neptune.neptune.model.FakeSampleRepository
 import com.neptune.neptune.ui.main.MainViewModel
@@ -63,7 +62,6 @@ class MainViewModelTest {
             sampleRepo = fakeRepository,
             profileRepo = fakeProfileRepository,
             useMockData = true,
-            context = appContext,
             auth = mockAuth)
   }
 

@@ -17,7 +17,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
-import androidx.navigation.compose.rememberNavController
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -39,6 +38,7 @@ import com.neptune.neptune.ui.post.PostScreen
 import com.neptune.neptune.ui.post.PostScreenTestTags
 import com.neptune.neptune.ui.post.PostUiState
 import com.neptune.neptune.ui.post.PostViewModel
+import com.neptune.neptune.ui.settings.SettingsViewModel
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -105,7 +105,10 @@ class NavigationTest {
         auth.signInAnonymously().await()
       }
     }
-    composeTestRule.setContent { NeptuneApp(startDestination = Screen.Main.route) }
+    val mockSettingsViewModel = mockk<SettingsViewModel>(relaxed = true)
+    composeTestRule.setContent {
+      NeptuneApp(startDestination = Screen.Main.route, settingsViewModel = mockSettingsViewModel)
+    }
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).isDisplayed()
   }
@@ -277,10 +280,7 @@ class NavigationTest {
 
   @Test
   fun goBackFromProfileToSearch() {
-
-    composeTestRule.setContent {
-      NeptuneApp(navController = rememberNavController(), startDestination = Screen.Main.route)
-    }
+    setContent()
 
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
   }
@@ -296,7 +296,7 @@ class NavigationTest {
     every { mockViewModel.userAvatar } returns MutableStateFlow(null)
     every { mockViewModel.likedSamples } returns MutableStateFlow(emptyMap())
     every { mockViewModel.comments } returns MutableStateFlow(emptyList())
-    every { mockViewModel.downloadProgress } returns MutableStateFlow<Int?>(null)
+    every { mockViewModel.downloadProgress } returns MutableStateFlow(null)
     every { mockViewModel.sampleResources } returns MutableStateFlow(emptyMap())
     every { mockViewModel.isRefreshing } returns MutableStateFlow(false)
     every { mockViewModel.activeCommentSampleId } returns MutableStateFlow(null)
@@ -325,6 +325,7 @@ class NavigationTest {
     val imageUriFlow = MutableStateFlow<Uri?>(null)
 
     every { mockViewModel.uiState } returns uiStateFlow
+    every { mockViewModel.isOnline } returns MutableStateFlow(true)
     every { mockViewModel.localImageUri } returns imageUriFlow
 
     every { mockViewModel.updateTitle(any<String>()) } answers

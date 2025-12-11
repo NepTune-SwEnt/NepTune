@@ -53,7 +53,7 @@ abstract class BaseSampleFeedViewModel(
   private val waveformCache = mutableMapOf<String, List<Float>>()
   private val _isOnline = MutableStateFlow(true)
   val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
-  val isUserLoggedIn: Boolean
+  open val isUserLoggedIn: Boolean
     get() = auth?.currentUser != null
 
   init {

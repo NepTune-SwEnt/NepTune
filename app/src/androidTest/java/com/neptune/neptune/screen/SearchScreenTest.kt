@@ -46,11 +46,11 @@ class SearchScreenTest {
     fakeSampleRepo = FakeSampleRepository()
     fakeProfileRepo = FakeProfileRepository()
     viewModel =
-        SearchViewModel(
-            sampleRepo = fakeSampleRepo,
-            profileRepo = fakeProfileRepo,
-            context = composeTestRule.activity.applicationContext,
-            useMockData = true)
+        object :
+            SearchViewModel(
+                sampleRepo = fakeSampleRepo, profileRepo = fakeProfileRepo, useMockData = true) {
+          override val isUserLoggedIn: Boolean = true
+        }
     composeTestRule.setContent {
       CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
         SearchScreen(searchViewModel = viewModel)
