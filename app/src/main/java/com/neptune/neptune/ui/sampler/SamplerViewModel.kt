@@ -843,9 +843,9 @@ open class SamplerViewModel() : ViewModel() {
     init {
       try {
         System.loadLibrary("sampler_jni")
-        Log.d("SamplerViewModel", "Librairie Native SoundTouch chargée.")
+        Log.d("SamplerViewModel", "Native SoundTouch library loaded.")
       } catch (e: Exception) {
-        Log.e("SamplerViewModel", "Échec du chargement de la librairie native: ${e.message}")
+        Log.w("SamplerViewModel", "Lib native not loaded (JVM test or environnement outside Android)")
       }
     }
   }
