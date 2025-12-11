@@ -16,7 +16,13 @@ import java.io.FileOutputStream
 import java.net.URI
 import java.util.UUID
 
-class ImportMediaUseCase(
+// Small adapter interface so tests can inject a fake sampler that returns a temp preview Uri
+interface SamplerProvider {
+  fun loadProjectData(zipFilePath: String)
+  suspend fun audioBuilding(): Uri?
+}
+
+open class ImportMediaUseCase(
     private val importer: FileImporter,
     private val repo: MediaRepository,
     private val packager: NeptunePackager
@@ -37,6 +43,19 @@ class ImportMediaUseCase(
     return finalizeImport(localAudio, probe.durationMs)
   }
 
+  // Make this protected/open so tests can override and inject a fake SamplerProvider
+  protected open fun createSamplerProvider(): SamplerProvider =
+      object : SamplerProvider {
+        private val sampler = SamplerViewModel()
+        override fun loadProjectData(zipFilePath: String) {
+          sampler.loadProjectData(zipFilePath)
+        }
+
+        override suspend fun audioBuilding(): Uri? {
+          return sampler.audioBuilding()
+        }
+      }
+
   private suspend fun finalizeImport(localAudio: File, durationMs: Long?): MediaItem {
     val projectZip =
         try {
@@ -53,9 +72,9 @@ class ImportMediaUseCase(
 
     val projectZipPath: String = projectZip.toURI().toString()
     val projectsJsonRepo = ProjectItemsRepositoryLocal(appContext)
-    val samplerVM = SamplerViewModel()
-    samplerVM.loadProjectData(projectZipPath)
-    val tempPreviewUri: Uri? = samplerVM.audioBuilding()
+    val sampler = createSamplerProvider()
+    sampler.loadProjectData(projectZipPath)
+    val tempPreviewUri: Uri? = sampler.audioBuilding()
 
     // Copy the preview file (if any) from the temporary Uri into a dedicated "previews" folder
     val audioPreviewLocalPath: String = run {

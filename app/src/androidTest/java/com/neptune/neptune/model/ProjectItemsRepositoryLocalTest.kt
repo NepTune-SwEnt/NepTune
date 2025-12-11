@@ -90,4 +90,49 @@ class ProjectItemsRepositoryLocalTest {
       // success
     }
   }
+
+  @Test
+  fun deleteProject_deletesLocalFiles() = runBlocking {
+    val projectId = repository.getNewId()
+
+    // Create temp files representing the project zip, audio preview and image preview
+    val zipFile = File(context.filesDir, "test_project_$projectId.zip")
+    val audioFile = File(context.filesDir, "preview_$projectId.mp3")
+    val imageFile = File(context.filesDir, "img_$projectId.png")
+
+    zipFile.writeText("zip")
+    audioFile.writeText("audio")
+    imageFile.writeText("img")
+
+    // Sanity checks
+    assertThat(zipFile.exists()).isTrue()
+    assertThat(audioFile.exists()).isTrue()
+    assertThat(imageFile.exists()).isTrue()
+
+    // Add project referencing the files using absolute paths
+    val project = ProjectItem(
+      uid = projectId,
+      name = "Project with files",
+      projectFileLocalPath = zipFile.absolutePath,
+      audioPreviewLocalPath = audioFile.absolutePath,
+      imagePreviewLocalPath = imageFile.absolutePath
+    )
+    repository.addProject(project)
+
+    // Delete project
+    repository.deleteProject(projectId)
+
+    // Files should be deleted
+    assertThat(zipFile.exists()).isFalse()
+    assertThat(audioFile.exists()).isFalse()
+    assertThat(imageFile.exists()).isFalse()
+
+    // Project should be removed
+    try {
+      repository.getProject(projectId)
+      Assert.fail("Expected NoSuchElementException after deletion")
+    } catch (_: NoSuchElementException) {
+      // success
+    }
+  }
 }

@@ -1,6 +1,7 @@
 package com.neptune.neptune.domain.usecase
 
 import android.content.Context
+import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
 import com.neptune.neptune.data.NeptunePackager
 import com.neptune.neptune.data.StoragePaths
@@ -77,5 +78,50 @@ class ImportMediaUseCaseTest {
     val fromRepo = repo.observeAll().first()
     assertEquals(1, fromRepo.size)
     assertEquals(item.projectUri, fromRepo.first().projectUri)
+  }
+
+  @Test
+  fun finalizeImport_createsAudioPreviewAndStoresIt() = runBlocking {
+    val ctx: Context = ApplicationProvider.getApplicationContext()
+    val paths = StoragePaths(ctx)
+    val packager = NeptunePackager(paths)
+    val repo = FakeRepo2()
+    val importer = FakeImporter(ctx.cacheDir)
+
+    // Create a temp preview file that the fake SamplerViewModel will return
+    val previewFile = File(ctx.cacheDir, "temp_preview.mp3").apply { writeText("preview") }
+    val fakeProvider = object : SamplerProvider {
+      override fun loadProjectData(zipFilePath: String) {
+        // no-op
+      }
+
+      override suspend fun audioBuilding(): Uri? {
+        return Uri.fromFile(previewFile)
+      }
+    }
+
+    // Subclass the usecase to inject the fake SamplerProvider
+    val uc = object : ImportMediaUseCase(importer, repo, packager) {
+      override fun createSamplerProvider(): SamplerProvider = fakeProvider
+    }
+
+    val item = uc("content://picked")
+
+    // Check that previews dir contains a file for the item id
+    val previewsDir = File(ctx.filesDir, "previews")
+    assertTrue(previewsDir.exists())
+    val files = previewsDir.listFiles() ?: emptyArray()
+    assertTrue(files.isNotEmpty())
+
+    // Check the project entry was created with audioPreviewLocalPath
+    // ProjectItemsRepositoryLocal saves projects to app files dir's projects.json
+    val projectsRepo = com.neptune.neptune.model.project.ProjectItemsRepositoryLocal(ctx)
+    val project = projectsRepo.findProjectWithProjectFile(item.projectUri)
+    assertTrue(project.audioPreviewLocalPath?.isNotBlank() == true)
+
+    // The preview file path should point to a file inside previewsDir
+    val previewPath = project.audioPreviewLocalPath!!
+    val previewFileSaved = File(URI(previewPath))
+    assertTrue(previewFileSaved.exists())
   }
 }
