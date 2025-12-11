@@ -712,9 +712,9 @@ open class SamplerViewModel() : ViewModel() {
 
       saveProjectDataSync(zipFilePath)
       audioBuilding()
-      val projectsJsonRepo = ProjectItemsRepositoryLocal(context)
-      val projectId: String = projectsJsonRepo.findProjectWithProjectFile(zipFilePath).uid
       try {
+        val projectsJsonRepo = ProjectItemsRepositoryLocal(context)
+        val projectId: String = projectsJsonRepo.findProjectWithProjectFile(zipFilePath).uid
         val state = _uiState.value
         val previewUri = state.currentAudioUri ?: return@launch
 
@@ -753,7 +753,7 @@ open class SamplerViewModel() : ViewModel() {
         Log.i(
             "SamplerViewModel", "Saved preview for project $projectId -> ${destFile.absolutePath}")
       } catch (e: Exception) {
-        Log.w("SamplerViewModel", "Failed to save preview for project $projectId", e)
+        Log.w("SamplerViewModel", "Failed to save preview for project", e)
       }
     }
   }
