@@ -24,7 +24,6 @@ import org.robolectric.annotation.Config
 class SearchViewModelTest {
   private val fakeSampleRepo = FakeSampleRepository()
   private val fakeProfileRepo = FakeProfileRepository()
-  private val appContext: Context = ApplicationProvider.getApplicationContext<Application>()
 
   @Test
   fun searchWithEmptyQueryLoadsAllSamples() {

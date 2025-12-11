@@ -83,7 +83,6 @@ class SearchScreenAllTests {
   class SpySearchViewModel(
       repo: SampleRepository,
       profileRepo: ProfileRepository,
-      connectivityObserver: NetworkConnectivityObserver
   ) :
       SearchViewModel(
           sampleRepo = repo,
