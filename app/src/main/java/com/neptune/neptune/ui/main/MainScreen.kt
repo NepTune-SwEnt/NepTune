@@ -178,7 +178,6 @@ fun MainScreen(
     navigateToProfile: () -> Unit = {},
     navigateToProjectList: () -> Unit = {},
     navigateToOtherUserProfile: (String) -> Unit = {},
-    navigateToSelectMessages: () -> Unit = {},
     navigateToSampleList: (FeedType) -> Unit = {},
     mainViewModel: MainViewModel =
         viewModel(factory = factory(LocalContext.current.applicationContext as Application))
@@ -229,10 +228,7 @@ fun MainScreen(
               .testTag(MainScreenTestTags.MAIN_SCREEN)) {
         Scaffold(
             topBar = {
-              MainTopAppBar(
-                  userAvatar = userAvatar,
-                  navigateToSelectMessages = navigateToSelectMessages,
-                  navigateToProfile = navigateToProfile)
+              MainTopAppBar(userAvatar = userAvatar, navigateToProfile = navigateToProfile)
             },
             floatingActionButton = {
               FloatingActionButton(
@@ -399,30 +395,10 @@ private fun SampleSectionLazyRow(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MainTopAppBar(
-    userAvatar: String?,
-    navigateToSelectMessages: () -> Unit,
-    navigateToProfile: () -> Unit
-) {
+private fun MainTopAppBar(userAvatar: String?, navigateToProfile: () -> Unit) {
   Column {
     CenterAlignedTopAppBar(
         modifier = Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
-        navigationIcon = {
-          // Message Button
-          IconButton(
-              onClick = navigateToSelectMessages,
-              modifier =
-                  Modifier.padding(vertical = 38.dp, horizontal = 25.dp)
-                      .size(38.dp)
-                      .testTag(NavigationTestTags.MESSAGE_BUTTON)) {
-                Icon(
-                    painter = painterResource(id = R.drawable.messageicon),
-                    contentDescription = "Messages",
-                    modifier = Modifier.size(30.dp),
-                    tint = NepTuneTheme.colors.onBackground,
-                )
-              }
-        },
         title = {
           Text(
               text = "NepTune",

@@ -41,13 +41,12 @@ import com.neptune.neptune.ui.messages.SelectMessagesScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
 import com.neptune.neptune.ui.navigation.Screen
-import com.neptune.neptune.ui.picker.ImportScreen
-import com.neptune.neptune.ui.picker.ImportViewModel
-import com.neptune.neptune.ui.picker.importAppRoot
 import com.neptune.neptune.ui.post.PostScreen
 import com.neptune.neptune.ui.profile.OtherUserProfileRoute
 import com.neptune.neptune.ui.profile.SelfProfileRoute
 import com.neptune.neptune.ui.projectlist.ProjectListScreen
+import com.neptune.neptune.ui.projectlist.ProjectListViewModel
+import com.neptune.neptune.ui.projectlist.importAppRoot
 import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.search.SearchScreen
 import com.neptune.neptune.ui.search.SearchViewModel
@@ -120,7 +119,7 @@ fun NeptuneApp(
   val navigationActions = NavigationActions(navController)
   val navBackStackEntry by navController.currentBackStackEntryAsState()
   val currentRoute = navBackStackEntry?.destination?.route
-  val importViewModel: ImportViewModel = viewModel(factory = importAppRoot())
+  val projectListViewModel: ProjectListViewModel = viewModel(factory = importAppRoot())
   val currentScreen = navigationActions.currentScreen(currentRoute ?: startDestination)
 
   val mainViewModel: MainViewModel =
@@ -151,9 +150,6 @@ fun NeptuneApp(
                       },
                       navigateToOtherUserProfile = { userId ->
                         navigationActions.navigateTo(Screen.OtherUserProfile.createRoute(userId))
-                      },
-                      navigateToSelectMessages = {
-                        navigationActions.navigateTo(Screen.SelectMessages)
                       },
                       navigateToSampleList = { type ->
                         navigationActions.navigateTo(Screen.Feed.createRoute(type))
@@ -203,9 +199,6 @@ fun NeptuneApp(
                           },
                           projectId = projectId)
                     }
-                composable(Screen.ImportFile.route) {
-                  ImportScreen(vm = importViewModel, goBack = { navigationActions.goBack() })
-                }
                 composable(Screen.SignIn.route) {
                   SignInScreen(
                       signInViewModel = signInViewModel,
@@ -224,6 +217,7 @@ fun NeptuneApp(
                             })) { backStackEntry ->
                       val purpose = backStackEntry.arguments?.getString("purpose") ?: "edit"
                       ProjectListScreen(
+                          projectListViewModel = projectListViewModel,
                           onProjectClick = { projectItem ->
                             when (purpose) {
                               "post" -> {
@@ -279,7 +273,6 @@ fun NeptuneApp(
                     }
                 composable(Screen.SelectMessages.route) {
                   SelectMessagesScreen(
-                      goBack = { navigationActions.goBack() },
                       onSelectUser = { uid ->
                         navigationActions.navigateTo(Screen.Messages.createRoute(uid))
                       })

@@ -1,30 +1,55 @@
 package com.neptune.neptune.ui.projectlist
 
+import android.content.Context
 import android.util.Log
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.room.Room
 import com.google.firebase.Timestamp
+import com.neptune.neptune.data.FileImporterImpl
+import com.neptune.neptune.data.MediaRepositoryImpl
+import com.neptune.neptune.data.NeptunePackager
+import com.neptune.neptune.data.StoragePaths
+import com.neptune.neptune.data.local.MediaDb
+import com.neptune.neptune.domain.model.MediaItem
+import com.neptune.neptune.domain.usecase.GetLibraryUseCase
+import com.neptune.neptune.domain.usecase.ImportMediaUseCase
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.TotalProjectItemsRepository
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
+import java.io.File
+import java.net.URI
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+private const val MEDIA_DB = "media.db"
 
 /**
  * ViewModel for managing the state and operations related to the list of projects. This has been
  * written with the help of LLMs.
  *
  * @property projectRepository Repository for accessing and manipulating project items.
- * @author Uri Jaquet
+ * @author Uri Jaquet and Angéline Bignens
  */
 class ProjectListViewModel(
     private val projectRepository: TotalProjectItemsRepository =
         TotalProjectItemsRepositoryProvider.repository,
+    private val importMedia: ImportMediaUseCase,
+    getLibrary: GetLibraryUseCase
 ) : ViewModel() {
   private var _uiState = MutableStateFlow(ProjectListUiState(projects = emptyList()))
   val uiState: StateFlow<ProjectListUiState> = _uiState.asStateFlow()
+
+  val library: StateFlow<List<MediaItem>> =
+      getLibrary().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
   init {
     getAllProjects()
@@ -175,6 +200,113 @@ class ProjectListViewModel(
   fun selectProject(project: ProjectItem) {
     _uiState.value = _uiState.value.copy(selectedProject = project.uid)
   }
+
+  /**
+   * Imports a media file from a given URI string. Supports both SAF/content URIs and file:// URIs.
+   *
+   * If the URI uses the "file" scheme, it attempts to convert it to a [File] and calls
+   * [importMedia]. If any exception occurs during this conversion, it falls back to importing using
+   * the original URI string.
+   *
+   * @param uriString The URI string pointing to the media file to import. Can be a content URI or
+   *   file URI.
+   */
+  fun importFromSaf(uriString: String) =
+      viewModelScope.launch {
+        val parsed =
+            try {
+              URI(uriString)
+            } catch (_: Exception) {
+              null
+            }
+        if (parsed != null && parsed.scheme == "file") {
+          // use File overload
+          try {
+            val f = File(parsed)
+            importMedia(f)
+          } catch (_: Exception) {
+            // fallback to string-based import in case of any issue
+            importMedia(uriString)
+          }
+        } else {
+          importMedia(uriString)
+        }
+      }
+
+  /**
+   * Imports a [File] produced by the in-app recorder directly and updates the project list
+   * immediately.
+   *
+   * This is a convenience function for handling files already available as [File] objects.
+   *
+   * @param file The recorded audio file to import as a project.
+   */
+  fun importRecordedFile(file: File) =
+      viewModelScope.launch {
+        importMedia(file)
+        getAllProjects()
+      }
+}
+
+/**
+ * Factory for creating [ProjectListViewModel] instances with custom use cases. This has been
+ * written with the help of LLMs.
+ *
+ * @property importUC The [ImportMediaUseCase] to be injected into the ViewModel.
+ * @property libraryUC The [GetLibraryUseCase] to be injected into the ViewModel.
+ */
+class ProjectListVMFactory(
+    private val importUC: ImportMediaUseCase,
+    private val libraryUC: GetLibraryUseCase,
+) : ViewModelProvider.Factory {
+  @Suppress("UNCHECKED_CAST")
+  override fun <T : ViewModel> create(modelClass: Class<T>): T {
+    if (modelClass.isAssignableFrom(ProjectListViewModel::class.java)) {
+      return ProjectListViewModel(
+          projectRepository = TotalProjectItemsRepositoryProvider.repository, importUC, libraryUC)
+          as T
+    }
+    error("Unknown ViewModel class")
+  }
+}
+
+/**
+ * Provides a singleton instance of the [MediaDb] database.This has been written with the help of
+ * LLMs.
+ *
+ * @param context The Android [Context] used to build the database.
+ * @return An instance of [MediaDb].
+ */
+private fun provideDb(context: Context): MediaDb =
+    Room.databaseBuilder(context.applicationContext, MediaDb::class.java, MEDIA_DB)
+        .fallbackToDestructiveMigration(false)
+        .build()
+
+/**
+ * Composable function that sets up singletons and provides the [ProjectListVMFactory] for the
+ * app.This has been written with the help of LLMs.
+ *
+ * This function initializes:
+ * - The local database ([MediaDb])
+ * - Media repository ([MediaRepositoryImpl])
+ * - File importer ([FileImporterImpl])
+ * - Packager ([NeptunePackager])
+ * - Use cases ([ImportMediaUseCase] and [GetLibraryUseCase])
+ *
+ * @return A [ProjectListVMFactory] ready to create [ProjectListViewModel] instances.
+ */
+@Composable
+fun importAppRoot(): ProjectListVMFactory {
+  val context = LocalContext.current
+  val db = remember { provideDb(context) }
+  val repo = remember { MediaRepositoryImpl(db.mediaDao()) }
+  val paths = remember { StoragePaths(context) }
+  val importer = remember { FileImporterImpl(context, context.contentResolver, paths) }
+  val packager = remember { NeptunePackager(paths) }
+  val importUC = remember { ImportMediaUseCase(importer, repo, packager) }
+  val libraryUC = remember { GetLibraryUseCase(repo) }
+
+  return ProjectListVMFactory(importUC, libraryUC)
 }
 
 /**

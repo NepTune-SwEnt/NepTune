@@ -46,10 +46,10 @@ sealed class Tab(val name: String, val icon: Int, val destination: Screen, val t
 
   object ImportAudio :
       Tab(
-          "Import Audio",
-          android.R.drawable.ic_menu_add,
-          Screen.ImportFile,
-          NavigationTestTags.IMPORT_FILE_TAB)
+          "Messages",
+          R.drawable.messageicon,
+          Screen.SelectMessages,
+          NavigationTestTags.SELECT_MESSAGES_TAB)
 }
 
 private val tabs =

@@ -53,9 +53,7 @@ sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
 
   object SettingsCustomTheme : Screen(route = "settings_custom_theme", showBottomBar = false)
 
-  object ImportFile : Screen(route = "import_file")
-
-  object SelectMessages : Screen(route = "select_messages", showBottomBar = false)
+  object SelectMessages : Screen(route = "select_messages", showBottomBar = true)
 }
 
 /**
@@ -88,7 +86,6 @@ open class NavigationActions(
       route == Screen.SettingsTheme.route -> Screen.SettingsTheme
       route == Screen.SettingsCustomTheme.route -> Screen.SettingsCustomTheme
       route == Screen.SettingsAccount.route -> Screen.SettingsAccount
-      route == Screen.ImportFile.route -> Screen.ImportFile
       route == Screen.OtherUserProfile.route -> Screen.OtherUserProfile
       route == Screen.SelectMessages.route -> Screen.SelectMessages
       else -> Screen.SignIn

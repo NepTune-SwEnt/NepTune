@@ -1,5 +1,10 @@
 package com.neptune.neptune.ui.projectlist
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,18 +22,23 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -38,6 +48,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -56,17 +68,17 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.firebase.Timestamp
 import com.neptune.neptune.R
+import com.neptune.neptune.data.StoragePaths
+import com.neptune.neptune.media.NeptuneRecorder
 import com.neptune.neptune.model.project.ProjectItem
-import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.ui.theme.NepTuneTheme
-import kotlinx.coroutines.runBlocking
+import java.io.File
 
 object ProjectListScreenTestTags {
   const val PROJECT_LIST_SCREEN = "ProjectListScreen"
@@ -81,6 +93,16 @@ object ProjectListScreenTestTags {
   const val DELETE_BUTTON = "DeleteButton"
   const val ADD_TO_CLOUD_BUTTON = "AddToCloudButton"
   const val REMOVE_FROM_CLOUD_BUTTON = "RemoveFromCloudButton"
+
+  const val BUTTON_RECORD = "RecordFAB"
+  const val MIC_ICON = "MicIcon"
+  const val STOP_ICON = "StopIcon"
+  const val BUTTON_CREATE = "ButtonCreate"
+  const val BUTTON_CANCEL = "ButtonCancel"
+  const val EMPTY_LIST = "EmptyList"
+  const val NAME_FIELD = "NameField"
+
+  const val IMPORT_AUDIO_BUTTON = "ImportAudioFAB"
 }
 
 private const val SEARCHBAR_FONT_SIZE = 21
@@ -92,7 +114,10 @@ private const val SEARCHBAR_FONT_SIZE = 21
  * @param credentialManager Manages user credentials.
  * @param onProjectClick Lambda function to navigate.
  * @param projectListViewModel ViewModel managing the state of the project list.
- * @author Uri Jaquet
+ * @param recorder NeptuneRecorder instance for audio recording.
+ * @param testRecordedFile test file to pre-populate the naming dialog.
+ * @param onDeleteFailed callback triggered if deleting a temp file fails.
+ * @author Uri Jaquet and Angéline Bignens
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,10 +125,51 @@ fun ProjectListScreen(
     credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
     onProjectClick: (ProjectItem) -> Unit = {},
     projectListViewModel: ProjectListViewModel = viewModel(),
+    recorder: NeptuneRecorder? = null,
+    testRecordedFile: File? = null,
+    onDeleteFailed: (() -> Unit)? = null,
 ) {
   val uiState by projectListViewModel.uiState.collectAsState()
   val projects: List<ProjectItem> = uiState.projects
   val selectedProjects: String? = uiState.selectedProject
+
+  val context = LocalContext.current
+
+  val pickAudio =
+      rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { projectListViewModel.importFromSaf(it.toString()) }
+      }
+
+  val actualRecorder = recorder ?: remember { NeptuneRecorder(context, StoragePaths(context)) }
+  var isRecording by remember { mutableStateOf(actualRecorder.isRecording) }
+  var hasAudioPermission by remember { mutableStateOf(false) }
+
+  // Dialog state for naming the recorded project
+  var showNameDialog by remember { mutableStateOf(false) }
+  var proposedFileToImport by remember { mutableStateOf<File?>(null) }
+  var projectName by remember { mutableStateOf("") }
+
+  // If a test provides a recorded file, open the name dialog immediately so tests can exercise
+  // the dialog actions without going through recording flow.
+  LaunchedEffect(testRecordedFile) {
+    testRecordedFile?.let {
+      proposedFileToImport = it
+      projectName = it.nameWithoutExtension
+      showNameDialog = true
+    }
+  }
+
+  val permissionLauncher =
+      rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) {
+          isGranted ->
+        hasAudioPermission = isGranted
+      }
+
+  LaunchedEffect(key1 = true) {
+    hasAudioPermission =
+        ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+  }
 
   var searchText by remember { mutableStateOf("") }
   val filteredProjects =
@@ -119,6 +185,38 @@ fun ProjectListScreen(
 
   Scaffold(
       containerColor = NepTuneTheme.colors.background,
+      floatingActionButton = {
+        RecordControls(
+            isRecording = isRecording,
+            onToggleRecord = {
+              // Toggle recording: start or stop and handle produced file
+              if (isRecording) {
+                val recorded =
+                    try {
+                      actualRecorder.stop()
+                    } catch (_: Exception) {
+                      null
+                    }
+                if (recorded != null) {
+                  proposedFileToImport = recorded
+                  projectName = recorded.nameWithoutExtension
+                  showNameDialog = true
+                }
+              } else {
+                if (hasAudioPermission) {
+                  try {
+                    actualRecorder.start()
+                  } catch (_: Exception) {
+                    /* ignore */
+                  }
+                } else {
+                  permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
+              }
+              isRecording = actualRecorder.isRecording
+            },
+            onImportAudio = { pickAudio.launch(arrayOf("audio/*")) })
+      },
       content = { it ->
         Column(
             modifier =
@@ -126,13 +224,63 @@ fun ProjectListScreen(
                     .fillMaxSize()
                     .padding(it)) {
               SearchBar(value = searchText, onValueChange = { searchText = it })
-              ProjectList(
-                  projects = filteredProjects,
-                  selectedProject = selectedProjects,
-                  modifier = Modifier.padding(it),
-                  projectListViewModel = projectListViewModel,
-                  onProjectClick = onProjectClick)
+
+              if (projects.isEmpty()) {
+                Column(Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 5.dp)) {
+                  Text(
+                      "No projects yet.",
+                      modifier = Modifier.testTag(ProjectListScreenTestTags.EMPTY_LIST),
+                      style =
+                          TextStyle(
+                              fontSize = 25.sp,
+                              fontFamily = FontFamily(Font(R.font.markazi_text)),
+                              fontWeight = FontWeight(400),
+                              color = NepTuneTheme.colors.onBackground))
+                  Spacer(Modifier.height(10.dp))
+                  Text(
+                      "Tap “Import audio” to create a .neptune project (zip with config.json + audio).",
+                      style =
+                          TextStyle(
+                              fontSize = 21.sp,
+                              fontFamily = FontFamily(Font(R.font.markazi_text)),
+                              fontWeight = FontWeight(400),
+                              color = NepTuneTheme.colors.onBackground.copy(alpha = 0.75f)))
+                }
+              } else {
+                ProjectList(
+                    projects = filteredProjects,
+                    selectedProject = selectedProjects,
+                    modifier = Modifier.padding(it),
+                    projectListViewModel = projectListViewModel,
+                    onProjectClick = onProjectClick)
+              }
             }
+        // Name dialog
+        if (showNameDialog && proposedFileToImport != null) {
+          NameProjectDialog(
+              projectName = projectName,
+              onNameChange = { projectName = it },
+              onConfirm = { name ->
+                val finalFile = sanitizeAndRename(proposedFileToImport!!, name)
+                projectListViewModel.importRecordedFile(finalFile)
+                showNameDialog = false
+                proposedFileToImport = null
+              },
+              onCancel = {
+                val deleted = proposedFileToImport?.delete() ?: true
+                if (!deleted) {
+                  onDeleteFailed?.invoke()
+                  // provide the same toast behavior as before
+                  Toast.makeText(
+                          context,
+                          "Could not delete temporary file ${proposedFileToImport?.absolutePath}",
+                          Toast.LENGTH_SHORT)
+                      .show()
+                }
+                showNameDialog = false
+                proposedFileToImport = null
+              })
+        }
       })
 }
 
@@ -529,48 +677,187 @@ fun SearchBar(
 }
 
 /**
- * Preview function for the ProjectListScreen composable.
+ * Composable displaying the recording and import controls as floating action buttons. Shows a
+ * record/stop button and an import audio button.This has been written with the help of LLMs.
  *
- * @param navigateBack Lambda function to navigate back (default is empty).
- * @param onProjectClick Lambda function to navigate to the sampler screen (default is empty).
- * @author Uri Jaquet
+ * @param isRecording Indicates whether recording is currently active. Changes the icon accordingly.
+ * @param onToggleRecord Lambda invoked when the record/stop button is clicked.
+ * @param onImportAudio Lambda invoked when the import audio button is clicked.
+ * @author Angéline Bignens
  */
-@Preview
 @Composable
-fun ProjectListScreenPreview(
-    navigateBack: () -> Unit = {},
-    onProjectClick: (ProjectItem) -> Unit = {},
+private fun RecordControls(
+    isRecording: Boolean,
+    onToggleRecord: () -> Unit,
+    onImportAudio: () -> Unit,
 ) {
-  val repo = TotalProjectItemsRepositoryProvider.repository
-  runBlocking {
-    repo.addProject(
-        ProjectItem(
-            uid = "1",
-            name = "Project 1",
-            description = "Description 1",
-            isFavorite = false,
-            tags = listOf(),
-            audioPreviewCloudUri = null,
-            projectFileCloudUri = null,
-            lastUpdated = Timestamp.now(),
-            ownerId = null,
-            collaborators = listOf(),
-        ))
-    repo.addProject(
-        ProjectItem(
-            uid = "2",
-            name = "Project 2",
-            description = "Description 2",
-            isFavorite = true,
-            tags = listOf(),
-            audioPreviewCloudUri = null,
-            projectFileCloudUri = null,
-            lastUpdated = Timestamp.now(),
-            ownerId = null,
-            collaborators = listOf(),
-        ))
+  Column(horizontalAlignment = Alignment.End) {
+    FloatingActionButton(
+        onClick = onToggleRecord,
+        containerColor = NepTuneTheme.colors.postButton,
+        modifier =
+            Modifier.shadow(
+                    elevation = 4.dp,
+                    spotColor = NepTuneTheme.colors.shadow,
+                    ambientColor = NepTuneTheme.colors.shadow)
+                .padding(bottom = 16.dp)
+                .testTag(ProjectListScreenTestTags.BUTTON_RECORD)) {
+          Icon(
+              if (isRecording) Icons.Filled.Stop else Icons.Filled.Mic,
+              contentDescription = if (isRecording) "Stop recording" else "Start recording",
+              modifier =
+                  Modifier.size(32.dp)
+                      .testTag(
+                          if (isRecording) ProjectListScreenTestTags.STOP_ICON
+                          else ProjectListScreenTestTags.MIC_ICON),
+              tint = NepTuneTheme.colors.onBackground)
+        }
+    ExtendedFloatingActionButton(
+        onClick = onImportAudio,
+        containerColor = NepTuneTheme.colors.postButton,
+        modifier = Modifier.testTag(ProjectListScreenTestTags.IMPORT_AUDIO_BUTTON)) {
+          Text(
+              "Import audio",
+              style =
+                  TextStyle(
+                      fontSize = 28.sp,
+                      fontFamily = FontFamily(Font(R.font.markazi_text)),
+                      fontWeight = FontWeight(400),
+                      color = NepTuneTheme.colors.onBackground))
+        }
   }
-  val vm = ProjectListViewModel(projectRepository = repo)
+}
 
-  ProjectListScreen(projectListViewModel = vm, onProjectClick = onProjectClick)
+/**
+ * Composable displaying a dialog to name a new project before saving/importing it.This has been
+ * written with the help of LLMs.
+ *
+ * @param projectName Current text for the project name.
+ * @param onNameChange Lambda invoked whenever the text in the input field changes.
+ * @param onConfirm Lambda invoked when the user confirms the name. Returns the final name.
+ * @param onCancel Lambda invoked when the dialog is dismissed or cancelled.
+ * @author Angéline Bignens
+ */
+@Composable
+private fun NameProjectDialog(
+    projectName: String,
+    onNameChange: (String) -> Unit,
+    onConfirm: (String) -> Unit,
+    onCancel: () -> Unit,
+) {
+  AlertDialog(
+      onDismissRequest = onCancel,
+      containerColor = NepTuneTheme.colors.listBackground,
+      title = {
+        Text(
+            "Name project",
+            style =
+                TextStyle(
+                    fontSize = 26.sp,
+                    fontFamily = FontFamily(Font(R.font.markazi_text)),
+                    fontWeight = FontWeight(500),
+                    color = NepTuneTheme.colors.onBackground))
+      },
+      text = {
+        Column {
+          Text(
+              "Enter a name for the new project",
+              style =
+                  TextStyle(
+                      fontSize = 21.sp,
+                      fontFamily = FontFamily(Font(R.font.markazi_text)),
+                      fontWeight = FontWeight(300),
+                      color = NepTuneTheme.colors.onBackground.copy(0.9f)))
+          Spacer(Modifier.height(8.dp))
+          TextField(
+              value = projectName,
+              onValueChange = onNameChange,
+              modifier = Modifier.fillMaxWidth().testTag(ProjectListScreenTestTags.NAME_FIELD),
+              textStyle =
+                  TextStyle(
+                      fontSize = 20.sp,
+                      fontFamily = FontFamily(Font(R.font.markazi_text)),
+                      color = NepTuneTheme.colors.onBackground),
+              colors =
+                  TextFieldDefaults.colors(
+                      focusedContainerColor = NepTuneTheme.colors.background,
+                      unfocusedContainerColor = NepTuneTheme.colors.background,
+                      focusedIndicatorColor = NepTuneTheme.colors.accentPrimary,
+                      unfocusedIndicatorColor = NepTuneTheme.colors.onBackground,
+                      focusedTextColor = NepTuneTheme.colors.onBackground,
+                      unfocusedTextColor = NepTuneTheme.colors.onBackground,
+                      cursorColor = NepTuneTheme.colors.accentPrimary))
+        }
+      },
+      confirmButton = {
+        Button(
+            modifier = Modifier.testTag(ProjectListScreenTestTags.BUTTON_CREATE),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = NepTuneTheme.colors.soundWave,
+                    contentColor = NepTuneTheme.colors.background),
+            onClick = { onConfirm(projectName) }) {
+              Text(
+                  "Create",
+                  style =
+                      TextStyle(
+                          fontSize = 22.sp,
+                          fontFamily = FontFamily(Font(R.font.markazi_text)),
+                          fontWeight = FontWeight(400)))
+            }
+      },
+      dismissButton = {
+        Button(
+            modifier = Modifier.testTag(ProjectListScreenTestTags.BUTTON_CANCEL),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = NepTuneTheme.colors.soundWave,
+                    contentColor = NepTuneTheme.colors.background),
+            onClick = onCancel) {
+              Text(
+                  "Cancel / Delete",
+                  style =
+                      TextStyle(
+                          fontSize = 22.sp,
+                          fontFamily = FontFamily(Font(R.font.markazi_text)),
+                          fontWeight = FontWeight(400)))
+            }
+      })
+}
+
+/**
+ * Sanitizes a project name and attempts to rename the given file accordingly. Invalid characters
+ * are replaced with underscores, consecutive underscores are collapsed, and leading/trailing
+ * special characters are removed.This has been written with the help of LLMs.
+ *
+ * If the desired file name already exists, the original file is returned.
+ *
+ * @param fileToImport The file to rename.
+ * @param projectName The desired project name.
+ * @return The renamed file if successful, or the original file if renaming failed or already
+ *   exists.
+ */
+private fun sanitizeAndRename(fileToImport: File, projectName: String): File {
+  val sanitized =
+      projectName
+          .replace(Regex("[^A-Za-z0-9._-]+"), "_")
+          .replace(Regex("_+"), "_")
+          .trim('_', '.', ' ')
+          .ifEmpty { projectName }
+  val ext = fileToImport.extension
+  val parent = fileToImport.parentFile
+  val desiredName = if (ext.isNotBlank()) "$sanitized.$ext" else sanitized
+  val desiredFile = File(parent, desiredName)
+  return if (desiredFile.exists()) {
+    // avoid overwrite
+    fileToImport
+  } else {
+    val moved =
+        try {
+          fileToImport.renameTo(desiredFile)
+        } catch (_: Exception) {
+          false
+        }
+    if (moved) desiredFile else fileToImport
+  }
 }

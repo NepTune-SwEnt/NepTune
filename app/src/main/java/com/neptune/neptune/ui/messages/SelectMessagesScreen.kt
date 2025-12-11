@@ -13,14 +13,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -46,7 +41,6 @@ import com.neptune.neptune.util.formatTime
 object SelectMessagesScreenTestTags {
   const val SELECT_MESSAGE_SCREEN = "SelectMessageScreen"
   const val MESSAGES_TITLE = "MessagesTitle"
-  const val BACK_BUTTON = "BackButton"
   const val TOP_DIVIDER = "TopDivider"
   const val NO_CONVERSATIONS_TEXT = "NoConversationsText"
   const val USER_LIST = "UserList"
@@ -67,7 +61,6 @@ object SelectMessagesScreenTestTags {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SelectMessagesScreen(
-    goBack: () -> Unit,
     onSelectUser: (String) -> Unit,
     selectMessagesViewModel: SelectMessagesViewModel = viewModel()
 ) {
@@ -77,36 +70,6 @@ fun SelectMessagesScreen(
           Modifier.fillMaxSize()
               .background(NepTuneTheme.colors.background)
               .testTag(SelectMessagesScreenTestTags.SELECT_MESSAGE_SCREEN)) {
-        TopAppBar(
-            title = {
-              Text(
-                  text = "Messages",
-                  color = NepTuneTheme.colors.onBackground,
-                  modifier =
-                      Modifier.padding(horizontal = 15.dp)
-                          .testTag(SelectMessagesScreenTestTags.MESSAGES_TITLE),
-                  fontSize = 40.sp,
-                  fontFamily = FontFamily(Font(R.font.markazi_text)),
-                  fontWeight = FontWeight(400),
-              )
-            },
-            navigationIcon = {
-              Icon(
-                  imageVector = Icons.Filled.ArrowBackIosNew,
-                  contentDescription = "Back",
-                  tint = NepTuneTheme.colors.onBackground,
-                  modifier =
-                      Modifier.padding(start = 8.dp)
-                          .size(32.dp)
-                          .testTag(SelectMessagesScreenTestTags.BACK_BUTTON)
-                          .clickable { goBack() })
-            },
-            colors =
-                TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = NepTuneTheme.colors.background,
-                    navigationIconContentColor = NepTuneTheme.colors.onBackground,
-                    actionIconContentColor = NepTuneTheme.colors.onBackground))
-
         HorizontalDivider(
             thickness = 1.dp,
             color = NepTuneTheme.colors.onBackground.copy(alpha = 0.1f),
