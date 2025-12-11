@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,6 +32,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -64,11 +67,11 @@ object SignInScreenTags {
   const val TOGGLE_REGISTER = "toggleRegisterButton"
   const val SUBMIT_EMAIL = "submitEmailButton"
   const val ANONYMOUS_BUTTON = "anonymousSignInButton"
-  const val OFFLINE_BUTON = "offlineSignInButton"
+  const val OFFLINE_BUTTON = "offlineSignInButton"
 
   // Top Bar
   const val TOP_BAR = "topBar"
-  const val TOP_BAR_TITLE = "topBarTitle"
+  const val TOP_BAR_LOGO = "topBarLogo"
 }
 
 val googleLogoId = R.drawable.google_logo
@@ -100,6 +103,8 @@ fun SignInScreen(
   val signInStatus by signInViewModel.signInStatus.collectAsState()
   val emailState by signInViewModel.emailAuthUiState.collectAsState()
   val isOnline by signInViewModel.isOnline.collectAsState()
+  val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+  val logoSize = screenWidth * 0.3f
 
   LaunchedEffect(credentialManager) {
     signInViewModel.initialize(
@@ -114,17 +119,13 @@ fun SignInScreen(
           CenterAlignedTopAppBar(
               modifier = Modifier.fillMaxWidth().height(112.dp).testTag(SignInScreenTags.TOP_BAR),
               title = {
-                Text(
-                    text = "NepTune",
-                    style =
-                        TextStyle(
-                            fontSize = 45.sp,
-                            fontFamily = FontFamily(Font(R.font.lily_script_one)),
-                            fontWeight = FontWeight(149),
-                            color = NepTuneTheme.colors.onBackground,
-                        ),
-                    modifier = Modifier.padding(25.dp).testTag(SignInScreenTags.TOP_BAR_TITLE),
-                    textAlign = TextAlign.Center)
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                  Image(
+                      painter = painterResource(id = R.drawable.neptune_logo),
+                      contentDescription = "NepTune Logo",
+                      modifier = Modifier.size(logoSize).testTag(SignInScreenTags.TOP_BAR_LOGO),
+                      contentScale = ContentScale.Fit)
+                }
               },
               colors =
                   TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -192,7 +193,7 @@ fun SignInScreen(
             ElevatedButton(
                 onClick = { signInViewModel.signInOffline() },
                 enabled = !emailState.loading,
-                modifier = Modifier.fillMaxWidth().testTag(SignInScreenTags.OFFLINE_BUTON)) {
+                modifier = Modifier.fillMaxWidth().testTag(SignInScreenTags.OFFLINE_BUTTON)) {
                   Text("Continue in Offline Mode")
                 }
           }
