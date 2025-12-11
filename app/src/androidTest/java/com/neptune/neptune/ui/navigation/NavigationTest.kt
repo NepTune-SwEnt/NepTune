@@ -29,7 +29,6 @@ import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.messages.MessagesScreenTestTags
 import com.neptune.neptune.ui.messages.SelectMessagesScreenTestTags
-import com.neptune.neptune.ui.picker.ImportScreenTestTags
 import com.neptune.neptune.ui.post.PostScreen
 import com.neptune.neptune.ui.post.PostScreenTestTags
 import com.neptune.neptune.ui.post.PostUiState
@@ -112,7 +111,7 @@ class NavigationTest {
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE_TAB).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.SELECT_MESSAGES_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).assertIsDisplayed()
   }
@@ -191,7 +190,7 @@ class NavigationTest {
   fun bottomBarIsVisibleOnImportScreen() {
     setContent()
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE_TAB).performClick()
+    composeTestRule.onNodeWithTag(NavigationTestTags.SELECT_MESSAGES_TAB).performClick()
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).assertIsDisplayed()
   }
 
@@ -324,12 +323,10 @@ class NavigationTest {
   @Test
   fun mainScreenBottomNavigationBarHasAllButton() {
     setContent()
-    // Original order: MAIN, SEARCH, PROJECTLIST, POST (now IMPORT_FILE)
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsDisplayed()
-    // The changed/new tab
-    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE_TAB).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.SELECT_MESSAGES_TAB).assertIsDisplayed()
   }
 
   /** Test that we can click on all of the bottom bar buttons */
@@ -339,8 +336,8 @@ class NavigationTest {
     listOf(
             NavigationTestTags.MAIN_TAB,
             NavigationTestTags.SEARCH_TAB,
-            NavigationTestTags.PROJECTLIST_TAB, // Retained original position (3rd)
-            NavigationTestTags.IMPORT_FILE_TAB) // Replaces POST_TAB (4th)
+            NavigationTestTags.PROJECTLIST_TAB,
+            NavigationTestTags.SELECT_MESSAGES_TAB)
         .forEach { tag -> composeTestRule.onNodeWithTag(tag).assertHasClickAction().performClick() }
   }
 
@@ -349,10 +346,12 @@ class NavigationTest {
   fun mainScreenBottomNavigationImportGoToImportScreen() {
     setContent()
     composeTestRule
-        .onNodeWithTag(NavigationTestTags.IMPORT_FILE_TAB)
+        .onNodeWithTag(NavigationTestTags.SELECT_MESSAGES_TAB)
         .assertHasClickAction()
         .performClick()
     composeTestRule.waitForIdle()
-    composeTestRule.onNodeWithTag(ImportScreenTestTags.IMPORT_SCREEN).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SelectMessagesScreenTestTags.SELECT_MESSAGE_SCREEN)
+        .assertIsDisplayed()
   }
 }

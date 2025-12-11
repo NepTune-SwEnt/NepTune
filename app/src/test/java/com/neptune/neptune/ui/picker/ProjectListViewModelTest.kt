@@ -11,6 +11,9 @@ import com.neptune.neptune.domain.port.FileImporter
 import com.neptune.neptune.domain.port.MediaRepository
 import com.neptune.neptune.domain.usecase.GetLibraryUseCase
 import com.neptune.neptune.domain.usecase.ImportMediaUseCase
+import com.neptune.neptune.model.fakes.FakeTotalProjectItemsRepository
+import com.neptune.neptune.ui.projectlist.ProjectListVMFactory
+import com.neptune.neptune.ui.projectlist.ProjectListViewModel
 import com.neptune.neptune.utils.MainDispatcherRule
 import io.mockk.mockk
 import java.io.File
@@ -70,22 +73,25 @@ class ImportViewModelTest {
   private val testDispatcher
     get() = mainRule.dispatcher
 
-  private lateinit var vm: ImportViewModel
+  private lateinit var vm: ProjectListViewModel
   private lateinit var repo: FakeRepo
   private lateinit var importer: FakeImporter
+
+  private lateinit var fakeProjectRepo: FakeTotalProjectItemsRepository
 
   @Before
   fun setUp() {
     val ctx: Context = ApplicationProvider.getApplicationContext()
     repo = FakeRepo()
     importer = FakeImporter(ctx.cacheDir)
+    fakeProjectRepo = FakeTotalProjectItemsRepository()
 
     // inject the SAME test dispatcher into NeptunePackager, so IO is controlled by runTest
     val packager = NeptunePackager(StoragePaths(ctx), io = testDispatcher)
 
     val importUC = ImportMediaUseCase(importer, repo, packager)
     val libraryUC = GetLibraryUseCase(repo)
-    vm = ImportViewModel(importUC, libraryUC)
+    vm = ProjectListViewModel(fakeProjectRepo, importUC, libraryUC)
   }
 
   @Test
@@ -130,7 +136,7 @@ class ImportViewModelTest {
   fun create_unknownViewModelClass_throwsIllegalStateException() {
     val importUC = mockk<ImportMediaUseCase>(relaxed = true)
     val libraryUC = mockk<GetLibraryUseCase>(relaxed = true)
-    val factory = ImportVMFactory(importUC, libraryUC)
+    val factory = ProjectListVMFactory(importUC, libraryUC)
 
     val ex =
         assertFailsWith<IllegalStateException> { factory.create(NotImportViewModel::class.java) }

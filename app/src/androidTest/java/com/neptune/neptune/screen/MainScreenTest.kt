@@ -115,14 +115,6 @@ class MainScreenTest {
   }
 
   @Test
-  fun mainScreenTopAppNavBarCanClickOnMessages() {
-    composeTestRule
-        .onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON)
-        .assertHasClickAction()
-        .performClick()
-  }
-
-  @Test
   fun discoverSection_displaysSample() {
     composeTestRule.onNodeWithText("Discover").assertIsDisplayed()
     // Check that at least one sample card is displayed

@@ -12,7 +12,6 @@ import com.neptune.neptune.ui.messages.SelectMessagesScreen
 import com.neptune.neptune.ui.messages.SelectMessagesScreenTestTags
 import com.neptune.neptune.ui.messages.SelectMessagesViewModel
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -33,10 +32,9 @@ class SelectMessagesScreenTest {
     viewModel = SelectMessagesViewModel()
   }
 
-  private fun setContent(goBack: () -> Unit = {}, onSelectUser: (String) -> Unit = {}) {
+  private fun setContent(onSelectUser: (String) -> Unit = {}) {
     composeTestRule.setContent {
-      SelectMessagesScreen(
-          goBack = goBack, onSelectUser = onSelectUser, selectMessagesViewModel = viewModel)
+      SelectMessagesScreen(onSelectUser = onSelectUser, selectMessagesViewModel = viewModel)
     }
   }
 
@@ -79,16 +77,6 @@ class SelectMessagesScreenTest {
         .assertIsDisplayed()
     composeTestRule.onNodeWithTag(SelectMessagesScreenTestTags.USER_LIST).assertIsDisplayed()
     composeTestRule.onNodeWithTag(SelectMessagesScreenTestTags.TOP_DIVIDER).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(SelectMessagesScreenTestTags.BACK_BUTTON).assertIsDisplayed()
-  }
-
-  /** Tests that clicking on the Back Button correctly trigger a callback */
-  @Test
-  fun testBackButtonTriggersCallback() {
-    var backClicked = false
-    setContent(goBack = { backClicked = true })
-    composeTestRule.onNodeWithTag(SelectMessagesScreenTestTags.BACK_BUTTON).performClick()
-    assertTrue(backClicked)
   }
 
   /** Tests that clicking on a User correctly trigger a callback */
@@ -108,7 +96,7 @@ class SelectMessagesScreenTest {
   fun testNoConversationsTextWhenEmpty() {
     val emptyViewModel = SelectMessagesViewModel(initialUsers = emptyList())
     composeTestRule.setContent {
-      SelectMessagesScreen(goBack = {}, onSelectUser = {}, selectMessagesViewModel = emptyViewModel)
+      SelectMessagesScreen(onSelectUser = {}, selectMessagesViewModel = emptyViewModel)
     }
 
     composeTestRule

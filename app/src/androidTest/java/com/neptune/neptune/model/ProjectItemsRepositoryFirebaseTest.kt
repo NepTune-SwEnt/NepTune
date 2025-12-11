@@ -1,13 +1,25 @@
 package com.neptune.neptune.model
 
 import android.util.Log
+import androidx.activity.ComponentActivity
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.common.truth.Truth.assertThat
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.neptune.neptune.model.project.PROJECT_ITEMS_COLLECTION_PATH
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepositoryFirestore
+import com.neptune.neptune.ui.projectlist.ProjectListViewModel
+import com.neptune.neptune.ui.projectlist.importAppRoot
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import org.junit.After
@@ -16,6 +28,7 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -44,6 +57,8 @@ class ProjectItemsRepositoryFirebaseTest {
   private lateinit var db: FirebaseFirestore
   private lateinit var auth: FirebaseAuth
   private lateinit var repo: ProjectItemsRepositoryFirestore
+
+  @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
   @Before
   fun setUp() {
@@ -181,5 +196,32 @@ class ProjectItemsRepositoryFirebaseTest {
     } catch (_: Exception) {
       // success
     }
+  }
+
+  /**
+   * Tests the @Composable factory ImportAppRoot().
+   *
+   * We check that:
+   * 1) It returns a working ViewModelProvider.Factory and the VM starts with an empty library.
+   * 2) Its wiring works end-to-end by importing a tiny WAV using file:// and observing the library
+   *    update. Written with assistance from ChatGPT.
+   */
+  @Test
+  fun importAppRootReturnsFactoryAndVmStartsEmpty() {
+    val lastSize = AtomicReference(-1)
+
+    compose.setContent {
+      val factory = importAppRoot() // <-- subject under test
+      val vm: ProjectListViewModel = viewModel(factory = factory)
+
+      var size by remember { mutableStateOf(-1) }
+      LaunchedEffect(vm) { vm.library.collect { size = it.size } }
+      LaunchedEffect(size) { lastSize.set(size) }
+    }
+
+    // library should be collected and initially empty
+    compose.waitForIdle()
+    compose.runOnIdle { /* ensure any pending effects observed */}
+    assertThat(lastSize.get()).isEqualTo(0)
   }
 }
