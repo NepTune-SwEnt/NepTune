@@ -7,6 +7,7 @@ import android.media.MediaFormat
 import android.media.MediaPlayer
 import android.net.Uri
 import android.util.Log
+import android.webkit.MimeTypeMap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.neptune.neptune.NepTuneApplication
@@ -14,10 +15,13 @@ import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.project.AudioFileMetadata
 import com.neptune.neptune.model.project.ParameterMetadata
 import com.neptune.neptune.model.project.ProjectExtractor
+import com.neptune.neptune.model.project.ProjectItemsRepositoryLocal
 import com.neptune.neptune.model.project.ProjectWriter
 import com.neptune.neptune.model.project.SamplerProjectData
 import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
 import kotlin.math.*
 import kotlin.math.abs
 import kotlin.math.cos
@@ -708,6 +712,49 @@ open class SamplerViewModel() : ViewModel() {
 
       saveProjectDataSync(zipFilePath)
       audioBuilding()
+      val projectsJsonRepo = ProjectItemsRepositoryLocal(context)
+      val projectId: String = projectsJsonRepo.findProjectWithProjectFile(zipFilePath).uid
+      try {
+        val state = _uiState.value
+        val previewUri = state.currentAudioUri ?: return@launch
+
+        val previewsDir = File(context.cacheDir, "previews")
+        if (!previewsDir.exists()) previewsDir.mkdirs()
+
+        val contentResolver = context.contentResolver
+        val mime = runCatching { contentResolver.getType(previewUri) }.getOrNull()
+        val extFromMime = mime?.let { MimeTypeMap.getSingleton().getExtensionFromMimeType(it) }
+        val pathExt = previewUri.path?.let { File(it).extension }?.takeIf { it.isNotBlank() }
+        val ext = extFromMime ?: pathExt ?: "wav"
+
+        val destFile = File(previewsDir, "${projectId}.$ext")
+
+        val inputStream: InputStream? =
+            runCatching { contentResolver.openInputStream(previewUri) }.getOrNull()
+
+        if (inputStream != null) {
+          inputStream.use { input ->
+            FileOutputStream(destFile).use { out -> input.copyTo(out, 4 * 1024) }
+          }
+        } else {
+          // fallback to file path
+          previewUri.path?.let { path ->
+            File(path).inputStream().use { fis ->
+              FileOutputStream(destFile).use { out -> fis.copyTo(out, 4 * 1024) }
+            }
+          }
+        }
+
+        // Update project entry with the preview local path
+        val project = projectsJsonRepo.findProjectWithProjectFile(zipFilePath)
+        val updated = project.copy(audioPreviewLocalPath = destFile.toURI().toString())
+        projectsJsonRepo.editProject(project.uid, updated)
+
+        Log.i(
+            "SamplerViewModel", "Saved preview for project $projectId -> ${destFile.absolutePath}")
+      } catch (e: Exception) {
+        Log.w("SamplerViewModel", "Failed to save preview for project $projectId", e)
+      }
     }
   }
 
