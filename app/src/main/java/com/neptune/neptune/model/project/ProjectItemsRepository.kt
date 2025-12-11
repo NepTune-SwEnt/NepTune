@@ -46,7 +46,8 @@ interface ProjectItemsRepository {
    */
   suspend fun deleteProject(projectID: String)
 
-  /** Find project by project file.
+  /**
+   * Find project by project file.
    *
    * @param projectFile The project file as string to find.
    * @return The project item corresponding to the provided project file.

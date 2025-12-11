@@ -85,5 +85,4 @@ class ProjectItemsRepositoryLocal(context: Context) : ProjectItemsRepository {
         projects.values.firstOrNull { it.projectFileLocalPath == projectFile }
             ?: throw NoSuchElementException("Project with projectFile $projectFile not found")
       }
-
 }
