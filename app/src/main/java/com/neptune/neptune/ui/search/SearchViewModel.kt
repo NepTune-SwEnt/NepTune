@@ -17,7 +17,9 @@ import com.neptune.neptune.ui.feed.BaseSampleFeedViewModel
 import com.neptune.neptune.ui.feed.SampleFeedController
 import com.neptune.neptune.ui.main.SampleUiActions
 import com.neptune.neptune.util.DownloadDirectoryProvider
+import com.neptune.neptune.util.NetworkConnectivityObserver
 import java.io.File
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -46,6 +48,7 @@ enum class SearchType(val title: String) {
  *
  * written with assistance from ChatGPT
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 open class SearchViewModel(
     sampleRepo: SampleRepository = SampleRepositoryProvider.repository,
     context: Context,
@@ -53,7 +56,8 @@ open class SearchViewModel(
     profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
     explicitStorageService: StorageService? = null,
     explicitDownloadsFolder: File? = null,
-    auth: FirebaseAuth? = null
+    auth: FirebaseAuth? = null,
+    private val connectivityObserver: NetworkConnectivityObserver = NetworkConnectivityObserver()
 ) :
     BaseSampleFeedViewModel(
         sampleRepo = sampleRepo,
@@ -92,6 +96,7 @@ open class SearchViewModel(
   // Current User Profile (to track following list)
   // Logic: Observe the current user flow. If a user is logged in, observe their profile.
   // If no user is logged in, emit null.
+  @OptIn(ExperimentalCoroutinesApi::class)
   val currentUserProfile: StateFlow<Profile?> =
       _currentUserFlow
           .flatMapLatest { user ->
@@ -106,6 +111,14 @@ open class SearchViewModel(
   // Local state for following IDs to ensure instant UI updates
   private val _followingIds = MutableStateFlow<Set<String>>(emptySet())
   val followingIds: StateFlow<Set<String>> = _followingIds.asStateFlow()
+  private val _isOnline = MutableStateFlow(true)
+  val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+
+  init {
+    viewModelScope.launch {
+      connectivityObserver.isOnline.collect { isConnected -> _isOnline.value = isConnected }
+    }
+  }
 
   fun toggleSearchType() {
     _searchType.update { it.toggle() }
@@ -265,6 +278,7 @@ open class SearchViewModel(
   }
 
   fun loadSamplesFromFirebase() {
+    if (auth?.currentUser == null) return
     viewModelScope.launch {
       this@SearchViewModel.sampleRepo.observeSamples().collectLatest { samples ->
         val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }

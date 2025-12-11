@@ -26,10 +26,12 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.database
+import com.neptune.neptune.util.NetworkConnectivityObserver
 import com.neptune.neptune.util.RealtimeDatabaseProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -125,7 +127,8 @@ data class EmailAuthUiState(
  */
 class SignInViewModel(
     private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val googleIdOptionFactory: GoogleIdOptionFactory = DefaultGoogleIdOptionFactory()
+    private val googleIdOptionFactory: GoogleIdOptionFactory = DefaultGoogleIdOptionFactory(),
+    private val connectivityObserver: NetworkConnectivityObserver = NetworkConnectivityObserver()
 ) : ViewModel() {
 
   private lateinit var credentialManager: CredentialManager
@@ -145,6 +148,8 @@ class SignInViewModel(
   /** Email/password form UI state. */
   private val _emailAuthUiState = MutableStateFlow(EmailAuthUiState())
   val emailAuthUiState: StateFlow<EmailAuthUiState> = _emailAuthUiState.asStateFlow()
+  private val _isOnline = MutableStateFlow(true)
+  val isOnline = _isOnline.asStateFlow()
 
   /**
    * Initializes the ViewModel.
@@ -163,14 +168,32 @@ class SignInViewModel(
     navigateMain = navigate
     clientId = serverClientId
 
-    val initialUser = firebaseAuth.currentUser
-    _currentUser.value = initialUser
-    if (initialUser != null) {
-      _signInStatus.value = SignInStatus.SUCCESS
-      setupPresence(initialUser.uid)
-      navigateMain()
-    } else {
-      _signInStatus.value = SignInStatus.SIGNED_OUT
+    viewModelScope.launch {
+      val isNetworkAvailable =
+          try {
+            connectivityObserver.isOnline.first()
+          } catch (_: Exception) {
+            false
+          }
+      val initialUser = firebaseAuth.currentUser
+      _currentUser.value = initialUser
+      if (initialUser != null) {
+        if (isNetworkAvailable) {
+          // logged and network
+          _signInStatus.value = SignInStatus.SUCCESS
+          setupPresence(initialUser.uid)
+          navigateMain()
+        } else {
+          // logged but no network
+          signOut()
+        }
+      } else {
+        // not logged
+        _signInStatus.value = SignInStatus.SIGNED_OUT
+      }
+      viewModelScope.launch {
+        connectivityObserver.isOnline.collect { status -> _isOnline.value = status }
+      }
     }
   }
 
@@ -247,6 +270,11 @@ class SignInViewModel(
 
   fun setConfirmPassword(value: String) {
     _emailAuthUiState.value = _emailAuthUiState.value.copy(confirmPassword = value)
+  }
+
+  fun signInOffline() {
+    _signInStatus.value = SignInStatus.SUCCESS
+    navigateMain()
   }
 
   fun toggleRegisterMode() {

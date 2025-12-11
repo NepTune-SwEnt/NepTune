@@ -303,6 +303,8 @@ class NavigationTest {
     every { mockViewModel.usernames } returns MutableStateFlow(emptyMap())
     every { mockViewModel.isAnonymous } returns MutableStateFlow(false)
     every { mockViewModel.recommendedSamples } returns MutableStateFlow(emptyList())
+    every { mockViewModel.isUserLoggedIn } returns true
+    every { mockViewModel.isOnline } returns MutableStateFlow(true)
 
     composeTestRule.setContent {
       MainScreen(navigateToProjectList = navigateToProjectListMock, mainViewModel = mockViewModel)

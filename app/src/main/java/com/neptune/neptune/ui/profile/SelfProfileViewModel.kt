@@ -65,9 +65,23 @@ class SelfProfileViewModel(
   private var snapshot: Profile? = null
   /** Cancelable job for username availability checks. */
   private var usernameCheckJob: Job? = null // suggested by ChatGPT
+  val isUserLoggedIn: Boolean
+    get() = auth.currentUser != null
 
   init {
     viewModelScope.launch {
+      // offline
+      if (auth.currentUser == null) {
+        _uiState.value =
+            _uiState.value.copy(
+                name = "Offline",
+                username = "Offline",
+                bio = "Offline mode active. Features are limited.",
+                isAnonymousUser = true,
+                mode = ProfileMode.VIEW)
+        return@launch
+      }
+
       repo.observeCurrentProfile().collectLatest { p ->
         snapshot = p
 
@@ -158,6 +172,7 @@ class SelfProfileViewModel(
 
   /** Call this once after auth to ensure profile exists (first login). */
   fun loadOrEnsure(suggestedUsernameBase: String? = null, displayName: String? = null) {
+    if (auth.currentUser == null) return
     viewModelScope.launch {
       try {
         _uiState.value = _uiState.value.copy(isSaving = true, error = null)

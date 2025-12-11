@@ -17,6 +17,7 @@ import com.neptune.neptune.model.sample.SampleRepositoryProvider
 import com.neptune.neptune.ui.feed.BaseSampleFeedViewModel
 import com.neptune.neptune.ui.feed.SampleFeedController
 import com.neptune.neptune.util.AudioWaveformExtractor
+import com.neptune.neptune.util.NetworkConnectivityObserver
 import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -106,6 +107,11 @@ open class MainViewModel(
   val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
   private val _recommendedSamples = MutableStateFlow<List<Sample>>(emptyList())
   val recommendedSamples: StateFlow<List<Sample>> = _recommendedSamples
+  private val _isOnline = MutableStateFlow(true)
+  val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+
+  val isUserLoggedIn: Boolean
+    get() = auth?.currentUser != null
 
   init {
     if (useMockData) {
@@ -116,6 +122,10 @@ open class MainViewModel(
     }
     auth?.addAuthStateListener(authListener)
     observeUserProfile()
+    val observer = NetworkConnectivityObserver()
+    viewModelScope.launch {
+      observer.isOnline.collect { isConnected -> _isOnline.value = isConnected }
+    }
   }
 
   fun loadRecommendations(limit: Int = 50) {
@@ -150,6 +160,7 @@ open class MainViewModel(
   }
 
   private fun loadSamplesFromFirebase() {
+    if (auth?.currentUser == null) return
     viewModelScope.launch {
       try {
         val profile = profileRepo.getCurrentProfile()
@@ -166,7 +177,7 @@ open class MainViewModel(
             }
           } else {
             val existingIds = allSamplesCache.map { it.id }.toSet()
-            val currentUserId = auth?.currentUser?.uid
+            val currentUserId = auth.currentUser?.uid
 
             val samplesToDisplay =
                 updatedSamples.filter { sample ->
@@ -342,6 +353,13 @@ open class MainViewModel(
     // allSamplesCache = emptyList()
     loadSamplesFromFirebase()
   }
+
+  /** Disconnect the user */
+  fun signOut() {
+    auth?.signOut()
+    _currentUserFlow.value = null
+  }
+
   /** Function to open the comment section. */
   fun openCommentSection(sample: Sample) {
     _activeCommentSampleId.value = sample.id

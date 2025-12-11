@@ -67,6 +67,7 @@ object SignInScreenTags {
   const val TOGGLE_REGISTER = "toggleRegisterButton"
   const val SUBMIT_EMAIL = "submitEmailButton"
   const val ANONYMOUS_BUTTON = "anonymousSignInButton"
+  const val OFFLINE_BUTTON = "offlineSignInButton"
 
   // Top Bar
   const val TOP_BAR = "topBar"
@@ -101,6 +102,7 @@ fun SignInScreen(
 
   val signInStatus by signInViewModel.signInStatus.collectAsState()
   val emailState by signInViewModel.emailAuthUiState.collectAsState()
+  val isOnline by signInViewModel.isOnline.collectAsState()
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
   val logoSize = screenWidth * 0.3f
 
@@ -153,29 +155,50 @@ fun SignInScreen(
 
           Spacer(modifier = Modifier.height(60.dp))
 
-          // Google Sign-In Button ------------------------------------------------------------
-          GoogleSignIn(context, signInStatus, emailState, signInViewModel)
+          if (isOnline) {
 
-          Spacer(modifier = Modifier.height(32.dp))
+            // Google Sign-In Button ------------------------------------------------------------
+            GoogleSignIn(context, signInStatus, emailState, signInViewModel)
 
-          Column(modifier = Modifier.fillMaxWidth()) {
-            AuthForm(emailState, signInViewModel)
+            Spacer(modifier = Modifier.height(32.dp))
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Column(modifier = Modifier.fillMaxWidth()) {
+              AuthForm(emailState, signInViewModel)
 
-            ToggleRegister(emailState, signInViewModel)
+              Spacer(modifier = Modifier.height(20.dp))
+
+              ToggleRegister(emailState, signInViewModel)
+
+              Spacer(modifier = Modifier.height(12.dp))
+
+              ElevatedButton(
+                  onClick = { signInViewModel.signInAnonymously() },
+                  modifier = Modifier.fillMaxWidth().testTag(SignInScreenTags.ANONYMOUS_BUTTON)) {
+                    Text("Continue as Guest")
+                  }
+            }
+          } else {
+            Text(
+                text = "Without connection you can only login in offline mode",
+                style =
+                    TextStyle(
+                        fontSize = 18.sp,
+                        fontFamily = FontFamily(Font(R.font.markazi_text)),
+                        color = NepTuneTheme.colors.onBackground.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center),
+                modifier = Modifier.padding(bottom = 24.dp))
 
             Spacer(modifier = Modifier.height(12.dp))
 
             ElevatedButton(
-                onClick = { signInViewModel.signInAnonymously() },
+                onClick = { signInViewModel.signInOffline() },
                 enabled = !emailState.loading,
-                modifier = Modifier.fillMaxWidth().testTag(SignInScreenTags.ANONYMOUS_BUTTON)) {
-                  Text("Continue as Guest")
+                modifier = Modifier.fillMaxWidth().testTag(SignInScreenTags.OFFLINE_BUTTON)) {
+                  Text("Continue in Offline Mode")
                 }
-
-            GeneralError(emailState)
           }
+
+          GeneralError(emailState)
         }
   }
 }
