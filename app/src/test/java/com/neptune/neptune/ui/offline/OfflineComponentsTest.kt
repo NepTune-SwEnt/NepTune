@@ -31,7 +31,7 @@ class OfflineComponentsTest {
   }
 
   @Test
-  fun offlineBanner_displaysCorrectMessage() {
+  fun offlineBannerDisplaysCorrectMessage() {
     composeTestRule.setContent { OfflineBanner() }
 
     composeTestRule.onNodeWithText("No connection. Showing offline data.").assertIsDisplayed()
