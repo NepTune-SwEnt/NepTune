@@ -118,7 +118,7 @@ class SearchScreenTestTagsPerSampleCard(private val idInColumn: String = "0") : 
     get() = tag("sampleDownloads")
 }
 
-class SearchScreenTestTagsPerUserCard(private val uid: String) {
+class SearchScreenTestTagsPerUserCard(uid: String) {
   val CARD = "userCard_$uid"
   val USERNAME = "userUsername_$uid"
   val FOLLOW_BUTTON = "userFollowButton_$uid"

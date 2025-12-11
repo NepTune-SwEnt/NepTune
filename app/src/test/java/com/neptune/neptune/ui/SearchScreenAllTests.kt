@@ -61,11 +61,14 @@ class SearchScreenAllTests {
     val fakeProfileRepo = FakeProfileRepository()
     val mockObserver = mockk<NetworkConnectivityObserver>(relaxed = true)
     every { mockObserver.isOnline } returns flowOf(true)
-    return SearchViewModel(
-        sampleRepo = fakeSampleRepo,
-        useMockData = true,
-        profileRepo = fakeProfileRepo,
-    )
+    return object :
+        SearchViewModel(
+            sampleRepo = fakeSampleRepo,
+            useMockData = true,
+            profileRepo = fakeProfileRepo,
+        ) {
+      override val isUserLoggedIn: Boolean = true
+    }
   }
 
   /** Advance past the 300ms debounce in SearchScreen */
@@ -90,6 +93,7 @@ class SearchScreenAllTests {
           profileRepo = profileRepo,
       ) {
     val calls = mutableListOf<String>()
+    override val isUserLoggedIn: Boolean = true
 
     override fun search(query: String) {
       calls += query
@@ -198,9 +202,7 @@ class SearchScreenAllTests {
   fun debounceTriggersSearchOnceAfterDelay() {
     val fakeSampleRepo = FakeSampleRepository()
     val fakeProfileRepo = FakeProfileRepository()
-    val mockObserver = mockk<NetworkConnectivityObserver>(relaxed = true)
-    every { mockObserver.isOnline } returns flowOf(true)
-    val vm = SpySearchViewModel(fakeSampleRepo, fakeProfileRepo, mockObserver)
+    val vm = SpySearchViewModel(fakeSampleRepo, fakeProfileRepo)
     composeRule.setContent { SearchScreen(searchViewModel = vm, mediaPlayer = fakeMediaPlayer) }
     // Rapid typing: only last value should trigger after debounce
     composeRule.onNodeWithTag(ProjectListScreenTestTags.SEARCH_TEXT_FIELD).performTextInput("a")
