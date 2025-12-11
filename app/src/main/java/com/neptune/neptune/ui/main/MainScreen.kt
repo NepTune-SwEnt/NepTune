@@ -154,6 +154,7 @@ object MainScreenTestTags : BaseSampleTestTags {
   const val COMMENT_TEXT_FIELD = "commentTextField"
   const val COMMENT_POST_BUTTON = "commentPostButton"
   const val COMMENT_LIST = "commentList"
+  const val COMMENT_PICTURE = "commentPicture"
 }
 
 fun factory(application: Application) =
@@ -270,7 +271,8 @@ fun MainScreen(
             },
             containerColor = NepTuneTheme.colors.background)
         // Comment Overlay (Outside Scaffold content, but inside Box to float over everything)
-        SampleCommentManager(mainViewModel = mainViewModel)
+        SampleCommentManager(
+            mainViewModel = mainViewModel, onProfileClicked = { handleProfileNavigation(it) })
 
         if (downloadProgress != null && downloadProgress != 0) {
           DownloadProgressBar(
@@ -793,7 +795,8 @@ fun CommentDialog(
     usernames: Map<String, String>,
     onDismiss: () -> Unit,
     onAddComment: (sampleId: String, commentText: String) -> Unit,
-    isAnonymous: Boolean = false
+    isAnonymous: Boolean = false,
+    onProfileClicked: (String) -> Unit = {}
 ) {
   var commentText by remember { mutableStateOf("") }
   val listScrollingState = rememberLazyListState()
@@ -839,37 +842,61 @@ fun CommentDialog(
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                       items(comments) { comment ->
                         val username = usernames[comment.authorId] ?: comment.authorName
-                        Column {
-                          Row(
-                              verticalAlignment = Alignment.CenterVertically,
-                              horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(
-                                    text = "${username}:",
-                                    style =
-                                        TextStyle(
-                                            fontSize = 18.sp,
-                                            fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                            fontWeight = FontWeight(300),
-                                            color = NepTuneTheme.colors.onBackground))
-                                Text(
-                                    text = "• " + formatTime(comment.timestamp),
-                                    style =
-                                        TextStyle(
-                                            fontSize = 14.sp,
-                                            fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                            fontWeight = FontWeight(300),
-                                            color =
-                                                NepTuneTheme.colors.onBackground.copy(
-                                                    alpha = 0.9f)))
-                              }
-                          Text(
-                              text = comment.text,
-                              style =
-                                  TextStyle(
-                                      fontSize = 18.sp,
-                                      fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                      fontWeight = FontWeight(300),
-                                      color = NepTuneTheme.colors.onBackground))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                          AsyncImage(
+                              model =
+                                  ImageRequest.Builder(LocalContext.current)
+                                      .data(
+                                          comment.authorProfilePicUrl.ifEmpty {
+                                            R.drawable.profile
+                                          })
+                                      .crossfade(true)
+                                      .build(),
+                              contentDescription = "Profile Picture",
+                              modifier =
+                                  Modifier.size(32.dp)
+                                      .clip(CircleShape)
+                                      .border(1.dp, NepTuneTheme.colors.onBackground, CircleShape)
+                                      .clickable { onProfileClicked(comment.authorId) }
+                                      .testTag(MainScreenTestTags.COMMENT_PICTURE),
+                              contentScale = ContentScale.Crop,
+                              placeholder = painterResource(R.drawable.profile),
+                              error = painterResource(R.drawable.profile))
+                          Spacer(Modifier.width(8.dp))
+                          Column {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                  Text(
+                                      text = "${username}:",
+                                      style =
+                                          TextStyle(
+                                              fontSize = 18.sp,
+                                              fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                              fontWeight = FontWeight(300),
+                                              color = NepTuneTheme.colors.onBackground),
+                                      modifier =
+                                          Modifier.clickable { onProfileClicked(comment.authorId) })
+                                  Text(
+                                      text = "• " + formatTime(comment.timestamp),
+                                      style =
+                                          TextStyle(
+                                              fontSize = 14.sp,
+                                              fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                              fontWeight = FontWeight(300),
+                                              color =
+                                                  NepTuneTheme.colors.onBackground.copy(
+                                                      alpha = 0.9f)))
+                                }
+                            Text(
+                                text = comment.text,
+                                style =
+                                    TextStyle(
+                                        fontSize = 18.sp,
+                                        fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                        fontWeight = FontWeight(300),
+                                        color = NepTuneTheme.colors.onBackground))
+                          }
                         }
                       }
                     }
