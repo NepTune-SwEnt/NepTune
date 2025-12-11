@@ -18,13 +18,16 @@ class ImportMediaUseCase(
 ) {
   suspend operator fun invoke(sourceUriString: String): MediaItem {
     val probe = importer.importFile(URI(sourceUriString))
-    val localAudio = File(URI(probe.localUri.toString()))
-    return finalizeImport(localAudio, probe.durationMs)
+    return invokeImplementation(probe)
   }
 
   // Overload for a File created by the in-app recorder. Uses importer.importRecorded
   suspend operator fun invoke(recordedFile: File): MediaItem {
     val probe = importer.importRecorded(recordedFile)
+    return invokeImplementation(probe)
+  }
+
+  private suspend fun invokeImplementation(probe: FileImporter.ImportedFile): MediaItem {
     val localAudio = File(URI(probe.localUri.toString()))
     return finalizeImport(localAudio, probe.durationMs)
   }

@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.projectlist
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -59,17 +60,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.credentials.CredentialManager
 import androidx.core.net.toUri
+import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
-import android.util.Log
 import com.google.firebase.Timestamp
 import com.neptune.neptune.R
+import com.neptune.neptune.media.LocalMediaPlayer
+import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.ui.theme.NepTuneTheme
-import com.neptune.neptune.media.NeptuneMediaPlayer
-import com.neptune.neptune.media.LocalMediaPlayer
 import kotlinx.coroutines.runBlocking
 
 object ProjectListScreenTestTags {
@@ -243,15 +243,17 @@ fun ProjectListItem(
               verticalAlignment = Alignment.CenterVertically) {
                 IconButton(
                     onClick = {
-                      // Play the project's preview audio if available, otherwise fall back to a demo resource
+                      // Play the project's preview audio if available, otherwise fall back to a
+                      // demo resource
                       try {
                         val path = project.audioPreviewLocalPath
-                        val uri = if (!path.isNullOrBlank()) {
-                          path.toUri()
-                        } else {
-                          // fallback demo URI from the media player helper
-                          mediaPlayer.getUriFromSampleId(project.uid)
-                        }
+                        val uri =
+                            if (!path.isNullOrBlank()) {
+                              path.toUri()
+                            } else {
+                              // fallback demo URI from the media player helper
+                              mediaPlayer.getUriFromSampleId(project.uid)
+                            }
                         mediaPlayer.togglePlay(uri)
                       } catch (e: Exception) {
                         Log.e("ProjectListItem", "Error playing preview for ${project.uid}", e)
@@ -601,5 +603,6 @@ fun ProjectListScreenPreview(
   // Provide an explicit NeptuneMediaPlayer for preview to avoid relying on composition local
   val previewPlayer = NeptuneMediaPlayer()
 
-  ProjectListScreen(projectListViewModel = vm, onProjectClick = onProjectClick, mediaPlayer = previewPlayer)
+  ProjectListScreen(
+      projectListViewModel = vm, onProjectClick = onProjectClick, mediaPlayer = previewPlayer)
 }
