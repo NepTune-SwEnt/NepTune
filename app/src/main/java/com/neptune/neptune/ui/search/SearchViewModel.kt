@@ -56,7 +56,6 @@ open class SearchViewModel(
     explicitStorageService: StorageService? = null,
     explicitDownloadsFolder: File? = null,
     auth: FirebaseAuth? = null,
-    private val connectivityObserver: NetworkConnectivityObserver = NetworkConnectivityObserver()
 ) :
     BaseSampleFeedViewModel(
         sampleRepo = sampleRepo,
@@ -118,18 +117,15 @@ open class SearchViewModel(
   val followingIds: StateFlow<Set<String>> = _followingIds.asStateFlow()
 
   init {
-    viewModelScope.launch {
-      connectivityObserver.isOnline.collect { isConnected -> _isOnline.value = isConnected }
+    if (auth != null && authListener != null) {
+      auth.addAuthStateListener(authListener)
     }
-      if (auth != null && authListener != null) {
-          auth.addAuthStateListener(authListener)
+    viewModelScope.launch {
+      currentUserProfile.collectLatest { profile ->
+        _followingIds.value = profile?.following?.toSet() ?: emptySet()
       }
-      viewModelScope.launch {
-          currentUserProfile.collectLatest { profile ->
-              _followingIds.value = profile?.following?.toSet() ?: emptySet()
-          }
-      }
-      load(useMockData)
+    }
+    load(useMockData)
   }
 
   fun toggleSearchType() {
@@ -203,11 +199,6 @@ open class SearchViewModel(
             NepTuneApplication.appContext,
             downloadProgress = downloadProgress)
       }
-
-  private fun refreshAllResources() {
-    val currentList = allSamples.value
-    currentList.forEach { sample -> loadSampleResources(sample) }
-  }
 
   override fun onCleared() {
     super.onCleared()

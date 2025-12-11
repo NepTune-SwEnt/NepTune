@@ -825,7 +825,6 @@ fun SelfProfileRoute(
     onFollowersClick: () -> Unit = {},
     onFollowingClick: () -> Unit = {}
 ) {
-  val context = LocalContext.current.applicationContext
   val auth = FirebaseAuth.getInstance()
   val ownerId = auth.currentUser?.uid.orEmpty()
 
@@ -847,7 +846,6 @@ fun SelfProfileRoute(
             @Suppress("UNCHECKED_CAST")
             return ProfileSamplesViewModel(
                 ownerId = ownerId,
-                context = context,
                 auth = auth,
             )
                 as T
@@ -923,7 +921,6 @@ fun OtherUserProfileRoute(
     userId: String,
     goBack: () -> Unit = {},
 ) {
-  val context = LocalContext.current.applicationContext
   val auth = FirebaseAuth.getInstance()
 
   val factory =
@@ -944,7 +941,7 @@ fun OtherUserProfileRoute(
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
           if (modelClass.isAssignableFrom(ProfileSamplesViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ProfileSamplesViewModel(ownerId = userId, context = context, auth = auth) as T
+            return ProfileSamplesViewModel(ownerId = userId, auth = auth) as T
           }
           throw IllegalArgumentException("Unknown ViewModel class")
         }

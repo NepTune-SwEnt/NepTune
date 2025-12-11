@@ -1,7 +1,6 @@
 package com.neptune.neptune.ui.search
 
 import OfflineScreen
-import android.app.Application
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -51,11 +50,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.google.firebase.auth.FirebaseAuth
 import com.neptune.neptune.R
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
@@ -127,17 +123,6 @@ class SearchScreenTestTagsPerUserCard(private val uid: String) {
   val USERNAME = "userUsername_$uid"
   val FOLLOW_BUTTON = "userFollowButton_$uid"
 }
-
-fun searchScreenFactory(application: Application) =
-    object : ViewModelProvider.Factory {
-      override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(SearchViewModel::class.java)) {
-          @Suppress("UNCHECKED_CAST")
-          return SearchViewModel(context = application, auth = FirebaseAuth.getInstance()) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-      }
-    }
 
 /**
  * Composable function representing the Search Screen.

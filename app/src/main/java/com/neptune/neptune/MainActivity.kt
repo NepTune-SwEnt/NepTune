@@ -1,6 +1,5 @@
 package com.neptune.neptune
 
-import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,7 +14,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -41,7 +39,6 @@ import com.neptune.neptune.ui.follow.FollowListRoute
 import com.neptune.neptune.ui.follow.FollowListTab
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainViewModel
-import com.neptune.neptune.ui.main.factory
 import com.neptune.neptune.ui.messages.MessagesScreen
 import com.neptune.neptune.ui.messages.SelectMessagesScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
@@ -127,8 +124,7 @@ fun NeptuneApp(
   val importViewModel: ImportViewModel = viewModel(factory = importAppRoot())
   val currentScreen = navigationActions.currentScreen(currentRoute ?: startDestination)
 
-  val mainViewModel: MainViewModel =
-      viewModel(factory = factory(LocalContext.current.applicationContext as Application))
+  val mainViewModel: MainViewModel = viewModel()
 
   // Media Player values
   val mediaPlayer = remember { NeptuneMediaPlayer() }

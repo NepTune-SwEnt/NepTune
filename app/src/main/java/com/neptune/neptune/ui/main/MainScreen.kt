@@ -1,7 +1,6 @@
 package com.neptune.neptune.ui.main
 
 import OfflineScreen
-import android.app.Application
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -90,8 +89,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.net.toUri
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -158,16 +155,6 @@ object MainScreenTestTags : BaseSampleTestTags {
   const val COMMENT_LIST = "commentList"
 }
 
-fun factory(application: Application) =
-    object : ViewModelProvider.Factory {
-      override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
-          @Suppress("UNCHECKED_CAST") return MainViewModel(context = application) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-      }
-    }
-
 /**
  * Composable function representing the Main Screen. This has been written with the help of LLMs.
  *
@@ -182,8 +169,7 @@ fun MainScreen(
     navigateToOtherUserProfile: (String) -> Unit = {},
     navigateToSelectMessages: () -> Unit = {},
     navigateToSampleList: (FeedType) -> Unit = {},
-    mainViewModel: MainViewModel =
-        viewModel(factory = factory(LocalContext.current.applicationContext as Application))
+    mainViewModel: MainViewModel = viewModel()
 ) {
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
