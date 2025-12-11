@@ -127,7 +127,8 @@ data class EmailAuthUiState(
  */
 class SignInViewModel(
     private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val googleIdOptionFactory: GoogleIdOptionFactory = DefaultGoogleIdOptionFactory()
+    private val googleIdOptionFactory: GoogleIdOptionFactory = DefaultGoogleIdOptionFactory(),
+    private val connectivityObserver: NetworkConnectivityObserver = NetworkConnectivityObserver()
 ) : ViewModel() {
 
   private lateinit var credentialManager: CredentialManager
@@ -168,10 +169,9 @@ class SignInViewModel(
     clientId = serverClientId
 
     viewModelScope.launch {
-      val observer = NetworkConnectivityObserver()
       val isNetworkAvailable =
           try {
-            observer.isOnline.first()
+            connectivityObserver.isOnline.first()
           } catch (_: Exception) {
             false
           }
@@ -191,7 +191,9 @@ class SignInViewModel(
         // not logged
         _signInStatus.value = SignInStatus.SIGNED_OUT
       }
-      viewModelScope.launch { observer.isOnline.collect { status -> _isOnline.value = status } }
+      viewModelScope.launch {
+        connectivityObserver.isOnline.collect { status -> _isOnline.value = status }
+      }
     }
   }
 

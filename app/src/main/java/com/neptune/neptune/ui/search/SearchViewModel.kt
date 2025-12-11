@@ -55,7 +55,8 @@ open class SearchViewModel(
     profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
     explicitStorageService: StorageService? = null,
     explicitDownloadsFolder: File? = null,
-    auth: FirebaseAuth? = null
+    auth: FirebaseAuth? = null,
+    private val connectivityObserver: NetworkConnectivityObserver = NetworkConnectivityObserver()
 ) :
     BaseSampleFeedViewModel(
         sampleRepo = sampleRepo,
@@ -118,22 +119,17 @@ open class SearchViewModel(
 
   init {
     viewModelScope.launch {
-      isOnline.collectLatest { isConnected ->
-        if (isConnected) {
-          load(useMockData)
-          refreshAllResources()
-        }
+      connectivityObserver.isOnline.collect { isConnected -> _isOnline.value = isConnected }
+    }
+      if (auth != null && authListener != null) {
+          auth.addAuthStateListener(authListener)
       }
-    }
-    if (auth != null && authListener != null) {
-      auth.addAuthStateListener(authListener)
-    }
-    viewModelScope.launch {
-      currentUserProfile.collectLatest { profile ->
-        _followingIds.value = profile?.following?.toSet() ?: emptySet()
+      viewModelScope.launch {
+          currentUserProfile.collectLatest { profile ->
+              _followingIds.value = profile?.following?.toSet() ?: emptySet()
+          }
       }
-    }
-    load(useMockData)
+      load(useMockData)
   }
 
   fun toggleSearchType() {
