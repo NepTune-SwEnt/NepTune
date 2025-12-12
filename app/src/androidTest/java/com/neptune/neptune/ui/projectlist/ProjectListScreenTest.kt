@@ -16,9 +16,9 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import com.google.firebase.Timestamp
-import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepositoryVar
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryCompose
