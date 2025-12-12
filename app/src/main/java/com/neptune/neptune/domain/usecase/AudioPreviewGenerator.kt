@@ -1,8 +1,8 @@
 package com.neptune.neptune.domain.usecase
 
 import android.net.Uri
-import com.neptune.neptune.model.project.ProjectExtractor
 import com.neptune.neptune.NepTuneApplication
+import com.neptune.neptune.model.project.ProjectExtractor
 import java.io.File
 
 // Backwards-compatible SamplerProvider interface used by tests and earlier code.
@@ -13,8 +13,8 @@ interface SamplerProvider {
 }
 
 /**
- * Interface representing a service that can load a sampler project and generate an audio preview Uri.
- * Implementations can be provided by the UI layer (eg. a ViewModel) or by a test double.
+ * Interface representing a service that can load a sampler project and generate an audio preview
+ * Uri. Implementations can be provided by the UI layer (eg. a ViewModel) or by a test double.
  */
 interface AudioPreviewGenerator : SamplerProvider
 
