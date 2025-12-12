@@ -176,15 +176,18 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
         }
 
     val deletedCount = docsToDelete.size
+    if (deletedCount == 0) return
+
+    // Use a single WriteBatch to perform all deletes and the counter update in one network request
+    val batch = db.batch()
     for (doc in docsToDelete) {
-      doc.reference.delete().await()
+      batch.delete(doc.reference)
     }
 
-    if (deletedCount > 0) {
-      val currentCount = snapshot.getLong("comments") ?: 0L
-      val newCount = (currentCount - deletedCount).coerceAtLeast(0L)
-      sampleDoc.update("comments", newCount).await()
-    }
+    // Atomic decrement to avoid race conditions with concurrent comment additions
+    batch.update(sampleDoc, "comments", FieldValue.increment(-deletedCount.toLong()))
+
+    batch.commit().await()
   }
   /** Observe the comment of a sample */
   override fun observeComments(sampleId: String): Flow<List<Comment>> = callbackFlow {
