@@ -122,7 +122,15 @@ fun FeedScreen(
           }
         }
 
-    SampleCommentManager(mainViewModel = mainViewModel)
+    SampleCommentManager(
+        mainViewModel = mainViewModel,
+        onProfileClicked = { userId ->
+          if (mainViewModel.isCurrentUser(userId)) {
+            navigateToProfile()
+          } else {
+            navigateToOtherUserProfile(userId)
+          }
+        })
     if (downloadProgress != null && downloadProgress != 0) {
       DownloadProgressBar(
           downloadProgress = downloadProgress!!, testTag = FeedScreenTestTag.DOWNLOAD_PROGRESS)

@@ -17,6 +17,8 @@ import com.neptune.neptune.ui.main.SampleUiActions
 import com.neptune.neptune.util.AudioWaveformExtractor
 import com.neptune.neptune.util.NetworkConnectivityObserver
 import com.neptune.neptune.util.WaveformExtractor
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -80,29 +82,44 @@ abstract class BaseSampleFeedViewModel(
 
   override fun onAddComment(sampleId: String, text: String) {
     viewModelScope.launch {
-      try {
-        val profile = profileRepo.getCurrentProfile()
-        val authorId = profile?.uid ?: "unknown"
-        val authorName = profile?.username ?: defaultName
-        sampleRepo.addComment(sampleId, authorId, authorName, text.trim())
-        observeCommentsForSample(sampleId)
-      } catch (e: Exception) {
-        Log.e("BaseSampleFeedViewModel", "Error adding comment: ${e.message}")
-      }
-    }
+        try {
+            val profile = profileRepo.getCurrentProfile()
+      val authorId = profile?.uid ?: "unknown"
+      val authorName = profile?.username ?: defaultName
+      val authorProfilePicUrl = profile?.avatarUrl ?: ""
+      sampleRepo.addComment(sampleId, authorId, authorName, authorProfilePicUrl, text.trim())
+      observeCommentsForSample(sampleId)
+    } catch (e: Exception) {
+            Log.e("BaseSampleFeedViewModel", "Error adding comment: ${e.message}")
+        }
+        }
   }
 
   protected open fun observeCommentsForSample(sampleId: String) {
     viewModelScope.launch {
-      try {
-        sampleRepo.observeComments(sampleId).collectLatest { list ->
-          list.forEach { comment -> loadUsername(comment.authorId) }
-          _comments.value = list
-        }
-      } catch (e: Exception) {
-        Log.e("BaseSampleFeedViewModel", "Error observing comments: ${e.message}")
+        try {
+            sampleRepo.observeComments(sampleId).collectLatest { list ->
+        val updatedComments =
+            list
+                .map {
+                  async {
+                    loadUsername(it.authorId)
+                    if (it.authorProfilePicUrl.isNotBlank()) {
+                      avatarCache.putIfAbsent(it.authorId, it.authorProfilePicUrl)
+                      it
+                    } else {
+                      val avatarUrl = getSampleOwnerAvatar(it.authorId)
+                      it.copy(authorProfilePicUrl = avatarUrl ?: "")
+                    }
+                  }
+                }
+                .awaitAll()
+        _comments.value = updatedComments
       }
-    }
+    } catch (e: Exception) {
+            Log.e("BaseSampleFeedViewModel", "Error observing comments: ${e.message}")
+        }
+        }
   }
 
   protected open fun loadUsername(userId: String) {

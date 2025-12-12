@@ -63,9 +63,16 @@ interface SampleRepository {
    * @param sampleId the ID of the sample
    * @param authorId the ID of the person who commented
    * @param authorName the username of the person who comments
+   * @param authorProfilePicUrl the profile picture of the user who comments
    * @param text the comment
    */
-  suspend fun addComment(sampleId: String, authorId: String, authorName: String, text: String)
+  suspend fun addComment(
+      sampleId: String,
+      authorId: String,
+      authorName: String,
+      text: String,
+      authorProfilePicUrl: String = "",
+  )
 
   /**
    * Observes real-time comments of a specific sample.

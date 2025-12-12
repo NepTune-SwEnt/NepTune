@@ -49,7 +49,8 @@ private val testSamples =
             likes = 2,
             usersLike = emptyList(),
             comments = 3,
-            downloads = 2),
+            downloads = 2,
+            isPublic = true),
         Sample(
             id = "sample2",
             name = "Followed Sample",
@@ -61,7 +62,8 @@ private val testSamples =
             likes = 2,
             usersLike = emptyList(),
             comments = 3,
-            downloads = 2))
+            downloads = 2,
+            isPublic = true))
 
 /**
  * Tests for the MainScreen.This has been written with the help of LLMs.
