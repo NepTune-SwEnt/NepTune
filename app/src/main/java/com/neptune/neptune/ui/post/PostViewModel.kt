@@ -14,6 +14,7 @@ import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.project.TotalProjectItemsRepository
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.model.sample.Sample
+import com.neptune.neptune.util.NetworkConnectivityObserver
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,6 +48,20 @@ class PostViewModel(
   private val auth: FirebaseAuth = FirebaseAuth.getInstance()
   val isAnonymous: Boolean
     get() = auth.currentUser?.isAnonymous ?: true
+
+  private val _isOnline = MutableStateFlow(true)
+  val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+
+  init {
+    try {
+      val observer = NetworkConnectivityObserver()
+      viewModelScope.launch {
+        observer.isOnline.collect { isConnected -> _isOnline.value = isConnected }
+      }
+    } catch (e: Exception) {
+      Log.e("PostViewModel", "Network observer init failed", e)
+    }
+  }
 
   /** Loads a project by its ID and converts it into a Sample. */
   fun loadProject(projectId: String) {
@@ -128,20 +143,24 @@ class PostViewModel(
       return
     }
     viewModelScope.launch {
-      val sampleId = uiState.value.sample.id
-      val fileName = "post_image_for_sample_$sampleId.jpg"
+      try {
+        val sampleId = uiState.value.sample.id
+        val fileName = "post_image_for_sample_$sampleId.jpg"
 
-      imageRepo.saveImageFromUri(uri, fileName)
+        imageRepo.saveImageFromUri(uri, fileName)
 
-      // Get the new URI from our internal storage and update the UI
-      _localImageUri.value =
-          imageRepo
-              .getImageUri(fileName)
-              ?.buildUpon()
-              ?.appendQueryParameter(
-                  "t", System.currentTimeMillis().toString() // Cache buster
-                  )
-              ?.build()
+        // Get the new URI from our internal storage and update the UI
+        _localImageUri.value =
+            imageRepo
+                .getImageUri(fileName)
+                ?.buildUpon()
+                ?.appendQueryParameter(
+                    "t", System.currentTimeMillis().toString() // Cache buster
+                    )
+                ?.build()
+      } catch (e: Exception) {
+        Log.e("PostViewModel", "Failed to change image: ${e.message}")
+      }
     }
   }
 

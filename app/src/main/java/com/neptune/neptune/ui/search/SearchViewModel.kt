@@ -1,10 +1,10 @@
 package com.neptune.neptune.ui.search
 
-import android.content.Context
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.R
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.Profile
@@ -17,13 +17,14 @@ import com.neptune.neptune.ui.feed.BaseSampleFeedViewModel
 import com.neptune.neptune.ui.feed.SampleFeedController
 import com.neptune.neptune.ui.main.SampleUiActions
 import com.neptune.neptune.util.DownloadDirectoryProvider
-import com.neptune.neptune.util.NetworkConnectivityObserver
 import java.io.File
+import kotlin.collections.forEach
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -51,29 +52,32 @@ enum class SearchType(val title: String) {
 @OptIn(ExperimentalCoroutinesApi::class)
 open class SearchViewModel(
     sampleRepo: SampleRepository = SampleRepositoryProvider.repository,
-    context: Context,
     private val useMockData: Boolean = false,
     profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
     explicitStorageService: StorageService? = null,
     explicitDownloadsFolder: File? = null,
     auth: FirebaseAuth? = null,
-    private val connectivityObserver: NetworkConnectivityObserver = NetworkConnectivityObserver()
 ) :
     BaseSampleFeedViewModel(
         sampleRepo = sampleRepo,
         profileRepo = profileRepo,
-        context = context,
         auth = if (useMockData) null else auth ?: FirebaseAuth.getInstance(),
         storageService = explicitStorageService),
     SampleFeedController {
 
   // ---------- Firebase auth (disabled in tests when useMockData = true) ----------
+  private val effectiveAuth = if (useMockData) null else auth ?: FirebaseAuth.getInstance()
 
   private val _currentUserFlow = MutableStateFlow(auth?.currentUser)
 
   private val authListener: FirebaseAuth.AuthStateListener? =
-      auth?.let {
-        FirebaseAuth.AuthStateListener { fbAuth -> _currentUserFlow.value = fbAuth.currentUser }
+      effectiveAuth?.let {
+        FirebaseAuth.AuthStateListener { fbAuth ->
+          _currentUserFlow.value = fbAuth.currentUser
+          if (fbAuth.currentUser != null) {
+            load(useMockData)
+          }
+        }
       }
 
   // ---------- Samples & likes / comments ----------
@@ -89,6 +93,8 @@ open class SearchViewModel(
   private val _searchType = MutableStateFlow(SearchType.SAMPLES)
   val searchType: StateFlow<SearchType> = _searchType.asStateFlow()
 
+  private val _isAnonymous = MutableStateFlow(auth?.currentUser?.isAnonymous ?: true)
+  val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
   // User search results
   private val _userResults = MutableStateFlow<List<Profile>>(emptyList())
   val userResults: StateFlow<List<Profile>> = _userResults.asStateFlow()
@@ -106,18 +112,30 @@ open class SearchViewModel(
               profileRepo.observeProfile(user.uid)
             }
           }
+          .catch { e ->
+            Log.e("SearchViewModel", "Error observing profile", e)
+            emit(null)
+          }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
   // Local state for following IDs to ensure instant UI updates
   private val _followingIds = MutableStateFlow<Set<String>>(emptySet())
   val followingIds: StateFlow<Set<String>> = _followingIds.asStateFlow()
-  private val _isOnline = MutableStateFlow(true)
-  val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
 
   init {
-    viewModelScope.launch {
-      connectivityObserver.isOnline.collect { isConnected -> _isOnline.value = isConnected }
+    if (effectiveAuth != null && authListener != null) {
+      effectiveAuth.addAuthStateListener(authListener)
     }
+    viewModelScope.launch {
+      try {
+        currentUserProfile.collectLatest { profile ->
+          _followingIds.value = profile?.following?.toSet() ?: emptySet()
+        }
+      } catch (e: Exception) {
+        Log.e("SearchViewModel", "Error collecting current user profile", e)
+      }
+    }
+    load(useMockData)
   }
 
   fun toggleSearchType() {
@@ -175,48 +193,22 @@ open class SearchViewModel(
             explicitStorageService
                 ?: run {
                   val storage =
-                      FirebaseStorage.getInstance(context.getString(R.string.storage_path))
+                      FirebaseStorage.getInstance(
+                          NepTuneApplication.appContext.getString(R.string.storage_path))
                   StorageService(storage)
                 }
 
         val downloadsFolder =
-            DownloadDirectoryProvider.resolveDownloadsDir(context, explicitDownloadsFolder)
+            DownloadDirectoryProvider.resolveDownloadsDir(
+                NepTuneApplication.appContext, explicitDownloadsFolder)
 
         SampleUiActions(
             sampleRepo,
             storageService,
             downloadsFolder,
-            context,
+            NepTuneApplication.appContext,
             downloadProgress = downloadProgress)
       }
-
-  init {
-    if (auth != null && authListener != null) {
-      auth.addAuthStateListener(authListener)
-    }
-
-    // Observe current user profile to keep following list in sync with server
-    // FIX: Using flatMapLatest to safely handle the case where currentUser is null
-    viewModelScope.launch {
-      _currentUserFlow
-          .flatMapLatest { user ->
-            if (user != null) {
-              profileRepo.observeProfile(user.uid)
-            } else {
-              flowOf(null)
-            }
-          }
-          .collectLatest { profile ->
-            if (profile != null) {
-              _followingIds.value = profile.following.toSet()
-            } else {
-              _followingIds.value = emptySet()
-            }
-          }
-    }
-
-    load(useMockData)
-  }
 
   override fun onCleared() {
     super.onCleared()
@@ -280,18 +272,22 @@ open class SearchViewModel(
   fun loadSamplesFromFirebase() {
     if (auth?.currentUser == null) return
     viewModelScope.launch {
-      this@SearchViewModel.sampleRepo.observeSamples().collectLatest { samples ->
-        val currentUserId = auth?.currentUser?.uid
-        val following = _followingIds.value
-        val visibleSamples =
-            samples.filter { sample ->
-              sample.isPublic || sample.ownerId == currentUserId || (sample.ownerId in following)
-            }
-        val readySamples = visibleSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
-        allSamples.value = readySamples
-        readySamples.forEach { loadSampleResources(it) }
-        applyFilter(query)
-        refreshLikeStates()
+      try {
+        this@SearchViewModel.sampleRepo.observeSamples().collectLatest { samples ->
+          val currentUserId = auth.currentUser?.uid
+          val following = _followingIds.value
+          val visibleSamples =
+              samples.filter { sample ->
+                sample.isPublic || sample.ownerId == currentUserId || (sample.ownerId in following)
+              }
+          val readySamples = visibleSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
+          allSamples.value = readySamples
+          readySamples.forEach { loadSampleResources(it) }
+          applyFilter(query)
+          refreshLikeStates()
+        }
+      } catch (e: Exception) {
+        Log.e("SearchViewModel", "Error loading samples (Offline?)", e)
       }
     }
   }
@@ -314,24 +310,32 @@ open class SearchViewModel(
   override fun onLikeClick(sample: Sample, isLiked: Boolean) {
     val sampleId = sample.id
     viewModelScope.launch {
-      this@SearchViewModel.sampleRepo.toggleLike(sample.id, isLiked)
-      val delta = if (isLiked) 1 else -1
-      val updatedSamples =
-          allSamples.value.map { current ->
-            if (current.id == sampleId) {
-              current.copy(likes = current.likes + delta)
-            } else {
-              current
+      try {
+        this@SearchViewModel.sampleRepo.toggleLike(sample.id, isLiked)
+        val delta = if (isLiked) 1 else -1
+        val updatedSamples =
+            allSamples.value.map { current ->
+              if (current.id == sampleId) {
+                current.copy(likes = current.likes + delta)
+              } else {
+                current
+              }
             }
-          }
-      allSamples.value = updatedSamples
-      applyFilter(query)
-      _likedSamples.value = _likedSamples.value + (sampleId to isLiked)
+        allSamples.value = updatedSamples
+        applyFilter(query)
+        _likedSamples.value = _likedSamples.value + (sampleId to isLiked)
+      } catch (e: Exception) {
+        Log.e("SearchViewModel", "Error toggling like: ${e.message}")
+      }
     }
   }
 
   fun refreshLikeStates() {
     refreshLikeStates(_samples.value, _likedSamples)
+  }
+
+  fun addComment(sampleId: String, text: String) {
+    onAddComment(sampleId, text)
   }
 
   open fun search(query: String) {

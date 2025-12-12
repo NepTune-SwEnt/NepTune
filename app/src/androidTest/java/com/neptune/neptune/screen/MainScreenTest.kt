@@ -19,7 +19,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
 import com.google.firebase.Timestamp
-import com.neptune.neptune.NepTuneApplication.Companion.appContext
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.FakeProfileRepository
@@ -97,7 +96,6 @@ class MainScreenTest {
         MainViewModel(
             sampleRepo = fakeSampleRepo,
             profileRepo = fakeProfileRepo,
-            context = appContext,
             useMockData = false // Set to false to use the real logic with our fake repo
             )
     composeTestRule.setContent {
