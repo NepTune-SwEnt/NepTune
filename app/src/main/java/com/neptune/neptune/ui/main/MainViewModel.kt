@@ -131,6 +131,7 @@ open class MainViewModel(
   fun loadRecommendations(limit: Int = 50) {
     viewModelScope.launch {
       Log.d("RecoDebug", "loadRecommendations() START, cacheSize=${allSamplesCache.size}")
+      if (auth?.currentUser == null) return@launch
       val recoUser = profileRepo.getCurrentRecoUserProfile()
       if (recoUser == null) {
         // Fallback when no user or profile: just show latest samples
