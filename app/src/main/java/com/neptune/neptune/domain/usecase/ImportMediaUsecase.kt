@@ -7,11 +7,11 @@ import com.neptune.neptune.domain.port.FileImporter
 import com.neptune.neptune.domain.port.MediaRepository
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepositoryLocal
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.URI
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 open class ImportMediaUseCase(
     private val importer: FileImporter,
@@ -43,7 +43,9 @@ open class ImportMediaUseCase(
     // Run packager on IO dispatcher to avoid blocking callers
     val projectZip =
         try {
-          withContext(Dispatchers.IO) { packager.createProjectZip(audioFile = localAudio, durationMs = durationMs) }
+          withContext(Dispatchers.IO) {
+            packager.createProjectZip(audioFile = localAudio, durationMs = durationMs)
+          }
         } catch (e: Exception) {
           // Ensure we attempt to delete the temporary local file on IO dispatcher
           withContext(Dispatchers.IO) { localAudio.delete() }

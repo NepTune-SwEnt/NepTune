@@ -5,10 +5,10 @@ import android.net.Uri
 import android.util.Log
 import android.webkit.MimeTypeMap
 import com.neptune.neptune.NepTuneApplication
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Helper to copy a temporary preview Uri into the app's previews folder and return the saved URI
@@ -32,7 +32,8 @@ class PreviewStoreHelper(private val context: Context = NepTuneApplication.appCo
           val destFile = File(previewsDir, "${itemId}.$ext")
 
           // Try to open via content resolver first; fall back to file path if needed
-          val inputStream = runCatching { contentResolver.openInputStream(tempPreviewUri) }.getOrNull()
+          val inputStream =
+              runCatching { contentResolver.openInputStream(tempPreviewUri) }.getOrNull()
           if (inputStream != null) {
             inputStream.use { input ->
               FileOutputStream(destFile).use { out -> input.copyTo(out, 4 * 1024) }
@@ -53,4 +54,3 @@ class PreviewStoreHelper(private val context: Context = NepTuneApplication.appCo
         }
       }
 }
-

@@ -7,10 +7,10 @@ import android.media.MediaFormat
 import android.media.MediaPlayer
 import android.net.Uri
 import android.util.Log
-import android.webkit.MimeTypeMap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.neptune.neptune.NepTuneApplication
+import com.neptune.neptune.domain.usecase.PreviewStoreHelper
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.project.AudioFileMetadata
 import com.neptune.neptune.model.project.ParameterMetadata
@@ -20,10 +20,7 @@ import com.neptune.neptune.model.project.ProjectWriter
 import com.neptune.neptune.model.project.SamplerProjectData
 import com.neptune.neptune.ui.sampler.SamplerViewModel.AudioProcessor
 import com.neptune.neptune.util.WaveformExtractor
-import com.neptune.neptune.domain.usecase.PreviewStoreHelper
 import java.io.File
-import java.io.FileOutputStream
-import java.io.InputStream
 import kotlin.math.*
 import kotlin.math.abs
 import kotlin.math.cos
@@ -31,7 +28,6 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -724,15 +720,15 @@ open class SamplerViewModel(
         val previewUri = state.currentAudioUri ?: return@launch
 
         // Delegate the actual copying to PreviewStoreHelper which performs IO on Dispatchers.IO
-        val previewLocalPath = previewStoreHelper.saveTempPreviewToPreviewsDir(projectId, previewUri)
+        val previewLocalPath =
+            previewStoreHelper.saveTempPreviewToPreviewsDir(projectId, previewUri)
 
         // Update project entry with the preview local path
         val project = projectsJsonRepo.findProjectWithProjectFile(zipFilePath)
         val updated = project.copy(audioPreviewLocalPath = previewLocalPath)
         projectsJsonRepo.editProject(project.uid, updated)
 
-        Log.i(
-            "SamplerViewModel", "Saved preview for project $projectId -> $previewLocalPath")
+        Log.i("SamplerViewModel", "Saved preview for project $projectId -> $previewLocalPath")
       } catch (e: Exception) {
         Log.w("SamplerViewModel", "Failed to save preview for project", e)
       }
@@ -821,22 +817,23 @@ open class SamplerViewModel(
 
     return try {
       // Execute the synchronous DSP pipeline on the default/background dispatcher
-      val newUri = withContext(dispatcherProvider.default) {
-        processAudio(
-            currentAudioUri = originalUri, // Source is the original file (non-destructive)
-            eqBands = state.eqBands,
-            reverbWet = state.reverbWet,
-            reverbSize = state.reverbSize,
-            reverbWidth = state.reverbWidth,
-            reverbDepth = state.reverbDepth,
-            reverbPredelay = state.reverbPredelay,
-            semitones = semitones,
-            audioProcessor = audioProcessor,
-            attack = state.attack,
-            decay = state.decay,
-            sustain = state.sustain,
-            release = state.release)
-      }
+      val newUri =
+          withContext(dispatcherProvider.default) {
+            processAudio(
+                currentAudioUri = originalUri, // Source is the original file (non-destructive)
+                eqBands = state.eqBands,
+                reverbWet = state.reverbWet,
+                reverbSize = state.reverbSize,
+                reverbWidth = state.reverbWidth,
+                reverbDepth = state.reverbDepth,
+                reverbPredelay = state.reverbPredelay,
+                semitones = semitones,
+                audioProcessor = audioProcessor,
+                attack = state.attack,
+                decay = state.decay,
+                sustain = state.sustain,
+                release = state.release)
+          }
 
       if (newUri != null) {
         _uiState.update { it.copy(currentAudioUri = newUri) }
