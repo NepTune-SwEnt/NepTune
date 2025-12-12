@@ -274,7 +274,7 @@ open class SearchViewModel(
     viewModelScope.launch {
       try {
         this@SearchViewModel.sampleRepo.observeSamples().collectLatest { samples ->
-          val currentUserId = auth?.currentUser?.uid
+          val currentUserId = auth.currentUser?.uid
           val following = _followingIds.value
           val visibleSamples =
               samples.filter { sample ->
