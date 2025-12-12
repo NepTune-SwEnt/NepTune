@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.projectlist
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -59,10 +60,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Timestamp
 import com.neptune.neptune.R
+import com.neptune.neptune.media.LocalMediaPlayer
+import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.ui.offline.OfflineBanner
@@ -93,6 +97,7 @@ private const val SEARCHBAR_FONT_SIZE = 21
  * @param credentialManager Manages user credentials.
  * @param onProjectClick Lambda function to navigate.
  * @param projectListViewModel ViewModel managing the state of the project list.
+ * @param mediaPlayer NeptuneMediaPlayer instance used to play audio previews.
  * @author Uri Jaquet
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -101,6 +106,7 @@ fun ProjectListScreen(
     credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
     onProjectClick: (ProjectItem) -> Unit = {},
     projectListViewModel: ProjectListViewModel = viewModel(),
+    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
 ) {
   val uiState by projectListViewModel.uiState.collectAsState()
   val projects: List<ProjectItem> = uiState.projects
@@ -137,7 +143,8 @@ fun ProjectListScreen(
                   selectedProject = selectedProjects,
                   modifier = Modifier.padding(it),
                   projectListViewModel = projectListViewModel,
-                  onProjectClick = onProjectClick)
+                  onProjectClick = onProjectClick,
+                  mediaPlayer = mediaPlayer)
             }
       })
 }
@@ -150,6 +157,7 @@ fun ProjectListScreen(
  * @param modifier Modifier for styling.
  * @param projectListViewModel ViewModel managing the state of the project list.
  * @param onProjectClick Lambda function to navigate.
+ * @param mediaPlayer NeptuneMediaPlayer instance used to play audio previews.
  * @author Uri Jaquet
  */
 @Composable
@@ -159,6 +167,7 @@ fun ProjectList(
     selectedProject: String? = null,
     projectListViewModel: ProjectListViewModel,
     onProjectClick: (ProjectItem) -> Unit = {},
+    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
 ) {
 
   val lineColor = NepTuneTheme.colors.onBackground
@@ -179,7 +188,8 @@ fun ProjectList(
               project = project,
               selectedProject = selectedProject,
               onProjectClick = onProjectClick,
-              projectListViewModel = projectListViewModel)
+              projectListViewModel = projectListViewModel,
+              mediaPlayer = mediaPlayer)
         }
       }
     }
@@ -194,6 +204,7 @@ fun ProjectList(
  * @param selectedProject ID of the currently selected project, if any.
  * @param onProjectClick Lambda function to open the selected project.
  * @param projectListViewModel ViewModel managing the state of the project list.
+ * @param mediaPlayer NeptuneMediaPlayer used to play audio previews.
  * @author Uri Jaquet
  */
 @Composable
@@ -202,6 +213,7 @@ fun ProjectListItem(
     selectedProject: String? = null,
     onProjectClick: (ProjectItem) -> Unit = {},
     projectListViewModel: ProjectListViewModel,
+    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
 ) {
   val backGroundColor =
       if (project.uid == selectedProject) NepTuneTheme.colors.listBackground
@@ -236,7 +248,24 @@ fun ProjectListItem(
               modifier = Modifier.padding(start = 5.dp),
               verticalAlignment = Alignment.CenterVertically) {
                 IconButton(
-                    onClick = {},
+                    onClick = {
+                      // Play the project's preview audio if available, otherwise fall back to a
+                      // demo resource
+                      try {
+                        val path = project.audioPreviewLocalPath
+                        val uri =
+                            if (!path.isNullOrBlank()) {
+                              path.toUri()
+                            } else {
+                              // fallback demo URI from the media player helper
+                              mediaPlayer.getUriFromSampleId(project.uid)
+                            }
+                        mediaPlayer.togglePlay(uri)
+                      } catch (e: Exception) {
+                        Log.e("ProjectListItem", "Error playing preview for ${project.uid}", e)
+                      }
+                    },
+                    modifier = Modifier.testTag("play_${project.uid}"),
                     content = {
                       Icon(
                           Icons.Default.PlayArrow,
@@ -582,5 +611,9 @@ fun ProjectListScreenPreview(
   }
   val vm = ProjectListViewModel(projectRepository = repo)
 
-  ProjectListScreen(projectListViewModel = vm, onProjectClick = onProjectClick)
+  // Provide an explicit NeptuneMediaPlayer for preview to avoid relying on composition local
+  val previewPlayer = NeptuneMediaPlayer()
+
+  ProjectListScreen(
+      projectListViewModel = vm, onProjectClick = onProjectClick, mediaPlayer = previewPlayer)
 }
