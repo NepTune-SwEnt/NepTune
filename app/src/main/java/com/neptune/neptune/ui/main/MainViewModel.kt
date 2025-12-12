@@ -343,7 +343,8 @@ open class MainViewModel(
       val profile = profileRepo.getCurrentProfile()
       val authorId = profile?.uid ?: auth?.currentUser?.uid ?: "unknown"
       val authorName = profile?.username ?: defaultName
-      sampleRepo.addComment(sampleId, authorId, authorName, text.trim())
+      val authorProfilePicUrl = userAvatar.value ?: ""
+      sampleRepo.addComment(sampleId, authorId, authorName, authorProfilePicUrl, text.trim())
     }
   }
 

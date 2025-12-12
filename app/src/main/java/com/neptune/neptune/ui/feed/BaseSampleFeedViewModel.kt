@@ -16,6 +16,8 @@ import com.neptune.neptune.ui.main.SampleResourceState
 import com.neptune.neptune.ui.main.SampleUiActions
 import com.neptune.neptune.util.AudioWaveformExtractor
 import com.neptune.neptune.util.WaveformExtractor
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -66,7 +68,8 @@ abstract class BaseSampleFeedViewModel(
       val profile = profileRepo.getCurrentProfile()
       val authorId = profile?.uid ?: "unknown"
       val authorName = profile?.username ?: defaultName
-      sampleRepo.addComment(sampleId, authorId, authorName, text.trim())
+      val authorProfilePicUrl = profile?.avatarUrl ?: ""
+      sampleRepo.addComment(sampleId, authorId, authorName, authorProfilePicUrl, text.trim())
       observeCommentsForSample(sampleId)
     }
   }
@@ -74,8 +77,22 @@ abstract class BaseSampleFeedViewModel(
   protected open fun observeCommentsForSample(sampleId: String) {
     viewModelScope.launch {
       sampleRepo.observeComments(sampleId).collectLatest { list ->
-        list.forEach { comment -> loadUsername(comment.authorId) }
-        _comments.value = list
+        val updatedComments =
+            list
+                .map {
+                  async {
+                    loadUsername(it.authorId)
+                    if (it.authorProfilePicUrl.isNotBlank()) {
+                      avatarCache.putIfAbsent(it.authorId, it.authorProfilePicUrl)
+                      it
+                    } else {
+                      val avatarUrl = getSampleOwnerAvatar(it.authorId)
+                      it.copy(authorProfilePicUrl = avatarUrl ?: "")
+                    }
+                  }
+                }
+                .awaitAll()
+        _comments.value = updatedComments
       }
     }
   }
