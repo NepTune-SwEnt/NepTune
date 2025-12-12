@@ -436,9 +436,13 @@ class SignInViewModel(
   fun signOut() {
     viewModelScope.launch {
       firebaseAuth.currentUser?.uid?.let { uid ->
-        val db = RealtimeDatabaseProvider.getDatabase()
-        db.getReference("status/$uid")
-            .setValue(mapOf("state" to "offline", "lastChanged" to ServerValue.TIMESTAMP))
+        try {
+          val db = RealtimeDatabaseProvider.getDatabase()
+          db.getReference("status/$uid")
+              .setValue(mapOf("state" to "offline", "lastChanged" to ServerValue.TIMESTAMP))
+        } catch (e: Exception) {
+          Log.e("SignInViewModel", "Error setting user offline on sign out: ${e.message}")
+        }
       }
 
       firebaseAuth.signOut()
