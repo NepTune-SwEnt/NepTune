@@ -107,6 +107,7 @@ class ProfileSamplesViewModel(
     viewModelScope.launch {
       this@ProfileSamplesViewModel.sampleRepo.toggleLike(sample.id, isLiked)
       val delta = if (isLiked) 1 else -1
+      profileRepo.updateLikeCount(sample.ownerId, delta)
       _samples.update { list ->
         list.map { current ->
           if (current.id == sample.id) current.copy(likes = current.likes + delta) else current

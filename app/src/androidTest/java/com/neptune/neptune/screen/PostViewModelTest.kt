@@ -8,6 +8,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.storage
+import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.TotalProjectItemsRepository
 import com.neptune.neptune.ui.post.PostUiState
@@ -46,6 +47,7 @@ class PostViewModelTest {
   private val storagePort = 9199
   private val authPort = 9099
   private val firestorePort = 8080
+  private lateinit var mockProfileRepo: ProfileRepository
 
   @Before
   fun setUp() = runBlocking {
@@ -64,9 +66,10 @@ class PostViewModelTest {
 
     // 3. Create Mock Repository
     mockProjectRepo = mock(TotalProjectItemsRepository::class.java)
+    mockProfileRepo = mock(ProfileRepository::class.java)
 
     // 4. Inject into ViewModel
-    viewModel = PostViewModel(projectRepository = mockProjectRepo)
+    viewModel = PostViewModel(projectRepository = mockProjectRepo, profileRepo = mockProfileRepo)
   }
 
   @After
