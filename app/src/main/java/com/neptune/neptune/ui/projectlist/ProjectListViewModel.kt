@@ -53,11 +53,11 @@ class ProjectListViewModel(
     private val getLibraryUseCase: GetLibraryUseCase? = null,
     private val mediaRepository: MediaRepository? = null,
     private val storageService: StorageService? = null,
-    private val auth: FirebaseAuth? = null
+    private val auth: FirebaseAuth? = null,
+    private val connectivityObserver: NetworkConnectivityObserver = NetworkConnectivityObserver()
 ) : ViewModel() {
   private var _uiState = MutableStateFlow(ProjectListUiState(projects = emptyList()))
   val uiState: StateFlow<ProjectListUiState> = _uiState.asStateFlow()
-  private val connectivityObserver = NetworkConnectivityObserver()
   private val _isOnline = MutableStateFlow(true)
   val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
 
