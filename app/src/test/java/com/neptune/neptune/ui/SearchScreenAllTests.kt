@@ -14,7 +14,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
-import com.neptune.neptune.NepTuneApplication.Companion.appContext
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.fakes.FakeProfileRepository
 import com.neptune.neptune.model.fakes.FakeSampleRepository
@@ -62,12 +61,14 @@ class SearchScreenAllTests {
     val fakeProfileRepo = FakeProfileRepository()
     val mockObserver = mockk<NetworkConnectivityObserver>(relaxed = true)
     every { mockObserver.isOnline } returns flowOf(true)
-    return SearchViewModel(
-        sampleRepo = fakeSampleRepo,
-        context = appContext,
-        useMockData = true,
-        profileRepo = fakeProfileRepo,
-        connectivityObserver = mockObserver)
+    return object :
+        SearchViewModel(
+            sampleRepo = fakeSampleRepo,
+            useMockData = true,
+            profileRepo = fakeProfileRepo,
+        ) {
+      override val isUserLoggedIn: Boolean = true
+    }
   }
 
   /** Advance past the 300ms debounce in SearchScreen */
@@ -85,15 +86,14 @@ class SearchScreenAllTests {
   class SpySearchViewModel(
       repo: SampleRepository,
       profileRepo: ProfileRepository,
-      connectivityObserver: NetworkConnectivityObserver
   ) :
       SearchViewModel(
           sampleRepo = repo,
-          context = appContext,
           useMockData = true,
           profileRepo = profileRepo,
-          connectivityObserver = connectivityObserver) {
+      ) {
     val calls = mutableListOf<String>()
+    override val isUserLoggedIn: Boolean = true
 
     override fun search(query: String) {
       calls += query
@@ -202,9 +202,7 @@ class SearchScreenAllTests {
   fun debounceTriggersSearchOnceAfterDelay() {
     val fakeSampleRepo = FakeSampleRepository()
     val fakeProfileRepo = FakeProfileRepository()
-    val mockObserver = mockk<NetworkConnectivityObserver>(relaxed = true)
-    every { mockObserver.isOnline } returns flowOf(true)
-    val vm = SpySearchViewModel(fakeSampleRepo, fakeProfileRepo, mockObserver)
+    val vm = SpySearchViewModel(fakeSampleRepo, fakeProfileRepo)
     composeRule.setContent { SearchScreen(searchViewModel = vm, mediaPlayer = fakeMediaPlayer) }
     // Rapid typing: only last value should trigger after debounce
     composeRule.onNodeWithTag(ProjectListScreenTestTags.SEARCH_TEXT_FIELD).performTextInput("a")
@@ -330,10 +328,7 @@ class SearchScreenAllTests {
     val vm =
         object :
             SearchViewModel(
-                sampleRepo = fakeSampleRepo,
-                context = appContext,
-                useMockData = true,
-                profileRepo = fakeProfileRepo) {
+                sampleRepo = fakeSampleRepo, useMockData = true, profileRepo = fakeProfileRepo) {
           override fun isCurrentUser(ownerId: String): Boolean = ownerId == "current-user"
         }
     val sample =

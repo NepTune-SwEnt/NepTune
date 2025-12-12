@@ -1,7 +1,6 @@
 package com.neptune.neptune.ui.search
 
 import OfflineScreen
-import android.app.Application
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -43,7 +42,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -52,11 +50,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.google.firebase.auth.FirebaseAuth
 import com.neptune.neptune.R
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
@@ -68,6 +63,7 @@ import com.neptune.neptune.ui.feed.sampleFeedItems
 import com.neptune.neptune.ui.main.CommentDialog
 import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.main.SampleResourceState
+import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.projectlist.SearchBar
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import kotlinx.coroutines.delay
@@ -122,22 +118,11 @@ class SearchScreenTestTagsPerSampleCard(private val idInColumn: String = "0") : 
     get() = tag("sampleDownloads")
 }
 
-class SearchScreenTestTagsPerUserCard(private val uid: String) {
+class SearchScreenTestTagsPerUserCard(uid: String) {
   val CARD = "userCard_$uid"
   val USERNAME = "userUsername_$uid"
   val FOLLOW_BUTTON = "userFollowButton_$uid"
 }
-
-fun searchScreenFactory(application: Application) =
-    object : ViewModelProvider.Factory {
-      override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(SearchViewModel::class.java)) {
-          @Suppress("UNCHECKED_CAST")
-          return SearchViewModel(context = application, auth = FirebaseAuth.getInstance()) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-      }
-    }
 
 /**
  * Composable function representing the Search Screen.
@@ -150,9 +135,7 @@ fun searchScreenFactory(application: Application) =
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
-    searchViewModel: SearchViewModel =
-        viewModel(
-            factory = searchScreenFactory(LocalContext.current.applicationContext as Application)),
+    searchViewModel: SearchViewModel = viewModel(),
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
     navigateToProfile: () -> Unit = {},
     navigateToOtherUserProfile: (String) -> Unit = {},
@@ -179,8 +162,9 @@ fun SearchScreen(
   val activeCommentSampleId by searchViewModel.activeCommentSampleId.collectAsState()
   val comments by searchViewModel.comments.collectAsState()
   val isOnline by searchViewModel.isOnline.collectAsState()
+  val isUserLoggedIn = remember { searchViewModel.isUserLoggedIn }
   Box(modifier = Modifier.fillMaxSize()) {
-    if (!isOnline) {
+    if (!isUserLoggedIn) {
       OfflineScreen()
     } else {
       Scaffold(
@@ -225,34 +209,37 @@ fun SearchScreen(
                 }
           },
           content = { pd ->
-            if (searchType == SearchType.SAMPLES) {
-              ScrollableColumnOfSamples(
-                  samples = samples,
-                  searchViewModel = searchViewModel,
-                  modifier = Modifier.padding(pd),
-                  mediaPlayer = mediaPlayer,
-                  likedSamples = likedSamples,
-                  activeCommentSampleId = activeCommentSampleId,
-                  comments = comments,
-                  navigateToProfile = navigateToProfile,
-                  navigateToOtherUserProfile = navigateToOtherUserProfile,
-                  sampleResources = sampleResources)
-            } else {
-              ScrollableColumnOfUsers(
-                  users = userResults,
-                  followingIds = followingIds,
-                  currentUserId = currentUserProfile?.uid ?: "",
-                  onFollowToggle = { uid, isFollowing ->
-                    searchViewModel.toggleFollow(uid, isFollowing)
-                  },
-                  navigateToOtherUserProfile = { uid ->
-                    if (searchViewModel.isCurrentUser(uid)) {
-                      navigateToProfile()
-                    } else {
-                      navigateToOtherUserProfile(uid)
-                    }
-                  },
-                  modifier = Modifier.padding(pd))
+            Column(modifier = Modifier.fillMaxSize().padding(pd)) {
+              if (!isOnline) {
+                OfflineBanner()
+              }
+              if (searchType == SearchType.SAMPLES) {
+                ScrollableColumnOfSamples(
+                    samples = samples,
+                    searchViewModel = searchViewModel,
+                    mediaPlayer = mediaPlayer,
+                    likedSamples = likedSamples,
+                    activeCommentSampleId = activeCommentSampleId,
+                    comments = comments,
+                    navigateToProfile = navigateToProfile,
+                    navigateToOtherUserProfile = navigateToOtherUserProfile,
+                    sampleResources = sampleResources)
+              } else {
+                ScrollableColumnOfUsers(
+                    users = userResults,
+                    followingIds = followingIds,
+                    currentUserId = currentUserProfile?.uid ?: "",
+                    onFollowToggle = { uid, isFollowing ->
+                      searchViewModel.toggleFollow(uid, isFollowing)
+                    },
+                    navigateToOtherUserProfile = { uid ->
+                      if (searchViewModel.isCurrentUser(uid)) {
+                        navigateToProfile()
+                      } else {
+                        navigateToOtherUserProfile(uid)
+                      }
+                    })
+              }
             }
           })
       if (downloadProgress != null && downloadProgress != 0) {
@@ -270,12 +257,10 @@ fun ScrollableColumnOfUsers(
     currentUserId: String,
     onFollowToggle: (String, Boolean) -> Unit,
     navigateToOtherUserProfile: (String) -> Unit,
-    modifier: Modifier = Modifier
 ) {
   LazyColumn(
       modifier =
-          modifier
-              .testTag(SearchScreenTestTags.USER_LIST)
+          Modifier.testTag(SearchScreenTestTags.USER_LIST)
               .fillMaxSize()
               .background(NepTuneTheme.colors.background),
       verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -352,7 +337,6 @@ fun ScrollableColumnOfUsers(
 
 @Composable
 fun ScrollableColumnOfSamples(
-    modifier: Modifier = Modifier,
     samples: List<Sample>,
     searchViewModel: SearchViewModel,
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
@@ -373,8 +357,7 @@ fun ScrollableColumnOfSamples(
   // Ensure the possibility to like in local
   LazyColumn(
       modifier =
-          modifier
-              .testTag(SearchScreenTestTags.SAMPLE_LIST)
+          Modifier.testTag(SearchScreenTestTags.SAMPLE_LIST)
               .fillMaxSize()
               .background(NepTuneTheme.colors.background),
       horizontalAlignment = Alignment.CenterHorizontally) {

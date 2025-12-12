@@ -1,6 +1,5 @@
 package com.neptune.neptune.ui.feed
 
-import android.app.Application
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -19,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -35,7 +33,6 @@ import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.main.SampleCommentManager
 import com.neptune.neptune.ui.main.SampleItem
 import com.neptune.neptune.ui.main.SampleResourceState
-import com.neptune.neptune.ui.main.factory
 import com.neptune.neptune.ui.main.onClickFunctions
 import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
@@ -55,8 +52,7 @@ object FeedScreenTestTag : BaseSampleTestTags {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeedScreen(
-    mainViewModel: MainViewModel =
-        viewModel(factory = factory(LocalContext.current.applicationContext as Application)),
+    mainViewModel: MainViewModel = viewModel(),
     initialType: FeedType = FeedType.DISCOVER,
     goBack: () -> Unit = {},
     navigateToProfile: () -> Unit = {},
@@ -126,7 +122,15 @@ fun FeedScreen(
           }
         }
 
-    SampleCommentManager(mainViewModel = mainViewModel)
+    SampleCommentManager(
+        mainViewModel = mainViewModel,
+        onProfileClicked = { userId ->
+          if (mainViewModel.isCurrentUser(userId)) {
+            navigateToProfile()
+          } else {
+            navigateToOtherUserProfile(userId)
+          }
+        })
     if (downloadProgress != null && downloadProgress != 0) {
       DownloadProgressBar(
           downloadProgress = downloadProgress!!, testTag = FeedScreenTestTag.DOWNLOAD_PROGRESS)

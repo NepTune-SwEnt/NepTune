@@ -1,11 +1,14 @@
 package com.neptune.neptune.ui.messages
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
 import com.neptune.neptune.model.messages.Message
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * ViewModel for managing the state and operations related to the messages. This has been written
@@ -38,7 +41,13 @@ class MessagesViewModel(
   }
 
   private fun loadConversation() {
-    // TODO repository.loadMessages(otherUserId) -> load conv from repo
+    viewModelScope.launch {
+      try {
+        // TODO repository.loadMessages(otherUserId) -> load conv from repo
+      } catch (e: Exception) {
+        Log.e("MessagesViewModel", "Failed to load conversation: ${e.message}")
+      }
+    }
   }
 
   fun sendMessage(text: String) {
@@ -51,8 +60,13 @@ class MessagesViewModel(
 
     _messages.value = _messages.value + msg
 
-    // TODO repository.sendMessage(otherUserId, msg)
-
+    viewModelScope.launch {
+      try {
+        // TODO repository.sendMessage(otherUserId, msg)
+      } catch (e: Exception) {
+        Log.e("MessagesViewModel", "Failed to send message: ${e.message}")
+      }
+    }
   }
 
   private fun loadFakeData(uid: String) {

@@ -73,7 +73,6 @@ class SearchViewModelTest {
     val viewModel =
         SearchViewModel(
             sampleRepo = realRepo,
-            context = context,
             useMockData = false,
             profileRepo = ProfileRepositoryProvider.repository,
             explicitStorageService = realStorageService,
@@ -93,7 +92,8 @@ class SearchViewModelTest {
             comments = 0,
             downloads = 0,
             ownerId = "tester",
-            storagePreviewSamplePath = audioPath)
+            storagePreviewSamplePath = audioPath,
+            isPublic = true)
     realRepo.addSample(sample1)
 
     var samples = withTimeout(timeOut) { viewModel.samples.filter { it.isNotEmpty() }.first() }

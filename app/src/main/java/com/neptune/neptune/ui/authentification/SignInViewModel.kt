@@ -189,7 +189,11 @@ class SignInViewModel(
         _signInStatus.value = SignInStatus.SIGNED_OUT
       }
       viewModelScope.launch {
-        connectivityObserver.isOnline.collect { status -> _isOnline.value = status }
+        try {
+          connectivityObserver.isOnline.collect { status -> _isOnline.value = status }
+        } catch (e: Exception) {
+          Log.e("SignInViewModel", "Network observer error", e)
+        }
       }
     }
   }
@@ -435,17 +439,17 @@ class SignInViewModel(
    */
   fun signOut() {
     viewModelScope.launch {
-      firebaseAuth.currentUser?.uid?.let { uid ->
-        try {
-          val db = RealtimeDatabaseProvider.getDatabase()
+      try {
+        firebaseAuth.currentUser?.uid?.let { uid ->
+            val db = RealtimeDatabaseProvider.getDatabase()
           db.getReference("status/$uid")
               .setValue(mapOf("state" to "offline", "lastChanged" to ServerValue.TIMESTAMP))
-        } catch (e: Exception) {
-          Log.e("SignInViewModel", "Error setting user offline on sign out: ${e.message}")
         }
-      }
 
-      firebaseAuth.signOut()
+        firebaseAuth.signOut()
+      } catch (_: Exception) {
+        Log.e("SignInViewModel", "Error during sign out")
+      }
       _currentUser.value = null
       _signInStatus.value = SignInStatus.SIGNED_OUT
       _emailAuthUiState.value = EmailAuthUiState()

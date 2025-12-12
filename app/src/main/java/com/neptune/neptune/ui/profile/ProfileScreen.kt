@@ -55,7 +55,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -825,7 +824,6 @@ fun SelfProfileRoute(
     onFollowersClick: () -> Unit = {},
     onFollowingClick: () -> Unit = {}
 ) {
-  val context = LocalContext.current.applicationContext
   val auth = FirebaseAuth.getInstance()
   val ownerId = auth.currentUser?.uid.orEmpty()
 
@@ -847,7 +845,6 @@ fun SelfProfileRoute(
             @Suppress("UNCHECKED_CAST")
             return ProfileSamplesViewModel(
                 ownerId = ownerId,
-                context = context,
                 auth = auth,
             )
                 as T
@@ -923,7 +920,6 @@ fun OtherUserProfileRoute(
     userId: String,
     goBack: () -> Unit = {},
 ) {
-  val context = LocalContext.current.applicationContext
   val auth = FirebaseAuth.getInstance()
 
   val factory =
@@ -944,7 +940,7 @@ fun OtherUserProfileRoute(
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
           if (modelClass.isAssignableFrom(ProfileSamplesViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ProfileSamplesViewModel(ownerId = userId, context = context, auth = auth) as T
+            return ProfileSamplesViewModel(ownerId = userId, auth = auth) as T
           }
           throw IllegalArgumentException("Unknown ViewModel class")
         }
