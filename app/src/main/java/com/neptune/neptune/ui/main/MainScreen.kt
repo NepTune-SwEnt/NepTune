@@ -105,6 +105,7 @@ import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.formatTime
+import java.util.Locale
 import kotlinx.coroutines.delay
 
 object MainScreenTestTags : BaseSampleTestTags {
@@ -720,7 +721,7 @@ fun SampleCard(
                         val seconds = sample.durationSeconds % 60
 
                         Text(
-                            String.format("%02d:%02d", minutes, seconds),
+                            String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds),
                             color = NepTuneTheme.colors.onBackground,
                             modifier =
                                 Modifier.padding(start = 8.dp).testTag(testTags.SAMPLE_DURATION),
@@ -829,7 +830,8 @@ fun CommentDialog(
     onDeleteComment:
         (sampleId: String, authorId: String, timestamp: com.google.firebase.Timestamp?) -> Unit =
         { _, _, _ ->
-        }
+        },
+    sampleOwnerId: String? = null,
 ) {
   var commentText by remember { mutableStateOf("") }
   val listScrollingState = rememberLazyListState()
@@ -930,16 +932,20 @@ fun CommentDialog(
                                         fontWeight = FontWeight(300),
                                         color = NepTuneTheme.colors.onBackground))
                           }
-                          // Delete button shown only to the comment author (UI-level hint).
+                          // Delete button shown only to the comment author or the sample owner
+                          // (UI-level hint).
                           val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
-                          if (currentUserId != null && currentUserId == comment.authorId) {
+                          val canDelete =
+                              currentUserId != null &&
+                                  (currentUserId == comment.authorId ||
+                                      currentUserId == sampleOwnerId)
+                          if (canDelete) {
                             IconButton(
                                 onClick = {
                                   onDeleteComment(sampleId, comment.authorId, comment.timestamp)
                                 }) {
                                   Icon(
-                                      imageVector =
-                                          androidx.compose.material.icons.Icons.Filled.Delete,
+                                      imageVector = Icons.Filled.Delete,
                                       contentDescription = "Delete comment",
                                       tint = NepTuneTheme.colors.onBackground)
                                 }

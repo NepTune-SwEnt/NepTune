@@ -99,11 +99,7 @@ class FakeSampleRepository(initialSamples: List<Sample> = emptyList()) : SampleR
     addComment(sampleId, authorId, authorName, text, Timestamp.now())
   }
 
-  override suspend fun deleteComment(
-    sampleId: String,
-    authorId: String,
-    timestamp: Timestamp?
-  ) {
+  override suspend fun deleteComment(sampleId: String, authorId: String, timestamp: Timestamp?) {
     val flow = _commentsMap[sampleId] ?: return
     val currentComments = flow.value.toMutableList()
     val iterator = currentComments.iterator()

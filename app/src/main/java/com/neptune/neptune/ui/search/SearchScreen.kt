@@ -384,6 +384,7 @@ fun ScrollableColumnOfSamples(
         onDeleteComment = { sampleId, authorId, timestamp ->
           searchViewModel.onDeleteComment(sampleId, authorId, timestamp)
         },
+        sampleOwnerId = samples.firstOrNull { it.id == activeCommentSampleId }?.ownerId,
     )
   }
 }
