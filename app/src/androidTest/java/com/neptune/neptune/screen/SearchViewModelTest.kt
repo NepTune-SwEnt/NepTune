@@ -93,7 +93,8 @@ class SearchViewModelTest {
             comments = 0,
             downloads = 0,
             ownerId = "tester",
-            storagePreviewSamplePath = audioPath)
+            storagePreviewSamplePath = audioPath,
+            isPublic = true)
     realRepo.addSample(sample1)
 
     var samples = withTimeout(timeOut) { viewModel.samples.filter { it.isNotEmpty() }.first() }

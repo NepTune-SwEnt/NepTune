@@ -281,7 +281,13 @@ open class SearchViewModel(
     if (auth?.currentUser == null) return
     viewModelScope.launch {
       this@SearchViewModel.sampleRepo.observeSamples().collectLatest { samples ->
-        val readySamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
+        val currentUserId = auth?.currentUser?.uid
+        val following = _followingIds.value
+        val visibleSamples =
+            samples.filter { sample ->
+              sample.isPublic || sample.ownerId == currentUserId || (sample.ownerId in following)
+            }
+        val readySamples = visibleSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
         allSamples.value = readySamples
         readySamples.forEach { loadSampleResources(it) }
         applyFilter(query)
