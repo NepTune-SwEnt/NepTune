@@ -75,6 +75,20 @@ interface SampleRepository {
   )
 
   /**
+   * Deletes a comment from a specific sample. Implementations should identify the comment using the
+   * authorId and timestamp. If timestamp is null, behavior is implementation-defined.
+   *
+   * @param sampleId the ID of the sample
+   * @param authorId the ID of the comment's author
+   * @param timestamp the timestamp of the comment (used to identify the precise comment)
+   */
+  suspend fun deleteComment(
+      sampleId: String,
+      authorId: String,
+      timestamp: com.google.firebase.Timestamp?
+  )
+
+  /**
    * Observes real-time comments of a specific sample.
    *
    * @param sampleId the ID of the sample
@@ -114,6 +128,7 @@ interface SampleRepository {
    * Fetch samples by tags.
    *
    * @param tags the tags to match
+   * @param perTagLimit the number of samples to fetch per tag
    */
   suspend fun getSamplesByTags(tags: List<String>, perTagLimit: Int = 100): List<Sample>
 }

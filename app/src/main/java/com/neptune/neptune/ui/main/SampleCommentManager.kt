@@ -17,13 +17,22 @@ fun SampleCommentManager(mainViewModel: MainViewModel, onProfileClicked: (String
   if (activeCommentSampleId != null) {
     val comments by mainViewModel.comments.collectAsState()
     val usernames by mainViewModel.usernames.collectAsState()
+    val discoverSamples by mainViewModel.discoverSamples.collectAsState()
+    val followedSamples by mainViewModel.followedSamples.collectAsState()
+
+    val sampleOwnerId =
+        (discoverSamples + followedSamples).firstOrNull { it.id == activeCommentSampleId }?.ownerId
     CommentDialog(
         sampleId = activeCommentSampleId!!,
         comments = comments,
         usernames = usernames,
         onDismiss = { mainViewModel.closeCommentSection() },
         onAddComment = { id, text -> mainViewModel.addComment(id, text) },
+        onDeleteComment = { sampleId, authorId, timestamp ->
+          mainViewModel.onDeleteComment(sampleId, authorId, timestamp)
+        },
         isAnonymous = isAnonymous,
-        onProfileClicked = onProfileClicked)
+        onProfileClicked = onProfileClicked,
+        sampleOwnerId = sampleOwnerId)
   }
 }

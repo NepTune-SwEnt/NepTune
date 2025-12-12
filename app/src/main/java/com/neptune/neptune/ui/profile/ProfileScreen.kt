@@ -459,7 +459,9 @@ private fun ProfileViewContent(
                       comments = comments,
                       usernames = usernames,
                       onDismiss = { profileSamplesViewModel.resetCommentSampleId() },
-                      onAddComment = { id, text -> profileSamplesViewModel.onAddComment(id, text) })
+                      onAddComment = { id, text -> profileSamplesViewModel.onAddComment(id, text) },
+                      sampleOwnerId = samples.firstOrNull { it.id == activeId }?.ownerId,
+                  )
                 }
               }
 

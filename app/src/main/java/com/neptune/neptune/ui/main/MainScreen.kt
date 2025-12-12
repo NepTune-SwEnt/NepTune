@@ -31,6 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Button
@@ -92,6 +93,7 @@ import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.google.firebase.auth.FirebaseAuth
 import com.neptune.neptune.R
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
@@ -103,6 +105,7 @@ import com.neptune.neptune.ui.navigation.NavigationTestTags
 import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.formatTime
+import java.util.Locale
 import kotlinx.coroutines.delay
 
 object MainScreenTestTags : BaseSampleTestTags {
@@ -713,10 +716,12 @@ fun SampleCard(
                                     fontFamily = FontFamily(Font(R.font.markazi_text)),
                                     fontWeight = FontWeight(400)))
 
+                        // compute duration
                         val minutes = sample.durationSeconds / 60
                         val seconds = sample.durationSeconds % 60
+
                         Text(
-                            "%02d:%02d".format(minutes, seconds),
+                            String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds),
                             color = NepTuneTheme.colors.onBackground,
                             modifier =
                                 Modifier.padding(start = 8.dp).testTag(testTags.SAMPLE_DURATION),
@@ -724,8 +729,7 @@ fun SampleCard(
                                 TextStyle(
                                     fontSize = regularFontSize,
                                     fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                    fontWeight = FontWeight(400),
-                                ))
+                                    fontWeight = FontWeight(400)))
                       }
                 }
           }
@@ -822,7 +826,12 @@ fun CommentDialog(
     onDismiss: () -> Unit,
     onAddComment: (sampleId: String, commentText: String) -> Unit,
     isAnonymous: Boolean = false,
-    onProfileClicked: (String) -> Unit = {}
+    onProfileClicked: (String) -> Unit = {},
+    onDeleteComment:
+        (sampleId: String, authorId: String, timestamp: com.google.firebase.Timestamp?) -> Unit =
+        { _, _, _ ->
+        },
+    sampleOwnerId: String? = null,
 ) {
   var commentText by remember { mutableStateOf("") }
   val listScrollingState = rememberLazyListState()
@@ -922,6 +931,24 @@ fun CommentDialog(
                                         fontFamily = FontFamily(Font(R.font.markazi_text)),
                                         fontWeight = FontWeight(300),
                                         color = NepTuneTheme.colors.onBackground))
+                          }
+                          // Delete button shown only to the comment author or the sample owner
+                          // (UI-level hint).
+                          val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+                          val canDelete =
+                              currentUserId != null &&
+                                  (currentUserId == comment.authorId ||
+                                      currentUserId == sampleOwnerId)
+                          if (canDelete) {
+                            IconButton(
+                                onClick = {
+                                  onDeleteComment(sampleId, comment.authorId, comment.timestamp)
+                                }) {
+                                  Icon(
+                                      imageVector = Icons.Filled.Delete,
+                                      contentDescription = "Delete comment",
+                                      tint = NepTuneTheme.colors.onBackground)
+                                }
                           }
                         }
                       }
