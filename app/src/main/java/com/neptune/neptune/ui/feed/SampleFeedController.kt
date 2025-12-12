@@ -17,6 +17,12 @@ interface SampleFeedController {
 
   fun onAddComment(sampleId: String, text: String)
 
+  /**
+   * Request deletion of a comment attached to [sampleId]. Implementations should ensure only
+   * authorized users can perform the deletion.
+   */
+  fun onDeleteComment(sampleId: String, authorId: String, timestamp: com.google.firebase.Timestamp?)
+
   fun isCurrentUser(ownerId: String): Boolean
 
   val usernames: StateFlow<Map<String, String>>

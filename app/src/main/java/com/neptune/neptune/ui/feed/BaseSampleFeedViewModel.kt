@@ -74,6 +74,33 @@ abstract class BaseSampleFeedViewModel(
     }
   }
 
+  override fun onDeleteComment(
+      sampleId: String,
+      authorId: String,
+      timestamp: com.google.firebase.Timestamp?
+  ) {
+    viewModelScope.launch {
+      try {
+        // Authorization: only comment author or sample owner may delete
+        val currentUserId = auth?.currentUser?.uid
+        val sample =
+            try {
+              sampleRepo.getSample(sampleId)
+            } catch (e: Exception) {
+              null
+            }
+        val isOwner = sample?.ownerId?.let { isCurrentUser(it) } ?: false
+        if (currentUserId == authorId || isOwner) {
+          sampleRepo.deleteComment(sampleId, authorId, timestamp)
+          // Re-observe to refresh local state
+          observeCommentsForSample(sampleId)
+        }
+      } catch (e: Exception) {
+        // ignore or log
+      }
+    }
+  }
+
   protected open fun observeCommentsForSample(sampleId: String) {
     viewModelScope.launch {
       sampleRepo.observeComments(sampleId).collectLatest { list ->

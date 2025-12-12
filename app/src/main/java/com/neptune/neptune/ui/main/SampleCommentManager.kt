@@ -23,6 +23,9 @@ fun SampleCommentManager(mainViewModel: MainViewModel, onProfileClicked: (String
         usernames = usernames,
         onDismiss = { mainViewModel.closeCommentSection() },
         onAddComment = { id, text -> mainViewModel.addComment(id, text) },
+        onDeleteComment = { sampleId, authorId, timestamp ->
+          mainViewModel.onDeleteComment(sampleId, authorId, timestamp)
+        },
         isAnonymous = isAnonymous,
         onProfileClicked = onProfileClicked)
   }

@@ -31,6 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Button
@@ -94,6 +95,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.google.firebase.auth.FirebaseAuth
 import com.neptune.neptune.R
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
@@ -687,10 +689,12 @@ fun SampleCard(
                                     fontFamily = FontFamily(Font(R.font.markazi_text)),
                                     fontWeight = FontWeight(400)))
 
+                        // compute duration
                         val minutes = sample.durationSeconds / 60
                         val seconds = sample.durationSeconds % 60
+
                         Text(
-                            "%02d:%02d".format(minutes, seconds),
+                            String.format("%02d:%02d", minutes, seconds),
                             color = NepTuneTheme.colors.onBackground,
                             modifier =
                                 Modifier.padding(start = 8.dp).testTag(testTags.SAMPLE_DURATION),
@@ -698,8 +702,7 @@ fun SampleCard(
                                 TextStyle(
                                     fontSize = regularFontSize,
                                     fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                    fontWeight = FontWeight(400),
-                                ))
+                                    fontWeight = FontWeight(400)))
                       }
                 }
           }
@@ -796,7 +799,11 @@ fun CommentDialog(
     onDismiss: () -> Unit,
     onAddComment: (sampleId: String, commentText: String) -> Unit,
     isAnonymous: Boolean = false,
-    onProfileClicked: (String) -> Unit = {}
+    onProfileClicked: (String) -> Unit = {},
+    onDeleteComment:
+        (sampleId: String, authorId: String, timestamp: com.google.firebase.Timestamp?) -> Unit =
+        { _, _, _ ->
+        }
 ) {
   var commentText by remember { mutableStateOf("") }
   val listScrollingState = rememberLazyListState()
@@ -863,7 +870,7 @@ fun CommentDialog(
                               placeholder = painterResource(R.drawable.profile),
                               error = painterResource(R.drawable.profile))
                           Spacer(Modifier.width(8.dp))
-                          Column {
+                          Column(Modifier.weight(1f)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -896,6 +903,20 @@ fun CommentDialog(
                                         fontFamily = FontFamily(Font(R.font.markazi_text)),
                                         fontWeight = FontWeight(300),
                                         color = NepTuneTheme.colors.onBackground))
+                          }
+                          // Delete button shown only to the comment author (UI-level hint).
+                          val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+                          if (currentUserId != null && currentUserId == comment.authorId) {
+                            IconButton(
+                                onClick = {
+                                  onDeleteComment(sampleId, comment.authorId, comment.timestamp)
+                                }) {
+                                  Icon(
+                                      imageVector =
+                                          androidx.compose.material.icons.Icons.Filled.Delete,
+                                      contentDescription = "Delete comment",
+                                      tint = NepTuneTheme.colors.onBackground)
+                                }
                           }
                         }
                       }

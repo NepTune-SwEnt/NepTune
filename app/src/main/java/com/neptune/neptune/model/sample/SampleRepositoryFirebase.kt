@@ -153,6 +153,39 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
     val currentCount = snapshot.getLong("comments") ?: 0L
     sampleDoc.update("comments", currentCount + 1).await()
   }
+  /** Delete a comment identified by authorId and timestamp (if provided). */
+  override suspend fun deleteComment(sampleId: String, authorId: String, timestamp: Timestamp?) {
+    val sampleDoc = samples.document(sampleId)
+    val snapshot = sampleDoc.get().await()
+
+    check(snapshot.exists()) {
+      "SampleRepositoryFirebase.deleteComment: Sample with id=$sampleId doesn't exist"
+    }
+
+    val commentsCol = sampleDoc.collection("comments")
+    val docsToDelete =
+        if (timestamp != null) {
+          commentsCol
+              .whereEqualTo("authorId", authorId)
+              .whereEqualTo("timestamp", timestamp)
+              .get()
+              .await()
+              .documents
+        } else {
+          commentsCol.whereEqualTo("authorId", authorId).limit(1).get().await().documents
+        }
+
+    val deletedCount = docsToDelete.size
+    for (doc in docsToDelete) {
+      doc.reference.delete().await()
+    }
+
+    if (deletedCount > 0) {
+      val currentCount = snapshot.getLong("comments") ?: 0L
+      val newCount = (currentCount - deletedCount).coerceAtLeast(0L)
+      sampleDoc.update("comments", newCount).await()
+    }
+  }
   /** Observe the comment of a sample */
   override fun observeComments(sampleId: String): Flow<List<Comment>> = callbackFlow {
     val listener =
