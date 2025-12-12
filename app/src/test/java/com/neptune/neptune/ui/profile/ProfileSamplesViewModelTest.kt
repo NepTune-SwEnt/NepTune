@@ -50,7 +50,6 @@ class ProfileSamplesViewModelTest {
                 ownerId = sample.ownerId,
                 sampleRepo = sampleRepo,
                 profileRepo = profileRepo,
-                context = context,
                 auth = null,
                 enableActions = false)
 
@@ -99,7 +98,6 @@ class ProfileSamplesViewModelTest {
                 ownerId = sample.ownerId,
                 sampleRepo = sampleRepo,
                 profileRepo = profileRepo,
-                context = context,
                 explicitStorageService = storageService,
                 explicitDownloadsFolder = downloadsDir,
                 explicitIoDispatcher = dispatcher,

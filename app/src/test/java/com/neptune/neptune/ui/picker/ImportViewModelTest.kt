@@ -39,6 +39,10 @@ private class FakeRepo : MediaRepository {
   override suspend fun upsert(item: MediaItem) {
     flow.value = flow.value + item
   }
+
+  override suspend fun delete(item: MediaItem) {
+    flow.value = flow.value - item
+  }
 }
 
 private class FakeImporter(private val dir: File) : FileImporter {

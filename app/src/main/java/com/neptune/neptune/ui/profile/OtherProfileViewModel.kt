@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.profile
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -34,37 +35,41 @@ class OtherProfileViewModel(
 
   init {
     viewModelScope.launch {
-      combine(repo.observeProfile(userId), repo.observeCurrentProfile()) { other, current ->
-            other to current
-          }
-          .collectLatest { (otherProfile, currentProfile) ->
-            if (otherProfile != null) {
-              val isCurrentUserFollowing = currentProfile?.following?.contains(userId) == true
-              val authAnonymous = auth.currentUser?.isAnonymous == true
-              val isCurrentUserAnonymous = authAnonymous || currentProfile?.isAnonymous == true
-              val updatedProfile =
-                  SelfProfileUiState(
-                      name = otherProfile.name.orEmpty(),
-                      username = otherProfile.username,
-                      bio = otherProfile.bio.orEmpty(),
-                      avatarUrl = otherProfile.avatarUrl,
-                      subscribers = otherProfile.subscribers.toInt(),
-                      subscriptions = otherProfile.subscriptions.toInt(),
-                      likes = otherProfile.likes.toInt(),
-                      posts = otherProfile.posts.toInt(),
-                      tags = otherProfile.tags,
-                      isAnonymousUser = otherProfile.isAnonymous,
-                      error = null)
-
-              _uiState.value =
-                  _uiState.value.copy(
-                      profile = updatedProfile,
-                      isCurrentUserFollowing = isCurrentUserFollowing,
-                      errorMessage = null,
-                      isFollowActionInProgress = false,
-                      isCurrentUserAnonymous = isCurrentUserAnonymous)
+      try {
+        combine(repo.observeProfile(userId), repo.observeCurrentProfile()) { other, current ->
+              other to current
             }
-          }
+            .collectLatest { (otherProfile, currentProfile) ->
+              if (otherProfile != null) {
+                val isCurrentUserFollowing = currentProfile?.following?.contains(userId) == true
+                val authAnonymous = auth.currentUser?.isAnonymous == true
+                val isCurrentUserAnonymous = authAnonymous || currentProfile?.isAnonymous == true
+                val updatedProfile =
+                    SelfProfileUiState(
+                        name = otherProfile.name.orEmpty(),
+                        username = otherProfile.username,
+                        bio = otherProfile.bio.orEmpty(),
+                        avatarUrl = otherProfile.avatarUrl,
+                        subscribers = otherProfile.subscribers.toInt(),
+                        subscriptions = otherProfile.subscriptions.toInt(),
+                        likes = otherProfile.likes.toInt(),
+                        posts = otherProfile.posts.toInt(),
+                        tags = otherProfile.tags,
+                        isAnonymousUser = otherProfile.isAnonymous,
+                        error = null)
+
+                _uiState.value =
+                    _uiState.value.copy(
+                        profile = updatedProfile,
+                        isCurrentUserFollowing = isCurrentUserFollowing,
+                        errorMessage = null,
+                        isFollowActionInProgress = false,
+                        isCurrentUserAnonymous = isCurrentUserAnonymous)
+              }
+            }
+      } catch (e: Exception) {
+        Log.e("OtherProfileViewModel", "Failed to init: ${e.message}")
+      }
     }
   }
 
@@ -85,7 +90,7 @@ class OtherProfileViewModel(
         } else {
           repo.followUser(userId)
         }
-      } catch (e: Exception) {
+      } catch (_: Exception) {
         _uiState.value =
             _uiState.value.copy(
                 errorMessage = "Unable to update follow state",

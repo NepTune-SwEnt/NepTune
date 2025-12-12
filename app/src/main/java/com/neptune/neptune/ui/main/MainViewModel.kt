@@ -1,11 +1,11 @@
 package com.neptune.neptune.ui.main
 
-import android.content.Context
 import android.os.Environment
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.R
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
@@ -48,10 +48,11 @@ data class SampleResourceState(
  */
 open class MainViewModel(
     sampleRepo: SampleRepository = SampleRepositoryProvider.repository,
-    context: Context,
     profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
     storageService: StorageService =
-        StorageService(FirebaseStorage.getInstance(context.getString(R.string.storage_path))),
+        StorageService(
+            FirebaseStorage.getInstance(
+                NepTuneApplication.appContext.getString(R.string.storage_path))),
     private val useMockData: Boolean = false,
     downloadsFolder: File =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
@@ -62,7 +63,6 @@ open class MainViewModel(
         sampleRepo = sampleRepo,
         profileRepo = profileRepo,
         auth = auth ?: if (useMockData) null else FirebaseAuth.getInstance(),
-        context = context,
         storageService = storageService,
         waveformExtractor = waveformExtractor),
     SampleFeedController {
@@ -77,7 +77,7 @@ open class MainViewModel(
             sampleRepo,
             storageService,
             downloadsFolder,
-            context,
+            NepTuneApplication.appContext,
             downloadProgress = downloadProgress)
       }
 
@@ -98,7 +98,6 @@ open class MainViewModel(
 
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples
-  private val avatarCache = mutableMapOf<String, String?>()
   private var allSamplesCache: List<Sample> = emptyList()
   private val _isRefreshing = MutableStateFlow(false)
   val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
@@ -120,56 +119,66 @@ open class MainViewModel(
 
   fun loadRecommendations(limit: Int = 50) {
     viewModelScope.launch {
-      Log.d("RecoDebug", "loadRecommendations() START, cacheSize=${allSamplesCache.size}")
-      val recoUser = profileRepo.getCurrentRecoUserProfile()
-      if (recoUser == null) {
-        // Fallback when no user or profile: just show latest samples
-        Log.d("RecoDebug", "No recoUser profile (null) – skipping recommendations")
+      try {
+        Log.d("RecoDebug", "loadRecommendations() START, cacheSize=${allSamplesCache.size}")
+        val recoUser = profileRepo.getCurrentRecoUserProfile()
+        if (recoUser == null) {
+          // Fallback when no user or profile: just show latest samples
+          Log.d("RecoDebug", "No recoUser profile (null) – skipping recommendations")
 
-        _recommendedSamples.value = emptyList()
-        return@launch
+          _recommendedSamples.value = emptyList()
+          return@launch
+        }
+        val candidates = allSamplesCache
+        if (candidates.isEmpty()) {
+          Log.d("RecoDebug", "No candidates (cache empty) – skipping ranking")
+          _recommendedSamples.value = emptyList()
+          return@launch
+        }
+        val ranked =
+            RecommendationEngine.rankSamplesForUser(
+                user = recoUser, candidates = candidates, limit = limit)
+        ranked.forEachIndexed { index, sample ->
+          val score = RecommendationEngine.scoreSample(sample, recoUser, System.currentTimeMillis())
+          Log.d(
+              "RecoDebug",
+              "#$index  id=${sample.id}  name=${sample.name}  score=${"%.4f".format(score)}")
+        }
+        _recommendedSamples.value = ranked
+        _discoverSamples.value = ranked
+      } catch (e: Exception) {
+        Log.e("MainViewModel", "Error loading recommendations: ${e.message}")
       }
-      val candidates = allSamplesCache
-      if (candidates.isEmpty()) {
-        Log.d("RecoDebug", "No candidates (cache empty) – skipping ranking")
-        _recommendedSamples.value = emptyList()
-        return@launch
-      }
-      val ranked =
-          RecommendationEngine.rankSamplesForUser(
-              user = recoUser, candidates = candidates, limit = limit)
-      ranked.forEachIndexed { index, sample ->
-        val score = RecommendationEngine.scoreSample(sample, recoUser, System.currentTimeMillis())
-        Log.d(
-            "RecoDebug",
-            "#$index  id=${sample.id}  name=${sample.name}  score=${"%.4f".format(score)}")
-      }
-      _recommendedSamples.value = ranked
-      _discoverSamples.value = ranked
     }
   }
 
   private fun loadSamplesFromFirebase() {
+    if (auth?.currentUser == null) return
     viewModelScope.launch {
       try {
         val profile = profileRepo.getCurrentProfile()
+        val currentUserId = auth?.currentUser?.uid
         val following = profile?.following.orEmpty()
-        sampleRepo.observeSamples().collectLatest { updatedSamples ->
+        sampleRepo.observeSamples().collectLatest { rawSamples ->
+          val visibleSamples =
+              rawSamples.filter { sample ->
+                sample.isPublic || sample.ownerId == currentUserId || (sample.ownerId in following)
+              }
           if (allSamplesCache.isEmpty()) {
-            allSamplesCache = updatedSamples
-            val readySamples = updatedSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
+            allSamplesCache = visibleSamples
+            val readySamples = visibleSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
             updateLists(readySamples, following)
 
-            val pendingSamples = updatedSamples.filter { it.storagePreviewSamplePath.isBlank() }
+            val pendingSamples = visibleSamples.filter { it.storagePreviewSamplePath.isBlank() }
             pendingSamples.forEach { pendingSample ->
               watchPendingSample(pendingSample.id, following)
             }
           } else {
             val existingIds = allSamplesCache.map { it.id }.toSet()
-            val currentUserId = auth?.currentUser?.uid
+            val currentUserId = auth.currentUser?.uid
 
             val samplesToDisplay =
-                updatedSamples.filter { sample ->
+                visibleSamples.filter { sample ->
                   val isExisting = sample.id in existingIds
                   val isMine = sample.ownerId == currentUserId
 
@@ -253,41 +262,45 @@ open class MainViewModel(
       return
     }
     viewModelScope.launch {
-      profileRepo.observeCurrentProfile().collectLatest { profile ->
-        // Update the user avatar
-        val newAvatarUrl = profile?.avatarUrl
-        _userAvatar.value = newAvatarUrl
-        _isAnonymous.value = profile?.isAnonymous ?: auth.currentUser?.isAnonymous ?: true
+      try {
+        profileRepo.observeCurrentProfile().collectLatest { profile ->
+          // Update the user avatar
+          val newAvatarUrl = profile?.avatarUrl
+          _userAvatar.value = newAvatarUrl
+          _isAnonymous.value = profile?.isAnonymous ?: auth.currentUser?.isAnonymous ?: true
 
-        // Update username
-        val newUsername = profile?.username
-        if (newUsername != null) {
-          val old = _usernames.value[currentUser.uid]
-          if (old == null || old != newUsername) {
-            _usernames.update { it + (currentUser.uid to newUsername) }
-          }
-        }
-
-        // Update avatar for samplers owned by current user
-        val currentUserId = auth.currentUser?.uid ?: return@collectLatest
-        avatarCache[currentUserId] = newAvatarUrl
-        _sampleResources.update { currentResources ->
-          val updatedResources = currentResources.toMutableMap()
-          val allLoadedSamples = _discoverSamples.value + _followedSamples.value
-          val mySamples = allLoadedSamples.filter { it.ownerId == currentUserId }
-          mySamples.forEach { sample ->
-            val currentState = updatedResources[sample.id]
-            if (currentState != null) {
-              updatedResources[sample.id] = currentState.copy(ownerAvatarUrl = newAvatarUrl)
+          // Update username
+          val newUsername = profile?.username
+          if (newUsername != null) {
+            val old = _usernames.value[currentUser.uid]
+            if (old == null || old != newUsername) {
+              _usernames.update { it + (currentUser.uid to newUsername) }
             }
           }
-          updatedResources
+
+          // Update avatar for samplers owned by current user
+          val currentUserId = auth.currentUser?.uid ?: return@collectLatest
+          updateAvatarCache(currentUserId, newAvatarUrl)
+          _sampleResources.update { currentResources ->
+            val updatedResources = currentResources.toMutableMap()
+            val allLoadedSamples = _discoverSamples.value + _followedSamples.value
+            val mySamples = allLoadedSamples.filter { it.ownerId == currentUserId }
+            mySamples.forEach { sample ->
+              val currentState = updatedResources[sample.id]
+              if (currentState != null) {
+                updatedResources[sample.id] = currentState.copy(ownerAvatarUrl = newAvatarUrl)
+              }
+            }
+            updatedResources
+          }
+          val following = profile?.following.orEmpty()
+          if (allSamplesCache.isNotEmpty()) {
+            val readySamples = allSamplesCache.filter { it.storagePreviewSamplePath.isNotBlank() }
+            updateLists(readySamples, following)
+          }
         }
-        val following = profile?.following.orEmpty()
-        if (allSamplesCache.isNotEmpty()) {
-          val readySamples = allSamplesCache.filter { it.storagePreviewSamplePath.isNotBlank() }
-          updateLists(readySamples, following)
-        }
+      } catch (e: Exception) {
+        Log.e("MainViewModel", "Error observing profile: ${e.message}")
       }
     }
   }
@@ -306,24 +319,20 @@ open class MainViewModel(
   override fun onLikeClick(sample: Sample, isLiked: Boolean) {
     if (_isAnonymous.value) return
     viewModelScope.launch {
-      val newState = actions?.onLikeClicked(sample, isLiked)
-      if (newState != null) {
-        _likedSamples.value = _likedSamples.value + (sample.id to newState)
+      try {
+        val newState = actions?.onLikeClicked(sample, isLiked)
+        if (newState != null) {
+          _likedSamples.value = _likedSamples.value + (sample.id to newState)
+        }
+      } catch (e: Exception) {
+        Log.e("MainViewModel", "Failed to toggle like: ${e.message}")
       }
     }
   }
 
   fun refreshLikeStates() {
-    viewModelScope.launch {
-      val allSamples = _discoverSamples.value + _followedSamples.value
-
-      val updatedStates = mutableMapOf<String, Boolean>()
-      for (sample in allSamples) {
-        val liked = sampleRepo.hasUserLiked(sample.id)
-        updatedStates[sample.id] = liked
-      }
-      _likedSamples.value = updatedStates
-    }
+    val allSamples = _discoverSamples.value + _followedSamples.value
+    super.refreshLikeStates(allSamples, _likedSamples)
   }
 
   fun addComment(sampleId: String, text: String) {
@@ -332,7 +341,8 @@ open class MainViewModel(
       val profile = profileRepo.getCurrentProfile()
       val authorId = profile?.uid ?: auth?.currentUser?.uid ?: "unknown"
       val authorName = profile?.username ?: defaultName
-      sampleRepo.addComment(sampleId, authorId, authorName, text.trim())
+      val authorProfilePicUrl = userAvatar.value ?: ""
+      sampleRepo.addComment(sampleId, authorId, authorName, authorProfilePicUrl, text.trim())
     }
   }
 
@@ -342,14 +352,20 @@ open class MainViewModel(
     // allSamplesCache = emptyList()
     loadSamplesFromFirebase()
   }
+
+  /** Disconnect the user */
+  fun signOut() {
+    auth?.signOut()
+    _currentUserFlow.value = null
+  }
+
   /** Function to open the comment section. */
   fun openCommentSection(sample: Sample) {
-    _activeCommentSampleId.value = sample.id
-    observeCommentsForSample(sample.id)
+    onCommentClicked(sample)
   }
   /** Function to close the comment section. */
   fun closeCommentSection() {
-    _activeCommentSampleId.value = null
+    resetCommentSampleId()
   }
 
   // Mock Data

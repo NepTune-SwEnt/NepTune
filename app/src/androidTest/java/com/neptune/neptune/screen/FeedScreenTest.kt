@@ -51,6 +51,7 @@ class FeedScreenTest {
   private val commentsFlow = MutableStateFlow<List<Comment>>(emptyList())
   private val usernamesFlow = MutableStateFlow<Map<String, String>>(emptyMap())
   private val userAvatarFlow = MutableStateFlow<String?>(null)
+  private val isOnlineFlow = MutableStateFlow(true)
 
   @Before
   fun setup() {
@@ -72,6 +73,7 @@ class FeedScreenTest {
     // Mock methods called in LaunchedEffects
     every { mockViewModel.loadSampleResources(any()) } just runs
     every { mockViewModel.refresh() } just runs
+    every { mockViewModel.isOnline } returns isOnlineFlow
   }
 
   private fun setContent(

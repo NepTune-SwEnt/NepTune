@@ -12,6 +12,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.net.URI
 import java.util.zip.ZipFile
+import kotlin.collections.plus
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
@@ -32,6 +33,10 @@ private class FakeRepo2 : MediaRepository {
 
   override suspend fun upsert(item: MediaItem) {
     flow.value = flow.value + item
+  }
+
+  override suspend fun delete(item: MediaItem) {
+    flow.value = flow.value - item
   }
 }
 
