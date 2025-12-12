@@ -17,7 +17,7 @@ open class ImportMediaUseCase(
     private val importer: FileImporter,
     private val repo: MediaRepository,
     private val packager: NeptunePackager,
-    private val audioPreviewGenerator: AudioPreviewGenerator = ViewModelAudioPreviewGenerator(),
+    private val audioPreviewGenerator: SamplerProvider? = null,
     private val previewStoreHelper: PreviewStoreHelper = PreviewStoreHelper()
 ) {
   suspend operator fun invoke(sourceUriString: String): MediaItem {
@@ -36,16 +36,15 @@ open class ImportMediaUseCase(
     return finalizeImport(localAudio, probe.durationMs)
   }
 
-  // Make this protected/open so tests can override and inject a fake AudioPreviewGenerator
-  protected open fun createSamplerProvider(): AudioPreviewGenerator = audioPreviewGenerator
+  // Make this protected/open so tests can override and inject a fake SamplerProvider
+  protected open fun createSamplerProvider(): SamplerProvider =
+      audioPreviewGenerator ?: ViewModelAudioPreviewGenerator()
 
   private suspend fun finalizeImport(localAudio: File, durationMs: Long?): MediaItem {
     // Run packager on IO dispatcher to avoid blocking callers
     val projectZip =
         try {
-          withContext(Dispatchers.IO) {
-            packager.createProjectZip(audioFile = localAudio, durationMs = durationMs)
-          }
+          withContext(Dispatchers.IO) { packager.createProjectZip(audioFile = localAudio, durationMs = durationMs) }
         } catch (e: Exception) {
           // Ensure we attempt to delete the temporary local file on IO dispatcher
           withContext(Dispatchers.IO) { localAudio.delete() }
@@ -63,9 +62,11 @@ open class ImportMediaUseCase(
     val projectsJsonRepo = ProjectItemsRepositoryLocal(appContext)
 
     // Use injected audio preview generator (no ViewModel creation in domain code)
+    // The generator's loadProjectData is suspend and returns a Uri pointing to extracted audio
     val sampler = createSamplerProvider()
-    sampler.loadProjectData(projectZipPath)
-    val tempPreviewUri = sampler.audioBuilding()
+
+    // Generate preview using the sampler provider off the IO dispatcher
+    val tempPreviewUri = withContext(Dispatchers.IO) { sampler.loadProjectData(projectZipPath) }
 
     // Copy the preview file (if any) from the temporary Uri into a dedicated "previews" folder
     val audioPreviewLocalPath: String =

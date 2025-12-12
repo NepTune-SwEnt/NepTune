@@ -81,7 +81,7 @@ class ImportMediaUseCaseTest {
   }
 
   @Test
-  fun finalizeImport_createsAudioPreviewAndStoresIt() = runBlocking {
+  fun finalizeImportCreatesAudioPreviewAndStoresIt() = runBlocking {
     val ctx: Context = ApplicationProvider.getApplicationContext()
     val paths = StoragePaths(ctx)
     val packager = NeptunePackager(paths)
@@ -92,11 +92,7 @@ class ImportMediaUseCaseTest {
     val previewFile = File(ctx.cacheDir, "temp_preview.mp3").apply { writeText("preview") }
     val fakeProvider =
         object : SamplerProvider {
-          override fun loadProjectData(zipFilePath: String) {
-            // no-op
-          }
-
-          override suspend fun audioBuilding(): Uri? {
+          override suspend fun loadProjectData(zipFilePath: String): Uri? {
             return Uri.fromFile(previewFile)
           }
         }
