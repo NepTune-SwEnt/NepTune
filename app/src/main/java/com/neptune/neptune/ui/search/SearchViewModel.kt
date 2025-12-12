@@ -272,23 +272,23 @@ open class SearchViewModel(
   fun loadSamplesFromFirebase() {
     if (auth?.currentUser == null) return
     viewModelScope.launch {
-        try {
-            this@SearchViewModel.sampleRepo.observeSamples().collectLatest { samples ->
-        val currentUserId = auth?.currentUser?.uid
-        val following = _followingIds.value
-        val visibleSamples =
-            samples.filter { sample ->
-              sample.isPublic || sample.ownerId == currentUserId || (sample.ownerId in following)
-            }
-        val readySamples = visibleSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
-        allSamples.value = readySamples
-        readySamples.forEach { loadSampleResources(it) }
-        applyFilter(query)
-        refreshLikeStates()
-      }
-    } catch (e: Exception) {
-            Log.e("SearchViewModel", "Error loading samples (Offline?)", e)
+      try {
+        this@SearchViewModel.sampleRepo.observeSamples().collectLatest { samples ->
+          val currentUserId = auth?.currentUser?.uid
+          val following = _followingIds.value
+          val visibleSamples =
+              samples.filter { sample ->
+                sample.isPublic || sample.ownerId == currentUserId || (sample.ownerId in following)
+              }
+          val readySamples = visibleSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
+          allSamples.value = readySamples
+          readySamples.forEach { loadSampleResources(it) }
+          applyFilter(query)
+          refreshLikeStates()
         }
+      } catch (e: Exception) {
+        Log.e("SearchViewModel", "Error loading samples (Offline?)", e)
+      }
     }
   }
 

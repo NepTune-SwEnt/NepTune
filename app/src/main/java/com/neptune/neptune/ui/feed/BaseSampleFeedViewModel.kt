@@ -82,44 +82,44 @@ abstract class BaseSampleFeedViewModel(
 
   override fun onAddComment(sampleId: String, text: String) {
     viewModelScope.launch {
-        try {
-            val profile = profileRepo.getCurrentProfile()
-      val authorId = profile?.uid ?: "unknown"
-      val authorName = profile?.username ?: defaultName
-      val authorProfilePicUrl = profile?.avatarUrl ?: ""
-      sampleRepo.addComment(sampleId, authorId, authorName, authorProfilePicUrl, text.trim())
-      observeCommentsForSample(sampleId)
-    } catch (e: Exception) {
-            Log.e("BaseSampleFeedViewModel", "Error adding comment: ${e.message}")
-        }
-        }
+      try {
+        val profile = profileRepo.getCurrentProfile()
+        val authorId = profile?.uid ?: "unknown"
+        val authorName = profile?.username ?: defaultName
+        val authorProfilePicUrl = profile?.avatarUrl ?: ""
+        sampleRepo.addComment(sampleId, authorId, authorName, authorProfilePicUrl, text.trim())
+        observeCommentsForSample(sampleId)
+      } catch (e: Exception) {
+        Log.e("BaseSampleFeedViewModel", "Error adding comment: ${e.message}")
+      }
+    }
   }
 
   protected open fun observeCommentsForSample(sampleId: String) {
     viewModelScope.launch {
-        try {
-            sampleRepo.observeComments(sampleId).collectLatest { list ->
-        val updatedComments =
-            list
-                .map {
-                  async {
-                    loadUsername(it.authorId)
-                    if (it.authorProfilePicUrl.isNotBlank()) {
-                      avatarCache.putIfAbsent(it.authorId, it.authorProfilePicUrl)
-                      it
-                    } else {
-                      val avatarUrl = getSampleOwnerAvatar(it.authorId)
-                      it.copy(authorProfilePicUrl = avatarUrl ?: "")
+      try {
+        sampleRepo.observeComments(sampleId).collectLatest { list ->
+          val updatedComments =
+              list
+                  .map {
+                    async {
+                      loadUsername(it.authorId)
+                      if (it.authorProfilePicUrl.isNotBlank()) {
+                        avatarCache.putIfAbsent(it.authorId, it.authorProfilePicUrl)
+                        it
+                      } else {
+                        val avatarUrl = getSampleOwnerAvatar(it.authorId)
+                        it.copy(authorProfilePicUrl = avatarUrl ?: "")
+                      }
                     }
                   }
-                }
-                .awaitAll()
-        _comments.value = updatedComments
+                  .awaitAll()
+          _comments.value = updatedComments
+        }
+      } catch (e: Exception) {
+        Log.e("BaseSampleFeedViewModel", "Error observing comments: ${e.message}")
       }
-    } catch (e: Exception) {
-            Log.e("BaseSampleFeedViewModel", "Error observing comments: ${e.message}")
-        }
-        }
+    }
   }
 
   protected open fun loadUsername(userId: String) {
