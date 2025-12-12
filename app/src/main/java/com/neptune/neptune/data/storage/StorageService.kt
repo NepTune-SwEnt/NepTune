@@ -115,7 +115,8 @@ open class StorageService(
    * @param localZipUri The local Uri for the .zip file.
    * @param localImageUri The local Uri for the cover image.
    */
-  suspend fun uploadSampleFiles(sample: Sample, localZipUri: Uri, localImageUri: Uri?) {
+  suspend fun uploadSampleFiles(sample: Sample, localZipUri: Uri, localImageUri: Uri?,
+                                localProcessedUri: Uri?) {
     val sampleId = sample.id
 
     val oldSample: Sample? =
@@ -128,6 +129,7 @@ open class StorageService(
     oldSample?.let {
       deleteFileByPath(it.storageZipPath)
       deleteFileByPath(it.storageImagePath)
+      deleteFileByPath(it.storageProcessedSamplePath)
     }
 
     val newStorageZipPath = "samples/${sampleId}.zip"
@@ -135,6 +137,12 @@ open class StorageService(
         if (localImageUri != null) "sample_image/${sampleId}/${getFileNameFromUri(localImageUri)}"
         else ""
 
+    val newProcessedAudioPath =
+      if (localProcessedUri != null) {
+        "processed_audios/$sampleId/${getFileNameFromUri(localProcessedUri)}"
+      } else {
+        ""
+      }
     coroutineScope {
       val deferredZip = async { uploadFile(localZipUri, newStorageZipPath) }
 
@@ -142,12 +150,18 @@ open class StorageService(
           if (localImageUri != null && newStorageImagePath.isNotEmpty())
               async { uploadFile(localImageUri, newStorageImagePath) }
           else null
-
+      val deferredProcessed =
+        if (localProcessedUri != null && newProcessedAudioPath.isNotEmpty()){
+          async { uploadFile(localProcessedUri, newProcessedAudioPath)}
+        } else {
+          null
+        }
       deferredZip.await()
       deferredImage?.await()
-
+      deferredProcessed?.await()
       val finalSample =
-          sample.copy(storageZipPath = newStorageZipPath, storageImagePath = newStorageImagePath)
+          sample.copy(storageZipPath = newStorageZipPath, storageImagePath = newStorageImagePath,
+            storageProcessedSamplePath = newProcessedAudioPath)
       sampleRepo.addSample(finalSample)
     }
   }

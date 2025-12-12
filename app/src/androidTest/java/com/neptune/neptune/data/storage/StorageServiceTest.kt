@@ -160,10 +160,12 @@ class StorageServiceTest {
 
         val newZipUri = createDummyFile("new_sample.zip", "new zip data")
         val newImageUri = createDummyFile(newImageName, "new image data")
+        val newProcessedUri = createDummyFile("new_sample.wav", "new wav data")
 
         // --- Act ---
         val sampleWithNewData = oldSample.copy(name = "New Sample Name")
-        storageService.uploadSampleFiles(sampleWithNewData, newZipUri, newImageUri)
+        storageService.uploadSampleFiles(sampleWithNewData, newZipUri, newImageUri,
+          newProcessedUri)
 
         // --- Assert ---
 
@@ -172,7 +174,7 @@ class StorageServiceTest {
           Firebase.storage.reference.child(oldZipPath).metadata.await()
           Assert.fail("Old file still exists, should have been deleted")
         } catch (_: Exception) {
-          // Success, file no longer exists (StorageException)
+          // Success, file no longer exists
         }
 
         val updatedSample = sampleRepo.getSample(sampleId)
@@ -181,6 +183,7 @@ class StorageServiceTest {
 
         Assert.assertEquals("samples/$sampleId.zip", updatedSample.storageZipPath)
         Assert.assertEquals("sample_image/$sampleId/$newImageName", updatedSample.storageImagePath)
+        Assert.assertEquals("processed_audios/$sampleId/new_sample.wav", updatedSample.storageProcessedSamplePath)
       }
 
   @Test

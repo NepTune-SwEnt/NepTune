@@ -17,6 +17,7 @@ data class Sample(
     val storageZipPath: String = "",
     val storageImagePath: String = "",
     val storagePreviewSamplePath: String = "",
+    val storageProcessedSamplePath: String = "",
     val creationTime: Long = 0
 ) {
   fun toProjectItem(): ProjectItem {

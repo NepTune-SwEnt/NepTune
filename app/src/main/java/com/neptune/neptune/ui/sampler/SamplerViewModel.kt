@@ -18,7 +18,6 @@ import com.neptune.neptune.model.project.ProjectWriter
 import com.neptune.neptune.model.project.SamplerProjectData
 import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
-import kotlin.math.*
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.pow
@@ -700,10 +699,10 @@ open class SamplerViewModel() : ViewModel() {
 
   open fun saveProjectData(zipFilePath: String): Job {
     return viewModelScope.launch {
-      val newAudioUri: Uri? = audioBuilding()
+      val processedUri: Uri? = audioBuilding()
 
-      if (newAudioUri != null) {
-        _uiState.update { it.copy(currentAudioUri = newAudioUri) }
+      if (processedUri != null) {
+        _uiState.update { it.copy(currentAudioUri = processedUri) }
       }
 
       saveProjectDataSync(zipFilePath)
