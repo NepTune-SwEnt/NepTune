@@ -1,6 +1,6 @@
 package com.neptune.neptune.ui.main
 
-import android.app.Application
+import OfflineScreen
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -90,8 +90,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.net.toUri
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -104,6 +102,7 @@ import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.feed.FeedType
 import com.neptune.neptune.ui.navigation.NavigationTestTags
+import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.formatTime
 import kotlinx.coroutines.delay
@@ -159,16 +158,6 @@ object MainScreenTestTags : BaseSampleTestTags {
   const val COMMENT_PICTURE = "commentPicture"
 }
 
-fun factory(application: Application) =
-    object : ViewModelProvider.Factory {
-      override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
-          @Suppress("UNCHECKED_CAST") return MainViewModel(context = application) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-      }
-    }
-
 /**
  * Composable function representing the Main Screen. This has been written with the help of LLMs.
  *
@@ -183,8 +172,7 @@ fun MainScreen(
     navigateToOtherUserProfile: (String) -> Unit = {},
     navigateToSelectMessages: () -> Unit = {},
     navigateToSampleList: (FeedType) -> Unit = {},
-    mainViewModel: MainViewModel =
-        viewModel(factory = factory(LocalContext.current.applicationContext as Application))
+    mainViewModel: MainViewModel = viewModel()
 ) {
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
@@ -198,6 +186,14 @@ fun MainScreen(
   val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
   val isRefreshing by mainViewModel.isRefreshing.collectAsState()
   val pullRefreshState = rememberPullToRefreshState()
+  val isOnline by mainViewModel.isOnline.collectAsState()
+  val isUserLoggedIn = remember { mainViewModel.isUserLoggedIn }
+  val nestedScrollModifier =
+      if (isOnline) {
+        Modifier.nestedScroll(pullRefreshState.nestedScrollConnection)
+      } else {
+        Modifier
+      }
 
   LaunchedEffect(pullRefreshState.isRefreshing) {
     if (pullRefreshState.isRefreshing) {
@@ -229,34 +225,37 @@ fun MainScreen(
   Box(
       modifier =
           Modifier.fillMaxSize()
-              .nestedScroll(pullRefreshState.nestedScrollConnection)
+              .then(nestedScrollModifier)
               .testTag(MainScreenTestTags.MAIN_SCREEN)) {
         Scaffold(
             topBar = {
               MainTopAppBar(
                   userAvatar = userAvatar,
                   navigateToSelectMessages = navigateToSelectMessages,
-                  navigateToProfile = navigateToProfile)
+                  navigateToProfile = navigateToProfile,
+                  isUserLoggedIn = isUserLoggedIn)
             },
             floatingActionButton = {
-              FloatingActionButton(
-                  onClick = navigateToProjectList,
-                  containerColor = NepTuneTheme.colors.postButton,
-                  contentColor = NepTuneTheme.colors.onBackground,
-                  shape = CircleShape,
-                  modifier =
-                      Modifier.shadow(
-                              elevation = 4.dp,
-                              spotColor = NepTuneTheme.colors.shadow,
-                              ambientColor = NepTuneTheme.colors.shadow,
-                              shape = CircleShape)
-                          .size(52.dp)
-                          .testTag(MainScreenTestTags.POST_BUTTON)) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Create a Post",
-                        modifier = Modifier.size(70.dp))
-                  }
+              if (isUserLoggedIn && !isAnonymous) {
+                FloatingActionButton(
+                    onClick = navigateToProjectList,
+                    containerColor = NepTuneTheme.colors.postButton,
+                    contentColor = NepTuneTheme.colors.onBackground,
+                    shape = CircleShape,
+                    modifier =
+                        Modifier.shadow(
+                                elevation = 4.dp,
+                                spotColor = NepTuneTheme.colors.shadow,
+                                ambientColor = NepTuneTheme.colors.shadow,
+                                shape = CircleShape)
+                            .size(52.dp)
+                            .testTag(MainScreenTestTags.POST_BUTTON)) {
+                      Icon(
+                          imageVector = Icons.Default.Add,
+                          contentDescription = "Create a Post",
+                          modifier = Modifier.size(70.dp))
+                    }
+              }
             },
             content = { paddingValues ->
               MainContent(
@@ -269,7 +268,9 @@ fun MainScreen(
                   handleProfileNavigation = { handleProfileNavigation(it) },
                   navigateToSampleList = navigateToSampleList,
                   pullRefreshState = pullRefreshState,
-                  isAnonymous = isAnonymous)
+                  isAnonymous = isAnonymous,
+                  isOnline = isOnline,
+              )
             },
             containerColor = NepTuneTheme.colors.background)
         // Comment Overlay (Outside Scaffold content, but inside Box to float over everything)
@@ -295,54 +296,76 @@ private fun MainContent(
     handleProfileNavigation: (String) -> Unit,
     navigateToSampleList: (FeedType) -> Unit,
     pullRefreshState: PullToRefreshState,
-    isAnonymous: Boolean = false
+    isAnonymous: Boolean = false,
+    isOnline: Boolean = true
 ) {
   val horizontalPadding = 30.dp
+  val isUserLoggedIn = remember { mainViewModel.isUserLoggedIn }
   Box(modifier = Modifier.fillMaxSize()) {
-    LazyColumn(
-        contentPadding = paddingValues, // Apply Scaffold padding
-        modifier = Modifier.fillMaxSize().testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
-          // ----------------Discover Section-----------------
-          item {
-            Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-              SectionHeader(
-                  title = FeedType.DISCOVER.title,
-                  onClick = { navigateToSampleList(FeedType.DISCOVER) })
+    if (!isUserLoggedIn) {
+      OfflineScreen()
+    } else {
+      Column(
+          modifier = Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding()),
+          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalArrangement = Arrangement.Top) {
+            if (!isOnline) {
+              OfflineBanner()
             }
+
+            // online
+            LazyColumn(
+                contentPadding =
+                    PaddingValues(
+                        bottom = paddingValues.calculateBottomPadding()), // Apply Scaffold padding
+                modifier =
+                    Modifier.fillMaxSize().testTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)) {
+                  // ----------------Discover Section-----------------
+                  item {
+                    Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+                      SectionHeader(
+                          title = FeedType.DISCOVER.title,
+                          onClick = { navigateToSampleList(FeedType.DISCOVER) })
+                    }
+                  }
+                  item {
+                    SampleSectionLazyRow(
+                        mainViewModel = mainViewModel,
+                        samples = discoverSamples,
+                        rowsPerColumn = 2,
+                        onCommentClick = { onCommentClicked(it) },
+                        onProfileClick = { handleProfileNavigation(it) },
+                        isAnonymous = isAnonymous)
+                  }
+                  // ----------------Followed Section-----------------
+                  item {
+                    Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+                      SectionHeader(
+                          title = FeedType.FOLLOWED.title,
+                          onClick = { navigateToSampleList(FeedType.FOLLOWED) })
+                    }
+                  }
+                  item {
+                    SampleSectionLazyRow(
+                        mainViewModel = mainViewModel,
+                        samples = followedSamples,
+                        rowsPerColumn = maxColumns,
+                        onCommentClick = { onCommentClicked(it) },
+                        onProfileClick = { handleProfileNavigation(it) })
+                    Spacer(modifier = Modifier.height(50.dp))
+                  }
+                }
           }
-          item {
-            SampleSectionLazyRow(
-                mainViewModel = mainViewModel,
-                samples = discoverSamples,
-                rowsPerColumn = 2,
-                onCommentClick = { onCommentClicked(it) },
-                onProfileClick = { handleProfileNavigation(it) },
-                isAnonymous = isAnonymous)
-          }
-          // ----------------Followed Section-----------------
-          item {
-            Row(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-              SectionHeader(
-                  title = FeedType.FOLLOWED.title,
-                  onClick = { navigateToSampleList(FeedType.FOLLOWED) })
-            }
-          }
-          item {
-            SampleSectionLazyRow(
-                mainViewModel = mainViewModel,
-                samples = followedSamples,
-                rowsPerColumn = maxColumns,
-                onCommentClick = { onCommentClicked(it) },
-                onProfileClick = { handleProfileNavigation(it) })
-            Spacer(modifier = Modifier.height(50.dp))
-          }
-        }
-    PullToRefreshContainer(
-        state = pullRefreshState,
-        modifier =
-            Modifier.align(Alignment.TopCenter).padding(top = paddingValues.calculateTopPadding()),
-        containerColor = NepTuneTheme.colors.background,
-        contentColor = NepTuneTheme.colors.onBackground)
+      if (isOnline) {
+        PullToRefreshContainer(
+            state = pullRefreshState,
+            modifier =
+                Modifier.align(Alignment.TopCenter)
+                    .padding(top = paddingValues.calculateTopPadding()),
+            containerColor = NepTuneTheme.colors.background,
+            contentColor = NepTuneTheme.colors.onBackground)
+      }
+    }
   }
 }
 
@@ -407,7 +430,8 @@ private fun SampleSectionLazyRow(
 private fun MainTopAppBar(
     userAvatar: String?,
     navigateToSelectMessages: () -> Unit,
-    navigateToProfile: () -> Unit
+    navigateToProfile: () -> Unit,
+    isUserLoggedIn: Boolean = true
 ) {
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
   val logoSize = screenWidth * 0.3f
@@ -415,20 +439,22 @@ private fun MainTopAppBar(
     CenterAlignedTopAppBar(
         modifier = Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
         navigationIcon = {
-          // Message Button
-          IconButton(
-              onClick = navigateToSelectMessages,
-              modifier =
-                  Modifier.padding(vertical = 38.dp, horizontal = 25.dp)
-                      .size(38.dp)
-                      .testTag(NavigationTestTags.MESSAGE_BUTTON)) {
-                Icon(
-                    painter = painterResource(id = R.drawable.messageicon),
-                    contentDescription = "Messages",
-                    modifier = Modifier.size(30.dp),
-                    tint = NepTuneTheme.colors.onBackground,
-                )
-              }
+          if (isUserLoggedIn) {
+            // Message Button
+            IconButton(
+                onClick = navigateToSelectMessages,
+                modifier =
+                    Modifier.padding(vertical = 38.dp, horizontal = 25.dp)
+                        .size(38.dp)
+                        .testTag(NavigationTestTags.MESSAGE_BUTTON)) {
+                  Icon(
+                      painter = painterResource(id = R.drawable.messageicon),
+                      contentDescription = "Messages",
+                      modifier = Modifier.size(30.dp),
+                      tint = NepTuneTheme.colors.onBackground,
+                  )
+                }
+          }
         },
         title = {
           Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -870,7 +896,7 @@ fun CommentDialog(
                               placeholder = painterResource(R.drawable.profile),
                               error = painterResource(R.drawable.profile))
                           Spacer(Modifier.width(8.dp))
-                          Column(Modifier.weight(1f)) {
+                          Column {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {

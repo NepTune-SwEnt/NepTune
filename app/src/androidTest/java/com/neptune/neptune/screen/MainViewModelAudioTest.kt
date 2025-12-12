@@ -2,7 +2,6 @@ package com.neptune.neptune.screen
 
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.neptune.neptune.data.storage.StorageService
@@ -56,7 +55,6 @@ class MainViewModelAudioTest {
   @Before
   fun setup() {
     Dispatchers.setMain(testDispatcher)
-    val appContext = InstrumentationRegistry.getInstrumentation().targetContext
 
     whenever(mockProfileRepo.observeCurrentProfile()).thenReturn(flowOf(null))
 
@@ -66,7 +64,6 @@ class MainViewModelAudioTest {
     viewModel =
         MainViewModel(
             sampleRepo = mockSampleRepo,
-            context = appContext,
             profileRepo = mockProfileRepo,
             storageService = mockStorageService,
             auth = mockAuth,

@@ -27,7 +27,6 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
-import androidx.test.core.app.ApplicationProvider
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.FakeProfileRepository
@@ -111,12 +110,10 @@ class ProfileScreenTest {
   private fun createFakeSamplesViewModel(
       initialSamples: List<com.neptune.neptune.model.sample.Sample> = emptyList()
   ): ProfileSamplesViewModel {
-    val context = ApplicationProvider.getApplicationContext<android.content.Context>()
     return ProfileSamplesViewModel(
         ownerId = "owner",
         sampleRepo = FakeSampleRepository(initialSamples),
         profileRepo = FakeProfileRepository(),
-        context = context,
         auth = null,
         enableActions = false)
   }

@@ -31,6 +31,11 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        externalNativeBuild {
+            cmake {
+                abiFilters("arm64-v8a", "armeabi-v7a", "x86_64")
+            }
+        }
     }
 
     buildTypes {
@@ -69,10 +74,20 @@ android {
         jvmTarget = "11"
     }
 
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+        }
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+
+    sourceSets.getByName("main") {
+        jniLibs.srcDir("src/main/cpp/libs")
     }
 
     testOptions {

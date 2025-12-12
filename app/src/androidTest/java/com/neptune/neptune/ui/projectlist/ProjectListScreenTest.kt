@@ -15,9 +15,13 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepositoryVar
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryCompose
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -63,9 +67,15 @@ class ProjectListScreenTest {
               isFavorite = false,
               lastUpdated = Timestamp(3, 0)))
     }
+    val mockUser = mockk<FirebaseUser>(relaxed = true)
+    val mockAuth = mockk<FirebaseAuth>(relaxed = true)
+    every { mockAuth.currentUser } returns mockUser
 
     viewModel =
-        ProjectListViewModel(TotalProjectItemsRepositoryCompose(localRepository, cloudRepository))
+        ProjectListViewModel(
+            projectRepository =
+                TotalProjectItemsRepositoryCompose(localRepository, cloudRepository),
+            auth = mockAuth)
 
     // Single setContent call per test lifecycle — inject navCalls collector here
     composeTestRule.setContent {
