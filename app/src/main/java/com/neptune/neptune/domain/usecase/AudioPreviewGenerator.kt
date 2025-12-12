@@ -8,7 +8,7 @@ import java.io.File
 // Backwards-compatible SamplerProvider interface used by tests and earlier code.
 // Now loadProjectData is suspend and returns an optional Uri pointing to the extracted audio
 // preview (so callers don't need to create or depend on a ViewModel).
-interface SamplerProvider {
+fun interface SamplerProvider {
   suspend fun loadProjectData(zipFilePath: String): Uri?
 }
 
@@ -36,7 +36,7 @@ class ViewModelAudioPreviewGenerator : AudioPreviewGenerator {
 
       // Extract the audio file into a cache location and return its Uri
       return extractor.extractAudioFile(zipFile, NepTuneApplication.appContext, audioFileName)
-    } catch (e: Exception) {
+    } catch (_: Exception) {
       // Bubbling the exception would also be fine; return null as best-effort behavior
       return null
     }

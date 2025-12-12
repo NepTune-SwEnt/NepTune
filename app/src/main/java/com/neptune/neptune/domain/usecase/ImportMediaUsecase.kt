@@ -11,8 +11,6 @@ import com.neptune.neptune.model.project.ProjectItemsRepositoryLocal
 import java.io.File
 import java.net.URI
 import java.util.UUID
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 open class ImportMediaUseCase(
     private val importer: FileImporter,
@@ -45,9 +43,7 @@ open class ImportMediaUseCase(
     // Run packager on IO dispatcher to avoid blocking callers
     val projectZip =
         try {
-          withContext(Dispatchers.IO) {
-            packager.createProjectZip(audioFile = localAudio, durationMs = durationMs)
-          }
+          packager.createProjectZip(audioFile = localAudio, durationMs = durationMs)
         } catch (e: Exception) {
           // Ensure we attempt to delete the temporary local file on IO dispatcher
           val isLocalAudioDeleted = localAudio.delete()
@@ -71,7 +67,7 @@ open class ImportMediaUseCase(
     val sampler = createSamplerProvider()
 
     // Generate preview using the sampler provider off the IO dispatcher
-    val tempPreviewUri = withContext(Dispatchers.IO) { sampler.loadProjectData(projectZipPath) }
+    val tempPreviewUri = sampler.loadProjectData(projectZipPath)
 
     // Copy the preview file (if any) from the temporary Uri into a dedicated "previews" folder
     val audioPreviewLocalPath: String =

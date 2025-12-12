@@ -10,13 +10,15 @@ import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+private val DISPATCHER = Dispatchers.IO
+
 /**
  * Helper to copy a temporary preview Uri into the app's previews folder and return the saved URI
  * string. All file IO is performed on the IO dispatcher.
  */
 class PreviewStoreHelper(private val context: Context = NepTuneApplication.appContext) {
   suspend fun saveTempPreviewToPreviewsDir(itemId: String, tempPreviewUri: Uri?): String =
-      withContext(Dispatchers.IO) {
+      withContext(DISPATCHER) {
         if (tempPreviewUri == null) return@withContext ""
 
         try {

@@ -705,14 +705,24 @@ open class SamplerViewModel(
 
   open fun saveProjectData(zipFilePath: String): Job {
     return viewModelScope.launch {
-      val newAudioUri: Uri? = audioBuilding()
+      // Launch audio processing and wait for it to finish, then read the updated ui state
+      val processingJob = audioBuilding()
+      if (processingJob != null) {
+        processingJob.join()
+      }
+
+      val newAudioUri: Uri? = _uiState.value.currentAudioUri
 
       if (newAudioUri != null) {
         _uiState.update { it.copy(currentAudioUri = newAudioUri) }
       }
 
+      // Save project synchronously (writes zip from currentAudioUri)
       saveProjectDataSync(zipFilePath)
+
+      // Kick off a background re-processing to ensure preview generation remains unchanged
       audioBuilding()
+
       try {
         val projectsJsonRepo = ProjectItemsRepositoryLocal(context)
         val projectId: String = projectsJsonRepo.findProjectWithProjectFile(zipFilePath).uid
@@ -805,7 +815,12 @@ open class SamplerViewModel(
     }
   }
 
-  open suspend fun audioBuilding(): Uri? {
+  /**
+   * Non-suspending API: launches audio processing in viewModelScope and returns the Job. Callers
+   * that need to wait for completion can join the returned Job and then read
+   * `uiState.value.currentAudioUri` to obtain the resulting Uri.
+   */
+  open fun audioBuilding(): Job? {
     val state = _uiState.value
     val originalUri =
         state.originalAudioUri ?: return null // Guards against missing original file URI
@@ -815,34 +830,38 @@ open class SamplerViewModel(
         computeSemitoneShift(
             state.inputPitchNote, state.inputPitchOctave, state.pitchNote, state.pitchOctave)
 
-    return try {
-      // Execute the synchronous DSP pipeline on the default/background dispatcher
-      val newUri =
-          withContext(dispatcherProvider.default) {
-            processAudio(
-                currentAudioUri = originalUri, // Source is the original file (non-destructive)
-                eqBands = state.eqBands,
-                reverbWet = state.reverbWet,
-                reverbSize = state.reverbSize,
-                reverbWidth = state.reverbWidth,
-                reverbDepth = state.reverbDepth,
-                reverbPredelay = state.reverbPredelay,
-                semitones = semitones,
-                audioProcessor = audioProcessor,
-                attack = state.attack,
-                decay = state.decay,
-                sustain = state.sustain,
-                release = state.release)
-          }
+    val job =
+        viewModelScope.launch {
+          try {
+            // Execute the synchronous DSP pipeline on the default/background dispatcher
+            val newUri =
+                withContext(dispatcherProvider.default) {
+                  processAudio(
+                      currentAudioUri =
+                          originalUri, // Source is the original file (non-destructive)
+                      eqBands = state.eqBands,
+                      reverbWet = state.reverbWet,
+                      reverbSize = state.reverbSize,
+                      reverbWidth = state.reverbWidth,
+                      reverbDepth = state.reverbDepth,
+                      reverbPredelay = state.reverbPredelay,
+                      semitones = semitones,
+                      audioProcessor = audioProcessor,
+                      attack = state.attack,
+                      decay = state.decay,
+                      sustain = state.sustain,
+                      release = state.release)
+                }
 
-      if (newUri != null) {
-        _uiState.update { it.copy(currentAudioUri = newUri) }
-      }
-      newUri
-    } catch (e: Exception) {
-      Log.e("SamplerViewModel", "audioBuilding failed: ${e.message}", e)
-      null
-    }
+            if (newUri != null) {
+              _uiState.update { it.copy(currentAudioUri = newUri) }
+            }
+          } catch (e: Exception) {
+            Log.e("SamplerViewModel", "audioBuilding failed: ${e.message}", e)
+          }
+        }
+
+    return job
   }
 
   internal fun processAudio(
