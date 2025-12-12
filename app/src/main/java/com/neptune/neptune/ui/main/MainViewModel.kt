@@ -121,6 +121,7 @@ open class MainViewModel(
     viewModelScope.launch {
       try {
         Log.d("RecoDebug", "loadRecommendations() START, cacheSize=${allSamplesCache.size}")
+        if (auth?.currentUser == null) return@launch
         val recoUser = profileRepo.getCurrentRecoUserProfile()
         if (recoUser == null) {
           // Fallback when no user or profile: just show latest samples
@@ -157,7 +158,7 @@ open class MainViewModel(
     viewModelScope.launch {
       try {
         val profile = profileRepo.getCurrentProfile()
-        val currentUserId = auth?.currentUser?.uid
+        val currentUserId = auth.currentUser?.uid
         val following = profile?.following.orEmpty()
         sampleRepo.observeSamples().collectLatest { rawSamples ->
           val visibleSamples =
@@ -342,7 +343,7 @@ open class MainViewModel(
       val authorId = profile?.uid ?: auth?.currentUser?.uid ?: "unknown"
       val authorName = profile?.username ?: defaultName
       val authorProfilePicUrl = userAvatar.value ?: ""
-      sampleRepo.addComment(sampleId, authorId, authorName, authorProfilePicUrl, text.trim())
+      sampleRepo.addComment(sampleId, authorId, authorName, text.trim(), authorProfilePicUrl)
     }
   }
 

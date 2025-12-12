@@ -6,6 +6,7 @@
 package com.neptune.neptune.model.project
 
 import android.content.Context
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.File
@@ -17,6 +18,7 @@ class ProjectItemsRepositoryLocal(context: Context) : ProjectItemsRepository {
   private val projectsFile = File(context.filesDir, "projects.json")
   private val gson = Gson()
   private val mutex = Mutex()
+  private val appContext = context.applicationContext
 
   init {
     if (!projectsFile.exists()) {
@@ -73,9 +75,49 @@ class ProjectItemsRepositoryLocal(context: Context) : ProjectItemsRepository {
   override suspend fun deleteProject(projectID: String) =
       mutex.withLock {
         val projects = readProjects()
-        if (projects.remove(projectID) == null) {
-          throw NoSuchElementException("Project with ID $projectID not found")
-        }
+        val removed =
+            projects.remove(projectID)
+                ?: throw NoSuchElementException("Project with ID $projectID not found")
         writeProjects(projects)
+
+        // Delete associated local files (project zip, audio preview, image preview) if they exist.
+        val pathsToDelete =
+            listOfNotNull(
+                removed.projectFileLocalPath,
+                removed.audioPreviewLocalPath,
+                removed.imagePreviewLocalPath)
+
+        Log.d("ProjectItemsRepositoryLocal", "Deleting files: $pathsToDelete")
+        pathsToDelete.forEach { path ->
+          try {
+            val file = File(path.removePrefix("file:"))
+            if (file.exists()) {
+              Log.d("ProjectItemsRepositoryLocal", "Deleting file: $file")
+              val deleted = file.delete()
+              if (deleted) {
+                Log.d("ProjectItemsRepositoryLocal", "Deleted file: $path")
+              } else {
+                Log.d("ProjectItemsRepositoryLocal", "Failed to delete file: $path")
+              }
+            } else {
+              Log.d("ProjectItemsRepositoryLocal", "Failed to delete file: $path, does not exist")
+            }
+          } catch (_: Exception) {
+            Log.d("ProjectItemsRepositoryLocal", "Failed to delete file: $path")
+          }
+        }
+      }
+
+  /**
+   * Find project by project file.
+   *
+   * @param projectFile The project file as string to find.
+   * @return The project item corresponding to the provided project file.
+   */
+  suspend fun findProjectWithProjectFile(projectFile: String): ProjectItem =
+      mutex.withLock {
+        val projects = readProjects()
+        projects.values.firstOrNull { it.projectFileLocalPath == projectFile }
+            ?: throw NoSuchElementException("Project with projectFile $projectFile not found")
       }
 }
