@@ -12,20 +12,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.google.firebase.Firebase
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
-import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.database
 import com.neptune.neptune.util.NetworkConnectivityObserver
 import com.neptune.neptune.util.RealtimeDatabaseProvider
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -133,7 +130,7 @@ class SignInViewModel(
 
   private lateinit var credentialManager: CredentialManager
 
-  private val _signInStatus = MutableStateFlow<SignInStatus>(SignInStatus.BEFORE_INITIALIZATION)
+  private val _signInStatus = MutableStateFlow(SignInStatus.BEFORE_INITIALIZATION)
 
   /** Exposes the currently authenticated [SignInStatus] as a read-only [StateFlow]. */
   val signInStatus: StateFlow<SignInStatus> = _signInStatus.asStateFlow()
@@ -384,7 +381,6 @@ class SignInViewModel(
           is FirebaseAuthInvalidUserException -> "User not found"
           is FirebaseAuthInvalidCredentialsException -> "Invalid credentials"
           is FirebaseAuthUserCollisionException -> "Email already in use"
-          is FirebaseAuthWeakPasswordException -> "Weak password"
           is FirebaseNetworkException -> "Network error"
           else -> "Authentication error"
         }
@@ -445,8 +441,8 @@ class SignInViewModel(
     viewModelScope.launch {
       try {
         firebaseAuth.currentUser?.uid?.let { uid ->
-          Firebase.database
-              .getReference("status/$uid")
+          val db = RealtimeDatabaseProvider.getDatabase()
+          db.getReference("status/$uid")
               .setValue(mapOf("state" to "offline", "lastChanged" to ServerValue.TIMESTAMP))
         }
 
