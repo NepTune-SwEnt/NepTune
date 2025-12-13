@@ -199,8 +199,7 @@ class FollowListViewModelTest {
         val repo = FakeProfileRepository()
         repo.addProfiles(
             listOf(
-                Profile(uid = "u1", username = "luca"),
-                Profile(uid = "u2", username = "chiara")))
+                Profile(uid = "u1", username = "luca"), Profile(uid = "u2", username = "chiara")))
         repo.setFollowingIds(listOf("u1", "u2"))
 
         val viewModel = FollowListViewModel(repo = repo, initialTab = FollowListTab.FOLLOWING)
