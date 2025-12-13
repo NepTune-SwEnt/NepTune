@@ -20,7 +20,6 @@ Java_com_neptune_neptune_ui_sampler_NativeAudioProcessor_pitchShiftNative(
     jfloat* samplesPtr = env->GetFloatArrayElements(inputSamples, NULL);
 
     if (samplesPtr == nullptr) {
-        LOGD("samplesPtr is null !");
         return nullptr;
     }
 
@@ -70,7 +69,67 @@ Java_com_neptune_neptune_ui_sampler_NativeAudioProcessor_pitchShiftNative(
         env->SetFloatArrayRegion(outputArray, 0, outputLength, outputData.data());
     }
 
-    LOGD("PitchShift Native done: Input=%d, Output=%d samples", arrayLength, outputLength);
+    return outputArray;
+}
+
+extern "C" JNIEXPORT jfloatArray JNICALL
+Java_com_neptune_neptune_ui_sampler_NativeAudioProcessor_timeStretchNative(
+        JNIEnv* env,
+        jobject /* this */,
+        jfloatArray inputSamples,
+        jfloat tempoRatio) {
+
+    jsize arrayLength = env->GetArrayLength(inputSamples);
+    jfloat* samplesPtr = env->GetFloatArrayElements(inputSamples, nullptr);
+
+    if (samplesPtr == nullptr) {
+        return nullptr;
+    }
+
+    const int sampleRate = 44100;
+    const int numChannels = 1;
+    const int sampleSegment = 1024;
+
+    SoundTouch soundTouch;
+
+    soundTouch.setSampleRate(sampleRate);
+    soundTouch.setChannels(numChannels);
+
+    // 🔑 TEMPO = time-stretch WITHOUT pitch change
+    soundTouch.setTempo(tempoRatio);
+
+    // Same quality settings as pitch
+    soundTouch.setSetting(SETTING_USE_QUICKSEEK, 0);
+    soundTouch.setSetting(SETTING_USE_AA_FILTER, 1);
+
+    const float* pcmBuffer = reinterpret_cast<const float*>(samplesPtr);
+    soundTouch.putSamples(pcmBuffer, arrayLength);
+    soundTouch.flush();
+
+    std::vector<float> outputData;
+    SAMPLETYPE tempBuffer[sampleSegment];
+
+    uint nSamples;
+    do {
+        nSamples = soundTouch.receiveSamples(tempBuffer, sampleSegment);
+
+        if (nSamples > 0) {
+            outputData.insert(
+                    outputData.end(),
+                    tempBuffer,
+                    tempBuffer + nSamples
+            );
+        }
+    } while (nSamples > 0);
+
+    env->ReleaseFloatArrayElements(inputSamples, samplesPtr, JNI_ABORT);
+
+    jsize outputLength = static_cast<jsize>(outputData.size());
+    jfloatArray outputArray = env->NewFloatArray(outputLength);
+
+    if (outputArray != nullptr) {
+        env->SetFloatArrayRegion(outputArray, 0, outputLength, outputData.data());
+    }
 
     return outputArray;
 }
