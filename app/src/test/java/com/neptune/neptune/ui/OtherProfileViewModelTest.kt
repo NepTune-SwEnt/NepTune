@@ -18,6 +18,7 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -190,6 +191,9 @@ private class FollowToggleTestRepository(
 
   override fun observeProfile(uid: String): Flow<Profile?> = otherProfileState
 
+  override fun observeAllProfiles(): Flow<List<Profile?>> =
+      combine(otherProfileState, currentProfileState) { other, current -> listOf(other, current) }
+
   override suspend fun unfollowUser(uid: String) {
     unfollowCalls.add(uid)
   }
@@ -252,6 +256,8 @@ private class FollowToggleTestRepository(
   override suspend fun getUserNameByUserId(userId: String): String? {
     throw UnsupportedOperationException("Not needed in this test")
   }
+
+  override suspend fun searchUsers(query: String): List<Profile> = emptyList()
 
   override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
     TODO("Not yet implemented")

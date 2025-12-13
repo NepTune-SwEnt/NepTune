@@ -22,6 +22,10 @@ private class RepoStub : MediaRepository {
   override suspend fun upsert(item: MediaItem) {
     s.value = s.value + item
   }
+
+  override suspend fun delete(item: MediaItem) {
+    s.value = s.value - item
+  }
 }
 
 class GetLibraryUsecaseTest {

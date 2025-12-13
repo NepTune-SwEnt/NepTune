@@ -1,11 +1,14 @@
 package com.neptune.neptune.ui.messages
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
-import com.neptune.neptune.model.messages.Messages
+import com.neptune.neptune.model.messages.Message
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * ViewModel for managing the state and operations related to the messages. This has been written
@@ -15,11 +18,11 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 class MessagesViewModel(
     private val otherUserId: String,
-    private val initialMessages: List<Messages> = emptyList() /*For testing only*/
+    private val initialMessages: List<Message> = emptyList() /*For testing only*/
 ) : ViewModel() {
 
   private val _messages = MutableStateFlow(initialMessages)
-  val messages: StateFlow<List<Messages>> = _messages.asStateFlow()
+  val messages: StateFlow<List<Message>> = _messages.asStateFlow()
 
   // TODO Replace with repo calls
   private val _otherUsername = MutableStateFlow("Test1")
@@ -38,12 +41,18 @@ class MessagesViewModel(
   }
 
   private fun loadConversation() {
-    // TODO repository.loadMessages(otherUserId) -> load conv from repo
+    viewModelScope.launch {
+      try {
+        // TODO repository.loadMessages(otherUserId) -> load conv from repo
+      } catch (e: Exception) {
+        Log.e("MessagesViewModel", "Failed to load conversation: ${e.message}")
+      }
+    }
   }
 
   fun sendMessage(text: String) {
     val msg =
-        Messages(
+        Message(
             id = System.currentTimeMillis().toString(),
             authorId = currentUserId,
             text = text,
@@ -51,8 +60,13 @@ class MessagesViewModel(
 
     _messages.value = _messages.value + msg
 
-    // TODO repository.sendMessage(otherUserId, msg)
-
+    viewModelScope.launch {
+      try {
+        // TODO repository.sendMessage(otherUserId, msg)
+      } catch (e: Exception) {
+        Log.e("MessagesViewModel", "Failed to send message: ${e.message}")
+      }
+    }
   }
 
   private fun loadFakeData(uid: String) {
@@ -65,8 +79,8 @@ class MessagesViewModel(
 
         _messages.value =
             listOf(
-                Messages("1", uid, "Byebye Sweetie Banana", Timestamp.now()),
-                Messages("2", currentUserId, "Mikkaaaa", Timestamp.now()),
+                Message("1", uid, "Byebye Sweetie Banana", Timestamp.now()),
+                Message("2", currentUserId, "Mikkaaaa", Timestamp.now()),
             )
       }
       "u2" -> {
@@ -75,9 +89,9 @@ class MessagesViewModel(
 
         _messages.value =
             listOf(
-                Messages("10", uid, bleh, Timestamp.now()),
-                Messages("11", currentUserId, bleh, Timestamp.now()),
-                Messages("12", uid, bleh, Timestamp.now()))
+                Message("10", uid, bleh, Timestamp.now()),
+                Message("11", currentUserId, bleh, Timestamp.now()),
+                Message("12", uid, bleh, Timestamp.now()))
       }
       "u3" -> {
         _otherUsername.value = "test3"
@@ -85,8 +99,8 @@ class MessagesViewModel(
 
         _messages.value =
             listOf(
-                Messages("20", currentUserId, "21", Timestamp.now()),
-                Messages("21", uid, "Banana", Timestamp.now()))
+                Message("20", currentUserId, "21", Timestamp.now()),
+                Message("21", uid, "Banana", Timestamp.now()))
       }
       else -> {
         _otherUsername.value = "Unknown"

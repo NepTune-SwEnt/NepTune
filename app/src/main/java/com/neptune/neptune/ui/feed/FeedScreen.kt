@@ -1,6 +1,5 @@
 package com.neptune.neptune.ui.feed
 
-import android.app.Application
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -19,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -35,8 +33,8 @@ import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.main.SampleCommentManager
 import com.neptune.neptune.ui.main.SampleItem
 import com.neptune.neptune.ui.main.SampleResourceState
-import com.neptune.neptune.ui.main.factory
 import com.neptune.neptune.ui.main.onClickFunctions
+import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.ui.util.NeptuneTopBar
 import kotlinx.coroutines.delay
@@ -54,8 +52,7 @@ object FeedScreenTestTag : BaseSampleTestTags {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeedScreen(
-    mainViewModel: MainViewModel =
-        viewModel(factory = factory(LocalContext.current.applicationContext as Application)),
+    mainViewModel: MainViewModel = viewModel(),
     initialType: FeedType = FeedType.DISCOVER,
     goBack: () -> Unit = {},
     navigateToProfile: () -> Unit = {},
@@ -67,6 +64,7 @@ fun FeedScreen(
   val pullRefreshState = rememberPullToRefreshState()
   val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
   val roundShape = 50
+  val isOnline by mainViewModel.isOnline.collectAsState()
 
   PullToRefreshHandler(
       isRefreshing = isRefreshing,
@@ -101,23 +99,38 @@ fun FeedScreen(
               divider = false)
         },
         containerColor = NepTuneTheme.colors.background) { paddingValues ->
-          Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            FeedContent(
-                modifier = Modifier.nestedScroll(pullRefreshState.nestedScrollConnection),
-                mainViewModel = mainViewModel,
-                currentType = currentType,
-                navigateToProfile = navigateToProfile,
-                navigateToOtherUserProfile = navigateToOtherUserProfile)
+          Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            if (!isOnline) {
+              OfflineBanner()
+            }
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+              FeedContent(
+                  modifier = Modifier.nestedScroll(pullRefreshState.nestedScrollConnection),
+                  mainViewModel = mainViewModel,
+                  currentType = currentType,
+                  navigateToProfile = navigateToProfile,
+                  navigateToOtherUserProfile = navigateToOtherUserProfile)
 
-            PullToRefreshContainer(
-                state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
-                containerColor = NepTuneTheme.colors.background,
-                contentColor = NepTuneTheme.colors.onBackground)
+              if (isOnline) {
+                PullToRefreshContainer(
+                    state = pullRefreshState,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    containerColor = NepTuneTheme.colors.background,
+                    contentColor = NepTuneTheme.colors.onBackground)
+              }
+            }
           }
         }
 
-    SampleCommentManager(mainViewModel = mainViewModel)
+    SampleCommentManager(
+        mainViewModel = mainViewModel,
+        onProfileClicked = { userId ->
+          if (mainViewModel.isCurrentUser(userId)) {
+            navigateToProfile()
+          } else {
+            navigateToOtherUserProfile(userId)
+          }
+        })
     if (downloadProgress != null && downloadProgress != 0) {
       DownloadProgressBar(
           downloadProgress = downloadProgress!!, testTag = FeedScreenTestTag.DOWNLOAD_PROGRESS)

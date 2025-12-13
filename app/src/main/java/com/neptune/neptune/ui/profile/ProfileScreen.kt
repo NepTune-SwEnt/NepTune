@@ -55,7 +55,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -72,7 +71,9 @@ import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.feed.sampleFeedItems
 import com.neptune.neptune.ui.main.CommentDialog
+import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
+import com.neptune.neptune.util.NetworkConnectivityObserver
 
 private val ScreenPadding = 16.dp
 private val SettingsButtonSize = 30.dp
@@ -136,6 +137,8 @@ fun ProfileScreen(
     onAvatarEditClick: () -> Unit = {},
     viewConfig: ProfileViewConfig,
     profileSamplesViewModel: ProfileSamplesViewModel,
+    isOnline: Boolean = true,
+    isUserLoggedIn: Boolean = true
 ) {
   Column(modifier = Modifier.padding(ScreenPadding).testTag(ProfileScreenTestTags.ROOT)) {
     when (uiState.mode) {
@@ -146,10 +149,13 @@ fun ProfileScreen(
             localAvatarUri = localAvatarUri,
             viewConfig = viewConfig,
             goBack = callbacks.goBackClick,
-            profileSamplesViewModel = profileSamplesViewModel)
+            profileSamplesViewModel = profileSamplesViewModel,
+            isOnline = isOnline,
+            isUserLoggedIn = isUserLoggedIn)
       }
       // Create profile screen edit content
       ProfileMode.EDIT -> {
+        if (!isOnline) OfflineBanner()
         ProfileEditContent(
             uiState = uiState,
             localAvatarUri = localAvatarUri,
@@ -160,7 +166,8 @@ fun ProfileScreen(
             onTagInputFieldChange = callbacks.onTagInputFieldChange,
             onTagSubmit = callbacks.onTagSubmit,
             onRemoveTag = callbacks.onRemoveTag,
-            onAvatarEditClick = onAvatarEditClick)
+            onAvatarEditClick = onAvatarEditClick,
+            isOnline = isOnline)
       }
     }
   }
@@ -183,11 +190,16 @@ sealed interface ProfileViewConfig {
   val topBarContent: (@Composable () -> Unit)?
   val belowStatsButton: (@Composable () -> Unit)?
   val bottomScreenButton: (@Composable (modifier: Modifier) -> Unit)?
+  val onFollowingClick: (() -> Unit)?
+  val onFollowersClick: (() -> Unit)?
 
   data class SelfProfileConfig(
       private val onEdit: () -> Unit,
       private val settings: () -> Unit,
       val canEditProfile: Boolean = true,
+      override val onFollowingClick: (() -> Unit)? = null,
+      override val onFollowersClick: (() -> Unit)? = null,
+      val isOnline: Boolean = true
   ) : ProfileViewConfig {
     override val topBarContent = @Composable { SettingsButton(settings) }
     override val belowStatsButton = null
@@ -196,7 +208,7 @@ sealed interface ProfileViewConfig {
           if (canEditProfile) {
             Button(
                 onClick = onEdit,
-                enabled = true,
+                enabled = isOnline,
                 modifier =
                     modifier
                         .padding(bottom = BottomButtonBottomPadding)
@@ -215,6 +227,9 @@ sealed interface ProfileViewConfig {
       val canFollowTarget: Boolean = true,
       private val onFollow: () -> Unit,
       private val errorMessage: String?,
+      override val onFollowingClick: (() -> Unit)? = null,
+      override val onFollowersClick: (() -> Unit)? = null,
+      val isOnline: Boolean = true
   ) : ProfileViewConfig {
     override val topBarContent = null
     override val belowStatsButton: @Composable () -> Unit = composable@{
@@ -227,7 +242,7 @@ sealed interface ProfileViewConfig {
           horizontalAlignment = Alignment.CenterHorizontally) {
             Button(
                 onClick = onFollow,
-                enabled = !isFollowActionInProgress,
+                enabled = !isFollowActionInProgress && isOnline,
                 modifier = Modifier.testTag(ProfileScreenTestTags.FOLLOW_BUTTON)) {
                   Icon(imageVector = icon, contentDescription = "Follow")
                   Spacer(Modifier.width(ButtonIconSpacing))
@@ -265,7 +280,9 @@ private fun ProfileViewContent(
     localAvatarUri: Uri?,
     goBack: () -> Unit,
     viewConfig: ProfileViewConfig,
-    profileSamplesViewModel: ProfileSamplesViewModel
+    profileSamplesViewModel: ProfileSamplesViewModel,
+    isOnline: Boolean = true,
+    isUserLoggedIn: Boolean = true
 ) {
   val samples by profileSamplesViewModel.samples.collectAsState()
   val likedSamples by profileSamplesViewModel.likedSamples.collectAsState()
@@ -307,132 +324,143 @@ private fun ProfileViewContent(
             Modifier.fillMaxSize()
                 .padding(innerPadding)
                 .testTag(ProfileScreenTestTags.VIEW_CONTENT)) {
-              LazyColumn(
-                  modifier =
-                      Modifier.fillMaxSize().padding(bottom = 88.dp).then(samplesListTagModifier),
-                  horizontalAlignment = Alignment.CenterHorizontally,
-              ) {
-                item { Spacer(Modifier.height(AvatarVerticalSpacing)) }
-
-                // Avatar image
-                item {
-                  val avatarModel =
-                      localAvatarUri ?: state.avatarUrl ?: R.drawable.ic_avatar_placeholder
-                  Avatar(
-                      avatarModel,
-                      modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
-                      showEditPencil = false)
+              Column(modifier = Modifier.fillMaxSize()) {
+                if (!isOnline && isUserLoggedIn) {
+                  OfflineBanner()
                 }
+                LazyColumn(
+                    modifier =
+                        Modifier.fillMaxSize().padding(bottom = 88.dp).then(samplesListTagModifier),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                  item { Spacer(Modifier.height(AvatarVerticalSpacing)) }
 
-                item { Spacer(Modifier.height(AvatarVerticalSpacing)) }
-
-                // Name and username
-                item {
-                  Text(
-                      text = state.name,
-                      color = NepTuneTheme.colors.onBackground,
-                      style = MaterialTheme.typography.headlineMedium,
-                      textAlign = TextAlign.Center,
-                      modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
-                }
-                item {
-                  Text(
-                      text = "@${state.username}",
-                      color = NepTuneTheme.colors.onBackground,
-                      style = MaterialTheme.typography.bodyMedium,
-                      modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
-                }
-                item { Spacer(Modifier.height(SectionVerticalSpacing)) }
-
-                // Stats row
-                item { StatRow(state) }
-                item { Spacer(Modifier.height(SectionVerticalSpacing)) }
-
-                // if view mode is for other users profile, show follow button
-                viewConfig.belowStatsButton?.let { button -> item { button() } }
-
-                // Bio
-                item {
-                  Text(
-                      text = if (state.bio != "") "“${state.bio}”" else "",
-                      color = NepTuneTheme.colors.onBackground,
-                      style = MaterialTheme.typography.titleLarge,
-                      textAlign = TextAlign.Center,
-                      modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
-                }
-
-                // Tags
-                if (state.tags.isNotEmpty()) {
-                  item { Spacer(Modifier.height(TagsSpacing)) }
+                  // Avatar image
                   item {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(TagsSpacing),
-                        verticalArrangement = Arrangement.spacedBy(TagsSpacing),
-                        modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_VIEW_SECTION)) {
-                          state.tags.forEach { tag ->
-                            InputChip(
-                                selected = false,
-                                onClick = {},
-                                enabled = false,
-                                label = { Text(tag) },
-                                colors =
-                                    InputChipDefaults.inputChipColors(
-                                        disabledContainerColor = NepTuneTheme.colors.cardBackground,
-                                        disabledLabelColor = NepTuneTheme.colors.onBackground),
-                                border =
-                                    InputChipDefaults.inputChipBorder(
-                                        borderWidth = 0.dp, enabled = false, selected = false))
-                          }
-                        }
+                    val avatarModel =
+                        localAvatarUri ?: state.avatarUrl ?: R.drawable.ic_avatar_placeholder
+                    Avatar(
+                        model = avatarModel,
+                        modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
+                        showEditPencil = false)
                   }
-                }
 
-                item { Spacer(Modifier.height(SectionVerticalSpacing)) }
+                  item { Spacer(Modifier.height(AvatarVerticalSpacing)) }
 
-                // Posted samples section
-                item {
-                  Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Posted samples",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = NepTuneTheme.colors.onBackground)
-                    Spacer(Modifier.height(SamplesSpacing))
-                  }
-                }
-
-                if (samples.isEmpty()) {
+                  // Name and username
                   item {
                     Text(
-                        text = "No samples posted yet.",
+                        text = state.name,
+                        color = NepTuneTheme.colors.onBackground,
+                        style = MaterialTheme.typography.headlineMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
+                  }
+                  item {
+                    Text(
+                        text = "@${state.username}",
+                        color = NepTuneTheme.colors.onBackground,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = NepTuneTheme.colors.onBackground)
+                        modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
                   }
-                } else {
-                  sampleFeedItems(
-                      samples = samples,
-                      controller = profileSamplesViewModel,
-                      mediaPlayer = mediaPlayer,
-                      likedSamples = likedSamples,
-                      sampleResources = sampleResources,
-                      navigateToProfile = {},
-                      navigateToOtherUserProfile = {},
-                      testTagsForSample = {
-                        object : BaseSampleTestTags {
-                          override val prefix = "sampleList"
-                        }
-                      },
-                      width = cardWidth,
-                      height = cardHeight)
-                }
-              }
+                  item { Spacer(Modifier.height(SectionVerticalSpacing)) }
 
-              activeCommentSampleId?.let { activeId ->
-                CommentDialog(
-                    sampleId = activeId,
-                    comments = comments,
-                    usernames = usernames,
-                    onDismiss = { profileSamplesViewModel.resetCommentSampleId() },
-                    onAddComment = { id, text -> profileSamplesViewModel.onAddComment(id, text) })
+                  // Stats row
+                  item {
+                    StatRow(
+                        state = state,
+                        onFollowersClick = viewConfig.onFollowersClick,
+                        onFollowingClick = viewConfig.onFollowingClick)
+                  }
+                  item { Spacer(Modifier.height(SectionVerticalSpacing)) }
+
+                  // if view mode is for other users profile, show follow button
+                  viewConfig.belowStatsButton?.let { button -> item { button() } }
+
+                  // Bio
+                  item {
+                    Text(
+                        text = if (state.bio != "") "“${state.bio}”" else "",
+                        color = NepTuneTheme.colors.onBackground,
+                        style = MaterialTheme.typography.titleLarge,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
+                  }
+
+                  // Tags
+                  if (state.tags.isNotEmpty()) {
+                    item { Spacer(Modifier.height(TagsSpacing)) }
+                    item {
+                      FlowRow(
+                          horizontalArrangement = Arrangement.spacedBy(TagsSpacing),
+                          verticalArrangement = Arrangement.spacedBy(TagsSpacing),
+                          modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_VIEW_SECTION)) {
+                            state.tags.forEach { tag ->
+                              InputChip(
+                                  selected = false,
+                                  onClick = {},
+                                  enabled = false,
+                                  label = { Text(tag) },
+                                  colors =
+                                      InputChipDefaults.inputChipColors(
+                                          disabledContainerColor =
+                                              NepTuneTheme.colors.cardBackground,
+                                          disabledLabelColor = NepTuneTheme.colors.onBackground),
+                                  border =
+                                      InputChipDefaults.inputChipBorder(
+                                          borderWidth = 0.dp, enabled = false, selected = false))
+                            }
+                          }
+                    }
+                  }
+
+                  item { Spacer(Modifier.height(SectionVerticalSpacing)) }
+
+                  // Posted samples section
+                  item {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                      Text(
+                          text = "Posted samples",
+                          style = MaterialTheme.typography.headlineSmall,
+                          color = NepTuneTheme.colors.onBackground)
+                      Spacer(Modifier.height(SamplesSpacing))
+                    }
+                  }
+
+                  if (samples.isEmpty()) {
+                    item {
+                      Text(
+                          text = "No samples posted yet.",
+                          style = MaterialTheme.typography.bodyMedium,
+                          color = NepTuneTheme.colors.onBackground)
+                    }
+                  } else {
+                    sampleFeedItems(
+                        samples = samples,
+                        controller = profileSamplesViewModel,
+                        mediaPlayer = mediaPlayer,
+                        likedSamples = likedSamples,
+                        sampleResources = sampleResources,
+                        navigateToProfile = {},
+                        navigateToOtherUserProfile = {},
+                        testTagsForSample = {
+                          object : BaseSampleTestTags {
+                            override val prefix = "sampleList"
+                          }
+                        },
+                        width = cardWidth,
+                        height = cardHeight)
+                  }
+                }
+
+                activeCommentSampleId?.let { activeId ->
+                  CommentDialog(
+                      sampleId = activeId,
+                      comments = comments,
+                      usernames = usernames,
+                      onDismiss = { profileSamplesViewModel.resetCommentSampleId() },
+                      onAddComment = { id, text -> profileSamplesViewModel.onAddComment(id, text) })
+                }
               }
 
               // if mode is self profile, show edit button
@@ -481,7 +509,8 @@ private fun ProfileEditContent(
     onTagInputFieldChange: (String) -> Unit,
     onTagSubmit: () -> Unit,
     onRemoveTag: (String) -> Unit,
-    onAvatarEditClick: () -> Unit
+    onAvatarEditClick: () -> Unit,
+    isOnline: Boolean = true
 ) {
   Column(
       modifier =
@@ -625,7 +654,7 @@ private fun ProfileEditContent(
         // Save button
         Button(
             onClick = onSave,
-            enabled = !uiState.isSaving && uiState.isValid,
+            enabled = !uiState.isSaving && uiState.isValid && isOnline,
             modifier = Modifier.testTag(ProfileScreenTestTags.SAVE_BUTTON)) {
               Icon(imageVector = Icons.Default.Check, contentDescription = "Save")
               Spacer(Modifier.width(ButtonIconSpacing))
@@ -660,7 +689,11 @@ fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, testTag:
 }
 
 @Composable
-private fun StatRow(state: SelfProfileUiState) {
+private fun StatRow(
+    state: SelfProfileUiState,
+    onFollowersClick: (() -> Unit)? = null,
+    onFollowingClick: (() -> Unit)? = null
+) {
   Row(Modifier.fillMaxWidth()) {
     StatBlock(
         label = "Posts",
@@ -675,12 +708,26 @@ private fun StatRow(state: SelfProfileUiState) {
     StatBlock(
         label = "Followers",
         value = state.subscribers,
-        modifier = Modifier.weight(1f),
+        modifier =
+            Modifier.weight(1f).let { base ->
+              if (!state.isAnonymousUser && onFollowersClick != null) {
+                base.clickable { onFollowersClick() }
+              } else {
+                base
+              }
+            },
         testTag = ProfileScreenTestTags.FOLLOWERS_BLOCK)
     StatBlock(
         label = "Following",
         value = state.subscriptions,
-        modifier = Modifier.weight(1f),
+        modifier =
+            Modifier.weight(1f).let { base ->
+              if (!state.isAnonymousUser && onFollowingClick != null) {
+                base.clickable { onFollowingClick() }
+              } else {
+                base
+              }
+            },
         testTag = ProfileScreenTestTags.FOLLOWING_BLOCK)
   }
 }
@@ -698,9 +745,9 @@ private fun StatRow(state: SelfProfileUiState) {
  */
 @Composable
 fun Avatar(
+    modifier: Modifier = Modifier,
     model: Any,
     sizeDp: Int = 120,
-    modifier: Modifier = Modifier,
     showEditPencil: Boolean,
     onEditClick: () -> Unit = {}
 ) {
@@ -771,9 +818,12 @@ fun EditableTagChip(tagText: String, onRemove: (String) -> Unit, modifier: Modif
  * This method was made using AI assistance
  */
 @Composable
-fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
-
-  val context = LocalContext.current.applicationContext
+fun SelfProfileRoute(
+    settings: () -> Unit = {},
+    goBack: () -> Unit = {},
+    onFollowersClick: () -> Unit = {},
+    onFollowingClick: () -> Unit = {}
+) {
   val auth = FirebaseAuth.getInstance()
   val ownerId = auth.currentUser?.uid.orEmpty()
 
@@ -795,7 +845,6 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
             @Suppress("UNCHECKED_CAST")
             return ProfileSamplesViewModel(
                 ownerId = ownerId,
-                context = context,
                 auth = auth,
             )
                 as T
@@ -809,6 +858,8 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
   val state = viewModel.uiState.collectAsState().value
   val localAvatarUri by viewModel.localAvatarUri.collectAsState()
   val tempAvatarUri by viewModel.tempAvatarUri.collectAsState()
+  val isOnline by remember { NetworkConnectivityObserver().isOnline }.collectAsState(initial = true)
+  val isUserLoggedIn = viewModel.isUserLoggedIn
 
   LaunchedEffect(Unit) { viewModel.loadOrEnsure() }
 
@@ -825,7 +876,18 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
       ProfileViewConfig.SelfProfileConfig(
           onEdit = viewModel::onEditClick,
           settings = settings,
-          canEditProfile = !state.isAnonymousUser)
+          canEditProfile = !state.isAnonymousUser,
+          onFollowingClick = {
+            if (!state.isAnonymousUser) {
+              onFollowingClick()
+            }
+          },
+          onFollowersClick = {
+            if (!state.isAnonymousUser) {
+              onFollowersClick()
+            }
+          },
+          isOnline = isOnline)
 
   ProfileScreen(
       uiState = state,
@@ -848,7 +910,9 @@ fun SelfProfileRoute(settings: () -> Unit = {}, goBack: () -> Unit = {}) {
               onTagInputFieldChange = viewModel::onTagInputFieldChange,
               onTagSubmit = viewModel::onTagAddition,
               onRemoveTag = viewModel::onTagDeletion,
-              goBackClick = goBack))
+              goBackClick = goBack),
+      isOnline = isOnline,
+      isUserLoggedIn = isUserLoggedIn)
 }
 
 @Composable
@@ -856,7 +920,6 @@ fun OtherUserProfileRoute(
     userId: String,
     goBack: () -> Unit = {},
 ) {
-  val context = LocalContext.current.applicationContext
   val auth = FirebaseAuth.getInstance()
 
   val factory =
@@ -877,23 +940,25 @@ fun OtherUserProfileRoute(
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
           if (modelClass.isAssignableFrom(ProfileSamplesViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ProfileSamplesViewModel(ownerId = userId, context = context, auth = auth) as T
+            return ProfileSamplesViewModel(ownerId = userId, auth = auth) as T
           }
           throw IllegalArgumentException("Unknown ViewModel class")
         }
       }
 
-  val viewModel: OtherProfileViewModel = viewModel(factory = factory)
+  val otherProfileViewModel: OtherProfileViewModel = viewModel(factory = factory)
   val samplesViewModel: ProfileSamplesViewModel = viewModel(factory = samplesFactory)
-  val state by viewModel.uiState.collectAsState()
+  val state by otherProfileViewModel.uiState.collectAsState()
+  val isOnline by remember { NetworkConnectivityObserver().isOnline }.collectAsState(initial = true)
 
   val viewConfig =
       ProfileViewConfig.OtherProfileConfig(
           isFollowing = state.isCurrentUserFollowing,
           isFollowActionInProgress = state.isFollowActionInProgress,
           canFollowTarget = !state.profile.isAnonymousUser && !state.isCurrentUserAnonymous,
-          onFollow = viewModel::onFollow,
-          errorMessage = state.errorMessage)
+          onFollow = otherProfileViewModel::onFollow,
+          errorMessage = state.errorMessage,
+          isOnline = isOnline)
 
   ProfileScreen(
       uiState = state.profile,
@@ -901,5 +966,5 @@ fun OtherUserProfileRoute(
       viewConfig = viewConfig,
       profileSamplesViewModel = samplesViewModel,
       callbacks = profileScreenCallbacks(goBackClick = goBack),
-  )
+      isOnline = isOnline)
 }

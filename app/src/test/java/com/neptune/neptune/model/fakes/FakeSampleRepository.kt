@@ -126,7 +126,8 @@ class FakeSampleRepository(initialSamples: List<Sample> = emptyList()) : SampleR
       sampleId: String,
       authorId: String,
       authorName: String,
-      text: String
+      text: String,
+      authorProfilePicUrl: String
   ) {
     addComment(sampleId, authorId, authorName, text, Timestamp.now())
   }

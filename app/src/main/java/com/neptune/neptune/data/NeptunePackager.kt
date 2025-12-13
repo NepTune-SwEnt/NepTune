@@ -37,18 +37,18 @@ class NeptunePackager(
         val durationRounded = round(durationSec * roundingFactor) / roundingFactor
         val configJson =
             """
-    {
-      "audioFiles": [
-        {
-          "name": "${audioFile.name}",
-          "volume": $volume,
-          "start": $startSeconds,
-          "duration": $durationRounded
-        }
-      ],
-      "parameters": []
-    }
-    """
+              {
+                "audioFiles": [
+                  {
+                    "name": "${audioFile.name}",
+                    "volume": $volume,
+                    "start": $startSeconds,
+                    "duration": $durationRounded
+                  }
+                ],
+                "parameters": []
+              }
+            """
                 .trimIndent()
         ZipOutputStream(BufferedOutputStream(FileOutputStream(zipFile))).use { zipOut ->
           // Add audio file entry

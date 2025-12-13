@@ -1,6 +1,5 @@
 package com.neptune.neptune
 
-import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,7 +14,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -26,6 +24,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.room.Room
+import com.neptune.neptune.data.MediaRepositoryImpl
+import com.neptune.neptune.data.local.MediaDb
+import com.neptune.neptune.domain.usecase.GetLibraryUseCase
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.resources.C
@@ -33,9 +35,10 @@ import com.neptune.neptune.ui.authentification.SignInScreen
 import com.neptune.neptune.ui.authentification.SignInViewModel
 import com.neptune.neptune.ui.feed.FeedScreen
 import com.neptune.neptune.ui.feed.FeedType
+import com.neptune.neptune.ui.follow.FollowListRoute
+import com.neptune.neptune.ui.follow.FollowListTab
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainViewModel
-import com.neptune.neptune.ui.main.factory
 import com.neptune.neptune.ui.messages.MessagesScreen
 import com.neptune.neptune.ui.messages.SelectMessagesScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
@@ -48,10 +51,11 @@ import com.neptune.neptune.ui.post.PostScreen
 import com.neptune.neptune.ui.profile.OtherUserProfileRoute
 import com.neptune.neptune.ui.profile.SelfProfileRoute
 import com.neptune.neptune.ui.projectlist.ProjectListScreen
+import com.neptune.neptune.ui.projectlist.ProjectListViewModel
+import com.neptune.neptune.ui.projectlist.ProjectListViewModelFactory
 import com.neptune.neptune.ui.sampler.SamplerScreen
 import com.neptune.neptune.ui.search.SearchScreen
 import com.neptune.neptune.ui.search.SearchViewModel
-import com.neptune.neptune.ui.search.searchScreenFactory
 import com.neptune.neptune.ui.settings.SettingsAccountScreen
 import com.neptune.neptune.ui.settings.SettingsCustomThemeScreen
 import com.neptune.neptune.ui.settings.SettingsScreen
@@ -108,23 +112,19 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun NeptuneApp(
-    settingsViewModel: SettingsViewModel =
-        SettingsViewModel(ThemeDataStore(LocalContext.current.applicationContext)),
+    settingsViewModel: SettingsViewModel = viewModel(),
     navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.SignIn.route,
 ) {
   val signInViewModel: SignInViewModel = viewModel()
-  val searchViewModel: SearchViewModel =
-      viewModel(
-          factory = searchScreenFactory(LocalContext.current.applicationContext as Application))
+  val searchViewModel: SearchViewModel = viewModel()
   val navigationActions = NavigationActions(navController)
   val navBackStackEntry by navController.currentBackStackEntryAsState()
   val currentRoute = navBackStackEntry?.destination?.route
   val importViewModel: ImportViewModel = viewModel(factory = importAppRoot())
   val currentScreen = navigationActions.currentScreen(currentRoute ?: startDestination)
 
-  val mainViewModel: MainViewModel =
-      viewModel(factory = factory(LocalContext.current.applicationContext as Application))
+  val mainViewModel: MainViewModel = viewModel()
 
   // Media Player values
   val mediaPlayer = remember { NeptuneMediaPlayer() }
@@ -163,7 +163,16 @@ fun NeptuneApp(
                 composable(Screen.Profile.route) {
                   SelfProfileRoute(
                       settings = { navigationActions.navigateTo(Screen.Settings) },
-                      goBack = { navigationActions.goBack() })
+                      goBack = { navigationActions.goBack() },
+                      onFollowersClick = {
+                        navigationActions.navigateTo(
+                            Screen.FollowList.createRoute(FollowListTab.FOLLOWERS))
+                      },
+                      onFollowingClick = {
+                        navigationActions.navigateTo(
+                            Screen.FollowList.createRoute(FollowListTab.FOLLOWING))
+                      },
+                  )
                 }
                 composable(
                     route = Screen.Edit.route + "/{zipFilePath}",
@@ -223,7 +232,22 @@ fun NeptuneApp(
                               defaultValue = "edit"
                             })) { backStackEntry ->
                       val purpose = backStackEntry.arguments?.getString("purpose") ?: "edit"
+                      val db = remember {
+                        Room.databaseBuilder(
+                                NepTuneApplication.appContext, MediaDb::class.java, "media.db")
+                            .build()
+                      }
+                      val mediaRepo = remember { MediaRepositoryImpl(db.mediaDao()) }
+                      val getLibraryUseCase = remember { GetLibraryUseCase(mediaRepo) }
+                      val vm: ProjectListViewModel =
+                          viewModel(
+                              factory =
+                                  ProjectListViewModelFactory(
+                                      getLibraryUseCase = getLibraryUseCase,
+                                      mediaRepository = mediaRepo,
+                                  ))
                       ProjectListScreen(
+                          projectListViewModel = vm,
                           onProjectClick = { projectItem ->
                             when (purpose) {
                               "post" -> {
@@ -278,11 +302,15 @@ fun NeptuneApp(
                       )
                     }
                 composable(Screen.SelectMessages.route) {
+                  val firebaseUser by signInViewModel.currentUser.collectAsState()
+                  val currentUid = firebaseUser?.uid ?: return@composable // prevent crash
+
                   SelectMessagesScreen(
                       goBack = { navigationActions.goBack() },
                       onSelectUser = { uid ->
                         navigationActions.navigateTo(Screen.Messages.createRoute(uid))
-                      })
+                      },
+                      currentUid = currentUid)
                 }
                 composable(
                     route = Screen.Messages.route,
@@ -307,6 +335,30 @@ fun NeptuneApp(
                           initialType = feedType,
                           goBack = { navigationActions.goBack() },
                           navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
+                          navigateToOtherUserProfile = { userId ->
+                            navigationActions.navigateTo(
+                                Screen.OtherUserProfile.createRoute(userId))
+                          })
+                    }
+                composable(
+                    route = Screen.FollowList.route,
+                    arguments = listOf(navArgument("initialTab") { type = NavType.StringType })) {
+                        backStackEntry ->
+                      val tabName = backStackEntry.arguments?.getString("initialTab")
+                      val initialTab =
+                          try {
+                            if (tabName != null) {
+                              FollowListTab.valueOf(tabName)
+                            } else {
+                              // By default, show Followers tab
+                              FollowListTab.FOLLOWERS
+                            }
+                          } catch (_: IllegalArgumentException) {
+                            FollowListTab.FOLLOWERS
+                          }
+                      FollowListRoute(
+                          initialTab = initialTab,
+                          goBack = { navigationActions.goBack() },
                           navigateToOtherUserProfile = { userId ->
                             navigationActions.navigateTo(
                                 Screen.OtherUserProfile.createRoute(userId))

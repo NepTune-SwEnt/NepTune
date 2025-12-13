@@ -139,7 +139,7 @@ open class StorageService(
 
     val newProcessedAudioPath =
       if (localProcessedUri != null) {
-        "processed_audios/$sampleId/${getFileNameFromUri(localProcessedUri)}"
+        "processed_audios/${sampleId}.wav"
       } else {
         ""
       }
@@ -238,6 +238,36 @@ open class StorageService(
       null
     }
   }
+
+  /**
+   * Download a file given its path
+   * @param outFile The path where we save
+   * @param onProgress for the download bar
+   */
+  suspend fun downloadFileByPath(
+    storagePath: String,
+    outFile: File,
+    onProgress: (Int) -> Unit = {}
+  ): File = withContext(ioDispatcher) {
+    require(storagePath.isNotBlank()) { "storagePath is blank" }
+
+    val ref = storageRef.child(storagePath)
+    if (!exists(ref)) throw IllegalArgumentException("File not found in storage at: $storagePath")
+
+    ref.getFile(outFile)
+      .addOnProgressListener { snap ->
+        val total = snap.totalByteCount
+        if (total > 0) {
+          val p = (100.0 * snap.bytesTransferred / total).toInt().coerceIn(0, 100)
+          onProgress(p)
+        }
+      }
+      .await()
+
+    onProgress(100)
+    outFile
+  }
+
 
   /**
    * Attempts to read the duration from the JSON. If it is 0, extracts the audio to measure it.

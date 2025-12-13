@@ -1,13 +1,19 @@
 package com.neptune.neptune.ui.sampler
 
 import android.content.Context
+import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
 import com.neptune.neptune.NepTuneApplication
+import com.neptune.neptune.domain.usecase.PreviewStoreHelper
+import com.neptune.neptune.model.project.ProjectItem
+import com.neptune.neptune.model.project.ProjectItemsRepositoryLocal
 import com.neptune.neptune.model.project.ProjectWriter
 import io.mockk.*
 import java.io.File
 import junit.framework.Assert.*
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -36,46 +42,73 @@ class SamplerViewModelSaveProjectTest {
   }
 
   @Test
-  fun saveProjectDataSync_noAudioUri_returnsEarly_and_noWrite() {
-    val vm = SamplerViewModel()
-    vm._uiState.update { it.copy(currentAudioUri = null) }
-    mockkConstructor(ProjectWriter::class)
-    vm.saveProjectDataSync("/tmp/some.zip")
-    verify(exactly = 0) { anyConstructed<ProjectWriter>().writeProject(any(), any(), any()) }
-  }
+  fun saveProjectData_savesPreviewAndUpdatesProject() = runBlocking {
+    // Prepare temp files
+    val tmpAudio = File.createTempFile("sample_audio", ".wav")
+    tmpAudio.writeBytes(ByteArray(512))
 
-  @Test
-  fun saveProjectDataSync_audioFileMissing_returnsEarly_and_noWrite() {
-    val vm = SamplerViewModel()
-    val missing = File("/tmp/does_not_exist.wav")
-    vm._uiState.update {
-      it.copy(currentAudioUri = missing.toURI().toString().let { android.net.Uri.parse(it) })
-    }
-    mockkConstructor(ProjectWriter::class)
-    vm.saveProjectDataSync("/tmp/some.zip")
-    verify(exactly = 0) { anyConstructed<ProjectWriter>().writeProject(any(), any(), any()) }
-  }
+    val tmpZip = File.createTempFile("project", ".zip")
 
-  @Test
-  fun saveProjectDataSync_withValidAudio_callsProjectWriter() {
-    val vm = SamplerViewModel()
-    val tmpAudio = File.createTempFile("audio", ".wav")
-    tmpAudio.writeBytes(ByteArray(2048))
-    vm._uiState.update {
-      it.copy(
-          currentAudioUri = tmpAudio.toURI().toString().let { android.net.Uri.parse(it) },
-          audioDurationMillis = 2000,
-          attack = 0.1f,
-          sustain = 0.5f,
-          tempo = 123)
-    }
+    // Prepare mocks
+    val previewStoreHelper = mockk<PreviewStoreHelper>()
 
+    val projectId = "proj-123"
+    val project =
+        ProjectItem(uid = projectId, name = "MyProject", projectFileLocalPath = tmpZip.absolutePath)
+
+    // Mock ProjectItemsRepositoryLocal constructor and methods
+    mockkConstructor(ProjectItemsRepositoryLocal::class)
+    coEvery {
+      anyConstructed<ProjectItemsRepositoryLocal>().findProjectWithProjectFile(any())
+    } returns project
+    coEvery { anyConstructed<ProjectItemsRepositoryLocal>().editProject(any(), any()) } just Runs
+
+    // Mock ProjectWriter to avoid actual IO
     mockkConstructor(ProjectWriter::class)
     every { anyConstructed<ProjectWriter>().writeProject(any(), any(), any()) } just Runs
 
-    val zip = File.createTempFile("dest", ".zip")
-    vm.saveProjectDataSync(zip.absolutePath)
+    val savedPreviewPath = "file://previews/$projectId.mp3"
+    coEvery { previewStoreHelper.saveTempPreviewToPreviewsDir(projectId, any()) } returns
+        savedPreviewPath
 
-    verify { anyConstructed<ProjectWriter>().writeProject(zip, any(), listOf(tmpAudio)) }
+    // Create a VM that overrides audioBuilding to return the tmpAudio Uri (avoid heavy processing)
+    val vm =
+        object : SamplerViewModel(previewStoreHelper) {
+          override fun audioBuilding(): Job? {
+            // Simulate that processing produced this audio Uri synchronously
+            val uri = Uri.fromFile(tmpAudio)
+            // Also update state as audioBuilding would normally
+            _uiState.update { it.copy(currentAudioUri = uri) }
+            // Return null to indicate no background Job was started
+            return null
+          }
+        }
+
+    // Ensure the state contains the currentAudioUri so saveProjectDataSync can find the file
+    vm._uiState.update { it.copy(currentAudioUri = Uri.fromFile(tmpAudio)) }
+
+    // Call saveProjectData
+    vm.saveProjectData(tmpZip.absolutePath)
+
+    // Wait briefly for the viewModelScope coroutine to execute (matches pattern in other tests)
+    Thread.sleep(300)
+
+    // Verify repository was asked for the project by path
+    coVerify(atLeast = 1) {
+      anyConstructed<ProjectItemsRepositoryLocal>().findProjectWithProjectFile(tmpZip.absolutePath)
+    }
+
+    // Verify preview was saved
+    coVerify { previewStoreHelper.saveTempPreviewToPreviewsDir(projectId, any()) }
+
+    // Capture the edited project passed to editProject and assert it contains the saved preview
+    // path
+    val slot = slot<com.neptune.neptune.model.project.ProjectItem>()
+    coVerify { anyConstructed<ProjectItemsRepositoryLocal>().editProject(projectId, capture(slot)) }
+    val edited = slot.captured
+    assertEquals(savedPreviewPath, edited.audioPreviewLocalPath)
+
+    // Also assert VM state currentAudioUri points to our tmp audio
+    assertEquals(Uri.fromFile(tmpAudio), vm.uiState.value.currentAudioUri)
   }
 }

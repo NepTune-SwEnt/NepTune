@@ -1,10 +1,10 @@
 package com.neptune.neptune.ui.profile
 
-import android.content.Context
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.R
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
@@ -32,7 +32,6 @@ class ProfileSamplesViewModel(
     private val ownerId: String,
     sampleRepo: SampleRepository = SampleRepositoryProvider.repository,
     profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
-    context: Context,
     explicitStorageService: StorageService? = null,
     explicitDownloadsFolder: File? = null,
     explicitIoDispatcher: CoroutineDispatcher? = null,
@@ -43,7 +42,6 @@ class ProfileSamplesViewModel(
         sampleRepo = sampleRepo,
         profileRepo = profileRepo,
         auth = auth,
-        context = context,
         storageService = explicitStorageService),
     SampleFeedController {
 
@@ -62,16 +60,18 @@ class ProfileSamplesViewModel(
         val storageService =
             explicitStorageService
                 ?: StorageService(
-                    FirebaseStorage.getInstance(context.getString(R.string.storage_path)))
+                    FirebaseStorage.getInstance(
+                        NepTuneApplication.appContext.getString(R.string.storage_path)))
         val downloadsFolder =
-            DownloadDirectoryProvider.resolveDownloadsDir(context, explicitDownloadsFolder)
+            DownloadDirectoryProvider.resolveDownloadsDir(
+                NepTuneApplication.appContext, explicitDownloadsFolder)
 
         SampleUiActions(
             repo = sampleRepo,
             storageService = storageService,
             profileRepo = profileRepo,
             downloadsFolder = downloadsFolder,
-            context = context,
+            context = NepTuneApplication.appContext,
             ioDispatcher = downloadDispatcher)
       }
 

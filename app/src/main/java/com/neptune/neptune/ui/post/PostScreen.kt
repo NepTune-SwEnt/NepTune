@@ -72,6 +72,7 @@ import com.neptune.neptune.data.rememberImagePickerLauncher
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.sample.Sample
+import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
 object PostScreenTestTags {
@@ -110,7 +111,7 @@ fun PostScreen(
 
   // This animation was taken from https://lottiefiles.com/free-animation/loading-qjrg8ygl9S
   val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.loading))
-
+  val isOnline by postViewModel.isOnline.collectAsState()
   val dynamicProperties =
       rememberLottieDynamicProperties(
           rememberLottieDynamicProperty(
@@ -176,251 +177,261 @@ fun PostScreen(
                       containerColor = NepTuneTheme.colors.background))
         },
         containerColor = NepTuneTheme.colors.background) { innerPadding ->
-
-          // box for the animation
-
           val scrollState = rememberScrollState()
 
           Column(
               modifier =
                   Modifier.fillMaxSize()
                       .padding(innerPadding)
-                      .padding(horizontal = 16.dp)
                       .verticalScroll(scrollState)
                       .testTag(PostScreenTestTags.POST_SCREEN),
               verticalArrangement = Arrangement.spacedBy(24.dp),
               horizontalAlignment = Alignment.CenterHorizontally) {
-                // Audio Preview
-                Box(
+                if (!isOnline) {
+                  OfflineBanner()
+                }
+                Column(
                     modifier =
-                        Modifier.padding(7.dp)
-                            .background(NepTuneTheme.colors.cardBackground)
-                            .fillMaxWidth()
-                            .clickable(
-                                onClick = {
-                                  mediaPlayer.togglePlay(
-                                      mediaPlayer.getUriFromSampleId(uiState.sample.id))
-                                })
-                            .aspectRatio(1.6f)
-                            .border(
-                                1.dp, NepTuneTheme.colors.onBackground, RoundedCornerShape(8.dp))
-                            .testTag(PostScreenTestTags.AUDIO_PREVIEW),
-                    contentAlignment = Alignment.Center) {
-                      if (localImageUri != null) {
-                        AsyncImage(
-                            model = localImageUri,
-                            contentDescription = "Sample's image",
-                            modifier = Modifier.align(Alignment.Center).fillMaxSize(),
-                            error = painterResource(id = R.drawable.waveform))
-                      } else {
-                        Icon(
-                            painter = painterResource(id = R.drawable.waveform),
-                            contentDescription = "Sample's image",
-                            tint = NepTuneTheme.colors.onBackground,
-                            modifier = Modifier.fillMaxWidth(0.7f).height(100.dp))
-                      }
-                      // Change image button
+                        Modifier.padding(horizontal = 16.dp), // On remet le padding horizontal ici
+                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally) {
+                      // Audio Preview
+                      Box(
+                          modifier =
+                              Modifier.padding(7.dp)
+                                  .background(NepTuneTheme.colors.cardBackground)
+                                  .fillMaxWidth()
+                                  .clickable(
+                                      onClick = {
+                                        mediaPlayer.togglePlay(
+                                            mediaPlayer.getUriFromSampleId(uiState.sample.id))
+                                      })
+                                  .aspectRatio(1.6f)
+                                  .border(
+                                      1.dp,
+                                      NepTuneTheme.colors.onBackground,
+                                      RoundedCornerShape(8.dp))
+                                  .testTag(PostScreenTestTags.AUDIO_PREVIEW),
+                          contentAlignment = Alignment.Center) {
+                            if (localImageUri != null) {
+                              AsyncImage(
+                                  model = localImageUri,
+                                  contentDescription = "Sample's image",
+                                  modifier = Modifier.align(Alignment.Center).fillMaxSize(),
+                                  error = painterResource(id = R.drawable.waveform))
+                            } else {
+                              Icon(
+                                  painter = painterResource(id = R.drawable.waveform),
+                                  contentDescription = "Sample's image",
+                                  tint = NepTuneTheme.colors.onBackground,
+                                  modifier = Modifier.fillMaxWidth(0.7f).height(100.dp))
+                            }
+                            // Change image button
+                            Button(
+                                onClick = { imagePickerLauncher.launch("image/*") },
+                                colors =
+                                    ButtonDefaults.buttonColors(
+                                        containerColor = NepTuneTheme.colors.onBackground,
+                                        contentColor = NepTuneTheme.colors.background),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                modifier =
+                                    Modifier.align(Alignment.BottomStart)
+                                        .padding(start = 8.dp, bottom = 6.dp)
+                                        .height(28.dp)
+                                        .testTag(PostScreenTestTags.CHANGE_IMAGE_BUTTON)) {
+                                  Icon(
+                                      painter = painterResource(id = R.drawable.changeicon),
+                                      contentDescription = "Change sample's image",
+                                      modifier = Modifier.size(20.dp))
+                                  Spacer(modifier = Modifier.width(4.dp))
+                                  Text(
+                                      "Change image",
+                                      style =
+                                          TextStyle(
+                                              fontSize = 18.sp,
+                                              fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                              fontWeight = FontWeight(200)))
+                                }
+
+                            // Duration text
+                            val durationSeconds = uiState.sample.durationSeconds
+                            val minutes = durationSeconds / 60
+                            val seconds = durationSeconds % 60
+                            val durationText = "%02d:%02d".format(minutes, seconds)
+                            Text(
+                                text = durationText,
+                                style =
+                                    TextStyle(
+                                        color = NepTuneTheme.colors.onBackground,
+                                        fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                        fontWeight = FontWeight(200),
+                                        fontSize = 36.sp),
+                                modifier =
+                                    Modifier.align(Alignment.BottomEnd)
+                                        .padding(end = 8.dp, bottom = 6.dp)
+                                        .testTag(PostScreenTestTags.DURATION_TEXT))
+                          }
+
+                      // Title Field
+                      TextField(
+                          value = uiState.sample.name,
+                          onValueChange = { postViewModel.updateTitle(it) },
+                          label = {
+                            Text(
+                                text = "Title",
+                                color = NepTuneTheme.colors.onBackground,
+                                style =
+                                    TextStyle(
+                                        fontSize = 28.sp,
+                                        fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                        fontWeight = FontWeight(200)))
+                          },
+                          textStyle =
+                              TextStyle(
+                                  color = NepTuneTheme.colors.smallText,
+                                  fontSize = 24.sp,
+                                  fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                  fontWeight = FontWeight(200)),
+                          modifier =
+                              Modifier.fillMaxWidth().testTag(PostScreenTestTags.TITLE_FIELD),
+                          singleLine = true,
+                          colors = postColors())
+
+                      // Description
+                      TextField(
+                          value = uiState.sample.description,
+                          onValueChange = { postViewModel.updateDescription(it) },
+                          label = {
+                            Text(
+                                text = "Introduce your sample",
+                                color = NepTuneTheme.colors.onBackground,
+                                style =
+                                    TextStyle(
+                                        fontSize = 26.sp,
+                                        fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                        fontWeight = FontWeight(200)))
+                          },
+                          textStyle =
+                              TextStyle(
+                                  color = NepTuneTheme.colors.smallText,
+                                  fontSize = 24.sp,
+                                  fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                  fontWeight = FontWeight(200)),
+                          modifier =
+                              Modifier.fillMaxWidth().testTag(PostScreenTestTags.DESCRIPTION_FIELD),
+                          singleLine = false,
+                          colors = postColors())
+
+                      // Tags
+                      TextField(
+                          value = TextFieldValue(tagText, selectionTagText),
+                          onValueChange = { newTagValue ->
+                            // Split by spaces and ensure each tag starts with #
+                            val fixedTags =
+                                newTagValue.text.split(" ").joinToString(" ") { tag ->
+                                  if (tag.isBlank()) ""
+                                  else if (!tag.startsWith("#")) "#$tag" else tag
+                                }
+
+                            // Update the text and the position
+                            tagText = fixedTags
+                            val newCursor =
+                                newTagValue.selection.end +
+                                    (fixedTags.length - newTagValue.text.length)
+                            selectionTagText = TextRange(newCursor.coerceIn(0, fixedTags.length))
+
+                            // Pass tags without # to ViewModel
+                            postViewModel.updateTags(fixedTags)
+                          },
+                          label = {
+                            Text(
+                                text = "Tags",
+                                color = NepTuneTheme.colors.onBackground,
+                                style =
+                                    TextStyle(
+                                        fontSize = 28.sp,
+                                        fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                        fontWeight = FontWeight(200)))
+                          },
+                          textStyle =
+                              TextStyle(
+                                  color = NepTuneTheme.colors.smallText,
+                                  fontSize = 24.sp,
+                                  fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                  fontWeight = FontWeight(200)),
+                          modifier = Modifier.fillMaxWidth().testTag(PostScreenTestTags.TAGS_FIELD),
+                          singleLine = true,
+                          colors = postColors())
+
+                      Spacer(modifier = Modifier.height(10.dp))
+
+                      // Audience
+                      Row(
+                          modifier =
+                              Modifier.fillMaxWidth()
+                                  .testTag(PostScreenTestTags.AUDIENCE_ROW)
+                                  .clickable { postViewModel.toggleAudience() }
+                                  .padding(8.dp),
+                          horizontalArrangement = Arrangement.SpaceBetween,
+                          verticalAlignment = Alignment.CenterVertically) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                              Icon(
+                                  painter = painterResource(id = R.drawable.audienceicon),
+                                  contentDescription = "audience",
+                                  tint = NepTuneTheme.colors.onBackground,
+                                  modifier = Modifier.size(30.dp))
+                              Spacer(modifier = Modifier.width(4.dp))
+                              Text(
+                                  text = "Audience:",
+                                  style =
+                                      TextStyle(
+                                          color = NepTuneTheme.colors.onBackground,
+                                          fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                          fontWeight = FontWeight(200),
+                                          fontSize = 28.sp))
+                            }
+                            Text(
+                                text = if (uiState.sample.isPublic) "Public" else "My followers",
+                                style =
+                                    TextStyle(
+                                        color = NepTuneTheme.colors.onBackground,
+                                        fontFamily = FontFamily(Font(R.font.markazi_text)),
+                                        fontWeight = FontWeight(200),
+                                        fontSize = 28.sp))
+                          }
+
+                      Spacer(modifier = Modifier.weight(1f))
+
+                      // Post Button
                       Button(
-                          onClick = { imagePickerLauncher.launch("image/*") },
+                          onClick = { postViewModel.submitPost() },
+                          enabled =
+                              uiState.sample.name.isNotBlank() &&
+                                  !uiState.isUploading &&
+                                  postViewModel.audioExist() &&
+                                  !postViewModel.isAnonymous &&
+                                  isOnline,
+                          modifier =
+                              Modifier.fillMaxWidth()
+                                  .height(55.dp)
+                                  .testTag(PostScreenTestTags.POST_BUTTON),
+                          shape = RoundedCornerShape(8.dp),
                           colors =
                               ButtonDefaults.buttonColors(
                                   containerColor = NepTuneTheme.colors.onBackground,
                                   contentColor = NepTuneTheme.colors.background),
-                          shape = RoundedCornerShape(10.dp),
-                          contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                          modifier =
-                              Modifier.align(Alignment.BottomStart)
-                                  .padding(start = 8.dp, bottom = 6.dp)
-                                  .height(28.dp)
-                                  .testTag(PostScreenTestTags.CHANGE_IMAGE_BUTTON)) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.changeicon),
-                                contentDescription = "Change sample's image",
-                                modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
+                          contentPadding = PaddingValues(0.dp)) {
                             Text(
-                                "Change image",
+                                "Post",
                                 style =
                                     TextStyle(
-                                        fontSize = 18.sp,
+                                        fontSize = 46.sp,
                                         fontFamily = FontFamily(Font(R.font.markazi_text)),
                                         fontWeight = FontWeight(200)))
                           }
-
-                      // Duration text
-                      val durationSeconds = uiState.sample.durationSeconds
-                      val minutes = durationSeconds / 60
-                      val seconds = durationSeconds % 60
-                      val durationText = "%02d:%02d".format(minutes, seconds)
-                      Text(
-                          text = durationText,
-                          style =
-                              TextStyle(
-                                  color = NepTuneTheme.colors.onBackground,
-                                  fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                  fontWeight = FontWeight(200),
-                                  fontSize = 36.sp),
-                          modifier =
-                              Modifier.align(Alignment.BottomEnd)
-                                  .padding(end = 8.dp, bottom = 6.dp)
-                                  .testTag(PostScreenTestTags.DURATION_TEXT))
+                      Spacer(modifier = Modifier.height(12.dp))
                     }
-
-                // Title Field
-                TextField(
-                    value = uiState.sample.name,
-                    onValueChange = { postViewModel.updateTitle(it) },
-                    label = {
-                      Text(
-                          text = "Title",
-                          color = NepTuneTheme.colors.onBackground,
-                          style =
-                              TextStyle(
-                                  fontSize = 28.sp,
-                                  fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                  fontWeight = FontWeight(200)))
-                    },
-                    textStyle =
-                        TextStyle(
-                            color = NepTuneTheme.colors.smallText,
-                            fontSize = 24.sp,
-                            fontFamily = FontFamily(Font(R.font.markazi_text)),
-                            fontWeight = FontWeight(200)),
-                    modifier = Modifier.fillMaxWidth().testTag(PostScreenTestTags.TITLE_FIELD),
-                    singleLine = true,
-                    colors = postColors())
-
-                // Description
-                TextField(
-                    value = uiState.sample.description,
-                    onValueChange = { postViewModel.updateDescription(it) },
-                    label = {
-                      Text(
-                          text = "Introduce your sample",
-                          color = NepTuneTheme.colors.onBackground,
-                          style =
-                              TextStyle(
-                                  fontSize = 26.sp,
-                                  fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                  fontWeight = FontWeight(200)))
-                    },
-                    textStyle =
-                        TextStyle(
-                            color = NepTuneTheme.colors.smallText,
-                            fontSize = 24.sp,
-                            fontFamily = FontFamily(Font(R.font.markazi_text)),
-                            fontWeight = FontWeight(200)),
-                    modifier =
-                        Modifier.fillMaxWidth().testTag(PostScreenTestTags.DESCRIPTION_FIELD),
-                    singleLine = false,
-                    colors = postColors())
-
-                // Tags
-                TextField(
-                    value = TextFieldValue(tagText, selectionTagText),
-                    onValueChange = { newTagValue ->
-                      // Split by spaces and ensure each tag starts with #
-                      val fixedTags =
-                          newTagValue.text.split(" ").joinToString(" ") { tag ->
-                            if (tag.isBlank()) "" else if (!tag.startsWith("#")) "#$tag" else tag
-                          }
-
-                      // Update the text and the position
-                      tagText = fixedTags
-                      val newCursor =
-                          newTagValue.selection.end + (fixedTags.length - newTagValue.text.length)
-                      selectionTagText = TextRange(newCursor.coerceIn(0, fixedTags.length))
-
-                      // Pass tags without # to ViewModel
-                      postViewModel.updateTags(fixedTags)
-                    },
-                    label = {
-                      Text(
-                          text = "Tags",
-                          color = NepTuneTheme.colors.onBackground,
-                          style =
-                              TextStyle(
-                                  fontSize = 28.sp,
-                                  fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                  fontWeight = FontWeight(200)))
-                    },
-                    textStyle =
-                        TextStyle(
-                            color = NepTuneTheme.colors.smallText,
-                            fontSize = 24.sp,
-                            fontFamily = FontFamily(Font(R.font.markazi_text)),
-                            fontWeight = FontWeight(200)),
-                    modifier = Modifier.fillMaxWidth().testTag(PostScreenTestTags.TAGS_FIELD),
-                    singleLine = true,
-                    colors = postColors())
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Audience
-                Row(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .testTag(PostScreenTestTags.AUDIENCE_ROW)
-                            .clickable { postViewModel.toggleAudience() }
-                            .padding(8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically) {
-                      Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.audienceicon),
-                            contentDescription = "audience",
-                            tint = NepTuneTheme.colors.onBackground,
-                            modifier = Modifier.size(30.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Audience:",
-                            style =
-                                TextStyle(
-                                    color = NepTuneTheme.colors.onBackground,
-                                    fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                    fontWeight = FontWeight(200),
-                                    fontSize = 28.sp))
-                      }
-                      Text(
-                          text = if (uiState.sample.isPublic) "Public" else "My followers",
-                          style =
-                              TextStyle(
-                                  color = NepTuneTheme.colors.onBackground,
-                                  fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                  fontWeight = FontWeight(200),
-                                  fontSize = 28.sp))
-                    }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                // Post Button
-                Button(
-                    onClick = { postViewModel.submitPost() },
-                    enabled =
-                        uiState.sample.name.isNotBlank() &&
-                            !uiState.isUploading &&
-                            postViewModel.audioExist() &&
-                            !postViewModel.isAnonymous,
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .height(55.dp)
-                            .testTag(PostScreenTestTags.POST_BUTTON),
-                    shape = RoundedCornerShape(8.dp),
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor = NepTuneTheme.colors.onBackground,
-                            contentColor = NepTuneTheme.colors.background),
-                    contentPadding = PaddingValues(0.dp)) {
-                      Text(
-                          "Post",
-                          style =
-                              TextStyle(
-                                  fontSize = 46.sp,
-                                  fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                  fontWeight = FontWeight(200)))
-                    }
-
-                Spacer(modifier = Modifier.height(12.dp))
               }
         }
   }

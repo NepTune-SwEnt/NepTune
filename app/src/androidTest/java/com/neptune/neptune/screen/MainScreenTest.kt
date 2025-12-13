@@ -19,7 +19,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
 import com.google.firebase.Timestamp
-import com.neptune.neptune.NepTuneApplication.Companion.appContext
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.FakeProfileRepository
@@ -30,6 +29,7 @@ import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.navigation.NavigationTestTags
+import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert
 import org.junit.Before
@@ -49,7 +49,8 @@ private val testSamples =
             likes = 2,
             usersLike = emptyList(),
             comments = 3,
-            downloads = 2),
+            downloads = 2,
+            isPublic = true),
         Sample(
             id = "sample2",
             name = "Followed Sample",
@@ -61,7 +62,8 @@ private val testSamples =
             likes = 2,
             usersLike = emptyList(),
             comments = 3,
-            downloads = 2))
+            downloads = 2,
+            isPublic = true))
 
 /**
  * Tests for the MainScreen.This has been written with the help of LLMs.
@@ -80,6 +82,8 @@ class MainScreenTest {
   private lateinit var fakeSampleRepo: FakeSampleRepository
   private var navigateToOtherUserProfileCallback: ((String) -> Unit)? = null
 
+  private var navigateToMessagesCallback: (() -> Unit)? = null
+
   @Before
   fun setup() {
     context = composeTestRule.activity.applicationContext
@@ -92,14 +96,14 @@ class MainScreenTest {
         MainViewModel(
             sampleRepo = fakeSampleRepo,
             profileRepo = fakeProfileRepo,
-            context = appContext,
             useMockData = false // Set to false to use the real logic with our fake repo
             )
     composeTestRule.setContent {
       CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
         MainScreen(
             mainViewModel = viewModel,
-            navigateToOtherUserProfile = { id -> navigateToOtherUserProfileCallback?.invoke(id) })
+            navigateToOtherUserProfile = { id -> navigateToOtherUserProfileCallback?.invoke(id) },
+            navigateToSelectMessages = { navigateToMessagesCallback?.invoke() })
       }
     }
     // Wait for the initial data to be loaded and UI to be ready
@@ -178,6 +182,21 @@ class MainScreenTest {
         .onAllNodesWithTag(MainScreenTestTags.SAMPLE_DOWNLOADS, true)
         .onFirst()
         .assertIsDisplayed()
+  }
+  /** Tests that clicking on the Messages button triggers the callback */
+  @Test
+  fun testClickingMessagesButtonTriggersCallback() {
+    var messagesClicked = false
+    navigateToMessagesCallback = { messagesClicked = true }
+
+    composeTestRule.waitForIdle()
+
+    composeTestRule
+        .onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON)
+        .assertHasClickAction()
+        .performClick()
+
+    assertTrue("Messages button click did not trigger callback", messagesClicked)
   }
 
   @Test

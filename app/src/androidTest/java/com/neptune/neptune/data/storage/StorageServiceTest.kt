@@ -183,7 +183,7 @@ class StorageServiceTest {
 
         Assert.assertEquals("samples/$sampleId.zip", updatedSample.storageZipPath)
         Assert.assertEquals("sample_image/$sampleId/$newImageName", updatedSample.storageImagePath)
-        Assert.assertEquals("processed_audios/$sampleId/new_sample.wav", updatedSample.storageProcessedSamplePath)
+        Assert.assertEquals("processed_audios/$sampleId.wav", updatedSample.storageProcessedSamplePath)
       }
 
   @Test

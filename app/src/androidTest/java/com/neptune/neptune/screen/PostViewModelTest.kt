@@ -96,7 +96,8 @@ class PostViewModelTest {
   @Test
   fun submitPostUploadsAndCompletes() = runBlocking {
     Firebase.auth.signOut()
-    Firebase.auth.createUserWithEmailAndPassword("post-test@example.com", "password").await()
+    val uniqueEmail = "post-test-${System.currentTimeMillis()}@example.com"
+    Firebase.auth.createUserWithEmailAndPassword(uniqueEmail, "password").await()
 
     // --- DATA ---
     val projectId = "proj_integration_test"

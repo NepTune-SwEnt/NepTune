@@ -10,4 +10,6 @@ interface MediaRepository {
   fun observeAll(): Flow<List<MediaItem>>
 
   suspend fun upsert(item: MediaItem)
+
+  suspend fun delete(item: MediaItem)
 }

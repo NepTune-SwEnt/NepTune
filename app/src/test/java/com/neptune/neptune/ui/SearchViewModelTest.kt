@@ -1,8 +1,5 @@
 package com.neptune.neptune.ui
 
-import android.app.Application
-import android.content.Context
-import androidx.test.core.app.ApplicationProvider
 import com.google.firebase.Timestamp
 import com.neptune.neptune.model.fakes.FakeProfileRepository
 import com.neptune.neptune.model.fakes.FakeSampleRepository
@@ -24,16 +21,12 @@ import org.robolectric.annotation.Config
 class SearchViewModelTest {
   private val fakeSampleRepo = FakeSampleRepository()
   private val fakeProfileRepo = FakeProfileRepository()
-  private val appContext: Context = ApplicationProvider.getApplicationContext<Application>()
 
   @Test
   fun searchWithEmptyQueryLoadsAllSamples() {
     val vm =
         SearchViewModel(
-            sampleRepo = fakeSampleRepo,
-            profileRepo = fakeProfileRepo,
-            context = appContext,
-            useMockData = true)
+            sampleRepo = fakeSampleRepo, profileRepo = fakeProfileRepo, useMockData = true)
 
     vm.search("") // should call loadData() then early return
 
@@ -46,10 +39,7 @@ class SearchViewModelTest {
   fun searchMatchesByNameDescriptionAndTagsNature() {
     val vm =
         SearchViewModel(
-            sampleRepo = fakeSampleRepo,
-            profileRepo = fakeProfileRepo,
-            context = appContext,
-            useMockData = true)
+            sampleRepo = fakeSampleRepo, profileRepo = fakeProfileRepo, useMockData = true)
 
     vm.search("nature")
 
@@ -66,10 +56,7 @@ class SearchViewModelTest {
   fun searchMatchesByTagIgnoringHashAndCase() {
     val vm =
         SearchViewModel(
-            sampleRepo = fakeSampleRepo,
-            profileRepo = fakeProfileRepo,
-            context = appContext,
-            useMockData = true)
+            sampleRepo = fakeSampleRepo, profileRepo = fakeProfileRepo, useMockData = true)
 
     vm.search("#NATURE") // hash and upper-case should be normalized away
 
@@ -81,10 +68,7 @@ class SearchViewModelTest {
   fun searchMatchesByDescriptionSea() {
     val vm =
         SearchViewModel(
-            sampleRepo = fakeSampleRepo,
-            profileRepo = fakeProfileRepo,
-            context = appContext,
-            useMockData = true)
+            sampleRepo = fakeSampleRepo, profileRepo = fakeProfileRepo, useMockData = true)
 
     vm.search("sea")
 
@@ -98,10 +82,7 @@ class SearchViewModelTest {
   fun consecutiveSearchesResetBaseDataEachTime() {
     val vm =
         SearchViewModel(
-            sampleRepo = fakeSampleRepo,
-            profileRepo = fakeProfileRepo,
-            context = appContext,
-            useMockData = true)
+            sampleRepo = fakeSampleRepo, profileRepo = fakeProfileRepo, useMockData = true)
 
     vm.search("nature")
     val afterNature = vm.samples.value.map { it.id }.sorted()
@@ -117,10 +98,7 @@ class SearchViewModelTest {
   fun clearingQueryAfterFilterRestoresAllResults() {
     val vm =
         SearchViewModel(
-            sampleRepo = fakeSampleRepo,
-            profileRepo = fakeProfileRepo,
-            context = appContext,
-            useMockData = true)
+            sampleRepo = fakeSampleRepo, profileRepo = fakeProfileRepo, useMockData = true)
 
     vm.search("sea")
     assertEquals(listOf("2", "3"), vm.samples.value.map { it.id }.sorted())
@@ -134,10 +112,7 @@ class SearchViewModelTest {
   fun searchWithNoMatchesReturnsEmptyList() {
     val vm =
         SearchViewModel(
-            sampleRepo = fakeSampleRepo,
-            profileRepo = fakeProfileRepo,
-            context = appContext,
-            useMockData = true)
+            sampleRepo = fakeSampleRepo, profileRepo = fakeProfileRepo, useMockData = true)
 
     vm.search("nope-no-match-123")
 
@@ -150,10 +125,7 @@ class SearchViewModelTest {
   fun normalizeRemovesNoiseAndLowercases() {
     val vm =
         SearchViewModel(
-            sampleRepo = fakeSampleRepo,
-            profileRepo = fakeProfileRepo,
-            context = appContext,
-            useMockData = true)
+            sampleRepo = fakeSampleRepo, profileRepo = fakeProfileRepo, useMockData = true)
     assertEquals("nature", vm.normalize(" N a-T_U R E!! "))
     assertEquals("nature", vm.normalize("#Nature"))
     assertEquals("sea", vm.normalize(" s.e-a "))
@@ -164,10 +136,7 @@ class SearchViewModelTest {
   fun normalizeTrimsWhitespace() {
     val vm =
         SearchViewModel(
-            sampleRepo = fakeSampleRepo,
-            profileRepo = fakeProfileRepo,
-            context = appContext,
-            useMockData = true)
+            sampleRepo = fakeSampleRepo, profileRepo = fakeProfileRepo, useMockData = true)
     assertEquals("abc", vm.normalize("  abc  "))
   }
 
@@ -175,10 +144,7 @@ class SearchViewModelTest {
   fun observeCommentsLoadsCommentsIntoViewModel() {
     val vm =
         SearchViewModel(
-            sampleRepo = fakeSampleRepo,
-            profileRepo = fakeProfileRepo,
-            context = appContext,
-            useMockData = true)
+            sampleRepo = fakeSampleRepo, profileRepo = fakeProfileRepo, useMockData = true)
 
     val sampleId = "21"
 
@@ -209,10 +175,7 @@ class SearchViewModelTest {
   fun loadUsernameUpdatesUsername() = runTest {
     val vm =
         SearchViewModel(
-            sampleRepo = fakeSampleRepo,
-            profileRepo = fakeProfileRepo,
-            context = appContext,
-            useMockData = true)
+            sampleRepo = fakeSampleRepo, profileRepo = fakeProfileRepo, useMockData = true)
 
     val userId = "u1"
 
@@ -226,10 +189,7 @@ class SearchViewModelTest {
   fun addCommentAddsCommentAndUpdatesUsernames() = runTest {
     val vm =
         SearchViewModel(
-            sampleRepo = fakeSampleRepo,
-            profileRepo = fakeProfileRepo,
-            context = appContext,
-            useMockData = true)
+            sampleRepo = fakeSampleRepo, profileRepo = fakeProfileRepo, useMockData = true)
 
     val sampleId = "21"
 

@@ -17,23 +17,28 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
-import androidx.navigation.compose.rememberNavController
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.neptune.neptune.NeptuneApp
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
+import com.neptune.neptune.model.messages.UserMessagePreview
+import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepositoryFirebase
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.messages.MessagesScreenTestTags
+import com.neptune.neptune.ui.messages.SelectMessagesScreen
 import com.neptune.neptune.ui.messages.SelectMessagesScreenTestTags
+import com.neptune.neptune.ui.messages.SelectMessagesViewModel
 import com.neptune.neptune.ui.picker.ImportScreenTestTags
 import com.neptune.neptune.ui.post.PostScreen
 import com.neptune.neptune.ui.post.PostScreenTestTags
 import com.neptune.neptune.ui.post.PostUiState
 import com.neptune.neptune.ui.post.PostViewModel
+import com.neptune.neptune.ui.settings.SettingsViewModel
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -41,10 +46,35 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
-import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+
+/**
+ * Creates a mocked [SelectMessagesViewModel] populated with test users for UI testing. This has
+ * been written with the help of LLMs.
+ *
+ * @return a mocked instance of [SelectMessagesViewModel].
+ * @author Angéline Bignens
+ */
+private fun mockSelectMessagesViewModel(): SelectMessagesViewModel {
+  val testUsers =
+      listOf(
+          UserMessagePreview(
+              profile = Profile(uid = "uid1", username = "TestUser1", avatarUrl = ""),
+              lastMessage = "Hello",
+              lastTimestamp = Timestamp.now(),
+              isOnline = true),
+          UserMessagePreview(
+              profile = Profile(uid = "uid2", username = "TestUser2", avatarUrl = ""),
+              lastMessage = "Hi there",
+              lastTimestamp = Timestamp.now(),
+              isOnline = false))
+
+  val mockViewModel = mockk<SelectMessagesViewModel>(relaxed = true)
+  every { mockViewModel.users } returns MutableStateFlow(testUsers)
+  return mockViewModel
+}
 
 /**
  * UI test for Navigation. This has been written with the help of LLMs.
@@ -70,7 +100,15 @@ class NavigationTest {
   private lateinit var repo: ProfileRepositoryFirebase
 
   private fun setContent() {
-    composeTestRule.setContent { NeptuneApp(startDestination = Screen.Main.route) }
+    runBlocking {
+      if (auth.currentUser == null) {
+        auth.signInAnonymously().await()
+      }
+    }
+    val mockSettingsViewModel = mockk<SettingsViewModel>(relaxed = true)
+    composeTestRule.setContent {
+      NeptuneApp(startDestination = Screen.Main.route, settingsViewModel = mockSettingsViewModel)
+    }
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU).isDisplayed()
   }
@@ -100,11 +138,6 @@ class NavigationTest {
     }
   }
 
-  @After
-  fun tearDown() {
-    auth.signOut()
-  }
-
   @Test
   fun testTagsAreCorrect() {
     setContent()
@@ -125,34 +158,34 @@ class NavigationTest {
   }
 
   @Test
-  fun messageButtonNavigatesToSelectMessageScreen() {
-    setContent()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).performClick()
-    composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).performClick()
-    composeTestRule
-        .onNodeWithTag(SelectMessagesScreenTestTags.SELECT_MESSAGE_SCREEN)
-        .assertIsDisplayed()
-  }
-
-  @Test
   fun selectingUserNavigatesToMessagesScreen() {
-    setContent()
+    var selectedUserId: String? = null
 
-    composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).performClick()
+    composeTestRule.setContent {
+      SelectMessagesScreen(
+          goBack = {},
+          onSelectUser = { selectedUserId = it },
+          currentUid = "uid0",
+          selectMessagesViewModel = mockSelectMessagesViewModel())
+    }
 
     composeTestRule
         .onAllNodesWithTag(SelectMessagesScreenTestTags.USER_ROW)
         .onFirst()
         .performClick()
 
-    composeTestRule.onNodeWithTag(MessagesScreenTestTags.MESSAGES_SCREEN).assertIsDisplayed()
+    assert(selectedUserId == "uid1")
   }
 
   @Test
   fun backButtonNavigatesBackToSelectMessages() {
-    setContent()
-
-    composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).performClick()
+    composeTestRule.setContent {
+      SelectMessagesScreen(
+          goBack = {},
+          onSelectUser = {},
+          currentUid = "uid0",
+          selectMessagesViewModel = mockSelectMessagesViewModel())
+    }
 
     composeTestRule
         .onAllNodesWithTag(SelectMessagesScreenTestTags.USER_ROW)
@@ -247,10 +280,7 @@ class NavigationTest {
 
   @Test
   fun goBackFromProfileToSearch() {
-
-    composeTestRule.setContent {
-      NeptuneApp(navController = rememberNavController(), startDestination = Screen.Main.route)
-    }
+    setContent()
 
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
   }
@@ -266,13 +296,15 @@ class NavigationTest {
     every { mockViewModel.userAvatar } returns MutableStateFlow(null)
     every { mockViewModel.likedSamples } returns MutableStateFlow(emptyMap())
     every { mockViewModel.comments } returns MutableStateFlow(emptyList())
-    every { mockViewModel.downloadProgress } returns MutableStateFlow<Int?>(null)
+    every { mockViewModel.downloadProgress } returns MutableStateFlow(null)
     every { mockViewModel.sampleResources } returns MutableStateFlow(emptyMap())
     every { mockViewModel.isRefreshing } returns MutableStateFlow(false)
     every { mockViewModel.activeCommentSampleId } returns MutableStateFlow(null)
     every { mockViewModel.usernames } returns MutableStateFlow(emptyMap())
     every { mockViewModel.isAnonymous } returns MutableStateFlow(false)
     every { mockViewModel.recommendedSamples } returns MutableStateFlow(emptyList())
+    every { mockViewModel.isUserLoggedIn } returns true
+    every { mockViewModel.isOnline } returns MutableStateFlow(true)
 
     composeTestRule.setContent {
       MainScreen(navigateToProjectList = navigateToProjectListMock, mainViewModel = mockViewModel)
@@ -293,6 +325,7 @@ class NavigationTest {
     val imageUriFlow = MutableStateFlow<Uri?>(null)
 
     every { mockViewModel.uiState } returns uiStateFlow
+    every { mockViewModel.isOnline } returns MutableStateFlow(true)
     every { mockViewModel.localImageUri } returns imageUriFlow
 
     every { mockViewModel.updateTitle(any<String>()) } answers

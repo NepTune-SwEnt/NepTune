@@ -26,6 +26,9 @@ class SignInScreenTest {
 
   /** Helper function to set up the Composable with a mocked ViewModel. */
   private fun setContent(signInViewModel: SignInViewModel, navigateMain: () -> Unit = {}) {
+    if (signInViewModel.isOnline !is MutableStateFlow) {
+      every { signInViewModel.isOnline } returns MutableStateFlow(true)
+    }
     composeTestRule.setContent {
       SignInScreen(signInViewModel = signInViewModel, navigateMain = navigateMain)
     }
@@ -143,6 +146,7 @@ class SignInScreenTest {
           every { initialize(any(), capture(navigateLambdaSlot), any()) } returns Unit
           every { signInStatus } returns MutableStateFlow(SignInStatus.SIGNED_OUT)
           every { emailAuthUiState } returns MutableStateFlow(EmailAuthUiState())
+          every { isOnline } returns MutableStateFlow(true)
         }
 
     val mockNavigateMain: () -> Unit = mockk(relaxed = true)

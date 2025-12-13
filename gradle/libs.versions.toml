@@ -36,6 +36,7 @@ uiDesktop = "1.7.0"
 
 tarsosDspCore = "2.5"
 tarsosDspJvm = "2.5"
+firebaseDatabaseKtxVersion = "21.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -90,6 +91,7 @@ okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 
 tarsos-dsp-core = { module = "be.tarsos.dsp:core", version.ref = "tarsosDspCore" }
 tarsos-dsp-jvm = { module = "be.tarsos.dsp:jvm", version.ref = "tarsosDspJvm" }
+google-firebase-database-ktx = { group = "com.google.firebase", name = "firebase-database-ktx", version.ref = "firebaseDatabaseKtxVersion" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

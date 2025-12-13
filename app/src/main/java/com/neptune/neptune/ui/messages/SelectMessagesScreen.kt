@@ -24,6 +24,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,11 +37,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.neptune.neptune.R
 import com.neptune.neptune.model.messages.UserMessagePreview
+import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
+import com.neptune.neptune.util.NetworkConnectivityObserver
 import com.neptune.neptune.util.formatTime
 
 object SelectMessagesScreenTestTags {
@@ -59,6 +64,23 @@ object SelectMessagesScreenTestTags {
 }
 
 /**
+ * Factory used to create a [SelectMessagesViewModel] instance with a specific user ID. This has
+ * been written with the help of LLMs.
+ *
+ * @param currentUid the ID of the current user.
+ * @author Angéline Bignens
+ */
+class SelectMessagesViewModelFactory(private val currentUid: String) : ViewModelProvider.Factory {
+
+  override fun <T : ViewModel> create(modelClass: Class<T>): T {
+    if (modelClass.isAssignableFrom(SelectMessagesViewModel::class.java)) {
+      @Suppress("UNCHECKED_CAST") return SelectMessagesViewModel(currentUid) as T
+    }
+    throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+  }
+}
+
+/**
  * Composable function representing the Select Message Screen. This has been written with the help
  * of LLMs.
  *
@@ -69,9 +91,12 @@ object SelectMessagesScreenTestTags {
 fun SelectMessagesScreen(
     goBack: () -> Unit,
     onSelectUser: (String) -> Unit,
-    selectMessagesViewModel: SelectMessagesViewModel = viewModel()
+    currentUid: String,
+    selectMessagesViewModel: SelectMessagesViewModel =
+        viewModel(factory = SelectMessagesViewModelFactory(currentUid))
 ) {
   val users by selectMessagesViewModel.users.collectAsState()
+  val isOnline by remember { NetworkConnectivityObserver().isOnline }.collectAsState(initial = true)
   Column(
       modifier =
           Modifier.fillMaxSize()
@@ -112,6 +137,10 @@ fun SelectMessagesScreen(
             color = NepTuneTheme.colors.onBackground.copy(alpha = 0.1f),
             modifier = Modifier.testTag(SelectMessagesScreenTestTags.TOP_DIVIDER))
 
+        if (!isOnline) {
+          OfflineBanner()
+        }
+
         // When no conversations
         if (users.isEmpty()) {
           Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -128,7 +157,7 @@ fun SelectMessagesScreen(
           LazyColumn(
               modifier = Modifier.fillMaxSize().testTag(SelectMessagesScreenTestTags.USER_LIST),
               verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                items(users) { user ->
+                items(users, key = { it.profile.uid }) { user ->
                   UserMessagePreviewRow(user = user, onClick = { onSelectUser(user.uid) })
                 }
               }
@@ -161,13 +190,19 @@ fun UserMessagePreviewRow(user: UserMessagePreview, onClick: () -> Unit) {
           // Online / Offline dot
           Box(
               modifier =
-                  Modifier.size(12.dp)
+                  Modifier.size(14.dp)
                       .clip(CircleShape)
-                      .background(
-                          color =
-                              if (user.isOnline) NepTuneTheme.colors.online
-                              else NepTuneTheme.colors.offline)
-                      .testTag(SelectMessagesScreenTestTags.ONLINE_INDICATOR))
+                      .background(NepTuneTheme.colors.background)
+                      .padding(2.dp)) {
+                Box(
+                    modifier =
+                        Modifier.fillMaxSize()
+                            .clip(CircleShape)
+                            .background(
+                                if (user.isOnline) NepTuneTheme.colors.online
+                                else NepTuneTheme.colors.offline)
+                            .testTag(SelectMessagesScreenTestTags.ONLINE_INDICATOR))
+              }
         }
 
         Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {

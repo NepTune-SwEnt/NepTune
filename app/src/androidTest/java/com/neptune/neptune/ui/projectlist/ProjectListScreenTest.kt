@@ -1,6 +1,7 @@
 // Kotlin
 package com.neptune.neptune.ui.projectlist
 
+import android.net.Uri
 import android.util.Log
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
@@ -15,9 +16,14 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepositoryVar
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryCompose
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -32,6 +38,16 @@ class ProjectListScreenTest {
   private lateinit var localRepository: ProjectItemsRepositoryVar
   private lateinit var cloudRepository: ProjectItemsRepositoryVar
   private val navCalls = mutableListOf<String>()
+  // Shared fake player used for all tests so we don't call setContent more than once
+  class FakePlayer : NeptuneMediaPlayer() {
+    var lastToggled: Uri? = null
+
+    override fun togglePlay(uri: Uri) {
+      lastToggled = uri
+    }
+  }
+
+  private lateinit var fakePlayer: FakePlayer
 
   @Before
   fun setUp() {
@@ -63,18 +79,33 @@ class ProjectListScreenTest {
               isFavorite = false,
               lastUpdated = Timestamp(3, 0)))
     }
+    val mockUser = mockk<FirebaseUser>(relaxed = true)
+    val mockAuth = mockk<FirebaseAuth>(relaxed = true)
+    every { mockAuth.currentUser } returns mockUser
 
     viewModel =
-        ProjectListViewModel(TotalProjectItemsRepositoryCompose(localRepository, cloudRepository))
+        ProjectListViewModel(
+            projectRepository =
+                TotalProjectItemsRepositoryCompose(localRepository, cloudRepository),
+            auth = mockAuth)
 
-    // Single setContent call per test lifecycle — inject navCalls collector here
+    // Initialize shared fake player; each test will call setContent() once
+    fakePlayer = FakePlayer()
+  }
+
+  // Call at the start of each test to set the Compose content exactly once for that test
+  private fun setContentOnce() {
     composeTestRule.setContent {
-      ProjectListScreen(projectListViewModel = viewModel, onProjectClick = { navCalls.add("2") })
+      ProjectListScreen(
+          projectListViewModel = viewModel,
+          onProjectClick = { navCalls.add("2") },
+          mediaPlayer = fakePlayer)
     }
   }
 
   @Test
   fun openingProjectCallsNavigate() {
+    setContentOnce()
     // Click on project "Fav" card
     composeTestRule.onNodeWithTag("project_2").performClick()
 
@@ -84,6 +115,7 @@ class ProjectListScreenTest {
 
   @Test
   fun sortedListShowsFavoritesFirstAndByDate() {
+    setContentOnce()
     composeTestRule.waitForIdle()
     // After view model sorts: "Fav" should be first, then "New", then "Old"
     val nameNodes =
@@ -96,6 +128,7 @@ class ProjectListScreenTest {
 
   @Test
   fun favoriteToggleUpdatesOrder() {
+    setContentOnce()
     composeTestRule.waitForIdle()
     // Initially Fav is first
     composeTestRule
@@ -116,6 +149,7 @@ class ProjectListScreenTest {
 
   @Test
   fun renamingProjectUpdatesUi() {
+    setContentOnce()
     // Open menu for project 1 and choose Rename
     composeTestRule.onNodeWithTag("menu_1").performClick()
     composeTestRule.onNodeWithTag(ProjectListScreenTestTags.RENAME_BUTTON).performClick()
@@ -133,6 +167,7 @@ class ProjectListScreenTest {
 
   @Test
   fun changeDescriptionUpdatesRepository() {
+    setContentOnce()
     val newDesc = "Updated description from test"
 
     // Open menu for project 3 and choose Change description
@@ -164,6 +199,7 @@ class ProjectListScreenTest {
 
   @Test
   fun deleteProjectRemovesItemFromUi() {
+    setContentOnce()
     // Delete project 1
     composeTestRule.onNodeWithTag("menu_1").performClick()
     composeTestRule.onNodeWithTag(ProjectListScreenTestTags.DELETE_BUTTON).performClick()
@@ -177,6 +213,7 @@ class ProjectListScreenTest {
 
   @Test
   fun testTagsAreCorrect() {
+    setContentOnce()
     composeTestRule.onNodeWithTag(ProjectListScreenTestTags.PROJECT_LIST_SCREEN).assertIsDisplayed()
     composeTestRule.onNodeWithTag(ProjectListScreenTestTags.PROJECT_LIST).assertIsDisplayed()
     composeTestRule.onNodeWithTag(ProjectListScreenTestTags.SEARCH_BAR).assertIsDisplayed()
@@ -186,6 +223,7 @@ class ProjectListScreenTest {
   /** Tests that you can type on the search bar */
   @Test
   fun searchbarCanType() {
+    setContentOnce()
     // Simulate typing
     composeTestRule
         .onNodeWithTag(ProjectListScreenTestTags.SEARCH_TEXT_FIELD)
@@ -199,10 +237,21 @@ class ProjectListScreenTest {
   /** Tests that the search icon exists and that the topBar has the right default text */
   @Test
   fun searchbarHasDefaultText() {
+    setContentOnce()
 
     // Assert that the search icon exist
     composeTestRule.onNodeWithContentDescription("Search Icon").assertExists()
 
     composeTestRule.onNode(hasText("Search for a Project")).assertIsDisplayed()
+  }
+
+  @Test
+  fun playButtonInvokesMediaPlayer() {
+    setContentOnce()
+    // Click the play button for project 2 (uses shared fakePlayer from setUp)
+    composeTestRule.onNodeWithTag("play_2").performClick()
+
+    // Ensure togglePlay was invoked
+    assert(fakePlayer.lastToggled != null)
   }
 }

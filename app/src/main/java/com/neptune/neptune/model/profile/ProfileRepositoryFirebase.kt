@@ -8,6 +8,7 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.Transaction
 import com.google.firebase.functions.FirebaseFunctions
 import com.neptune.neptune.model.recommendation.RecoUserProfile
@@ -47,7 +48,8 @@ class ProfileRepositoryFirebase(
 
   /** Returns the current authenticated user's profile, or null if none exists. */
   override suspend fun getCurrentProfile(): Profile? {
-    return getProfile(requireCurrentUid())
+    val uid = auth.currentUser?.uid ?: return null
+    return getProfile(uid)
   }
 
   /** Returns the profile corresponding to the given user uid, or null if none exists. */
@@ -74,6 +76,26 @@ class ProfileRepositoryFirebase(
         }
     awaitClose { reg.remove() }
     // =====================================================
+  }
+
+  /**
+   * Observes all the Profiles. This has been written with the help of LLMs.
+   *
+   * @author Angéline Bignens
+   */
+  override fun observeAllProfiles(): Flow<List<Profile?>> = callbackFlow {
+    val reg =
+        profiles.addSnapshotListener { snap, err ->
+          if (err != null) {
+            trySend(emptyList())
+            return@addSnapshotListener
+          }
+
+          val profilesList = snap?.documents?.map { it.toProfileOrNull() } ?: emptyList()
+          trySend(profilesList)
+        }
+
+    awaitClose { reg.remove() }
   }
 
   override suspend fun unfollowUser(uid: String) {
@@ -132,6 +154,7 @@ class ProfileRepositoryFirebase(
   }
 
   override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
+    val uid = auth.currentUser?.uid ?: return null
     val profile = getCurrentProfile()
 
     // 1) Try to read tagsWeight map
@@ -152,7 +175,7 @@ class ProfileRepositoryFirebase(
         tagsWeight[tag] = 1.0
       }
     }
-    return RecoUserProfile(uid = requireCurrentUid(), tagsWeight = tagsWeight)
+    return RecoUserProfile(uid = uid, tagsWeight = tagsWeight)
   }
 
   /**
@@ -436,4 +459,46 @@ class ProfileRepositoryFirebase(
 
   /** Converts an input string to a valid username base (lowercase, alphanumeric + underscores). */
   private fun toUsernameBase(s: String) = s.lowercase().replace("[^a-z0-9_]".toRegex(), "")
+
+  /**
+   * Searches for users. If [query] is empty, returns a list of all users ordered by subscribers.
+   * Otherwise, returns users whose username OR name contains the given query, sorted by subscribers
+   * descending.
+   *
+   * WARNING: This is a very inefficient implementation that is not suitable for production. It
+   * downloads all profiles and filters them in memory. For a scalable solution, use a search
+   * service like Algolia or Elasticsearch.
+   *
+   * @param query the string to search for, or empty string for all users
+   * @return a list of matching profiles
+   */
+  override suspend fun searchUsers(query: String): List<Profile> {
+    return try {
+      if (query.isBlank()) {
+        // Return top 50 users by subscriber count
+        profiles
+            .orderBy("subscribers", Query.Direction.DESCENDING)
+            .limit(50)
+            .get()
+            .await()
+            .mapNotNull { it.toProfileOrNull() }
+            .filter { !it.isAnonymous }
+      } else {
+        val normalizedQuery = query.lowercase()
+
+        val allUsers = profiles.get().await().mapNotNull { it.toProfileOrNull() }
+
+        allUsers
+            .filter {
+              !it.isAnonymous &&
+                  (it.username.lowercase().contains(normalizedQuery) ||
+                      (it.name ?: "").lowercase().contains(normalizedQuery))
+            }
+            .sortedByDescending { it.subscribers }
+      }
+    } catch (e: Exception) {
+      Log.e("ProfileRepository", "Error searching users", e)
+      emptyList()
+    }
+  }
 }
