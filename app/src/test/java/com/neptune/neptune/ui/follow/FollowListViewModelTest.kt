@@ -46,6 +46,12 @@ class FollowListViewModelTest {
     return auth
   }
 
+  private fun mockAuthNoUser() {
+    mockkStatic(FirebaseAuth::class)
+    val auth = mockk<FirebaseAuth> { every { currentUser } returns null }
+    every { FirebaseAuth.getInstance() } returns auth
+  }
+
   @After
   fun tearDown() {
     unmockkAll()
@@ -209,6 +215,40 @@ class FollowListViewModelTest {
       }
 
   @Test
+  fun loadFollowersWithNullUidSetsErrorAndStopsLoading() =
+      runTest(dispatcher) {
+        mockAuthNoUser()
+        val viewModel =
+            FollowListViewModel(
+                repo = FakeProfileRepository(), initialTab = FollowListTab.FOLLOWERS)
+
+        val method = viewModel::class.java.getDeclaredMethod("loadFollowers")
+        method.isAccessible = true
+        method.invoke(viewModel)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals("User not authenticated. Please sign in.", state.errorMessage)
+        assertFalse(state.isLoadingFollowers)
+      }
+
+  @Test
+  fun loadFollowersFailureSetsErrorMessage() =
+      runTest(dispatcher) {
+        mockAuth()
+        val viewModel =
+            FollowListViewModel(
+                repo = ThrowingFollowersRepository(), initialTab = FollowListTab.FOLLOWERS)
+
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals("followers boom", state.errorMessage)
+        assertFalse(state.isLoadingFollowers)
+        assertTrue(state.followers.isEmpty())
+      }
+
+  @Test
   fun toggleFollowFailureResetsProgressAndRestoresFollowState() =
       runTest(dispatcher) {
         mockAuth()
@@ -255,5 +295,13 @@ private class ThrowingFollowRepository(
 
   override suspend fun unfollowUser(uid: String) {
     throw RuntimeException("follow failed")
+  }
+}
+
+private class ThrowingFollowersRepository(
+    private val delegate: ProfileRepository = FakeProfileRepository()
+) : ProfileRepository by delegate {
+  override suspend fun getFollowersIds(uid: String): List<String> {
+    throw RuntimeException("followers boom")
   }
 }
