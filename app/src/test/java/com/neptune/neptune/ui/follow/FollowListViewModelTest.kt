@@ -200,7 +200,7 @@ class FollowListViewModelTest {
         repo.addProfiles(
             listOf(
                 Profile(uid = "u1", username = "luca"),
-                Profile(uid = "u2", username = "longestusername")))
+                Profile(uid = "u2", username = "chiara")))
         repo.setFollowingIds(listOf("u1", "u2"))
 
         val viewModel = FollowListViewModel(repo = repo, initialTab = FollowListTab.FOLLOWING)
@@ -212,6 +212,58 @@ class FollowListViewModelTest {
         val followingList = viewModel.uiState.value.following
         assertTrue(followingList.any { it.uid == "u1" })
         assertFalse(followingList.first { it.uid == "u1" }.isFollowedByCurrentUser)
+      }
+
+  @Test
+  fun followFromFollowersUpdatesExistingFollowingEntry() =
+      runTest(dispatcher) {
+        mockAuth()
+        val repo = FakeProfileRepository()
+        repo.addProfiles(listOf(Profile(uid = "u1", username = "luca")))
+        repo.setFollowersIds(listOf("u1")) // followers = {u1}
+        repo.setFollowingIds(listOf("u1")) // following = {u1}
+
+        val viewModel = FollowListViewModel(repo = repo, initialTab = FollowListTab.FOLLOWERS)
+        advanceUntilIdle() // load followers
+
+        viewModel.selectTab(FollowListTab.FOLLOWING)
+        viewModel.refresh()
+        advanceUntilIdle() // load following so followingIdx >= 0
+        viewModel.selectTab(FollowListTab.FOLLOWERS)
+
+        viewModel.toggleFollow("u1", isFromFollowersList = false) // unfollow from following tab
+        advanceUntilIdle()
+
+        viewModel.toggleFollow("u1", isFromFollowersList = true) // follow again from followers tab
+        advanceUntilIdle()
+
+        val followingItem = viewModel.uiState.value.following.first { it.uid == "u1" }
+        assertTrue(followingItem.isFollowedByCurrentUser) // hit branch followingIdx >= 0
+        assertFalse(followingItem.isActionInProgress)
+      }
+
+  @Test
+  fun unfollowFromFollowingUpdatesFollowerEntryWhenPresent() =
+      runTest(dispatcher) {
+        mockAuth()
+        val repo = FakeProfileRepository()
+        repo.addProfiles(listOf(Profile(uid = "u1", username = "luca")))
+        repo.setFollowersIds(listOf("u1"))
+        repo.setFollowingIds(listOf("u1"))
+
+        val viewModel = FollowListViewModel(repo = repo, initialTab = FollowListTab.FOLLOWERS)
+        advanceUntilIdle() // load followers
+
+        viewModel.selectTab(FollowListTab.FOLLOWING)
+        viewModel.refresh()
+        advanceUntilIdle() // load following so followerIdx >= 0 too
+
+        viewModel.toggleFollow("u1", isFromFollowersList = false) // unfollow from following tab
+        advanceUntilIdle()
+
+        val followerItem = viewModel.uiState.value.followers.first { it.uid == "u1" }
+        assertFalse(followerItem.isFollowedByCurrentUser) // branch followerIdx >= 0
+        assertFalse(followerItem.isActionInProgress)
       }
 
   @Test
