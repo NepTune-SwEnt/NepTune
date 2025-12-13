@@ -62,17 +62,6 @@ class FollowListViewModel(
     saveList(isFollowers, updated)
   }
 
-  private fun toggleFollowFlag(uid: String, isFollowers: Boolean) {
-    val updated =
-        currentList(isFollowers).map {
-          if (it.uid == uid)
-              it.copy(
-                  isFollowedByCurrentUser = !it.isFollowedByCurrentUser, isActionInProgress = false)
-          else it
-        }
-    saveList(isFollowers, updated)
-  }
-
   fun toggleFollow(uid: String, isFromFollowersList: Boolean) {
     markInProgress(uid, isFromFollowersList)
     viewModelScope.launch {
@@ -85,9 +74,9 @@ class FollowListViewModel(
         } else {
           repo.followUser(uid)
         }
-        toggleFollowFlag(uid, isFromFollowersList)
+        applyFollowChange(uid, isFromFollowersList, isNowFollowed = !isCurrentlyFollowed)
       } catch (e: Exception) {
-        resetProgress(uid, isFromFollowersList, isCurrentlyFollowed)
+        resetProgress(uid, isCurrentlyFollowed)
         _uiState.update {
           it.copy(errorMessage = e.message ?: "Failed to update follow state. Please try again.")
         }
@@ -172,13 +161,68 @@ class FollowListViewModel(
           avatarUrl = profile.avatarUrl.takeUnless { it.isBlank() },
           isFollowedByCurrentUser = isFollowedByCurrentUser)
 
-  private fun resetProgress(uid: String, isFollowers: Boolean, followState: Boolean) {
-    val updated =
-        currentList(isFollowers).map {
-          if (it.uid == uid)
-              it.copy(isActionInProgress = false, isFollowedByCurrentUser = followState)
-          else it
+  private fun applyFollowChange(uid: String, fromFollowersTab: Boolean, isNowFollowed: Boolean) {
+    val followers = _uiState.value.followers.toMutableList()
+    val following = _uiState.value.following.toMutableList()
+
+    val followerIdx = followers.indexOfFirst { it.uid == uid }
+    val followingIdx = following.indexOfFirst { it.uid == uid }
+
+    if (followerIdx >= 0) {
+      followers[followerIdx] =
+          followers[followerIdx].copy(
+              isFollowedByCurrentUser = isNowFollowed, isActionInProgress = false)
+    }
+
+    if (fromFollowersTab) {
+      if (isNowFollowed) {
+        if (followingIdx >= 0) {
+          following[followingIdx] =
+              following[followingIdx].copy(
+                  isFollowedByCurrentUser = true, isActionInProgress = false)
+        } else if (followerIdx >= 0) {
+          following.add(
+              followers[followerIdx].copy(
+                  isFollowedByCurrentUser = true, isActionInProgress = false))
         }
-    saveList(isFollowers, updated)
+      } else if (followingIdx >= 0) {
+        following.removeAt(followingIdx)
+      }
+    } else {
+      if (followingIdx >= 0) {
+        following[followingIdx] =
+            following[followingIdx].copy(
+                isFollowedByCurrentUser = isNowFollowed, isActionInProgress = false)
+      }
+      if (followerIdx >= 0) {
+        followers[followerIdx] =
+            followers[followerIdx].copy(
+                isFollowedByCurrentUser = isNowFollowed, isActionInProgress = false)
+      }
+    }
+
+    _uiState.update { it.copy(followers = followers, following = following) }
+  }
+
+  private fun resetProgress(uid: String, followState: Boolean) {
+    val followers = _uiState.value.followers.toMutableList()
+    val following = _uiState.value.following.toMutableList()
+
+    val followerIdx = followers.indexOfFirst { it.uid == uid }
+    val followingIdx = following.indexOfFirst { it.uid == uid }
+
+    if (followerIdx >= 0) {
+      followers[followerIdx] =
+          followers[followerIdx].copy(
+              isActionInProgress = false, isFollowedByCurrentUser = followState)
+    }
+
+    if (followingIdx >= 0) {
+      following[followingIdx] =
+          following[followingIdx].copy(
+              isActionInProgress = false, isFollowedByCurrentUser = followState)
+    }
+
+    _uiState.update { it.copy(followers = followers, following = following) }
   }
 }

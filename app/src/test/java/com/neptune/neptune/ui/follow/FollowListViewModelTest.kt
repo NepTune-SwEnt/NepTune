@@ -151,4 +151,59 @@ class FollowListViewModelTest {
         assertTrue(updatedUser.isFollowedByCurrentUser)
         assertFalse(updatedUser.isActionInProgress)
       }
+
+  @Test
+  fun unfollowFromFollowersRemovesFromFollowingAndFollowBackReadds() =
+      runTest(dispatcher) {
+        mockAuth()
+        val repo = FakeProfileRepository()
+        repo.addProfiles(
+            listOf(
+                Profile(uid = "u1", username = "luca"),
+                Profile(uid = "u2", username = "longestusername"),
+                Profile(uid = "u3", username = "chiara"),
+                Profile(uid = "u6", username = "eleonora")))
+        repo.setFollowersIds(listOf("u1", "u2", "u3"))
+        repo.setFollowingIds(listOf("u3", "u6"))
+
+        val viewModel = FollowListViewModel(repo = repo, initialTab = FollowListTab.FOLLOWERS)
+        advanceUntilIdle() // load followers
+
+        viewModel.selectTab(FollowListTab.FOLLOWING)
+        viewModel.refresh()
+        advanceUntilIdle() // load following
+
+        viewModel.selectTab(FollowListTab.FOLLOWERS)
+        viewModel.toggleFollow("u3", isFromFollowersList = true) // unfollow chiara
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.following.none { it.uid == "u3" })
+
+        viewModel.toggleFollow("u3", isFromFollowersList = true) // follow back
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.following.any { it.uid == "u3" })
+      }
+
+  @Test
+  fun unfollowFromFollowingKeepsEntryVisible() =
+      runTest(dispatcher) {
+        mockAuth()
+        val repo = FakeProfileRepository()
+        repo.addProfiles(
+            listOf(
+                Profile(uid = "u1", username = "luca"),
+                Profile(uid = "u2", username = "longestusername")))
+        repo.setFollowingIds(listOf("u1", "u2"))
+
+        val viewModel = FollowListViewModel(repo = repo, initialTab = FollowListTab.FOLLOWING)
+        advanceUntilIdle() // load following
+
+        viewModel.toggleFollow("u1", isFromFollowersList = false) // unfollow from following tab
+        advanceUntilIdle()
+
+        val followingList = viewModel.uiState.value.following
+        assertTrue(followingList.any { it.uid == "u1" })
+        assertFalse(followingList.first { it.uid == "u1" }.isFollowedByCurrentUser)
+      }
 }
