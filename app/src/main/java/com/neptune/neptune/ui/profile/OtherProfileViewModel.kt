@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -36,12 +38,21 @@ class OtherProfileViewModel(
   init {
     viewModelScope.launch {
       try {
-        combine(repo.observeProfile(userId), repo.observeCurrentProfile()) { other, current ->
-              other to current
+        val followingFlow =
+            auth.currentUser?.uid?.let { uid -> repo.observeFollowingIds(uid) }
+                ?: flowOf(emptyList())
+        val currentProfileFlow =
+            if (auth.currentUser != null) repo.observeCurrentProfile() else flowOf(null)
+
+        combine(repo.observeProfile(userId), currentProfileFlow, followingFlow) {
+                other,
+                current,
+                following ->
+              Triple(other, current, following)
             }
-            .collectLatest { (otherProfile, currentProfile) ->
+            .collectLatest { (otherProfile, currentProfile, followingIds) ->
               if (otherProfile != null) {
-                val isCurrentUserFollowing = currentProfile?.following?.contains(userId) == true
+                val isCurrentUserFollowing = followingIds.contains(userId)
                 val authAnonymous = auth.currentUser?.isAnonymous == true
                 val isCurrentUserAnonymous = authAnonymous || currentProfile?.isAnonymous == true
                 val updatedProfile =
@@ -90,11 +101,17 @@ class OtherProfileViewModel(
         } else {
           repo.followUser(userId)
         }
+        _uiState.update { state ->
+          state.copy(
+              isCurrentUserFollowing = !isCurrentUserFollowing,
+              isFollowActionInProgress = false)
+        }
       } catch (_: Exception) {
         _uiState.value =
             _uiState.value.copy(
                 errorMessage = "Unable to update follow state",
                 isFollowActionInProgress = false,
+                isCurrentUserFollowing = isCurrentUserFollowing,
             )
       }
     }

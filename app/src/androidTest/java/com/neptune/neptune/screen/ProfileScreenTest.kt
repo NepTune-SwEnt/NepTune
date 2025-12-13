@@ -819,7 +819,7 @@ class ProfileScreenTest {
                     likes = 12,
                     posts = 3,
                     tags = listOf("ambient")),
-            initialCurrentProfile = Profile(uid = "current-user", following = emptyList()))
+            initialCurrentProfile = Profile(uid = "current-user"))
 
     withProfileRepository(repo) {
       composeTestRule.setContent {
@@ -879,7 +879,7 @@ class ProfileScreenTest {
             targetUserId = userId,
             initialOtherProfile =
                 Profile(uid = userId, name = "Anonymous Artist", isAnonymous = true),
-            initialCurrentProfile = Profile(uid = "current-user", following = emptyList()))
+            initialCurrentProfile = Profile(uid = "current-user"))
 
     withProfileRepository(repo) {
       composeTestRule.setContent {
@@ -928,7 +928,8 @@ class ProfileScreenTest {
         FakeOtherProfileRepository(
             targetUserId = userId,
             initialOtherProfile = Profile(uid = userId, name = "Remote Artist"),
-            initialCurrentProfile = Profile(uid = "current-user", following = listOf(userId)))
+            initialCurrentProfile = Profile(uid = "current-user"),
+            initialFollowing = listOf(userId))
     var goBackCalled = false
 
     withProfileRepository(repo) {
@@ -1025,11 +1026,15 @@ class ProfileScreenTest {
 private class FakeOtherProfileRepository(
     private val targetUserId: String,
     initialOtherProfile: Profile,
-    initialCurrentProfile: Profile
+    initialCurrentProfile: Profile,
+    initialFollowing: List<String> = emptyList(),
+    initialFollowers: List<String> = emptyList()
 ) : ProfileRepository {
 
   private val otherProfile = MutableStateFlow<Profile?>(initialOtherProfile)
   private val currentProfile = MutableStateFlow<Profile?>(initialCurrentProfile)
+  private val followingIds = MutableStateFlow(initialFollowing)
+    private val followersIds = MutableStateFlow(initialFollowers)
 
   var followRequests = 0
     private set
@@ -1053,20 +1058,23 @@ private class FakeOtherProfileRepository(
 
   override suspend fun unfollowUser(uid: String) {
     unfollowRequests++
-    currentProfile.value =
-        currentProfile.value?.let { profile ->
-          profile.copy(following = profile.following.filterNot { it == uid })
-        }
+    followingIds.value = followingIds.value.filterNot { it == uid }
   }
 
   override suspend fun followUser(uid: String) {
     followRequests++
-    currentProfile.value =
-        currentProfile.value?.let { profile ->
-          if (profile.following.contains(uid)) profile
-          else profile.copy(following = profile.following + uid)
-        }
+    if (!followingIds.value.contains(uid)) {
+      followingIds.value = followingIds.value + uid
+    }
   }
+
+  override suspend fun getFollowingIds(uid: String): List<String> = followingIds.value
+
+  override suspend fun getFollowersIds(uid: String): List<String> = followersIds.value
+
+  override fun observeFollowingIds(uid: String): Flow<List<String>> = followingIds
+
+  override fun observeFollowersIds(uid: String): Flow<List<String>> = followersIds
 
   override suspend fun ensureProfile(
       suggestedUsernameBase: String?,
