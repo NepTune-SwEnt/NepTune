@@ -2,15 +2,47 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+  	match /projects/{uid} {
+      allow create: if request.auth.uid == request.resource.data.ownerId;
+      allow read, write: if request.auth.uid == resource.data.ownerId;
+    }
+
     function signedIn() {
       return request.auth != null;
     }
 
     // Each user can read/write ONLY their own profile document
     match /profiles/{uid} {
-      allow read, create, update, delete:
-        if signedIn() && uid == request.auth.uid;
+      // Allow any logged-in user to READ any profile
+      allow read: if signedIn();
+
+      // Write permissions restricted to the owner
+      allow create, update, delete: if signedIn() &&
+      (uid == request.auth.uid || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])));
+
+      // Allow reading follow edges for any signed-in user; writes are done via Cloud Functions.
+      match /followers/{docId} {
+        allow read: if signedIn();
+      }
+      match /following/{docId} {
+        allow read: if signedIn();
+      }
     }
+
+    //Anyone signed in can read and write
+    match /samples/{sampleId} {
+  		allow read, write: if signedIn();
+
+      match /comments/{commentsId}{
+    		allow read, write: if signedIn();
+    	}
+
+      match /likes/{userId}{
+      	allow read, write: if request.auth.uid == userId;
+      }
+		}
+
+
 
     // Username lock docs: usernames/{username}
     match /usernames/{uname} {
