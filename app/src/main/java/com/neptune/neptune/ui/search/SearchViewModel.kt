@@ -99,7 +99,7 @@ open class SearchViewModel(
   private val _userResults = MutableStateFlow<List<Profile>>(emptyList())
   val userResults: StateFlow<List<Profile>> = _userResults.asStateFlow()
 
-  // Current User Profile (to track following list)
+  // Current User Profile (metadata needed by the UI)
   // Logic: Observe the current user flow. If a user is logged in, observe their profile.
   // If no user is logged in, emit null.
   @OptIn(ExperimentalCoroutinesApi::class)
@@ -128,9 +128,15 @@ open class SearchViewModel(
     }
     viewModelScope.launch {
       try {
-        currentUserProfile.collectLatest { profile ->
-          _followingIds.value = profile?.following?.toSet() ?: emptySet()
-        }
+        _currentUserFlow
+            .flatMapLatest { user ->
+              if (user == null) {
+                flowOf(emptySet<String>())
+              } else {
+                profileRepo.observeFollowingIds(user.uid)
+              }
+            }
+            .collectLatest { ids -> _followingIds.value = ids.toSet() }
       } catch (e: Exception) {
         Log.e("SearchViewModel", "Error collecting current user profile", e)
       }

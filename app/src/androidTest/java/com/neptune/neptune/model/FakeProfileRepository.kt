@@ -6,6 +6,7 @@ import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.TAG_WEIGHT_MAX
 import com.neptune.neptune.model.recommendation.RecoUserProfile
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 
 /** Fake Profile Repository for testing purposes. This has been written with the help of LLMs. */
@@ -46,6 +47,17 @@ class FakeProfileRepository(initial: Profile? = null) : ProfileRepository {
   override suspend fun followUser(uid: String) {
     // No-op for now
   }
+
+  private val followingIds = MutableStateFlow<List<String>>(emptyList())
+  private val followersIds = MutableStateFlow<List<String>>(emptyList())
+
+  override suspend fun getFollowingIds(uid: String): List<String> = followingIds.value
+
+  override suspend fun getFollowersIds(uid: String): List<String> = followersIds.value
+
+  override fun observeFollowingIds(uid: String): Flow<List<String>> = followingIds
+
+  override fun observeFollowersIds(uid: String): Flow<List<String>> = followersIds
 
   override suspend fun ensureProfile(
       suggestedUsernameBase: String?,

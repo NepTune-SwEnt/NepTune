@@ -11,3 +11,4 @@ app/google-services.json
 /.firebaserc
 /firebase-debug.log
 /firestore-debug.log
+functions/firestore-debug.log

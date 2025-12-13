@@ -656,7 +656,6 @@ class ProfileRepositoryFirebaseTest {
         "posts" to posts,
         "tags" to tags,
         "tagsWeight" to tagsWeight,
-        "following" to following,
         "isAnonymous" to isAnonymous)
   }
 

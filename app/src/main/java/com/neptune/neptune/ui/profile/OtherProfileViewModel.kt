@@ -4,16 +4,17 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.storage.FirebaseStorage
-import com.neptune.neptune.data.ImageStorageRepository
-import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -22,12 +23,11 @@ import kotlinx.coroutines.launch
  * For now it uses mocked data and simple in-memory follow toggling. Later you can plug in a real
  * repository fetching by [userId].
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class OtherProfileViewModel(
     private val repo: ProfileRepository = ProfileRepositoryProvider.repository,
     private val userId: String,
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val imageRepo: ImageStorageRepository = ImageStorageRepository(),
-    private val storageService: StorageService = StorageService(FirebaseStorage.getInstance())
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(OtherProfileUiState())
@@ -36,12 +36,22 @@ class OtherProfileViewModel(
   init {
     viewModelScope.launch {
       try {
-        combine(repo.observeProfile(userId), repo.observeCurrentProfile()) { other, current ->
-              other to current
+        val currentProfileFlow = repo.observeCurrentProfile()
+        val followingFlow =
+            currentProfileFlow.flatMapLatest { currentProfile ->
+              val uid = currentProfile?.uid ?: auth.currentUser?.uid
+              if (uid != null) repo.observeFollowingIds(uid) else flowOf(emptyList())
             }
-            .collectLatest { (otherProfile, currentProfile) ->
+
+        combine(repo.observeProfile(userId), currentProfileFlow, followingFlow) {
+                other,
+                current,
+                following ->
+              Triple(other, current, following)
+            }
+            .collectLatest { (otherProfile, currentProfile, followingIds) ->
               if (otherProfile != null) {
-                val isCurrentUserFollowing = currentProfile?.following?.contains(userId) == true
+                val isCurrentUserFollowing = followingIds.contains(userId)
                 val authAnonymous = auth.currentUser?.isAnonymous == true
                 val isCurrentUserAnonymous = authAnonymous || currentProfile?.isAnonymous == true
                 val updatedProfile =
@@ -90,11 +100,16 @@ class OtherProfileViewModel(
         } else {
           repo.followUser(userId)
         }
+        _uiState.update { state ->
+          state.copy(
+              isCurrentUserFollowing = !isCurrentUserFollowing, isFollowActionInProgress = false)
+        }
       } catch (_: Exception) {
         _uiState.value =
             _uiState.value.copy(
                 errorMessage = "Unable to update follow state",
                 isFollowActionInProgress = false,
+                isCurrentUserFollowing = isCurrentUserFollowing,
             )
       }
     }
