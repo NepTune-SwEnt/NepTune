@@ -771,7 +771,6 @@ open class SamplerViewModel() : ViewModel() {
       ProjectWriter()
           .writeProject(zipFile = zipFile, metadata = projectData, audioFiles = listOf(audioFile))
 
-      Log.i("SamplerViewModel", "Project saved: ${zipFile.absolutePath}")
     } catch (e: Exception) {
       Log.e("SamplerViewModel", "Failed to save ZIP file: ${e.message}", e)
     }

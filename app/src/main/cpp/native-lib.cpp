@@ -95,10 +95,8 @@ Java_com_neptune_neptune_ui_sampler_NativeAudioProcessor_timeStretchNative(
     soundTouch.setSampleRate(sampleRate);
     soundTouch.setChannels(numChannels);
 
-    // 🔑 TEMPO = time-stretch WITHOUT pitch change
     soundTouch.setTempo(tempoRatio);
 
-    // Same quality settings as pitch
     soundTouch.setSetting(SETTING_USE_QUICKSEEK, 0);
     soundTouch.setSetting(SETTING_USE_AA_FILTER, 1);
 
