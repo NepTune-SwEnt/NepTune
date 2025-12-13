@@ -4,16 +4,15 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.storage.FirebaseStorage
-import com.neptune.neptune.data.ImageStorageRepository
-import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -24,12 +23,11 @@ import kotlinx.coroutines.launch
  * For now it uses mocked data and simple in-memory follow toggling. Later you can plug in a real
  * repository fetching by [userId].
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class OtherProfileViewModel(
     private val repo: ProfileRepository = ProfileRepositoryProvider.repository,
     private val userId: String,
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val imageRepo: ImageStorageRepository = ImageStorageRepository(),
-    private val storageService: StorageService = StorageService(FirebaseStorage.getInstance())
 ) : ViewModel() {
 
   private val _uiState = MutableStateFlow(OtherProfileUiState())
@@ -38,11 +36,12 @@ class OtherProfileViewModel(
   init {
     viewModelScope.launch {
       try {
+        val currentProfileFlow = repo.observeCurrentProfile()
         val followingFlow =
-            auth.currentUser?.uid?.let { uid -> repo.observeFollowingIds(uid) }
-                ?: flowOf(emptyList())
-        val currentProfileFlow =
-            if (auth.currentUser != null) repo.observeCurrentProfile() else flowOf(null)
+            currentProfileFlow.flatMapLatest { currentProfile ->
+              val uid = currentProfile?.uid ?: auth.currentUser?.uid
+              if (uid != null) repo.observeFollowingIds(uid) else flowOf(emptyList())
+            }
 
         combine(repo.observeProfile(userId), currentProfileFlow, followingFlow) {
                 other,

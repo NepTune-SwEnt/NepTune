@@ -5,8 +5,6 @@ package com.neptune.neptune.ui
 import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.neptune.neptune.data.ImageStorageRepository
-import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.recommendation.RecoUserProfile
@@ -52,15 +50,12 @@ class OtherProfileViewModelTest {
 
         val repo = FollowToggleTestRepository(otherProfile, currentProfile)
         val mockAuth: FirebaseAuth = mock()
-        val mockImageRepo: ImageStorageRepository = mock()
-        val mockStorageService: StorageService = mock()
         val viewModel =
             OtherProfileViewModel(
                 repo = repo,
                 userId = targetUserId,
                 auth = mockAuth,
-                imageRepo = mockImageRepo,
-                storageService = mockStorageService)
+            )
         advanceUntilIdle()
 
         val initialState = viewModel.uiState.value
@@ -103,15 +98,12 @@ class OtherProfileViewModelTest {
         val currentProfile = Profile(uid = "viewer-1", username = "viewer", isAnonymous = true)
         val repo = FollowToggleTestRepository(otherProfile, currentProfile)
         val mockAuth: FirebaseAuth = mock()
-        val mockImageRepo: ImageStorageRepository = mock()
-        val mockStorageService: StorageService = mock()
         val viewModel =
             OtherProfileViewModel(
                 repo = repo,
                 userId = targetUserId,
                 auth = mockAuth,
-                imageRepo = mockImageRepo,
-                storageService = mockStorageService)
+            )
         advanceUntilIdle()
 
         assertTrue(viewModel.uiState.value.isCurrentUserAnonymous)
@@ -133,16 +125,13 @@ class OtherProfileViewModelTest {
         val mockUser: FirebaseUser = mock()
         whenever(mockAuth.currentUser).thenReturn(mockUser)
         whenever(mockUser.isAnonymous).thenReturn(true)
-        val mockImageRepo: ImageStorageRepository = mock()
-        val mockStorageService: StorageService = mock()
 
         val viewModel =
             OtherProfileViewModel(
                 repo = repo,
                 userId = targetUserId,
                 auth = mockAuth,
-                imageRepo = mockImageRepo,
-                storageService = mockStorageService)
+            )
         advanceUntilIdle()
 
         assertTrue(viewModel.uiState.value.isCurrentUserAnonymous)
