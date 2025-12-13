@@ -1034,7 +1034,7 @@ private class FakeOtherProfileRepository(
   private val otherProfile = MutableStateFlow<Profile?>(initialOtherProfile)
   private val currentProfile = MutableStateFlow<Profile?>(initialCurrentProfile)
   private val followingIds = MutableStateFlow(initialFollowing)
-    private val followersIds = MutableStateFlow(initialFollowers)
+  private val followersIds = MutableStateFlow(initialFollowers)
 
   var followRequests = 0
     private set

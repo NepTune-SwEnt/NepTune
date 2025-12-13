@@ -103,8 +103,7 @@ class OtherProfileViewModel(
         }
         _uiState.update { state ->
           state.copy(
-              isCurrentUserFollowing = !isCurrentUserFollowing,
-              isFollowActionInProgress = false)
+              isCurrentUserFollowing = !isCurrentUserFollowing, isFollowActionInProgress = false)
         }
       } catch (_: Exception) {
         _uiState.value =
