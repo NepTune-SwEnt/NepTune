@@ -22,6 +22,8 @@ const val USERNAMES_COLLECTION_PATH = "usernames"
 const val GUEST_NAME = "anonymous"
 const val TAG_WEIGHT_MAX = 50.0
 private const val DEFAULT_BIO = "Hello! New NepTune user here!"
+private const val FOLLOWING_SUBCOLLECTION = "following"
+private const val FOLLOWERS_SUBCOLLECTION = "followers"
 
 /**
  * Firebase-backed implementation of [ProfileRepository] using Firestore.
@@ -98,6 +100,55 @@ class ProfileRepositoryFirebase(
     awaitClose { reg.remove() }
   }
 
+  override suspend fun getFollowingIds(uid: String): List<String> =
+      readFollowSubcollectionIds(uid, FOLLOWING_SUBCOLLECTION)
+
+  override suspend fun getFollowersIds(uid: String): List<String> =
+      readFollowSubcollectionIds(uid, FOLLOWERS_SUBCOLLECTION)
+
+  override fun observeFollowingIds(uid: String): Flow<List<String>> =
+      observeFollowSubcollectionIds(uid, FOLLOWING_SUBCOLLECTION)
+
+  override fun observeFollowersIds(uid: String): Flow<List<String>> =
+      observeFollowSubcollectionIds(uid, FOLLOWERS_SUBCOLLECTION)
+
+  private suspend fun readFollowSubcollectionIds(uid: String, subcollection: String): List<String> {
+    val snapshot = profiles.document(uid).collection(subcollection).get().await()
+    return snapshot.documents
+        .mapNotNull { doc ->
+          val fromId = doc.id
+          val fieldUid = doc.getString("uid")
+          (fromId.takeIf { it.isNotBlank() } ?: fieldUid)?.takeIf { it.isNotBlank() }
+        }
+        .distinct()
+  }
+
+  private fun observeFollowSubcollectionIds(
+      uid: String,
+      subcollection: String
+  ): Flow<List<String>> = callbackFlow {
+    val registration =
+        profiles.document(uid).collection(subcollection).addSnapshotListener { snap, err ->
+          if (err != null) {
+            trySend(emptyList())
+            return@addSnapshotListener
+          }
+
+          val ids =
+              snap
+                  ?.documents
+                  ?.mapNotNull { doc ->
+                    val fromId = doc.id
+                    val fieldUid = doc.getString("uid")
+                    (fromId.takeIf { it.isNotBlank() } ?: fieldUid)?.takeIf { it.isNotBlank() }
+                  }
+                  ?.distinct() ?: emptyList()
+
+          trySend(ids)
+        }
+    awaitClose { registration.remove() }
+  }
+
   override suspend fun unfollowUser(uid: String) {
     callFollowFunction(targetUid = uid, follow = false)
   }
@@ -148,7 +199,6 @@ class ProfileRepositoryFirebase(
           tags = (get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
           tagsWeight = tagsWeight,
           avatarUrl = getString("avatarUrl").orEmpty(),
-          following = (get("following") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
           isAnonymous = getBoolean("isAnonymous") ?: false)
     }
   }
@@ -215,7 +265,6 @@ class ProfileRepositoryFirebase(
                     avatarUrl = "",
                     subscribers = 0L,
                     subscriptions = 0L,
-                    following = emptyList(),
                     likes = 0L,
                     posts = 0L,
                     isAnonymous = auth.currentUser?.isAnonymous == true)
@@ -234,7 +283,6 @@ class ProfileRepositoryFirebase(
                     "likes" to 0L,
                     "posts" to 0L,
                     "tags" to emptyList<String>(),
-                    "following" to emptyList<String>(),
                     "isAnonymous" to (auth.currentUser?.isAnonymous == true),
                     "tagsWeight" to emptyMap<String, Double>()))
 
