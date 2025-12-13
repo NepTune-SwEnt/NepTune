@@ -5,6 +5,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.neptune.neptune.model.fakes.FakeProfileRepository
 import com.neptune.neptune.model.profile.Profile
+import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.utils.MainDispatcherRule
 import io.mockk.every
 import io.mockk.mockk
@@ -206,4 +207,53 @@ class FollowListViewModelTest {
         assertTrue(followingList.any { it.uid == "u1" })
         assertFalse(followingList.first { it.uid == "u1" }.isFollowedByCurrentUser)
       }
+
+  @Test
+  fun toggleFollowFailureResetsProgressAndRestoresFollowState() =
+      runTest(dispatcher) {
+        mockAuth()
+        val baseRepo = FakeProfileRepository()
+        baseRepo.addProfiles(listOf(Profile(uid = "target", username = "target")))
+        baseRepo.setFollowersIds(listOf("target"))
+        baseRepo.setFollowingIds(listOf("target"))
+        val repo = ThrowingFollowRepository(baseRepo)
+
+        val viewModel = FollowListViewModel(repo = repo, initialTab = FollowListTab.FOLLOWERS)
+        advanceUntilIdle() // load followers
+
+        viewModel.selectTab(FollowListTab.FOLLOWING)
+        viewModel.refresh()
+        advanceUntilIdle() // load following
+        viewModel.selectTab(FollowListTab.FOLLOWERS)
+
+        viewModel.toggleFollow("target", isFromFollowersList = true) // attempt to unfollow
+
+        assertTrue(
+            viewModel.uiState.value.followers.first { it.uid == "target" }.isActionInProgress)
+
+        advanceUntilIdle() // allow coroutine to fail and hit resetProgress
+
+        val state = viewModel.uiState.value
+        val followerItem = state.followers.first { it.uid == "target" }
+        val followingItem = state.following.first { it.uid == "target" }
+
+        assertTrue(followerItem.isFollowedByCurrentUser)
+        assertFalse(followerItem.isActionInProgress)
+        assertTrue(followingItem.isFollowedByCurrentUser)
+        assertFalse(followingItem.isActionInProgress)
+        assertEquals("follow failed", state.errorMessage)
+      }
+}
+
+private class ThrowingFollowRepository(
+    private val delegate: FakeProfileRepository,
+) : ProfileRepository by delegate {
+
+  override suspend fun followUser(uid: String) {
+    throw RuntimeException("follow failed")
+  }
+
+  override suspend fun unfollowUser(uid: String) {
+    throw RuntimeException("follow failed")
+  }
 }
