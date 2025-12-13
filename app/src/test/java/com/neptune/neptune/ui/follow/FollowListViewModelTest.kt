@@ -4,6 +4,7 @@ package com.neptune.neptune.ui.follow
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.neptune.neptune.model.fakes.FakeProfileRepository
+import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.utils.MainDispatcherRule
 import io.mockk.every
 import io.mockk.mockk
@@ -32,9 +33,13 @@ class FollowListViewModelTest {
 
   @get:Rule val mainDispatcherRule = MainDispatcherRule(dispatcher)
 
-  private fun mockAuth(isAnonymous: Boolean = false): FirebaseAuth {
+  private fun mockAuth(isAnonymous: Boolean = false, uid: String = "testUid"): FirebaseAuth {
     mockkStatic(FirebaseAuth::class)
-    val user = mockk<FirebaseUser> { every { this@mockk.isAnonymous } returns isAnonymous }
+    val user =
+        mockk<FirebaseUser> {
+          every { this@mockk.isAnonymous } returns isAnonymous
+          every { this@mockk.uid } returns uid
+        }
     val auth = mockk<FirebaseAuth> { every { currentUser } returns user }
     every { FirebaseAuth.getInstance() } returns auth
     return auth
@@ -63,9 +68,21 @@ class FollowListViewModelTest {
   fun refreshLoadsActiveTabOnlyThenLoadsOtherWhenRequested() =
       runTest(dispatcher) {
         mockAuth()
-        val viewModel =
-            FollowListViewModel(
-                repo = FakeProfileRepository(), initialTab = FollowListTab.FOLLOWERS)
+        val repo = FakeProfileRepository()
+        repo.addProfiles(
+            listOf(
+                Profile(uid = "u1", username = "luca"),
+                Profile(uid = "u2", username = "longestusername"),
+                Profile(uid = "u3", username = "chiara"),
+                Profile(uid = "u4", username = "cate"),
+                Profile(uid = "u5", username = "alice"),
+                Profile(uid = "u6", username = "eleonora"),
+                Profile(uid = "u7", username = "mattia"),
+                Profile(uid = "u8", username = "anto")))
+        repo.setFollowersIds(listOf("u1", "u2", "u3", "u4", "u5"))
+        repo.setFollowingIds(listOf("u3", "u6", "u7", "u8"))
+
+        val viewModel = FollowListViewModel(repo = repo, initialTab = FollowListTab.FOLLOWERS)
 
         advanceUntilIdle()
 
@@ -73,6 +90,7 @@ class FollowListViewModelTest {
         val afterFollowersLoad = viewModel.uiState.value
         assertEquals(5, afterFollowersLoad.followers.size)
         assertEquals(0, afterFollowersLoad.following.size)
+        assertTrue(afterFollowersLoad.followers.first { it.uid == "u3" }.isFollowedByCurrentUser)
         assertFalse(afterFollowersLoad.isLoadingFollowers)
         assertFalse(afterFollowersLoad.isLoadingFollowing)
 
@@ -110,9 +128,13 @@ class FollowListViewModelTest {
   fun toggleFollowMarksProgressThenTogglesFollowFlag() =
       runTest(dispatcher) {
         mockAuth()
-        val viewModel =
-            FollowListViewModel(
-                repo = FakeProfileRepository(), initialTab = FollowListTab.FOLLOWERS)
+        val repo = FakeProfileRepository()
+        repo.addProfiles(
+            listOf(
+                Profile(uid = "u1", username = "luca"),
+                Profile(uid = "u2", username = "longestusername")))
+        repo.setFollowersIds(listOf("u1", "u2"))
+        val viewModel = FollowListViewModel(repo = repo, initialTab = FollowListTab.FOLLOWERS)
         advanceUntilIdle()
 
         val targetId = "u2"
