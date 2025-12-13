@@ -51,6 +51,18 @@ interface ProfileRepository {
    */
   fun observeAllProfiles(): Flow<List<Profile?>>
 
+  /** Reads the user IDs the given profile is following from the dedicated subcollection. */
+  suspend fun getFollowingIds(uid: String): List<String>
+
+  /** Reads the user IDs that follow the given profile from the dedicated subcollection. */
+  suspend fun getFollowersIds(uid: String): List<String>
+
+  /** Observes the following list under `/profiles/{uid}/following`. */
+  fun observeFollowingIds(uid: String): Flow<List<String>>
+
+  /** Observes the followers list under `/profiles/{uid}/followers`. */
+  fun observeFollowersIds(uid: String): Flow<List<String>>
+
   /**
    * Makes the current user unfollow the user with the given uid.
    *

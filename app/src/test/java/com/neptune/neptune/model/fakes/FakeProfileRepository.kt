@@ -37,6 +37,9 @@ class FakeProfileRepository(
     throw UnsupportedOperationException("Not needed in this test")
   }
 
+  private val followingIds = MutableStateFlow<List<String>>(emptyList())
+  private val followersIds = MutableStateFlow<List<String>>(emptyList())
+
   override suspend fun unfollowUser(uid: String) {
     throw UnsupportedOperationException("Not needed in this test")
   }
@@ -44,6 +47,14 @@ class FakeProfileRepository(
   override suspend fun followUser(uid: String) {
     throw UnsupportedOperationException("Not needed in this test")
   }
+
+  override suspend fun getFollowingIds(uid: String): List<String> = followingIds.value
+
+  override suspend fun getFollowersIds(uid: String): List<String> = followersIds.value
+
+  override fun observeFollowingIds(uid: String): Flow<List<String>> = followingIds.asStateFlow()
+
+  override fun observeFollowersIds(uid: String): Flow<List<String>> = followersIds.asStateFlow()
 
   override suspend fun ensureProfile(
       suggestedUsernameBase: String?,
