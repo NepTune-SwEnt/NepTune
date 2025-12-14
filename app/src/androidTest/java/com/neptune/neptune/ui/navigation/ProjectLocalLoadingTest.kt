@@ -32,7 +32,6 @@ import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
-import okhttp3.internal.wait
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -86,15 +85,8 @@ class FakeMediaPlayer : NeptuneMediaPlayer() {
   }
 }
 
-fun AndroidComposeTestRule<*, *>.waitForNodeWithTag(
-  tag: String,
-  timeoutMillis: Long = 10_000
-) {
-  waitUntil(timeoutMillis) {
-    onAllNodesWithTag(tag)
-      .fetchSemanticsNodes()
-      .isNotEmpty()
-  }
+fun AndroidComposeTestRule<*, *>.waitForNodeWithTag(tag: String, timeoutMillis: Long = 10_000) {
+  waitUntil(timeoutMillis) { onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
 }
 
 class LocalProjectLoadingTest {
