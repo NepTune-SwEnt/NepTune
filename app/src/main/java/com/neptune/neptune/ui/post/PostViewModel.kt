@@ -193,7 +193,7 @@ class PostViewModel(
         storageService?.uploadSampleFiles(
             _uiState.value.sample, currentZipUri, localImageUri.value, _processedAudioUri.value)
         profileRepo.updatePostCount(1)
-         _uiState.update { it.copy(isUploading = false, postComplete = true) }
+        _uiState.update { it.copy(isUploading = false, postComplete = true) }
       } catch (e: Exception) {
         Log.e("PostViewModel", "error on upload", e)
         _uiState.update { it.copy(isUploading = false) }

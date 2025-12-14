@@ -23,6 +23,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
+const val PROCESSED_AUDIO = "processed_audios"
+
 open class StorageService(
     val storage: FirebaseStorage,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -121,7 +123,7 @@ open class StorageService(
         else ""
     val newProcessedAudioPath =
         if (localProcessedUri != null) {
-          "processed_audios/${sampleId}.wav"
+          "${PROCESSED_AUDIO}/${sampleId}.wav"
         } else {
           ""
         }

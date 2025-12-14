@@ -1,6 +1,5 @@
 package com.neptune.neptune.ui.feed
 
-import android.util.Log
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -205,11 +204,7 @@ private fun FeedContent(
 
                 val clickHandlers =
                     onClickFunctions(
-                        onDownloadClick = {
-                          println(sample.storageProcessedSamplePath)
-                          Log.e("Processed path", sample.storageProcessedSamplePath)
-                          onDownloadRequest(sample)
-                        },
+                        onDownloadClick = { onDownloadRequest(sample) },
                         onLikeClick = { isLiked -> mainViewModel.onLikeClick(sample, isLiked) },
                         onCommentClick = { mainViewModel.openCommentSection(sample) },
                         onProfileClick = {

@@ -77,6 +77,7 @@ import com.neptune.neptune.ui.main.CommentDialog
 import com.neptune.neptune.ui.main.DownloadChoiceDialog
 import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.offline.OfflineBanner
+import com.neptune.neptune.ui.profile.ProfileScreenTestTags.DOWNLOAD_PROGRESS_BAR
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.NetworkConnectivityObserver
 
@@ -124,6 +125,7 @@ object ProfileScreenTestTags {
   const val FIELD_NAME = "profile/field/name"
   const val FIELD_USERNAME = "profile/field/username"
   const val FIELD_BIO = "profile/field/bio"
+  const val DOWNLOAD_PROGRESS_BAR = "profile/downloadProgressBar"
   const val FIELD_ADD_TAG = "profile/field/add_tag"
 }
 
@@ -488,7 +490,7 @@ private fun ProfileViewContent(
 
               if (downloadProgress != null && downloadProgress != 0) {
                 DownloadProgressBar(
-                    downloadProgress = downloadProgress!!, testTag = "profile/downloadProgressBar")
+                    downloadProgress = downloadProgress!!, testTag = DOWNLOAD_PROGRESS_BAR)
               }
               // if mode is self profile, show edit button
               viewConfig.bottomScreenButton?.invoke(Modifier.align(Alignment.BottomCenter))

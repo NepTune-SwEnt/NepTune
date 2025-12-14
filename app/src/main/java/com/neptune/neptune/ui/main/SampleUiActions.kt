@@ -115,6 +115,7 @@ class SampleUiActions(
     return storageService.getDownloadUrl(storagePath)
   }
 
+  /** replaces / \ : * ? " < > | AND whitespaces with _ */
   private fun safeFileName(raw: String): String {
     // remove characters that are problematic on filesystems
     return raw.trim()
@@ -163,6 +164,16 @@ class SampleUiActions(
   }
 }
 
+/**
+ * the window that pops up when you click on the download button.
+ *
+ * @param sampleName the name of the sample
+ * @param processedAvailable whether the processed audio is available
+ * @param onDismiss the callback to be invoked when the dialog is dismissed
+ * @param onDownloadZip the callback to be invoked when the download zip button is clicked
+ * @param onDownloadProcessed the callback to be invoked when the download processed button is
+ *   clicked
+ */
 @Composable
 fun DownloadChoiceDialog(
     sampleName: String,
