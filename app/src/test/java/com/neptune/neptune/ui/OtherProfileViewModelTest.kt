@@ -194,6 +194,10 @@ private class FollowToggleTestRepository(
   override fun observeAllProfiles(): Flow<List<Profile?>> =
       combine(otherProfileState, currentProfileState) { other, current -> listOf(other, current) }
 
+  override suspend fun updatePostCount(delta: Int) {}
+
+  override suspend fun updateLikeCount(targetUserId: String, delta: Int) {}
+
   override suspend fun unfollowUser(uid: String) {
     unfollowCalls.add(uid)
   }

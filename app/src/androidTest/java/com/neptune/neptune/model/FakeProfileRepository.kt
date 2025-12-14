@@ -39,6 +39,10 @@ class FakeProfileRepository(initial: Profile? = null) : ProfileRepository {
     throw UnsupportedOperationException("Not needed in this test")
   }
 
+  override suspend fun updatePostCount(delta: Int) {}
+
+  override suspend fun updateLikeCount(targetUserId: String, delta: Int) {}
+
   override suspend fun unfollowUser(uid: String) {
     // No-op for now
   }

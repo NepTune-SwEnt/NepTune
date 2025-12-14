@@ -93,7 +93,7 @@ data class SamplerUiState(
     val currentAudioUri: Uri? = null,
     val audioDurationMillis: Int = 4000,
     val showInitialSetupDialog: Boolean = false,
-    val inputTempo: Int = 120,
+    val inputTempo: Int = 110,
     val inputPitchNote: String = "C",
     val inputPitchOctave: Int = 4,
     val timeSignature: String = "4/4",
@@ -215,13 +215,7 @@ open class SamplerViewModel(
 
       if (isFirstPlay) {
         mediaPlayer.setOnPreparedListener {
-          val duration = mediaPlayer.getDuration()
-          _uiState.update { state ->
-            state.copy(
-                isPlaying = true,
-                playbackPosition = 0f,
-                audioDurationMillis = if (duration > 0) duration else state.audioDurationMillis)
-          }
+          _uiState.update { state -> state.copy(isPlaying = true, playbackPosition = 0f) }
           startPlaybackTicker()
         }
 
@@ -240,15 +234,10 @@ open class SamplerViewModel(
 
       val newIsPlaying = if (isStartingPlay) true else mediaPlayer.isPlaying()
 
-      val realDuration = mediaPlayer.getDuration()
-      val newDuration = if (realDuration > 0) realDuration else state.audioDurationMillis
       val didReset = shouldResetFromEnd || isNearZero
       val newPosition = if (newIsPlaying && didReset) 0.0f else state.playbackPosition
 
-      state.copy(
-          isPlaying = newIsPlaying,
-          playbackPosition = newPosition,
-          audioDurationMillis = newDuration)
+      state.copy(isPlaying = newIsPlaying, playbackPosition = newPosition)
     }
   }
 
@@ -590,7 +579,7 @@ open class SamplerViewModel(
               return@launch
             }
 
-        val sampleDuration = mediaPlayer.getDuration()
+        val sampleDuration = extractDurationFromUri(audioUri)
         Log.d("SamplerViewModel", "URI audio loaded: $audioUri")
 
         val paramMap = projectData.parameters.associate { it.type to it.value }
@@ -637,7 +626,7 @@ open class SamplerViewModel(
                     paramMap["compAttack"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compAttack,
                 compDecay = paramMap["compDecay"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compDecay,
                 eqBands = newEqBands.toList(),
-                inputTempo = current.tempo,
+                inputTempo = current.inputTempo,
                 inputPitchNote = current.pitchNote,
                 inputPitchOctave = current.pitchOctave,
                 originalAudioUri = audioUri,
@@ -715,9 +704,13 @@ open class SamplerViewModel(
 
       if (newAudioUri != null) {
         _uiState.update { it.copy(currentAudioUri = newAudioUri) }
+        val duration = extractDurationFromUri(newAudioUri)
+
+        if (duration > 0) {
+          _uiState.update { it.copy(audioDurationMillis = duration) }
+        }
       }
 
-      // Save project synchronously (writes zip from currentAudioUri)
       saveProjectDataSync(zipFilePath)
 
       // Kick off a background re-processing to ensure preview generation remains unchanged
@@ -808,23 +801,46 @@ open class SamplerViewModel(
       val zipFile = File(zipFilePath)
       ProjectWriter()
           .writeProject(zipFile = zipFile, metadata = projectData, audioFiles = listOf(audioFile))
-
-      Log.i("SamplerViewModel", "Project saved: ${zipFile.absolutePath}")
     } catch (e: Exception) {
       Log.e("SamplerViewModel", "Failed to save ZIP file: ${e.message}", e)
     }
   }
 
-  /**
-   * Non-suspending API: launches audio processing in viewModelScope and returns the Job. Callers
-   * that need to wait for completion can join the returned Job and then read
-   * `uiState.value.currentAudioUri` to obtain the resulting Uri.
-   */
+  private fun extractDurationFromUri(uri: Uri): Int {
+    val extractor = MediaExtractor()
+    return try {
+      extractor.setDataSource(context, uri, null)
+
+      for (i in 0 until extractor.trackCount) {
+        val format = extractor.getTrackFormat(i)
+        val mime = format.getString(MediaFormat.KEY_MIME)
+
+        if (mime?.startsWith("audio/") == true) {
+          val durationUs = format.getLong(MediaFormat.KEY_DURATION)
+          return (durationUs / 1000).toInt()
+        }
+      }
+      -1
+    } catch (e: Exception) {
+      Log.e("SamplerViewModel", "Duration extract failed", e)
+      -1
+    } finally {
+      extractor.release()
+    }
+  }
+
   open fun audioBuilding(): Job? {
     val state = _uiState.value
     val originalUri =
         state.originalAudioUri ?: return null // Guards against missing original file URI
 
+    var tempoRatio: Double
+
+    if (state.inputTempo > 0) {
+      tempoRatio = state.tempo.toDouble() / state.inputTempo.toDouble()
+    } else {
+      tempoRatio = 1.0
+    }
     // Compute semitone shift
     val semitones =
         computeSemitoneShift(
@@ -846,6 +862,7 @@ open class SamplerViewModel(
                       reverbDepth = state.reverbDepth,
                       reverbPredelay = state.reverbPredelay,
                       semitones = semitones,
+                      tempoRatio = tempoRatio,
                       audioProcessor = audioProcessor,
                       attack = state.attack,
                       decay = state.decay,
@@ -874,6 +891,7 @@ open class SamplerViewModel(
       reverbPredelay: Float,
       audioProcessor: AudioProcessor,
       semitones: Int = 0,
+      tempoRatio: Double = 1.0,
       attack: Float = 0f,
       decay: Float = 0f,
       sustain: Float = 1f,
@@ -887,6 +905,10 @@ open class SamplerViewModel(
 
     // 2. Apply EQ: Parametric equalization is applied non-destructively to the samples
     samples = applyEQFilters(samples, sampleRate, eqBands)
+
+    if (tempoRatio != 1.0) {
+      samples = audioProcessor.timeStretch(samples, tempoRatio.toFloat())
+    }
 
     if (semitones != 0) {
       samples = audioProcessor.pitchShift(samples, semitones)
@@ -905,23 +927,19 @@ open class SamplerViewModel(
     // files)
     val out = File(context.cacheDir, "${base}_processed.wav")
 
-    Log.d(
-        "SamplerViewModel",
-        "Writing WAV: frames=${samples.size}, durationSec=${samples.size.toFloat() / sampleRate}")
-
     // Encode processed FloatArray back into a standard WAV file (PCM16 format)
     encodePCMToWAV(samples, sampleRate, channelCount, out)
-    Log.d("SamplerViewModel", "WAV file written: frames=${samples.size / channelCount}")
 
     return Uri.fromFile(out) // Return the URI of the newly processed file
   }
 
   interface AudioProcessor {
     fun pitchShift(samples: FloatArray, semitones: Int): FloatArray
+
+    fun timeStretch(samples: FloatArray, tempoRatio: Float): FloatArray
   }
 
   fun equalizeAudio(audioUri: Uri?, eqBands: List<Float>) {
-    Log.d("SamplerViewModel", "Equalize audio called, eqBands=$eqBands")
 
     if (audioUri == null) {
       Log.e("SamplerViewModel", "No audio to equalize")
@@ -937,9 +955,6 @@ open class SamplerViewModel(
       }
 
       val (samples, sampleRate, channelCount) = audioData
-      Log.d(
-          "SamplerViewModel",
-          "Decoded ${samples.size} samples at $sampleRate Hz, $channelCount channel(s)")
 
       // Apply EQ filters to the samples
       var processedSamples = applyEQFilters(samples, sampleRate, eqBands)
@@ -969,8 +984,6 @@ open class SamplerViewModel(
       // Update UI state with the new audio Uri
       val newUri = Uri.fromFile(outFile)
       _uiState.update { current -> current.copy(currentAudioUri = newUri) }
-
-      Log.i("SamplerViewModel", "Equalized audio written to ${outFile.absolutePath}")
     } catch (e: Exception) {
       Log.e("SamplerViewModel", "Failed to equalize audio: ${e.message}", e)
     }
@@ -1095,8 +1108,6 @@ open class SamplerViewModel(
 
       // Apply filter to all samples
       processedSamples = filter.process(processedSamples)
-
-      Log.d("SamplerViewModel", "Applied EQ at ${frequency}Hz with gain ${gainDB}dB")
     }
 
     return processedSamples
@@ -1216,10 +1227,6 @@ open class SamplerViewModel(
         out.write(intToBytes(dataSize))
         out.write(pcmData)
       }
-
-      Log.d(
-          "SamplerViewModel",
-          "WAV file written: ${outputFile.absolutePath} frames=${samples.size / channelCount}")
     } catch (e: Exception) {
       Log.e("SamplerViewModel", "Error encoding WAV: ${e.message}", e)
       throw e
@@ -1444,11 +1451,12 @@ open class SamplerViewModel(
 class NativeAudioProcessor : AudioProcessor {
   private external fun pitchShiftNative(samples: FloatArray, semitones: Int): FloatArray
 
+  private external fun timeStretchNative(samples: FloatArray, tempoRatio: Float): FloatArray
+
   companion object {
     init {
       try {
         System.loadLibrary("sampler_jni")
-        Log.d("SamplerViewModel", "Native SoundTouch library loaded.")
       } catch (e: UnsatisfiedLinkError) {
         Log.w(
             "SamplerViewModel", "Lib native not loaded (JVM test or environnement outside Android)")
@@ -1458,5 +1466,9 @@ class NativeAudioProcessor : AudioProcessor {
 
   override fun pitchShift(samples: FloatArray, semitones: Int): FloatArray {
     return pitchShiftNative(samples, semitones)
+  }
+
+  override fun timeStretch(samples: FloatArray, tempoRatio: Float): FloatArray {
+    return timeStretchNative(samples, tempoRatio)
   }
 }
