@@ -59,6 +59,7 @@ class SearchViewModelTest {
 
   @Test
   fun integrationLoadSamplesAndIncrementalUpdate() = runBlocking {
+    auth.signInAnonymously().await()
     clearFirestoreSamples()
 
     val audioPath = "test_samples/audio_${UUID.randomUUID()}.mp3"
@@ -72,7 +73,6 @@ class SearchViewModelTest {
     val viewModel =
         SearchViewModel(
             sampleRepo = realRepo,
-            context = context,
             useMockData = false,
             profileRepo = ProfileRepositoryProvider.repository,
             explicitStorageService = realStorageService,
@@ -92,7 +92,8 @@ class SearchViewModelTest {
             comments = 0,
             downloads = 0,
             ownerId = "tester",
-            storagePreviewSamplePath = audioPath)
+            storagePreviewSamplePath = audioPath,
+            isPublic = true)
     realRepo.addSample(sample1)
 
     var samples = withTimeout(timeOut) { viewModel.samples.filter { it.isNotEmpty() }.first() }

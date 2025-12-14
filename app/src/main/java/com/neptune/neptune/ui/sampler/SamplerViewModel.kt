@@ -10,10 +10,12 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.neptune.neptune.NepTuneApplication
+import com.neptune.neptune.domain.usecase.PreviewStoreHelper
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.project.AudioFileMetadata
 import com.neptune.neptune.model.project.ParameterMetadata
 import com.neptune.neptune.model.project.ProjectExtractor
+import com.neptune.neptune.model.project.ProjectItemsRepositoryLocal
 import com.neptune.neptune.model.project.ProjectWriter
 import com.neptune.neptune.model.project.SamplerProjectData
 import com.neptune.neptune.ui.sampler.SamplerViewModel.AudioProcessor
@@ -25,9 +27,7 @@ import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sin
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -105,7 +105,9 @@ data class SamplerUiState(
     get() = "$pitchNote$pitchOctave"
 }
 
-open class SamplerViewModel() : ViewModel() {
+open class SamplerViewModel(
+    private val previewStoreHelper: PreviewStoreHelper = PreviewStoreHelper()
+) : ViewModel() {
 
   val context: Context = NepTuneApplication.appContext
 
@@ -437,7 +439,7 @@ open class SamplerViewModel() : ViewModel() {
   }
 
   open fun updateReverbWet(value: Float) {
-    _uiState.update { it.copy(reverbWet = value.coerceIn(0.0f, 1.0f)) }
+    _uiState.update { it.copy(reverbWet = value.coerceIn(0.0f, 1f)) }
   }
 
   open fun updateReverbSize(value: Float) {
@@ -445,11 +447,11 @@ open class SamplerViewModel() : ViewModel() {
   }
 
   open fun updateReverbWidth(value: Float) {
-    _uiState.update { it.copy(reverbWidth = value.coerceIn(0.0f, 1.0f)) }
+    _uiState.update { it.copy(reverbWidth = value.coerceIn(0.0f, 1f)) }
   }
 
   open fun updateReverbDepth(value: Float) {
-    _uiState.update { it.copy(reverbDepth = value.coerceIn(0.0f, 1.0f)) }
+    _uiState.update { it.copy(reverbDepth = value.coerceIn(0.0f, 1f)) }
   }
 
   open fun updateReverbPredelay(value: Float) {
@@ -465,7 +467,7 @@ open class SamplerViewModel() : ViewModel() {
   }
 
   open fun updateCompKnee(value: Float) {
-    _uiState.update { it.copy(compKnee = value.coerceIn(0.0f, COMP_KNEE_MAX)) }
+    _uiState.update { it.copy(compKnee = value.coerceIn(0f, COMP_KNEE_MAX)) }
   }
 
   open fun updateCompGain(value: Float) {
@@ -473,11 +475,11 @@ open class SamplerViewModel() : ViewModel() {
   }
 
   open fun updateCompAttack(value: Float) {
-    _uiState.update { it.copy(compAttack = value.coerceIn(0.0f, COMP_TIME_MAX)) }
+    _uiState.update { it.copy(compAttack = value.coerceIn(0f, COMP_TIME_MAX)) }
   }
 
   open fun updateCompDecay(value: Float) {
-    _uiState.update { it.copy(compDecay = value.coerceIn(0.0f, COMP_TIME_MAX)) }
+    _uiState.update { it.copy(compDecay = value.coerceIn(0f, COMP_TIME_MAX)) }
   }
 
   fun loadWaveform(uri: Uri) {
@@ -578,7 +580,8 @@ open class SamplerViewModel() : ViewModel() {
               return@launch
             }
 
-        val sampleDuration = extractDurationFromUri(audioUri)
+        val sampleDuration = mediaPlayer.getDuration()
+        Log.d("SamplerViewModel", "URI audio loaded: $audioUri")
 
         val paramMap = projectData.parameters.associate { it.type to it.value }
 
@@ -692,7 +695,13 @@ open class SamplerViewModel() : ViewModel() {
 
   open fun saveProjectData(zipFilePath: String): Job {
     return viewModelScope.launch {
-      val newAudioUri: Uri? = audioBuilding()
+      // Launch audio processing and wait for it to finish, then read the updated ui state
+      val processingJob = audioBuilding()
+      if (processingJob != null) {
+        processingJob.join()
+      }
+
+      val newAudioUri: Uri? = _uiState.value.currentAudioUri
 
       if (newAudioUri != null) {
         _uiState.update { it.copy(currentAudioUri = newAudioUri) }
@@ -704,6 +713,29 @@ open class SamplerViewModel() : ViewModel() {
       }
 
       saveProjectDataSync(zipFilePath)
+
+      // Kick off a background re-processing to ensure preview generation remains unchanged
+      audioBuilding()
+
+      try {
+        val projectsJsonRepo = ProjectItemsRepositoryLocal(context)
+        val projectId: String = projectsJsonRepo.findProjectWithProjectFile(zipFilePath).uid
+        val state = _uiState.value
+        val previewUri = state.currentAudioUri ?: return@launch
+
+        // Delegate the actual copying to PreviewStoreHelper which performs IO on Dispatchers.IO
+        val previewLocalPath =
+            previewStoreHelper.saveTempPreviewToPreviewsDir(projectId, previewUri)
+
+        // Update project entry with the preview local path
+        val project = projectsJsonRepo.findProjectWithProjectFile(zipFilePath)
+        val updated = project.copy(audioPreviewLocalPath = previewLocalPath)
+        projectsJsonRepo.editProject(project.uid, updated)
+
+        Log.i("SamplerViewModel", "Saved preview for project $projectId -> $previewLocalPath")
+      } catch (e: Exception) {
+        Log.w("SamplerViewModel", "Failed to save preview for project", e)
+      }
     }
   }
 
@@ -776,95 +808,81 @@ open class SamplerViewModel() : ViewModel() {
     }
   }
 
-  private fun extractDurationFromUri(uri: Uri): Int {
-    val extractor = MediaExtractor()
-    return try {
-      extractor.setDataSource(context, uri, null)
+    private fun extractDurationFromUri(uri: Uri): Int {
+        val extractor = MediaExtractor()
+        return try {
+            extractor.setDataSource(context, uri, null)
 
-      for (i in 0 until extractor.trackCount) {
-        val format = extractor.getTrackFormat(i)
-        val mime = format.getString(MediaFormat.KEY_MIME)
+            for (i in 0 until extractor.trackCount) {
+                val format = extractor.getTrackFormat(i)
+                val mime = format.getString(MediaFormat.KEY_MIME)
 
-        if (mime?.startsWith("audio/") == true) {
-          val durationUs = format.getLong(MediaFormat.KEY_DURATION)
-          return (durationUs / 1000).toInt()
+                if (mime?.startsWith("audio/") == true) {
+                    val durationUs = format.getLong(MediaFormat.KEY_DURATION)
+                    return (durationUs / 1000).toInt()
+                }
+            }
+            -1
+        } catch (e: Exception) {
+            Log.e("SamplerViewModel", "Duration extract failed", e)
+            -1
+        } finally {
+            extractor.release()
         }
-      }
-      -1
-    } catch (e: Exception) {
-      Log.e("SamplerViewModel", "Duration extract failed", e)
-      -1
-    } finally {
-      extractor.release()
     }
-  }
 
-  suspend fun audioBuilding(): Uri? {
-    val state = _uiState.value
-    val originalUri =
-        state.originalAudioUri ?: return null // Guards against missing original file URI
+    open fun audioBuilding(): Job? {
+        val state = _uiState.value
+        val originalUri =
+            state.originalAudioUri ?: return null // Guards against missing original file URI
 
-    // CompletableDeferred acts as a Promise/Future to hold the Uri result from the coroutine
-    val deferred = CompletableDeferred<Uri?>()
+        var tempoRatio: Double
 
-    // Define a Coroutine Context for background work (Dispatchers.Default)
-    // and includes an exception handler to complete the Deferred value if the process crashes.
-    val context =
-        Dispatchers.Default +
-            CoroutineExceptionHandler { _, e ->
-              Log.e("SamplerViewModel", "audioBuilding failed: ${e.message}", e)
-              deferred.complete(null) // Complete the Deferred with null on failure
+        if (state.inputTempo > 0) {
+            tempoRatio = state.tempo.toDouble() / state.inputTempo.toDouble()
+        } else {
+            tempoRatio = 1.0
+        }
+        // Compute semitone shift
+        val semitones =
+            computeSemitoneShift(
+                state.inputPitchNote, state.inputPitchOctave, state.pitchNote, state.pitchOctave)
+
+        val job =
+            viewModelScope.launch {
+                try {
+                    // Execute the synchronous DSP pipeline on the default/background dispatcher
+                    val newUri =
+                        withContext(dispatcherProvider.default) {
+                            processAudio(
+                                currentAudioUri =
+                                    originalUri, // Source is the original file (non-destructive)
+                                eqBands = state.eqBands,
+                                reverbWet = state.reverbWet,
+                                reverbSize = state.reverbSize,
+                                reverbWidth = state.reverbWidth,
+                                reverbDepth = state.reverbDepth,
+                                reverbPredelay = state.reverbPredelay,
+                                semitones = semitones,
+                                tempoRatio = tempoRatio,
+                                audioProcessor = audioProcessor,
+                                attack = state.attack,
+                                decay = state.decay,
+                                sustain = state.sustain,
+                                release = state.release)
+                        }
+
+                    if (newUri != null) {
+                        _uiState.update { it.copy(currentAudioUri = newUri) }
+                    }
+                } catch (e: Exception) {
+                    Log.e("SamplerViewModel", "audioBuilding failed: ${e.message}", e)
+                }
             }
 
-    var tempoRatio: Double
-
-    if (state.inputTempo > 0) {
-      tempoRatio = state.tempo.toDouble() / state.inputTempo.toDouble()
-    } else {
-      tempoRatio = 1.0
+        return job
     }
 
-    val semitones =
-        computeSemitoneShift(
-            state.inputPitchNote, state.inputPitchOctave, state.pitchNote, state.pitchOctave)
-
-    // Launch the main processing coroutine
-    viewModelScope.launch(context) {
-      try {
-        // Execute the synchronous DSP pipeline on a background thread (Dispatchers.Default)
-        val newUri =
-            withContext(dispatcherProvider.default) {
-              processAudio(
-                  currentAudioUri = originalUri,
-                  eqBands = state.eqBands,
-                  reverbWet = state.reverbWet,
-                  reverbSize = state.reverbSize,
-                  reverbWidth = state.reverbWidth,
-                  reverbDepth = state.reverbDepth,
-                  reverbPredelay = state.reverbPredelay,
-                  semitones = semitones,
-                  tempoRatio = tempoRatio,
-                  audioProcessor = audioProcessor,
-                  attack = state.attack,
-                  decay = state.decay,
-                  sustain = state.sustain,
-                  release = state.release)
-            }
-
-        // If processing succeeds, update the UI state with the new processed audio URI
-        if (newUri != null) {
-          _uiState.update { it.copy(currentAudioUri = newUri) }
-        }
-        deferred.complete(newUri) // Signal completion to the outer runBlocking caller
-      } catch (e: Exception) {
-        Log.e("SamplerViewModel", "audioBuilding failed: ${e.message}", e)
-        deferred.complete(null)
-      }
-    }
-
-    // Blocks the caller thread until the processing coroutine completes and deferred has a value.
-    return deferred.await()
-  }
 
   internal fun processAudio(
       currentAudioUri: Uri?,

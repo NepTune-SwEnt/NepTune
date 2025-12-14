@@ -18,6 +18,10 @@ class MediaRepositoryImpl(private val dao: MediaDao) : MediaRepository {
 
   override suspend fun upsert(item: MediaItem) = dao.upsert(toEntity(item))
 
+  override suspend fun delete(item: MediaItem) {
+    dao.delete(toEntity(item))
+  }
+
   private companion object {
     // Convert MediaItemEntity to MediaItem
     fun toDomain(e: MediaItemEntity) = MediaItem(id = e.id, e.projectUri)

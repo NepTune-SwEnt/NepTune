@@ -15,6 +15,7 @@ import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.ui.follow.FollowListScreenTestTags
 import com.neptune.neptune.ui.follow.FollowListTab
+import com.neptune.neptune.ui.settings.SettingsViewModel
 import com.neptune.neptune.ui.theme.SampleAppTheme
 import io.mockk.every
 import io.mockk.mockk
@@ -60,11 +61,15 @@ class FollowListNavigationTest {
 
   @Test
   fun followListRouteUsesInitialTabArgument() {
+    val mockSettingsViewModel = mockk<SettingsViewModel>(relaxed = true)
     composeTestRule.setContent {
       val controller = rememberNavController()
       navController = controller
       SampleAppTheme {
-        NeptuneApp(navController = controller, startDestination = Screen.Main.route)
+        NeptuneApp(
+            navController = controller,
+            startDestination = Screen.Main.route,
+            settingsViewModel = mockSettingsViewModel)
       }
     }
     composeTestRule.runOnUiThread {
@@ -82,11 +87,15 @@ class FollowListNavigationTest {
 
   @Test
   fun invalidFollowListArgumentFallsBackToFollowersTab() {
+    val mockSettingsViewModel = mockk<SettingsViewModel>(relaxed = true)
     composeTestRule.setContent {
       val controller = rememberNavController()
       navController = controller
       SampleAppTheme {
-        NeptuneApp(navController = controller, startDestination = Screen.Main.route)
+        NeptuneApp(
+            navController = controller,
+            startDestination = Screen.Main.route,
+            settingsViewModel = mockSettingsViewModel)
       }
     }
     composeTestRule.runOnUiThread { navController?.navigate("follow_list/INVALID") }

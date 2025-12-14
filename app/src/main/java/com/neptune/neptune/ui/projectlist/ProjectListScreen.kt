@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.projectlist
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -59,12 +60,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Timestamp
 import com.neptune.neptune.R
+import com.neptune.neptune.media.LocalMediaPlayer
+import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
+import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import kotlinx.coroutines.runBlocking
 
@@ -92,6 +97,7 @@ private const val SEARCHBAR_FONT_SIZE = 21
  * @param credentialManager Manages user credentials.
  * @param onProjectClick Lambda function to navigate.
  * @param projectListViewModel ViewModel managing the state of the project list.
+ * @param mediaPlayer NeptuneMediaPlayer instance used to play audio previews.
  * @author Uri Jaquet
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,10 +106,13 @@ fun ProjectListScreen(
     credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
     onProjectClick: (ProjectItem) -> Unit = {},
     projectListViewModel: ProjectListViewModel = viewModel(),
+    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
 ) {
   val uiState by projectListViewModel.uiState.collectAsState()
   val projects: List<ProjectItem> = uiState.projects
   val selectedProjects: String? = uiState.selectedProject
+  val isOnline by projectListViewModel.isOnline.collectAsState()
+  val isUserLoggedIn = projectListViewModel.isUserLoggedIn
 
   var searchText by remember { mutableStateOf("") }
   val filteredProjects =
@@ -126,12 +135,16 @@ fun ProjectListScreen(
                     .fillMaxSize()
                     .padding(it)) {
               SearchBar(value = searchText, onValueChange = { searchText = it })
+              if (!isOnline && isUserLoggedIn) {
+                OfflineBanner()
+              }
               ProjectList(
                   projects = filteredProjects,
                   selectedProject = selectedProjects,
                   modifier = Modifier.padding(it),
                   projectListViewModel = projectListViewModel,
-                  onProjectClick = onProjectClick)
+                  onProjectClick = onProjectClick,
+                  mediaPlayer = mediaPlayer)
             }
       })
 }
@@ -144,6 +157,7 @@ fun ProjectListScreen(
  * @param modifier Modifier for styling.
  * @param projectListViewModel ViewModel managing the state of the project list.
  * @param onProjectClick Lambda function to navigate.
+ * @param mediaPlayer NeptuneMediaPlayer instance used to play audio previews.
  * @author Uri Jaquet
  */
 @Composable
@@ -153,6 +167,7 @@ fun ProjectList(
     selectedProject: String? = null,
     projectListViewModel: ProjectListViewModel,
     onProjectClick: (ProjectItem) -> Unit = {},
+    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
 ) {
 
   val lineColor = NepTuneTheme.colors.onBackground
@@ -173,7 +188,8 @@ fun ProjectList(
               project = project,
               selectedProject = selectedProject,
               onProjectClick = onProjectClick,
-              projectListViewModel = projectListViewModel)
+              projectListViewModel = projectListViewModel,
+              mediaPlayer = mediaPlayer)
         }
       }
     }
@@ -188,6 +204,7 @@ fun ProjectList(
  * @param selectedProject ID of the currently selected project, if any.
  * @param onProjectClick Lambda function to open the selected project.
  * @param projectListViewModel ViewModel managing the state of the project list.
+ * @param mediaPlayer NeptuneMediaPlayer used to play audio previews.
  * @author Uri Jaquet
  */
 @Composable
@@ -196,6 +213,7 @@ fun ProjectListItem(
     selectedProject: String? = null,
     onProjectClick: (ProjectItem) -> Unit = {},
     projectListViewModel: ProjectListViewModel,
+    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
 ) {
   val backGroundColor =
       if (project.uid == selectedProject) NepTuneTheme.colors.listBackground
@@ -230,7 +248,24 @@ fun ProjectListItem(
               modifier = Modifier.padding(start = 5.dp),
               verticalAlignment = Alignment.CenterVertically) {
                 IconButton(
-                    onClick = {},
+                    onClick = {
+                      // Play the project's preview audio if available, otherwise fall back to a
+                      // demo resource
+                      try {
+                        val path = project.audioPreviewLocalPath
+                        val uri =
+                            if (!path.isNullOrBlank()) {
+                              path.toUri()
+                            } else {
+                              // fallback demo URI from the media player helper
+                              mediaPlayer.getUriFromSampleId(project.uid)
+                            }
+                        mediaPlayer.togglePlay(uri)
+                      } catch (e: Exception) {
+                        Log.e("ProjectListItem", "Error playing preview for ${project.uid}", e)
+                      }
+                    },
+                    modifier = Modifier.testTag("play_${project.uid}"),
                     content = {
                       Icon(
                           Icons.Default.PlayArrow,
@@ -274,6 +309,7 @@ fun EditMenu(
   var showRenameDialog by remember { mutableStateOf(false) }
   var showChangeDescDialog by remember { mutableStateOf(false) }
   var showDeleteDialog by remember { mutableStateOf(false) }
+  val isOnline by projectListViewModel.isOnline.collectAsState()
 
   if (showRenameDialog) {
     RenameProjectDialog(
@@ -304,68 +340,71 @@ fun EditMenu(
         onDismiss = { showDeleteDialog = false })
   }
 
-  // Right  buttons
-  Row {
-    // Star favorite toggle
-    IconButton(
-        onClick = { projectListViewModel.toggleFavorite(project.uid) },
-        modifier = Modifier.testTag("favorite_${project.uid}")) {
-          Icon(
-              imageVector = if (project.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
-              contentDescription = "Favorite",
-              tint = NepTuneTheme.colors.onBackground,
-              modifier = Modifier.size(26.dp))
-        }
-
-    Box(modifier = Modifier.padding(end = 0.dp)) {
+  if (isOnline) {
+    // Right  buttons
+    Row {
+      // Star favorite toggle
       IconButton(
-          onClick = { expanded = true }, modifier = Modifier.testTag("menu_${project.uid}")) {
+          onClick = { projectListViewModel.toggleFavorite(project.uid) },
+          modifier = Modifier.testTag("favorite_${project.uid}")) {
             Icon(
-                Icons.Rounded.MoreVert,
-                contentDescription = "Edit",
+                imageVector =
+                    if (project.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
+                contentDescription = "Favorite",
                 tint = NepTuneTheme.colors.onBackground,
-                modifier = Modifier.size(30.dp).padding(end = 0.dp),
-            )
+                modifier = Modifier.size(26.dp))
           }
-      DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-        DropdownMenuItem(
-            modifier = Modifier.testTag(ProjectListScreenTestTags.RENAME_BUTTON),
-            text = { Text("Rename") },
-            onClick = {
-              showRenameDialog = true
-              expanded = false
-            })
-        DropdownMenuItem(
-            modifier = Modifier.testTag(ProjectListScreenTestTags.CHANGE_DESCRIPTION_BUTTON),
-            text = { Text("Change Description") },
-            onClick = {
-              showChangeDescDialog = true
-              expanded = false
-            })
-        if (!project.isStoredInCloud) {
+
+      Box(modifier = Modifier.padding(end = 0.dp)) {
+        IconButton(
+            onClick = { expanded = true }, modifier = Modifier.testTag("menu_${project.uid}")) {
+              Icon(
+                  Icons.Rounded.MoreVert,
+                  contentDescription = "Edit",
+                  tint = NepTuneTheme.colors.onBackground,
+                  modifier = Modifier.size(30.dp).padding(end = 0.dp),
+              )
+            }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
           DropdownMenuItem(
-              modifier = Modifier.testTag(ProjectListScreenTestTags.ADD_TO_CLOUD_BUTTON),
-              text = { Text("Add to Cloud") },
+              modifier = Modifier.testTag(ProjectListScreenTestTags.RENAME_BUTTON),
+              text = { Text("Rename") },
               onClick = {
-                projectListViewModel.addProjectToCloud(project.uid)
+                showRenameDialog = true
                 expanded = false
               })
-        } else {
           DropdownMenuItem(
-              modifier = Modifier.testTag(ProjectListScreenTestTags.REMOVE_FROM_CLOUD_BUTTON),
-              text = { Text("Remove from Cloud") },
+              modifier = Modifier.testTag(ProjectListScreenTestTags.CHANGE_DESCRIPTION_BUTTON),
+              text = { Text("Change Description") },
               onClick = {
-                projectListViewModel.removeProjectFromCloud(project.uid)
+                showChangeDescDialog = true
+                expanded = false
+              })
+          if (!project.isStoredInCloud) {
+            DropdownMenuItem(
+                modifier = Modifier.testTag(ProjectListScreenTestTags.ADD_TO_CLOUD_BUTTON),
+                text = { Text("Add to Cloud") },
+                onClick = {
+                  projectListViewModel.addProjectToCloud(project.uid)
+                  expanded = false
+                })
+          } else {
+            DropdownMenuItem(
+                modifier = Modifier.testTag(ProjectListScreenTestTags.REMOVE_FROM_CLOUD_BUTTON),
+                text = { Text("Remove from Cloud") },
+                onClick = {
+                  projectListViewModel.removeProjectFromCloud(project.uid)
+                  expanded = false
+                })
+          }
+          DropdownMenuItem(
+              modifier = Modifier.testTag(ProjectListScreenTestTags.DELETE_BUTTON),
+              text = { Text("Delete") },
+              onClick = {
+                showDeleteDialog = true
                 expanded = false
               })
         }
-        DropdownMenuItem(
-            modifier = Modifier.testTag(ProjectListScreenTestTags.DELETE_BUTTON),
-            text = { Text("Delete") },
-            onClick = {
-              showDeleteDialog = true
-              expanded = false
-            })
       }
     }
   }
@@ -572,5 +611,9 @@ fun ProjectListScreenPreview(
   }
   val vm = ProjectListViewModel(projectRepository = repo)
 
-  ProjectListScreen(projectListViewModel = vm, onProjectClick = onProjectClick)
+  // Provide an explicit NeptuneMediaPlayer for preview to avoid relying on composition local
+  val previewPlayer = NeptuneMediaPlayer()
+
+  ProjectListScreen(
+      projectListViewModel = vm, onProjectClick = onProjectClick, mediaPlayer = previewPlayer)
 }

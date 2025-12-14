@@ -238,6 +238,7 @@ class PostScreenTest {
     val uiStateFlow = MutableStateFlow(PostUiState(isUploading = true))
     every { mockViewModel.uiState } returns uiStateFlow
     every { mockViewModel.localImageUri } returns MutableStateFlow(null)
+    every { mockViewModel.isOnline } returns MutableStateFlow(true)
 
     composeTestRule.setContent {
       CompositionLocalProvider(LocalMediaPlayer provides mockk(relaxed = true)) {

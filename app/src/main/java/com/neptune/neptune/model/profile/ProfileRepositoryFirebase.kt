@@ -22,7 +22,6 @@ const val USERNAMES_COLLECTION_PATH = "usernames"
 const val GUEST_NAME = "anonymous"
 const val TAG_WEIGHT_MAX = 50.0
 private const val DEFAULT_BIO = "Hello! New NepTune user here!"
-private const val MAX_USER_QUERY_RESULTS = 50L
 
 /**
  * Firebase-backed implementation of [ProfileRepository] using Firestore.
@@ -49,7 +48,8 @@ class ProfileRepositoryFirebase(
 
   /** Returns the current authenticated user's profile, or null if none exists. */
   override suspend fun getCurrentProfile(): Profile? {
-    return getProfile(requireCurrentUid())
+    val uid = auth.currentUser?.uid ?: return null
+    return getProfile(uid)
   }
 
   /** Returns the profile corresponding to the given user uid, or null if none exists. */
@@ -154,6 +154,7 @@ class ProfileRepositoryFirebase(
   }
 
   override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
+    val uid = auth.currentUser?.uid ?: return null
     val profile = getCurrentProfile()
 
     // 1) Try to read tagsWeight map
@@ -174,7 +175,7 @@ class ProfileRepositoryFirebase(
         tagsWeight[tag] = 1.0
       }
     }
-    return RecoUserProfile(uid = requireCurrentUid(), tagsWeight = tagsWeight)
+    return RecoUserProfile(uid = uid, tagsWeight = tagsWeight)
   }
 
   /**

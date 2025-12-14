@@ -41,6 +41,10 @@ private class CapturingRepo : MediaRepository {
   override suspend fun upsert(item: MediaItem) {
     state.value = state.value + item
   }
+
+  override suspend fun delete(item: MediaItem) {
+    state.value = state.value - item
+  }
 }
 
 @RunWith(RobolectricTestRunner::class)

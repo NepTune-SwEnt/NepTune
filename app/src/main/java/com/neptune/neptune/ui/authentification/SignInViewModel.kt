@@ -12,24 +12,23 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.google.firebase.Firebase
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
-import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.database
+import com.neptune.neptune.util.NetworkConnectivityObserver
 import com.neptune.neptune.util.RealtimeDatabaseProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -125,12 +124,13 @@ data class EmailAuthUiState(
  */
 class SignInViewModel(
     private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val googleIdOptionFactory: GoogleIdOptionFactory = DefaultGoogleIdOptionFactory()
+    private val googleIdOptionFactory: GoogleIdOptionFactory = DefaultGoogleIdOptionFactory(),
+    private val connectivityObserver: NetworkConnectivityObserver = NetworkConnectivityObserver()
 ) : ViewModel() {
 
   private lateinit var credentialManager: CredentialManager
 
-  private val _signInStatus = MutableStateFlow<SignInStatus>(SignInStatus.BEFORE_INITIALIZATION)
+  private val _signInStatus = MutableStateFlow(SignInStatus.BEFORE_INITIALIZATION)
 
   /** Exposes the currently authenticated [SignInStatus] as a read-only [StateFlow]. */
   val signInStatus: StateFlow<SignInStatus> = _signInStatus.asStateFlow()
@@ -145,6 +145,8 @@ class SignInViewModel(
   /** Email/password form UI state. */
   private val _emailAuthUiState = MutableStateFlow(EmailAuthUiState())
   val emailAuthUiState: StateFlow<EmailAuthUiState> = _emailAuthUiState.asStateFlow()
+  private val _isOnline = MutableStateFlow(true)
+  val isOnline = _isOnline.asStateFlow()
 
   /**
    * Initializes the ViewModel.
@@ -163,14 +165,36 @@ class SignInViewModel(
     navigateMain = navigate
     clientId = serverClientId
 
-    val initialUser = firebaseAuth.currentUser
-    _currentUser.value = initialUser
-    if (initialUser != null) {
-      _signInStatus.value = SignInStatus.SUCCESS
-      setupPresence(initialUser.uid)
-      navigateMain()
-    } else {
-      _signInStatus.value = SignInStatus.SIGNED_OUT
+    viewModelScope.launch {
+      val isNetworkAvailable =
+          try {
+            connectivityObserver.isOnline.first()
+          } catch (_: Exception) {
+            false
+          }
+      val initialUser = firebaseAuth.currentUser
+      _currentUser.value = initialUser
+      if (initialUser != null) {
+        if (isNetworkAvailable) {
+          // logged and network
+          _signInStatus.value = SignInStatus.SUCCESS
+          setupPresence(initialUser.uid)
+          navigateMain()
+        } else {
+          // logged but no network
+          signOut()
+        }
+      } else {
+        // not logged
+        _signInStatus.value = SignInStatus.SIGNED_OUT
+      }
+      viewModelScope.launch {
+        try {
+          connectivityObserver.isOnline.collect { status -> _isOnline.value = status }
+        } catch (e: Exception) {
+          Log.e("SignInViewModel", "Network observer error", e)
+        }
+      }
     }
   }
 
@@ -247,6 +271,11 @@ class SignInViewModel(
 
   fun setConfirmPassword(value: String) {
     _emailAuthUiState.value = _emailAuthUiState.value.copy(confirmPassword = value)
+  }
+
+  fun signInOffline() {
+    _signInStatus.value = SignInStatus.SUCCESS
+    navigateMain()
   }
 
   fun toggleRegisterMode() {
@@ -352,7 +381,6 @@ class SignInViewModel(
           is FirebaseAuthInvalidUserException -> "User not found"
           is FirebaseAuthInvalidCredentialsException -> "Invalid credentials"
           is FirebaseAuthUserCollisionException -> "Email already in use"
-          is FirebaseAuthWeakPasswordException -> "Weak password"
           is FirebaseNetworkException -> "Network error"
           else -> "Authentication error"
         }
@@ -411,13 +439,17 @@ class SignInViewModel(
    */
   fun signOut() {
     viewModelScope.launch {
-      firebaseAuth.currentUser?.uid?.let { uid ->
-        Firebase.database
-            .getReference("status/$uid")
-            .setValue(mapOf("state" to "offline", "lastChanged" to ServerValue.TIMESTAMP))
-      }
+      try {
+        firebaseAuth.currentUser?.uid?.let { uid ->
+          val db = RealtimeDatabaseProvider.getDatabase()
+          db.getReference("status/$uid")
+              .setValue(mapOf("state" to "offline", "lastChanged" to ServerValue.TIMESTAMP))
+        }
 
-      firebaseAuth.signOut()
+        firebaseAuth.signOut()
+      } catch (_: Exception) {
+        Log.e("SignInViewModel", "Error during sign out")
+      }
       _currentUser.value = null
       _signInStatus.value = SignInStatus.SIGNED_OUT
       _emailAuthUiState.value = EmailAuthUiState()
