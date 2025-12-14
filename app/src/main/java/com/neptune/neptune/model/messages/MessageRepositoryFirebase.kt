@@ -7,7 +7,6 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.SetOptions
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.util.RealtimeDatabaseProvider
@@ -44,34 +43,32 @@ class MessageRepositoryFirebase(
                     return@addSnapshotListener
                   }
 
-                  // Build previews
-                  val previews =
-                      snapshot.documents.mapNotNull { doc ->
-                        val participants =
-                            (doc["participants"] as? List<*>)?.mapNotNull { it as? String }
-                                ?: return@mapNotNull null
-                        val otherUid =
-                            participants.firstOrNull { it != currentUid } ?: return@mapNotNull null
-
-                        val lastMessage = doc.getString("lastMessage")
-                        val lastTimestamp = doc.getTimestamp("lastTimestamp")
-
-                        Triple(otherUid, lastMessage, lastTimestamp)
-                      }
-
                   launch {
-                    val result =
-                        previews.mapNotNull { (otherUid, msg, ts) ->
+                    // Build preview
+                    val previews =
+                        snapshot.documents.mapNotNull { doc ->
+                          val participants =
+                              (doc["participants"] as? List<*>)?.mapNotNull { it as? String }
+                                  ?: return@mapNotNull null
+
+                          val otherUid =
+                              participants.firstOrNull { it != currentUid }
+                                  ?: return@mapNotNull null
+
+                          val lastMessage = doc.getString("lastMessage") ?: ""
+                          val lastTimestamp = doc.getTimestamp("lastTimestamp")
+
                           val profile: Profile? = profileRepo.getProfile(otherUid)
                           profile?.let {
                             UserMessagePreview(
                                 profile = it,
-                                lastMessage = msg,
-                                lastTimestamp = ts,
+                                lastMessage = lastMessage,
+                                lastTimestamp = lastTimestamp,
                                 isOnline = false)
                           }
                         }
-                    trySend(result)
+
+                    trySend(previews)
                   }
                 }
 
@@ -135,8 +132,7 @@ class MessageRepositoryFirebase(
   /** sends messages */
   override suspend fun sendMessage(conversationId: String, message: Message) {
     val convRef = firestore.collection("messages").document(conversationId)
-    val participants = conversationId.split("_")
-    val msgRef = convRef.collection("messages").document(message.id)
+    val msgRef = convRef.collection("messages").document()
 
     // Add message
     msgRef
@@ -145,16 +141,6 @@ class MessageRepositoryFirebase(
                 "authorId" to message.authorId,
                 "text" to message.text,
                 "timestamp" to FieldValue.serverTimestamp()))
-        .await()
-
-    // Update preview
-    convRef
-        .set(
-            mapOf(
-                "participants" to participants,
-                "lastMessage" to message.text,
-                "lastTimestamp" to FieldValue.serverTimestamp()),
-            SetOptions.merge())
         .await()
   }
 }

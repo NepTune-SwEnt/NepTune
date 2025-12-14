@@ -310,8 +310,7 @@ fun NeptuneApp(
                       onSelectUser = { uid ->
                         navigationActions.navigateTo(Screen.Messages.createRoute(uid))
                       },
-                      currentUid = currentUid,
-                      navController = navController)
+                      currentUid = currentUid)
                 }
                 composable(
                     route = Screen.Messages.route,

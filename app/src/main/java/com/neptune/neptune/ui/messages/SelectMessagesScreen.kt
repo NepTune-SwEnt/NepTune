@@ -42,12 +42,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.AsyncImage
 import com.neptune.neptune.R
 import com.neptune.neptune.model.messages.UserMessagePreview
-import com.neptune.neptune.ui.navigation.Screen
 import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.NetworkConnectivityObserver
@@ -97,7 +94,6 @@ fun SelectMessagesScreen(
     goBack: () -> Unit,
     onSelectUser: (String) -> Unit,
     currentUid: String,
-    navController: NavHostController,
     selectMessagesViewModel: SelectMessagesViewModel =
         viewModel(factory = SelectMessagesViewModelFactory(currentUid))
 ) {
@@ -112,13 +108,6 @@ fun SelectMessagesScreen(
     }
   }
 
-  // Trigger reload whenever this screen becomes visible
-  val navBackStackEntry by navController.currentBackStackEntryAsState()
-  LaunchedEffect(navBackStackEntry) {
-    if (navBackStackEntry?.destination?.route == Screen.SelectMessages.route) {
-      selectMessagesViewModel.refreshMessagePreviews()
-    }
-  }
   Column(
       modifier =
           Modifier.fillMaxSize()
