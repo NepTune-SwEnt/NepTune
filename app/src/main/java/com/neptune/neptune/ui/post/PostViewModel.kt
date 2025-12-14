@@ -11,6 +11,8 @@ import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.R
 import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.data.storage.StorageService
+import com.neptune.neptune.model.profile.ProfileRepository
+import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.model.project.TotalProjectItemsRepository
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.model.sample.Sample
@@ -30,6 +32,7 @@ import kotlinx.coroutines.launch
 class PostViewModel(
     private val projectRepository: TotalProjectItemsRepository =
         TotalProjectItemsRepositoryProvider.repository,
+    private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
     private val storageService: StorageService? =
         StorageService(
             FirebaseStorage.getInstance(
@@ -183,6 +186,7 @@ class PostViewModel(
     viewModelScope.launch {
       try {
         storageService?.uploadSampleFiles(_uiState.value.sample, currentZipUri, localImageUri.value)
+        profileRepo.updatePostCount(1)
         _uiState.update { it.copy(isUploading = false, postComplete = true) }
       } catch (e: Exception) {
         Log.e("PostViewModel", "error on upload", e)
