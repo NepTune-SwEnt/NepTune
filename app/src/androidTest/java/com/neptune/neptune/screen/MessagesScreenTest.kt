@@ -1,9 +1,7 @@
 package com.neptune.neptune.screen
 
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -28,10 +26,20 @@ class MessagesScreenTest {
   @get:Rule val composeTestRule = createComposeRule()
 
   private fun setContent(
-      uid: String = "123",
+      otherUserId: String = "123",
+      currentUserId: String = "me",
       goBack: () -> Unit = {},
+      messagesViewModel: MessagesViewModel? = null
   ) {
-    composeTestRule.setContent { MessagesScreen(uid = uid, goBack = goBack) }
+    composeTestRule.setContent {
+      MessagesScreen(
+          otherUserId = otherUserId,
+          currentUserId = currentUserId,
+          goBack = goBack,
+          messagesViewModel =
+              messagesViewModel
+                  ?: MessagesViewModel(otherUserId = otherUserId, currentUserId = currentUserId))
+    }
   }
 
   @Test
@@ -68,10 +76,15 @@ class MessagesScreenTest {
 
   @Test
   fun canWriteANewMessage() {
-    val testViewModel = MessagesViewModel(otherUserId = "21", initialMessages = emptyList())
+    val testViewModel = MessagesViewModel(otherUserId = "21", currentUserId = "me")
     // Set content with the test ViewModel
     composeTestRule.setContent {
-      MessagesScreen(uid = "21", goBack = {}, messagesViewModel = testViewModel, autoScroll = false)
+      MessagesScreen(
+          otherUserId = "21",
+          currentUserId = "me",
+          goBack = {},
+          messagesViewModel = testViewModel,
+          autoScroll = false)
     }
 
     // Write a message
@@ -94,11 +107,15 @@ class MessagesScreenTest {
   /** Tests that bubbles appear when a new message is written */
   @Test
   fun messagesAddsBubble() {
-    val testViewModel = MessagesViewModel(otherUserId = "234", initialMessages = emptyList())
+    val testViewModel = MessagesViewModel(otherUserId = "234", currentUserId = "me")
     // Set content with the test ViewModel
     composeTestRule.setContent {
       MessagesScreen(
-          uid = "234", goBack = {}, messagesViewModel = testViewModel, autoScroll = false)
+          otherUserId = "234",
+          currentUserId = "me",
+          goBack = {},
+          messagesViewModel = testViewModel,
+          autoScroll = false)
     }
 
     // Write a message
@@ -122,78 +139,5 @@ class MessagesScreenTest {
     setContent(goBack = { backClicked = true })
     composeTestRule.onNodeWithTag(MessagesScreenTestTags.BACK_BUTTON).performClick()
     assertTrue(backClicked)
-  }
-
-  /** Tests that u1 fake data loads correctly */
-  @Test
-  fun messagesScreenLoadsFakeDataForU1() {
-    composeTestRule.setContent { MessagesScreen(uid = "u1", goBack = {}) }
-
-    // Username
-    composeTestRule
-        .onNodeWithTag(MessagesScreenTestTags.USERNAME)
-        .assertIsDisplayed()
-        .assertTextContains("test1")
-
-    // Online indicator
-    composeTestRule.onNodeWithTag(MessagesScreenTestTags.ONLINE_INDICATOR).assertIsDisplayed()
-
-    // Messages
-    composeTestRule.waitUntil(5000) {
-      composeTestRule
-          .onAllNodesWithText("Byebye Sweetie Banana")
-          .fetchSemanticsNodes()
-          .isNotEmpty() &&
-          composeTestRule.onAllNodesWithText("Mikkaaaa").fetchSemanticsNodes().isNotEmpty()
-    }
-
-    composeTestRule.onNodeWithText("Byebye Sweetie Banana").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Mikkaaaa").assertIsDisplayed()
-  }
-
-  /** Tests that u2 fake data loads correctly */
-  @Test
-  fun messagesScreenLoadsFakeDataForU2() {
-    composeTestRule.setContent { MessagesScreen(uid = "u2", goBack = {}) }
-
-    // Username
-    composeTestRule
-        .onNodeWithTag(MessagesScreenTestTags.USERNAME)
-        .assertIsDisplayed()
-        .assertTextContains("test2")
-
-    // Online indicator
-    composeTestRule.onNodeWithTag(MessagesScreenTestTags.ONLINE_INDICATOR).assertIsDisplayed()
-
-    // Messages
-    composeTestRule.waitUntil(5000) {
-      composeTestRule.onAllNodesWithText("BLEH😝").fetchSemanticsNodes().size == 3
-    }
-
-    composeTestRule.onAllNodesWithText("BLEH😝").assertCountEquals(3)
-  }
-
-  /** Tests that u3 fake data loads correctly */
-  @Test
-  fun messagesScreenLoadsFakeDataForU3() {
-    composeTestRule.setContent { MessagesScreen(uid = "u3", goBack = {}) }
-
-    // Username
-    composeTestRule
-        .onNodeWithTag(MessagesScreenTestTags.USERNAME)
-        .assertIsDisplayed()
-        .assertTextContains("test3")
-
-    // Online indicator
-    composeTestRule.onNodeWithTag(MessagesScreenTestTags.ONLINE_INDICATOR).assertIsDisplayed()
-
-    // Messages
-    composeTestRule.waitUntil(5000) {
-      composeTestRule.onAllNodesWithText("Banana").fetchSemanticsNodes().isNotEmpty() &&
-          composeTestRule.onAllNodesWithText("21").fetchSemanticsNodes().isNotEmpty()
-    }
-
-    composeTestRule.onNodeWithText("Banana").assertIsDisplayed()
-    composeTestRule.onNodeWithText("21").assertIsDisplayed()
   }
 }

@@ -27,10 +27,9 @@ class MessagesViewModel(
     private val currentUserId: String,
     private val messageRepo: MessageRepository = MessageRepositoryProvider.repository,
     private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository,
-    private val initialMessages: List<Message> = emptyList() /*For testing only*/
 ) : ViewModel() {
 
-  private val _messages = MutableStateFlow(initialMessages)
+  private val _messages = MutableStateFlow(emptyList<Message>())
   val messages: StateFlow<List<Message>> = _messages.asStateFlow()
 
   private val _otherUsername = MutableStateFlow("Loading..")
@@ -43,13 +42,9 @@ class MessagesViewModel(
   private val conversationId = listOf(currentUserId, otherUserId).sorted().joinToString("_")
 
   init {
-    if (initialMessages.isNotEmpty()) {
-      loadFakeData(otherUserId)
-    } else {
-      observeOtherUserProfile()
-      observeOtherUserOnline()
-      observeConversation()
-    }
+    observeOtherUserProfile()
+    observeOtherUserOnline()
+    observeConversation()
   }
 
   fun sendMessage(text: String) {
@@ -97,45 +92,5 @@ class MessagesViewModel(
         .observeUserOnlineState(otherUserId)
         .onEach { online -> _isOnline.value = online }
         .launchIn(viewModelScope)
-  }
-
-  private fun loadFakeData(uid: String) {
-
-    val bleh = "BLEH\uD83D\uDE1D"
-    when (uid) {
-      "u1" -> {
-        _otherUsername.value = "test1"
-        _isOnline.value = true
-
-        _messages.value =
-            listOf(
-                Message("1", uid, "Byebye Sweetie Banana", Timestamp.now()),
-                Message("2", currentUserId, "Mikkaaaa", Timestamp.now()),
-            )
-      }
-      "u2" -> {
-        _otherUsername.value = "test2"
-        _isOnline.value = false
-
-        _messages.value =
-            listOf(
-                Message("10", uid, bleh, Timestamp.now()),
-                Message("11", currentUserId, bleh, Timestamp.now()),
-                Message("12", uid, bleh, Timestamp.now()))
-      }
-      "u3" -> {
-        _otherUsername.value = "test3"
-        _isOnline.value = true
-
-        _messages.value =
-            listOf(
-                Message("20", currentUserId, "21", Timestamp.now()),
-                Message("21", uid, "Banana", Timestamp.now()))
-      }
-      else -> {
-        _otherUsername.value = "Unknown"
-        _messages.value = emptyList()
-      }
-    }
   }
 }
