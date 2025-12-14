@@ -48,7 +48,7 @@ class PostViewModel(
   private val auth: FirebaseAuth = FirebaseAuth.getInstance()
   val isAnonymous: Boolean
     get() = auth.currentUser?.isAnonymous ?: true
-
+  private val _processedAudioUri = MutableStateFlow<Uri?>(null)
   private val _isOnline = MutableStateFlow(true)
   val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
 
@@ -75,7 +75,13 @@ class PostViewModel(
         }
         _localZipUri.value = rawPath.toUri()
         val durationSeconds = storageService?.getProjectDuration(_localZipUri.value) ?: 0
-        val sample =
+        //processed audio
+          project.audioPreviewLocalPath
+              ?.takeIf { it.isNotBlank() }
+              ?.let{ localPathString ->
+                  _processedAudioUri.value = localPathString.toUri()
+              }
+          val sample =
             Sample(
                 id = project.uid,
                 name = project.name,
@@ -182,7 +188,8 @@ class PostViewModel(
     _uiState.update { it.copy(isUploading = true) }
     viewModelScope.launch {
       try {
-        storageService?.uploadSampleFiles(_uiState.value.sample, currentZipUri, localImageUri.value)
+        storageService?.uploadSampleFiles(_uiState.value.sample, currentZipUri, localImageUri.value,
+            _processedAudioUri.value)
         _uiState.update { it.copy(isUploading = false, postComplete = true) }
       } catch (e: Exception) {
         Log.e("PostViewModel", "error on upload", e)

@@ -57,7 +57,7 @@ class SampleUiActionsTest {
     assertFalse(actions.downloadBusy.value)
     assertNull(actions.downloadError.value)
 
-    actions.onDownloadClicked(sample)
+    actions.onDownloadZippedClicked(sample)
 
     // Make sure all coroutines scheduled on dispatcher are executed
     testScheduler.advanceUntilIdle()
@@ -84,7 +84,7 @@ class SampleUiActionsTest {
 
     actions.downloadBusy.value = true
 
-    actions.onDownloadClicked(sample)
+    actions.onDownloadZippedClicked(sample)
 
     // No work should have been scheduled, but advance just in case
     testScheduler.advanceUntilIdle()
@@ -113,7 +113,7 @@ class SampleUiActionsTest {
             ioDispatcher = dispatcher,
             profileRepo = profileRepo)
 
-    actions.onDownloadClicked(sample)
+    actions.onDownloadZippedClicked(sample)
 
     testScheduler.advanceUntilIdle()
 

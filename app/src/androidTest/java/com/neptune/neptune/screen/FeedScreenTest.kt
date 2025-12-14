@@ -282,7 +282,7 @@ class FeedScreenTest {
 
     // Download
     composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_DOWNLOADS).onFirst().performClick()
-    verify { mockViewModel.onDownloadSample(sample) }
+    verify { mockViewModel.onDownloadZippedSample(sample) }
 
     // Comment
     composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_COMMENTS).onFirst().performClick()

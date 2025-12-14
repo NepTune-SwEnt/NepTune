@@ -7,8 +7,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ProgressIndicatorDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,65 +51,139 @@ class SampleUiActions(
     private val downloadProgress: MutableStateFlow<Int?> = MutableStateFlow(0),
     private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository
 ) {
-  val downloadBusy = MutableStateFlow(false)
-  val downloadError = MutableStateFlow<String?>(null)
+    val downloadBusy = MutableStateFlow(false)
+    val downloadError = MutableStateFlow<String?>(null)
 
-  @Throws(IOException::class)
-  suspend fun onDownloadClicked(sample: Sample) {
-    if (downloadBusy.value) return
-    downloadBusy.value = true
-    downloadError.value = null
-    downloadProgress.value = 0
-    try {
-      val zip =
-          withContext(ioDispatcher) {
-            storageService.downloadZippedSample(sample, context) { percent ->
-              downloadProgress.value = percent
-            }
-          }
-      withContext(ioDispatcher) { storageService.persistZipToDownloads(zip, downloadsFolder) }
-      repo.increaseDownloadCount(sample.id)
+    @Throws(IOException::class)
+    suspend fun onDownloadZippedClicked(sample: Sample) {
+        if (downloadBusy.value) return
+        downloadBusy.value = true
+        downloadError.value = null
+        downloadProgress.value = 0
+        try {
+            val zip =
+                withContext(ioDispatcher) {
+                    storageService.downloadZippedSample(sample, context) { percent ->
+                        downloadProgress.value = percent
+                    }
+                }
+            withContext(ioDispatcher) { storageService.persistZipToDownloads(zip, downloadsFolder) }
+            repo.increaseDownloadCount(sample.id)
 
-      // record download interaction
-      profileRepo.recordTagInteraction(tags = sample.tags, likeDelta = 0, downloadDelta = 1)
-    } catch (e: SecurityException) {
-      downloadError.value = "Storage permission required: ${e.message}"
-    } catch (e: IOException) {
-      downloadError.value = "File error: ${e.message}"
-    } catch (e: Exception) {
-      downloadError.value = "Download failed: ${e.message}"
-      Log.e("SampleActions", "Download failed", e)
-    } finally {
-      downloadBusy.value = false
-      downloadProgress.value = null
-    }
-  }
-
-  suspend fun onLikeClicked(sample: Sample, isLiked: Boolean): Boolean {
-    val sampleId = sample.id
-    val alreadyLiked = repo.hasUserLiked(sampleId)
-
-    val result =
-        if (!alreadyLiked && isLiked) {
-          repo.toggleLike(sampleId, true)
-          true
-        } else if (alreadyLiked && !isLiked) {
-          repo.toggleLike(sampleId, false)
-          false
-        } else {
-          // Doesn't change
-          alreadyLiked
+            // record download interaction
+            profileRepo.recordTagInteraction(tags = sample.tags, likeDelta = 0, downloadDelta = 1)
+        } catch (e: SecurityException) {
+            downloadError.value = "Storage permission required: ${e.message}"
+        } catch (e: IOException) {
+            downloadError.value = "File error: ${e.message}"
+        } catch (e: Exception) {
+            downloadError.value = "Download failed: ${e.message}"
+            Log.e("SampleActions", "Download failed", e)
+        } finally {
+            downloadBusy.value = false
+            downloadProgress.value = null
         }
-    if (!alreadyLiked && isLiked) {
-      profileRepo.recordTagInteraction(tags = sample.tags, likeDelta = 1, downloadDelta = 0)
     }
-    return result
-  }
 
-  /** Delegate function to get download URL from StorageService */
-  suspend fun getDownloadUrl(storagePath: String): String? {
-    return storageService.getDownloadUrl(storagePath)
-  }
+    suspend fun onLikeClicked(sample: Sample, isLiked: Boolean): Boolean {
+        val sampleId = sample.id
+        val alreadyLiked = repo.hasUserLiked(sampleId)
+
+        val result =
+            if (!alreadyLiked && isLiked) {
+                repo.toggleLike(sampleId, true)
+                true
+            } else if (alreadyLiked && !isLiked) {
+                repo.toggleLike(sampleId, false)
+                false
+            } else {
+                // Doesn't change
+                alreadyLiked
+            }
+        if (!alreadyLiked && isLiked) {
+            profileRepo.recordTagInteraction(tags = sample.tags, likeDelta = 1, downloadDelta = 0)
+        }
+        return result
+    }
+
+    /** Delegate function to get download URL from StorageService */
+    suspend fun getDownloadUrl(storagePath: String): String? {
+        return storageService.getDownloadUrl(storagePath)
+    }
+
+    @Throws(IOException::class)
+    suspend fun onDownloadProcessedClicked(sample: Sample) {
+        if (downloadBusy.value) return
+        downloadBusy.value = true
+        downloadError.value = null
+        downloadProgress.value = 0
+
+        try {
+            val processedPath = sample.storageProcessedSamplePath
+            if (processedPath.isBlank()) {
+                downloadError.value = "No processed audio available for this sample."
+                return
+            }
+
+            // put it next to downloads (or inside a subfolder)
+            val outFile = File(downloadsFolder, sample.id)
+
+            withContext(ioDispatcher) {
+                storageService.downloadFileByPath(processedPath, outFile) { percent ->
+                    downloadProgress.value = percent
+                }
+            }
+
+            // optional: count as a download interaction too (your choice)
+            repo.increaseDownloadCount(sample.id)
+            profileRepo.recordTagInteraction(tags = sample.tags, likeDelta = 0, downloadDelta = 1)
+
+        } catch (e: SecurityException) {
+            downloadError.value = "Storage permission required: ${e.message}"
+        } catch (e: IOException) {
+            downloadError.value = "File error: ${e.message}"
+        } catch (e: Exception) {
+            downloadError.value = "Download failed: ${e.message}"
+            Log.e("SampleActions", "Processed download failed", e)
+        } finally {
+            downloadBusy.value = false
+            downloadProgress.value = null
+        }
+    }
+}
+
+
+@Composable
+fun DownloadChoiceDialog(
+    sampleName: String,
+    processedAvailable: Boolean,
+    onDismiss: () -> Unit,
+    onDownloadZip: () -> Unit,
+    onDownloadProcessed: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Download") },
+        text = { Text("Choose what to download for \"$sampleName\"") },
+        confirmButton = {
+            Button(
+                onClick = onDownloadZip,
+                modifier = Modifier.testTag("download_zip_btn"),
+            ) {
+                Text("Download ZIP")
+            }
+        },
+        dismissButton = {
+            // second action button (kept simple)
+            Button(
+                onClick = onDownloadProcessed,
+                enabled = processedAvailable,
+                modifier = Modifier.testTag("download_processed_btn"),
+            ) {
+                Text("Processed Audio")
+            }
+        }
+    )
 }
 
 @Composable

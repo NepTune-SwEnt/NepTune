@@ -403,7 +403,7 @@ private fun SampleSectionLazyRow(
 
               val clickHandlers =
                   onClickFunctions(
-                      onDownloadClick = { mainViewModel.onDownloadSample(sample) },
+                      onDownloadClick = { mainViewModel.onDownloadZippedSample(sample) },
                       onLikeClick = { isLiked ->
                         if (!isAnonymous) mainViewModel.onLikeClick(sample, isLiked)
                       },

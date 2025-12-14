@@ -41,34 +41,13 @@ open class StorageService(
   // correct -> obtain path from Firestore and not Storage
   @Throws(IOException::class)
   open suspend fun downloadZippedSample(
-      sample: Sample,
-      context: Context,
-      onProgress: (Int) -> Unit = {}
-  ): File =
-      withContext(ioDispatcher) {
-        val sampleRef = storageRef.child(sample.storageZipPath)
-        if (!exists(sampleRef))
-            throw IllegalArgumentException(
-                "Sample file not found in storage at : ${sample.storageZipPath}")
-
-        val tmp = File(context.cacheDir, "${sample.name}.zip")
-
-        sampleRef
-            .getFile(tmp)
-            .addOnProgressListener { snapshot ->
-              // size in bytes of the file being transferred
-              val total = snapshot.totalByteCount
-              if (total > 0) {
-                // progress percentage
-                val progress = (100.0 * snapshot.bytesTransferred / total).toInt().coerceIn(0, 100)
-                onProgress(progress)
-              }
-            }
-            .await()
-        // ensure progress is marked as complete
-        onProgress(100)
-        tmp
-      }
+    sample: Sample,
+    context: Context,
+    onProgress: (Int) -> Unit = {}
+  ): File {
+    val tmp = File(context.cacheDir, "${sample.name}.zip")
+    return downloadToFile(sample.storageZipPath, tmp, onProgress)
+  }
 
   /**
    * Unzips [zipFile] into [outputDir] without creating subdirectories. All files are extracted
@@ -115,7 +94,8 @@ open class StorageService(
    * @param localZipUri The local Uri for the .zip file.
    * @param localImageUri The local Uri for the cover image.
    */
-  suspend fun uploadSampleFiles(sample: Sample, localZipUri: Uri, localImageUri: Uri?) {
+  suspend fun uploadSampleFiles(sample: Sample, localZipUri: Uri, localImageUri: Uri?,
+                                localProcessedUri: Uri?) {
     val sampleId = sample.id
 
     val oldSample: Sample? =
@@ -128,13 +108,19 @@ open class StorageService(
     oldSample?.let {
       deleteFileByPath(it.storageZipPath)
       deleteFileByPath(it.storageImagePath)
+      deleteFileByPath(it.storageProcessedSamplePath)
     }
 
     val newStorageZipPath = "samples/${sampleId}.zip"
     val newStorageImagePath =
         if (localImageUri != null) "sample_image/${sampleId}/${getFileNameFromUri(localImageUri)}"
         else ""
-
+    val newProcessedAudioPath =
+      if (localProcessedUri != null) {
+        "processed_audios/${sampleId}.wav"
+      } else {
+        ""
+      }
     coroutineScope {
       val deferredZip = async { uploadFile(localZipUri, newStorageZipPath) }
 
@@ -143,11 +129,18 @@ open class StorageService(
               async { uploadFile(localImageUri, newStorageImagePath) }
           else null
 
+      val deferredProcessed =
+        if (localProcessedUri != null && newProcessedAudioPath.isNotEmpty()){
+          async { uploadFile(localProcessedUri, newProcessedAudioPath)}
+        } else {
+          null
+        }
       deferredZip.await()
       deferredImage?.await()
-
+      deferredProcessed?.await()
       val finalSample =
-          sample.copy(storageZipPath = newStorageZipPath, storageImagePath = newStorageImagePath)
+          sample.copy(storageZipPath = newStorageZipPath, storageImagePath = newStorageImagePath,
+            storageProcessedSamplePath = newProcessedAudioPath)
       sampleRepo.addSample(finalSample)
     }
   }
@@ -272,6 +265,45 @@ open class StorageService(
       }
     }
   }
+  private suspend fun downloadToFile(
+    storagePath: String,
+    outFile: File,
+    onProgress: (Int) -> Unit = {}
+  ): File = withContext(ioDispatcher) {
+    require(storagePath.isNotBlank()) { "storagePath is blank" }
+
+    val ref = storageRef.child(storagePath)
+    if (!exists(ref)) {
+      throw IllegalArgumentException("File not found in storage at: $storagePath")
+    }
+
+    ref.getFile(outFile)
+      .addOnProgressListener { snap ->
+        val total = snap.totalByteCount
+        if (total > 0) {
+          val p = (100.0 * snap.bytesTransferred / total)
+            .toInt()
+            .coerceIn(0, 100)
+          onProgress(p)
+        }
+      }
+      .await()
+
+    onProgress(100)
+    outFile
+  }
+
+  /**
+   * Download a file given its path
+   * @param outFile The path where we save
+   * @param onProgress for the download bar
+   */
+  suspend fun downloadFileByPath(
+    storagePath: String,
+    outFile: File,
+    onProgress: (Int) -> Unit = {}
+  ): File = downloadToFile(storagePath, outFile, onProgress)
+
 
   /** Helper to retrieve the duration of an audio file (mp3/wav) via MediaMetadataRetriever */
   private suspend fun getAudioDuration(context: Context, audioUri: Uri): Int {

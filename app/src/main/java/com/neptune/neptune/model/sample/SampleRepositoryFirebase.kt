@@ -307,6 +307,7 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
         storageZipPath = getString("storageZipPath").orEmpty(),
         storageImagePath = getString("storageImagePath").orEmpty(),
         storagePreviewSamplePath = getString("storagePreviewSamplePath").orEmpty(),
+        storageProcessedSamplePath = getString("storageProcessedSamplePath").orEmpty(),
         creationTime = getTimestamp("creationTime")?.toDate()?.time ?: 0L)
   }
 
@@ -325,5 +326,6 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
           "usersLike" to usersLike,
           "storageZipPath" to storageZipPath,
           "storageImagePath" to storageImagePath,
-          "storagePreviewSamplePath" to storagePreviewSamplePath)
+          "storagePreviewSamplePath" to storagePreviewSamplePath,
+          "storagePreviewSamplePath" to storageProcessedSamplePath)
 }

@@ -184,7 +184,7 @@ private fun FeedContent(
 
                 val clickHandlers =
                     onClickFunctions(
-                        onDownloadClick = { mainViewModel.onDownloadSample(sample) },
+                        onDownloadClick = { mainViewModel.onDownloadZippedSample(sample) },
                         onLikeClick = { isLiked -> mainViewModel.onLikeClick(sample, isLiked) },
                         onCommentClick = { mainViewModel.openCommentSection(sample) },
                         onProfileClick = {
