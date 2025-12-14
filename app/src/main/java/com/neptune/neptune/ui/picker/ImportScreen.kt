@@ -210,8 +210,7 @@ fun ImportScreen(
         projectName = projectName,
         onNameChange = { projectName = it },
         onConfirm = { name ->
-          val finalFile = sanitizeAndRename(proposedFileToImport!!, name)
-          vm.importRecordedFile(finalFile)
+          vm.processAndImportRecording(proposedFileToImport!!, name)
           showNameDialog = false
           proposedFileToImport = null
         },
@@ -276,7 +275,7 @@ fun RecordControls(
 }
 
 @Composable
-fun NameProjectDialog(
+private fun NameProjectDialog(
     projectName: String,
     onNameChange: (String) -> Unit,
     onConfirm: (String) -> Unit,

@@ -18,7 +18,7 @@ class SamplerAudioTempoTest {
     val realViewModel = SamplerViewModel()
     val viewModelSpy = spy(realViewModel)
 
-    doReturn(mockAudioData).`when`(viewModelSpy).decodeAudioToPCM(any())
+    doReturn(mockAudioData).`when`(viewModelSpy).decodeAudio(any())
     doReturn(initialSamples).`when`(mockAudioProcessor).timeStretch(any(), any())
 
     viewModelSpy.processAudio(

@@ -185,7 +185,8 @@ fun MainScreen(
   val isRefreshing by mainViewModel.isRefreshing.collectAsState()
   val pullRefreshState = rememberPullToRefreshState()
   val isOnline by mainViewModel.isOnline.collectAsState()
-  val isUserLoggedIn = remember { mainViewModel.isUserLoggedIn }
+  val currentUser by mainViewModel.currentUser.collectAsState()
+  val isUserLoggedIn = currentUser != null
   val nestedScrollModifier =
       if (isOnline) {
         Modifier.nestedScroll(pullRefreshState.nestedScrollConnection)
@@ -268,7 +269,7 @@ fun MainScreen(
                   pullRefreshState = pullRefreshState,
                   isAnonymous = isAnonymous,
                   isOnline = isOnline,
-              )
+                  isUserLoggedIn = isUserLoggedIn)
             },
             containerColor = NepTuneTheme.colors.background)
         // Comment Overlay (Outside Scaffold content, but inside Box to float over everything)
@@ -295,10 +296,10 @@ private fun MainContent(
     navigateToSampleList: (FeedType) -> Unit,
     pullRefreshState: PullToRefreshState,
     isAnonymous: Boolean = false,
-    isOnline: Boolean = true
+    isOnline: Boolean = true,
+    isUserLoggedIn: Boolean = true
 ) {
   val horizontalPadding = 30.dp
-  val isUserLoggedIn = remember { mainViewModel.isUserLoggedIn }
   Box(modifier = Modifier.fillMaxSize()) {
     if (!isUserLoggedIn) {
       OfflineScreen()

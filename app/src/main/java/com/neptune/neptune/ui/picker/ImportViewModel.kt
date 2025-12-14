@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -37,8 +38,10 @@ import com.neptune.neptune.domain.model.MediaItem
 import com.neptune.neptune.domain.usecase.GetLibraryUseCase
 import com.neptune.neptune.domain.usecase.ImportMediaUseCase
 import com.neptune.neptune.ui.theme.NepTuneTheme
+import com.neptune.neptune.util.AudioUtils
 import java.io.File
 import java.net.URI
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -83,6 +86,29 @@ class ImportViewModel(
           importMedia(uriString)
         }
       }
+  /** Takes the recorded file (M4A), converts it to WAV, then imports it. */
+  fun processAndImportRecording(rawM4aFile: File, rawProjectName: String) {
+    viewModelScope.launch(Dispatchers.IO) {
+      val sanitizedName =
+          rawProjectName
+              .replace(Regex("[^A-Za-z0-9._-]+"), "_")
+              .replace(Regex("_+"), "_")
+              .trim('_', '.', ' ')
+              .ifEmpty { rawProjectName }
+      val destinationWav = File(rawM4aFile.parent, "$sanitizedName.wav")
+
+      val conversionSuccess = AudioUtils.convertToWav(rawM4aFile.toUri(), destinationWav)
+
+      if (conversionSuccess) {
+        try {
+          rawM4aFile.delete()
+        } catch (_: Exception) {}
+        importMedia(destinationWav)
+      } else {
+        importMedia(rawM4aFile)
+      }
+    }
+  }
 
   // New convenience: import a File produced by the in-app recorder directly
   fun importRecordedFile(file: File, refreshProjects: () -> Unit = {}) = viewModelScope.launch {
