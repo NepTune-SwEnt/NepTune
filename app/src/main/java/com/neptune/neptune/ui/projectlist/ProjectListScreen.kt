@@ -127,7 +127,8 @@ fun ProjectListScreen(
   onDeleteFailed: (() -> Unit)? = null,
 ) {
   val uiState by projectListViewModel.uiState.collectAsState()
-  var projects: List<ProjectItem> = uiState.projects
+  // Use the reactive uiState.projects directly so additions trigger recomposition
+  val projects: List<ProjectItem> = uiState.projects
   val selectedProjects: String? = uiState.selectedProject
   val isOnline by projectListViewModel.isOnline.collectAsState()
   val isUserLoggedIn = projectListViewModel.isUserLoggedIn
@@ -179,12 +180,6 @@ fun ProjectListScreen(
     hasAudioPermission =
       ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
           PackageManager.PERMISSION_GRANTED
-  }
-
-  LaunchedEffect(uiState.isLoading) {
-    if (!uiState.isLoading) {
-      projects = uiState.projects
-    }
   }
 
   Scaffold(

@@ -45,7 +45,8 @@ open class TotalProjectItemsRepositoryCompose(
 
     Log.d("TotalRepo", "Merged Projects: $mergedProjects")
 
-    return mergedProjects
+    // Return defensive copies of the items and the list itself so callers get new instances
+    return mergedProjects.map { it.copy() }.toList()
   }
 
   override suspend fun getProject(projectID: String): ProjectItem {

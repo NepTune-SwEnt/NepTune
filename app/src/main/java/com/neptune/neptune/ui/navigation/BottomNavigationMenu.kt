@@ -31,6 +31,8 @@ sealed class Tab(val name: String, val icon: Int, val destination: Screen, val t
 
   object Main : Tab(
     "Home",
+    // Credits:
+    // https://www.flaticon.com/free-icon-font/home_3917743
     R.drawable.home_unselected,
     Screen.Main,
     NavigationTestTags.MAIN_TAB)
@@ -38,6 +40,8 @@ sealed class Tab(val name: String, val icon: Int, val destination: Screen, val t
   object ProjectList :
       Tab(
           "Select Project",
+          // Credits:
+          // https://www.flaticon.com/free-icon-font/list-music_10742896
           R.drawable.list_projects_unselected,
           Screen.ProjectList,
           NavigationTestTags.PROJECTLIST_TAB)
@@ -45,6 +49,8 @@ sealed class Tab(val name: String, val icon: Int, val destination: Screen, val t
   object Search :
       Tab(
           "Search",
+          // Credits:
+          // https://www.flaticon.com/free-icon-font/search_3917754
           R.drawable.search_unselected,
           Screen.Search,
           NavigationTestTags.SEARCH_TAB)
