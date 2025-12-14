@@ -900,7 +900,7 @@ open class SamplerViewModel(
     if (currentAudioUri == null) return null
 
     // 1. Decode Audio: Convert source URI (MP3/WAV) to raw PCM samples (FloatArray)
-    val audioData = decodeAudioToPCM(currentAudioUri) ?: return null
+    val audioData = decodeAudio(currentAudioUri) ?: return null
     var (samples, sampleRate, channelCount) = audioData
 
     // 2. Apply EQ: Parametric equalization is applied non-destructively to the samples
@@ -928,7 +928,7 @@ open class SamplerViewModel(
     val out = File(context.cacheDir, "${base}_processed.wav")
 
     // Encode processed FloatArray back into a standard WAV file (PCM16 format)
-    encodePCMToWAV(samples, sampleRate, channelCount, out)
+    encodeAudio(samples, sampleRate, channelCount, out)
 
     return Uri.fromFile(out) // Return the URI of the newly processed file
   }
@@ -979,7 +979,7 @@ open class SamplerViewModel(
       val outFile = File(context.cacheDir, "${baseName}_equalized.wav")
 
       // Encode equalized samples back to WAV file
-      encodePCMToWAV(processedSamples, sampleRate, channelCount, outFile)
+      encodeAudio(processedSamples, sampleRate, channelCount, outFile)
 
       // Update UI state with the new audio Uri
       val newUri = Uri.fromFile(outFile)
@@ -1294,6 +1294,16 @@ open class SamplerViewModel(
           }
     }
     return samples.mapIndexed { index, sample -> sample * envelope[index] }.toFloatArray()
+  }
+
+  @org.jetbrains.annotations.VisibleForTesting
+  open fun decodeAudio(uri: Uri): Triple<FloatArray, Int, Int>? {
+    return decodeAudioToPCM(uri)
+  }
+
+  @org.jetbrains.annotations.VisibleForTesting
+  open fun encodeAudio(samples: FloatArray, sampleRate: Int, channelCount: Int, file: File) {
+    encodePCMToWAV(samples, sampleRate, channelCount, file)
   }
 }
 
