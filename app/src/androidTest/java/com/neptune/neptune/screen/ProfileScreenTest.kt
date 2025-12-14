@@ -1056,6 +1056,10 @@ private class FakeOtherProfileRepository(
     return combine(currentProfile, otherProfile) { current, other -> listOf(current, other) }
   }
 
+  override suspend fun updatePostCount(delta: Int) {}
+
+  override suspend fun updateLikeCount(targetUserId: String, delta: Int) {}
+
   override suspend fun unfollowUser(uid: String) {
     unfollowRequests++
     followingIds.value = followingIds.value.filterNot { it == uid }

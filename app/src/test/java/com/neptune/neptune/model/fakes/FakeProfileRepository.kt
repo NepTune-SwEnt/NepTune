@@ -44,6 +44,9 @@ class FakeProfileRepository(
 
   private val followingIds = MutableStateFlow<List<String>>(emptyList())
   private val followersIds = MutableStateFlow<List<String>>(emptyList())
+  override suspend fun updatePostCount(delta: Int) {}
+
+  override suspend fun updateLikeCount(targetUserId: String, delta: Int) {}
 
   override suspend fun unfollowUser(uid: String) {
     followingIds.value = followingIds.value.filterNot { it == uid }

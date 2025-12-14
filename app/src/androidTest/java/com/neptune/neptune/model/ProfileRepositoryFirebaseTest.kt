@@ -735,4 +735,57 @@ class ProfileRepositoryFirebaseTest {
       cancelAndIgnoreRemainingEvents()
     }
   }
+
+  @Test
+  fun updatePostCountIncrementsAndDecrementsCorrectly() = runBlocking {
+    auth.signOut()
+    createUniqueUser("post-counter-test")
+    val profile = repo.ensureProfile("poster", null)
+    val uid = profile.uid
+    val doc = db.collection(PROFILES_COLLECTION_PATH).document(uid)
+
+    assertEquals("Initial post count should be 0", 0L, doc.get().await().getLong("posts"))
+
+    repo.updatePostCount(1)
+    var snap = doc.get().await()
+    assertEquals("Post count should be 1", 1L, snap.getLong("posts"))
+
+    repo.updatePostCount(5)
+    snap = doc.get().await()
+    assertEquals("Post count should be 6", 6L, snap.getLong("posts"))
+
+    repo.updatePostCount(-2)
+    snap = doc.get().await()
+    assertEquals("Post count should be 4", 4L, snap.getLong("posts"))
+  }
+
+  @Test
+  fun updateLikeCountUpdatesTargetUserField() = runBlocking {
+    auth.signOut()
+    createUniqueUser("target-user")
+    val targetProfile = repo.ensureProfile("target", null)
+    val targetUid = targetProfile.uid
+    val targetDoc = db.collection(PROFILES_COLLECTION_PATH).document(targetUid)
+
+    assertEquals(0L, targetDoc.get().await().getLong("likes"))
+
+    auth.signOut()
+    createUniqueUser("liker-user")
+    repo.ensureProfile("liker", null)
+
+    val likerUid = currentUid()
+    val likerDoc = db.collection(PROFILES_COLLECTION_PATH).document(likerUid)
+    assertEquals(0L, likerDoc.get().await().getLong("likes"))
+
+    repo.updateLikeCount(targetUid, 1)
+
+    var targetSnap = targetDoc.get().await()
+    assertEquals("Target likes should increase", 1L, targetSnap.getLong("likes"))
+
+    assertEquals("Liker likes should not change", 0L, likerDoc.get().await().getLong("likes"))
+
+    repo.updateLikeCount(targetUid, -1)
+    targetSnap = targetDoc.get().await()
+    assertEquals("Target likes should decrease", 0L, targetSnap.getLong("likes"))
+  }
 }

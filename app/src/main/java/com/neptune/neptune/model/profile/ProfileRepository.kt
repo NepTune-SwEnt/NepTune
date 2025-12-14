@@ -64,6 +64,21 @@ interface ProfileRepository {
   fun observeFollowersIds(uid: String): Flow<List<String>>
 
   /**
+   * Updates the post count of the current user by the given delta.
+   *
+   * @param delta the amount to increment (or decrement) the post count
+   */
+  suspend fun updatePostCount(delta: Int)
+
+  /**
+   * Updates the like count of the target user by the given delta.
+   *
+   * @param targetUserId the user ID of the profile to update
+   * @param delta the amount to increment (or decrement) the like count
+   */
+  suspend fun updateLikeCount(targetUserId: String, delta: Int)
+
+  /**
    * Makes the current user unfollow the user with the given uid.
    *
    * @param uid the user ID of the profile to unfollow
