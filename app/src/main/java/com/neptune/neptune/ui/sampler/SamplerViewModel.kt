@@ -892,7 +892,7 @@ open class SamplerViewModel(
       reverbPredelay: Float,
       audioProcessor: AudioProcessor,
       semitones: Int = 0,
-      tempoRatio: Double,
+      tempoRatio: Double = 1.0,
       attack: Float = 0f,
       decay: Float = 0f,
       sustain: Float = 1f,
