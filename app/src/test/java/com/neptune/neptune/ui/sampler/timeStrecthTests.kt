@@ -39,7 +39,7 @@ class SamplerAudioTempoTest {
   }
 
   @Test
-  fun processAudio_appliesTimeStretchWhenTempoRatioGreaterThanOne() {
+  fun processAudioAppliesTimeStretchWhenTempoRatioGreaterThanOne() {
     val tempoRatio = 1.25
     val testSamples = floatArrayOf(0.1f, 0.2f, 0.3f)
 
@@ -51,7 +51,7 @@ class SamplerAudioTempoTest {
   }
 
   @Test
-  fun processAudio_appliesTimeStretchWhenTempoRatioLowerThanOne() {
+  fun processAudioAppliesTimeStretchWhenTempoRatioLowerThanOne() {
     val tempoRatio = 0.75
     val testSamples = floatArrayOf(0.1f, 0.2f, 0.3f)
 
@@ -63,7 +63,7 @@ class SamplerAudioTempoTest {
   }
 
   @Test
-  fun processAudio_doesNotApplyTimeStretchWhenTempoRatioIsOne() {
+  fun processAudioDoesNotApplyTimeStretchWhenTempoRatioIsOne() {
     val tempoRatio = 1.0
     val testSamples = floatArrayOf(0.1f, 0.2f, 0.3f)
 

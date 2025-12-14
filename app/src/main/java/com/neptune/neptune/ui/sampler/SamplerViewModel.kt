@@ -215,7 +215,6 @@ open class SamplerViewModel(
 
       if (isFirstPlay) {
         mediaPlayer.setOnPreparedListener {
-          val duration = mediaPlayer.getDuration()
           _uiState.update { state -> state.copy(isPlaying = true, playbackPosition = 0f) }
           startPlaybackTicker()
         }
