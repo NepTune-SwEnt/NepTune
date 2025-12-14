@@ -58,7 +58,6 @@ private var onImportFinished = {}
 class ImportViewModel(
   private val importMedia: ImportMediaUseCase,
   getLibrary: GetLibraryUseCase,
-  onImportFinished: () -> Unit = {}
 ) : ViewModel() {
   val library: StateFlow<List<MediaItem>> =
       getLibrary().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
@@ -114,6 +113,13 @@ class ImportViewModel(
   fun importRecordedFile(file: File, refreshProjects: () -> Unit = {}) = viewModelScope.launch {
     importMedia(file)
     refreshProjects()
+  }
+
+  // Register a callback that will be invoked when an import completes (used for SAF / external
+  // imports). We assign the top-level `onImportFinished` so the ImportMediaUseCase created in
+  // `importAppRoot` (which captures a lambda calling that var) will call this callback.
+  fun setOnImportFinished(callback: () -> Unit) {
+    onImportFinished = callback
   }
 }
 

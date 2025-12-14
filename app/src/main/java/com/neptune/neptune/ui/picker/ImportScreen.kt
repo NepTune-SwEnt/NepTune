@@ -275,7 +275,7 @@ fun RecordControls(
 }
 
 @Composable
-private fun NameProjectDialog(
+fun NameProjectDialog(
     projectName: String,
     onNameChange: (String) -> Unit,
     onConfirm: (String) -> Unit,

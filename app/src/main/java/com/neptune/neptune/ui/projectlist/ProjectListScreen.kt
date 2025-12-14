@@ -170,6 +170,13 @@ fun ProjectListScreen(
     }
   }
 
+  // Ensure SAF / external imports refresh the project list after completion by registering a
+  // callback on the ImportViewModel. This will be called by ImportMediaUseCase via the
+  // top-level onImportFinished captured when the use case was created in importAppRoot().
+  LaunchedEffect(importViewModel) {
+    importViewModel.setOnImportFinished { projectListViewModel.refreshProjects() }
+  }
+
   val permissionLauncher =
     rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) {
         isGranted ->
@@ -246,6 +253,7 @@ fun ProjectListScreen(
       onNameChange = { projectName = it },
       onConfirm = { name ->
         val finalFile = sanitizeAndRename(proposedFileToImport!!, name)
+        // For recorded files we already call refresh after import via the lambda param.
         importViewModel.importRecordedFile(finalFile) { projectListViewModel.refreshProjects() }
         showNameDialog = false
         proposedFileToImport = null
