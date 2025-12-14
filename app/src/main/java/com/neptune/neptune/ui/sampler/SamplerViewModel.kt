@@ -920,6 +920,18 @@ open class SamplerViewModel(
     // 2. Apply EQ: Parametric equalization is applied non-destructively to the samples
     samples = applyEQFilters(samples, sampleRate, eqBands)
 
+    val state = _uiState.value
+    val compressor =
+        Compressor(
+            sampleRate = sampleRate,
+            thresholdDb = state.compThreshold,
+            ratio = state.compRatio.toFloat(),
+            kneeDb = state.compKnee,
+            makeUpDb = state.compGain,
+            attackSeconds = state.compAttack,
+            releaseSeconds = state.compDecay)
+    samples = compressor.process(samples)
+
     if (tempoRatio != 1.0) {
       samples = audioProcessor.timeStretch(samples, tempoRatio.toFloat())
     }
