@@ -3,6 +3,7 @@ package com.neptune.neptune.ui.navigation
 import android.os.Bundle
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -28,19 +29,23 @@ import com.neptune.neptune.ui.theme.NepTuneTheme
  */
 sealed class Tab(val name: String, val icon: Int, val destination: Screen, val testTag: String) {
 
-  object Main : Tab("Home", R.drawable.home_planet, Screen.Main, NavigationTestTags.MAIN_TAB)
+  object Main : Tab(
+    "Home",
+    R.drawable.home_planet,
+    Screen.Main,
+    NavigationTestTags.MAIN_TAB)
 
   object ProjectList :
       Tab(
           "Select Project",
-          R.drawable.music_note,
+          R.drawable.list_projects_unselected,
           Screen.ProjectList,
           NavigationTestTags.PROJECTLIST_TAB)
 
   object Search :
       Tab(
           "Search",
-          android.R.drawable.ic_menu_search,
+          R.drawable.search_unselected,
           Screen.Search,
           NavigationTestTags.SEARCH_TAB)
 
@@ -85,7 +90,9 @@ fun BottomNavigationMenu(
         thickness = 0.75.dp,
         color = NepTuneTheme.colors.onBackground)
     NavigationBar(
-        modifier = Modifier.testTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU),
+        modifier = Modifier
+          .testTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU)
+          .height(70.dp),
         containerColor = NepTuneTheme.colors.background) {
           tabs.forEach { tab ->
             val isSelected: Boolean =
@@ -104,11 +111,10 @@ fun BottomNavigationMenu(
                   Icon(
                       painter = painterResource(id = tab.icon),
                       contentDescription = tab.name,
-                      modifier = Modifier.size(33.dp),
+                      modifier = Modifier.size(30.dp),
                       tint = NepTuneTheme.colors.onBackground)
                 },
                 alwaysShowLabel = false,
-                label = { Text(tab.name) },
                 selected = isSelected,
                 onClick = {
                   if (tab.destination == Screen.ProjectList) {
