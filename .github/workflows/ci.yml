@@ -88,6 +88,11 @@ jobs:
         run: |
           ./gradlew ktfmtCheck
 
+      # Format
+      - name: KTFmt Check
+        run: |
+          ./gradlew ktfmtFormat
+
       # Load google-services.json and local.properties from the secrets
       - name: Decode secrets
         env:
