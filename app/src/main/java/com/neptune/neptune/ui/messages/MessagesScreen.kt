@@ -64,7 +64,7 @@ class MessagesViewModelFactory(private val otherUserId: String, private val curr
       @Suppress("UNCHECKED_CAST")
       return MessagesViewModel(otherUserId = otherUserId, currentUserId = currentUserId) as T
     }
-    throw IllegalArgumentException("Unknown ViewModel class")
+    throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
   }
 }
 
