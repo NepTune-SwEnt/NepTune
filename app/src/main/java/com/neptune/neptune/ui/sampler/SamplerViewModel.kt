@@ -580,7 +580,7 @@ open class SamplerViewModel(
               return@launch
             }
 
-        val sampleDuration = mediaPlayer.getDuration()
+        val sampleDuration = extractDurationFromUri(audioUri)
         Log.d("SamplerViewModel", "URI audio loaded: $audioUri")
 
         val paramMap = projectData.parameters.associate { it.type to it.value }
@@ -802,87 +802,85 @@ open class SamplerViewModel(
       val zipFile = File(zipFilePath)
       ProjectWriter()
           .writeProject(zipFile = zipFile, metadata = projectData, audioFiles = listOf(audioFile))
-
     } catch (e: Exception) {
       Log.e("SamplerViewModel", "Failed to save ZIP file: ${e.message}", e)
     }
   }
 
-    private fun extractDurationFromUri(uri: Uri): Int {
-        val extractor = MediaExtractor()
-        return try {
-            extractor.setDataSource(context, uri, null)
+  private fun extractDurationFromUri(uri: Uri): Int {
+    val extractor = MediaExtractor()
+    return try {
+      extractor.setDataSource(context, uri, null)
 
-            for (i in 0 until extractor.trackCount) {
-                val format = extractor.getTrackFormat(i)
-                val mime = format.getString(MediaFormat.KEY_MIME)
+      for (i in 0 until extractor.trackCount) {
+        val format = extractor.getTrackFormat(i)
+        val mime = format.getString(MediaFormat.KEY_MIME)
 
-                if (mime?.startsWith("audio/") == true) {
-                    val durationUs = format.getLong(MediaFormat.KEY_DURATION)
-                    return (durationUs / 1000).toInt()
-                }
-            }
-            -1
-        } catch (e: Exception) {
-            Log.e("SamplerViewModel", "Duration extract failed", e)
-            -1
-        } finally {
-            extractor.release()
+        if (mime?.startsWith("audio/") == true) {
+          val durationUs = format.getLong(MediaFormat.KEY_DURATION)
+          return (durationUs / 1000).toInt()
         }
+      }
+      -1
+    } catch (e: Exception) {
+      Log.e("SamplerViewModel", "Duration extract failed", e)
+      -1
+    } finally {
+      extractor.release()
     }
+  }
 
-    open fun audioBuilding(): Job? {
-        val state = _uiState.value
-        val originalUri =
-            state.originalAudioUri ?: return null // Guards against missing original file URI
+  open fun audioBuilding(): Job? {
+    val state = _uiState.value
+    val originalUri =
+        state.originalAudioUri ?: return null // Guards against missing original file URI
 
-        var tempoRatio: Double
+    var tempoRatio: Double
 
-        if (state.inputTempo > 0) {
-            tempoRatio = state.tempo.toDouble() / state.inputTempo.toDouble()
-        } else {
-            tempoRatio = 1.0
-        }
-        // Compute semitone shift
-        val semitones =
-            computeSemitoneShift(
-                state.inputPitchNote, state.inputPitchOctave, state.pitchNote, state.pitchOctave)
+    if (state.inputTempo > 0) {
+      tempoRatio = state.tempo.toDouble() / state.inputTempo.toDouble()
+    } else {
+      tempoRatio = 1.0
+    }
+    // Compute semitone shift
+    val semitones =
+        computeSemitoneShift(
+            state.inputPitchNote, state.inputPitchOctave, state.pitchNote, state.pitchOctave)
 
-        val job =
-            viewModelScope.launch {
-                try {
-                    // Execute the synchronous DSP pipeline on the default/background dispatcher
-                    val newUri =
-                        withContext(dispatcherProvider.default) {
-                            processAudio(
-                                currentAudioUri =
-                                    originalUri, // Source is the original file (non-destructive)
-                                eqBands = state.eqBands,
-                                reverbWet = state.reverbWet,
-                                reverbSize = state.reverbSize,
-                                reverbWidth = state.reverbWidth,
-                                reverbDepth = state.reverbDepth,
-                                reverbPredelay = state.reverbPredelay,
-                                semitones = semitones,
-                                tempoRatio = tempoRatio,
-                                audioProcessor = audioProcessor,
-                                attack = state.attack,
-                                decay = state.decay,
-                                sustain = state.sustain,
-                                release = state.release)
-                        }
-
-                    if (newUri != null) {
-                        _uiState.update { it.copy(currentAudioUri = newUri) }
-                    }
-                } catch (e: Exception) {
-                    Log.e("SamplerViewModel", "audioBuilding failed: ${e.message}", e)
+    val job =
+        viewModelScope.launch {
+          try {
+            // Execute the synchronous DSP pipeline on the default/background dispatcher
+            val newUri =
+                withContext(dispatcherProvider.default) {
+                  processAudio(
+                      currentAudioUri =
+                          originalUri, // Source is the original file (non-destructive)
+                      eqBands = state.eqBands,
+                      reverbWet = state.reverbWet,
+                      reverbSize = state.reverbSize,
+                      reverbWidth = state.reverbWidth,
+                      reverbDepth = state.reverbDepth,
+                      reverbPredelay = state.reverbPredelay,
+                      semitones = semitones,
+                      tempoRatio = tempoRatio,
+                      audioProcessor = audioProcessor,
+                      attack = state.attack,
+                      decay = state.decay,
+                      sustain = state.sustain,
+                      release = state.release)
                 }
+
+            if (newUri != null) {
+              _uiState.update { it.copy(currentAudioUri = newUri) }
             }
+          } catch (e: Exception) {
+            Log.e("SamplerViewModel", "audioBuilding failed: ${e.message}", e)
+          }
+        }
 
-        return job
-    }
-
+    return job
+  }
 
   internal fun processAudio(
       currentAudioUri: Uri?,
