@@ -146,6 +146,7 @@ dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.androidx.room.external.antlr)
     implementation(libs.firebase.database.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose.android)
     testImplementation(libs.junit)
     globalTestImplementation(libs.androidx.junit)
     globalTestImplementation(libs.androidx.espresso.core)
