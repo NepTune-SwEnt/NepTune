@@ -327,5 +327,5 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
           "storageZipPath" to storageZipPath,
           "storageImagePath" to storageImagePath,
           "storagePreviewSamplePath" to storagePreviewSamplePath,
-          "storagePreviewSamplePath" to storageProcessedSamplePath)
+          "storageProcessedSamplePath" to storageProcessedSamplePath)
 }

@@ -47,6 +47,7 @@ class ProfileSamplesViewModel(
 
   private val _samples = MutableStateFlow<List<Sample>>(emptyList())
   val samples: StateFlow<List<Sample>> = _samples.asStateFlow()
+  val downloadProgress = MutableStateFlow<Int?>(null)
 
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples.asStateFlow()

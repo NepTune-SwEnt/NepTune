@@ -61,6 +61,7 @@ import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.feed.sampleFeedItems
 import com.neptune.neptune.ui.main.CommentDialog
+import com.neptune.neptune.ui.main.DownloadChoiceDialog
 import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.main.SampleResourceState
 import com.neptune.neptune.ui.offline.OfflineBanner
@@ -144,7 +145,7 @@ fun SearchScreen(
   var searchText by remember { mutableStateOf("") }
   val downloadProgress: Int? by searchViewModel.downloadProgress.collectAsState()
   val sampleResources by searchViewModel.sampleResources.collectAsState()
-
+  var downloadPickerSample by remember { mutableStateOf<Sample?>(null) }
   // Collect the search type and user results
   val searchType by searchViewModel.searchType.collectAsState()
   val userResults by searchViewModel.userResults.collectAsState()
@@ -223,7 +224,9 @@ fun SearchScreen(
                     comments = comments,
                     navigateToProfile = navigateToProfile,
                     navigateToOtherUserProfile = navigateToOtherUserProfile,
-                    sampleResources = sampleResources)
+                    sampleResources = sampleResources,
+                    onDownloadRequest = { sample -> downloadPickerSample = sample }
+                )
               } else {
                 ScrollableColumnOfUsers(
                     users = userResults,
@@ -242,7 +245,23 @@ fun SearchScreen(
               }
             }
           })
-      if (downloadProgress != null && downloadProgress != 0) {
+        downloadPickerSample?.let { s ->
+            DownloadChoiceDialog(
+                sampleName = s.name,
+                processedAvailable = s.storageProcessedSamplePath.isNotBlank(),
+                onDismiss = { downloadPickerSample = null },
+                onDownloadZip = {
+                    downloadPickerSample = null
+                    searchViewModel.onDownloadZippedSample(s) // or whatever your VM method is called
+                },
+                onDownloadProcessed = {
+                    downloadPickerSample = null
+                    searchViewModel.onDownloadProcessedSample(s) // add if you have it
+                },
+            )
+        }
+
+        if (downloadProgress != null && downloadProgress != 0) {
         DownloadProgressBar(
             downloadProgress = downloadProgress!!, SearchScreenTestTags.DOWNLOAD_BAR)
       }
@@ -349,6 +368,7 @@ fun ScrollableColumnOfSamples(
     testTagsForSample: (Sample) -> BaseSampleTestTags = {
       SearchScreenTestTagsPerSampleCard(idInColumn = it.id)
     },
+    onDownloadRequest : (Sample) -> Unit = {},
 ) {
   val configuration = LocalConfiguration.current
   val screenWidth = configuration.screenWidthDp.dp
@@ -367,6 +387,7 @@ fun ScrollableColumnOfSamples(
             mediaPlayer = mediaPlayer,
             likedSamples = likedSamples,
             sampleResources = sampleResources,
+            onDownloadRequest = onDownloadRequest,
             navigateToProfile = navigateToProfile,
             navigateToOtherUserProfile = navigateToOtherUserProfile,
             testTagsForSample = testTagsForSample,

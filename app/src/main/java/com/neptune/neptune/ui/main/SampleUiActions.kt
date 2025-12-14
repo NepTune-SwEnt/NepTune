@@ -111,6 +111,13 @@ class SampleUiActions(
         return storageService.getDownloadUrl(storagePath)
     }
 
+    private fun safeFileName(raw: String): String {
+        // remove characters that are problematic on filesystems
+        return raw.trim()
+            .replace(Regex("""[\\/:*?"<>|]"""), "_")
+            .replace(Regex("""\s+"""), " ")
+            .ifBlank { "audio" }
+    }
     @Throws(IOException::class)
     suspend fun onDownloadProcessedClicked(sample: Sample) {
         if (downloadBusy.value) return
@@ -124,9 +131,9 @@ class SampleUiActions(
                 downloadError.value = "No processed audio available for this sample."
                 return
             }
-
+            val baseName = safeFileName(sample.name.ifBlank { "audio" })
             // put it next to downloads (or inside a subfolder)
-            val outFile = File(downloadsFolder, sample.id)
+            val outFile = File(downloadsFolder, "$baseName.wav")
 
             withContext(ioDispatcher) {
                 storageService.downloadFileByPath(processedPath, outFile) { percent ->
