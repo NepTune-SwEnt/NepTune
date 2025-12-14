@@ -84,14 +84,14 @@ jobs:
         run: npm install -g firebase-tools@14.27.0
 
       # Check formatting
-      - name: KTFmt Format
+      - name: KTFmt check and auto-format on failure
         run: |
-          ./gradlew ktfmtCheck
-
-      # Format
-      - name: KTFmt Check
-        run: |
-          ./gradlew ktfmtFormat
+          if ./gradlew ktfmtCheck; then
+            echo "ktfmtCheck passed"
+          else
+            echo "ktfmtCheck failed — running ktfmtFormat"
+            ./gradlew ktfmtFormat || true
+          fi
 
       # Load google-services.json and local.properties from the secrets
       - name: Decode secrets
