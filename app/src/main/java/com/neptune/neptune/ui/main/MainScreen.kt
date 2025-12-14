@@ -282,24 +282,22 @@ fun MainScreen(
           DownloadProgressBar(
               downloadProgress = downloadProgress!!, MainScreenTestTags.DOWNLOAD_PROGRESS)
         }
-      if (showDownloadPicker) {
+        if (showDownloadPicker) {
           val s = downloadPickerSample!!
           DownloadChoiceDialog(
               sampleName = s.name,
               processedAvailable = s.storageProcessedSamplePath.isNotBlank(),
               onDismiss = { downloadPickerSample = null },
               onDownloadZip = {
-                  downloadPickerSample = null           // hide dialog first
-                  mainViewModel.onDownloadZippedSample(s)  // start download
+                downloadPickerSample = null // hide dialog first
+                mainViewModel.onDownloadZippedSample(s) // start download
               },
               onDownloadProcessed = {
-                  downloadPickerSample = null
-                  mainViewModel.onDownloadProcessedSample(s)
-              }
-          )
+                downloadPickerSample = null
+                mainViewModel.onDownloadProcessedSample(s)
+              })
+        }
       }
-
-  }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -73,7 +73,8 @@ class ProfileSamplesViewModel(
             profileRepo = profileRepo,
             downloadsFolder = downloadsFolder,
             context = NepTuneApplication.appContext,
-            ioDispatcher = downloadDispatcher)
+            ioDispatcher = downloadDispatcher,
+            downloadProgress = downloadProgress)
       }
 
   init {
@@ -104,18 +105,18 @@ class ProfileSamplesViewModel(
     }
   }
 
-    override fun onDownloadProcessedSample(sample: Sample) {
-        val safeActions = actions ?: return
-        viewModelScope.launch {
-            try {
-                withContext(downloadDispatcher) { safeActions.onDownloadProcessedClicked(sample) }
-            } catch (e: Exception) {
-                Log.e("ProfileSamplesViewModel", "Error downloading sample: ${e.message}")
-            }
-        }
+  override fun onDownloadProcessedSample(sample: Sample) {
+    val safeActions = actions ?: return
+    viewModelScope.launch {
+      try {
+        withContext(downloadDispatcher) { safeActions.onDownloadProcessedClicked(sample) }
+      } catch (e: Exception) {
+        Log.e("ProfileSamplesViewModel", "Error downloading sample: ${e.message}")
+      }
     }
+  }
 
-    override fun onLikeClick(sample: Sample, isLiked: Boolean) {
+  override fun onLikeClick(sample: Sample, isLiked: Boolean) {
     viewModelScope.launch {
       this@ProfileSamplesViewModel.sampleRepo.toggleLike(sample.id, isLiked)
       val delta = if (isLiked) 1 else -1

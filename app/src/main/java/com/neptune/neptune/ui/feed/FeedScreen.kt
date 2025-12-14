@@ -136,22 +136,21 @@ fun FeedScreen(
             navigateToOtherUserProfile(userId)
           }
         })
-      if (showDownloadPicker) {
-          val s = downloadPickerSample!!
-          DownloadChoiceDialog(
-              sampleName = s.name,
-              processedAvailable = s.storageProcessedSamplePath.isNotBlank(),
-              onDismiss = { downloadPickerSample = null },
-              onDownloadZip = {
-                  downloadPickerSample = null
-                  mainViewModel.onDownloadZippedSample(s)
-              },
-              onDownloadProcessed = {
-                  downloadPickerSample = null
-                  mainViewModel.onDownloadProcessedSample(s)
-              }
-          )
-      }
+    if (showDownloadPicker) {
+      val s = downloadPickerSample!!
+      DownloadChoiceDialog(
+          sampleName = s.name,
+          processedAvailable = s.storageProcessedSamplePath.isNotBlank(),
+          onDismiss = { downloadPickerSample = null },
+          onDownloadZip = {
+            downloadPickerSample = null
+            mainViewModel.onDownloadZippedSample(s)
+          },
+          onDownloadProcessed = {
+            downloadPickerSample = null
+            mainViewModel.onDownloadProcessedSample(s)
+          })
+    }
     if (downloadProgress != null && downloadProgress != 0) {
       DownloadProgressBar(
           downloadProgress = downloadProgress!!, testTag = FeedScreenTestTag.DOWNLOAD_PROGRESS)
@@ -207,9 +206,10 @@ private fun FeedContent(
                 val clickHandlers =
                     onClickFunctions(
                         onDownloadClick = {
-                            println(sample.storageProcessedSamplePath)
-                            Log.e("Processed path", sample.storageProcessedSamplePath)
-                            onDownloadRequest(sample) },
+                          println(sample.storageProcessedSamplePath)
+                          Log.e("Processed path", sample.storageProcessedSamplePath)
+                          onDownloadRequest(sample)
+                        },
                         onLikeClick = { isLiked -> mainViewModel.onLikeClick(sample, isLiked) },
                         onCommentClick = { mainViewModel.openCommentSection(sample) },
                         onProfileClick = {

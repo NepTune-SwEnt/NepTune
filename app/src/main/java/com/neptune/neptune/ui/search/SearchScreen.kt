@@ -225,8 +225,7 @@ fun SearchScreen(
                     navigateToProfile = navigateToProfile,
                     navigateToOtherUserProfile = navigateToOtherUserProfile,
                     sampleResources = sampleResources,
-                    onDownloadRequest = { sample -> downloadPickerSample = sample }
-                )
+                    onDownloadRequest = { sample -> downloadPickerSample = sample })
               } else {
                 ScrollableColumnOfUsers(
                     users = userResults,
@@ -245,23 +244,23 @@ fun SearchScreen(
               }
             }
           })
-        downloadPickerSample?.let { s ->
-            DownloadChoiceDialog(
-                sampleName = s.name,
-                processedAvailable = s.storageProcessedSamplePath.isNotBlank(),
-                onDismiss = { downloadPickerSample = null },
-                onDownloadZip = {
-                    downloadPickerSample = null
-                    searchViewModel.onDownloadZippedSample(s) // or whatever your VM method is called
-                },
-                onDownloadProcessed = {
-                    downloadPickerSample = null
-                    searchViewModel.onDownloadProcessedSample(s) // add if you have it
-                },
-            )
-        }
+      downloadPickerSample?.let { s ->
+        DownloadChoiceDialog(
+            sampleName = s.name,
+            processedAvailable = s.storageProcessedSamplePath.isNotBlank(),
+            onDismiss = { downloadPickerSample = null },
+            onDownloadZip = {
+              downloadPickerSample = null
+              searchViewModel.onDownloadZippedSample(s) // or whatever your VM method is called
+            },
+            onDownloadProcessed = {
+              downloadPickerSample = null
+              searchViewModel.onDownloadProcessedSample(s) // add if you have it
+            },
+        )
+      }
 
-        if (downloadProgress != null && downloadProgress != 0) {
+      if (downloadProgress != null && downloadProgress != 0) {
         DownloadProgressBar(
             downloadProgress = downloadProgress!!, SearchScreenTestTags.DOWNLOAD_BAR)
       }
@@ -368,7 +367,7 @@ fun ScrollableColumnOfSamples(
     testTagsForSample: (Sample) -> BaseSampleTestTags = {
       SearchScreenTestTagsPerSampleCard(idInColumn = it.id)
     },
-    onDownloadRequest : (Sample) -> Unit = {},
+    onDownloadRequest: (Sample) -> Unit = {},
 ) {
   val configuration = LocalConfiguration.current
   val screenWidth = configuration.screenWidthDp.dp

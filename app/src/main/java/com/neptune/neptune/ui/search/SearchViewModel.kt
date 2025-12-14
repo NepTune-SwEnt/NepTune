@@ -307,20 +307,19 @@ open class SearchViewModel(
     }
   }
 
-    override fun onDownloadProcessedSample(sample: Sample) {
-        val safeActions = actions ?: return // no-op in tests
-        viewModelScope.launch {
-            try {
-                safeActions.onDownloadProcessedClicked(sample)
-                load(useMockData)
-            } catch (e: Exception) {
-                Log.e("SearchViewModel", "Error downloading sample: ${e.message}")
-
-            }
-        }
+  override fun onDownloadProcessedSample(sample: Sample) {
+    val safeActions = actions ?: return // no-op in tests
+    viewModelScope.launch {
+      try {
+        safeActions.onDownloadProcessedClicked(sample)
+        load(useMockData)
+      } catch (e: Exception) {
+        Log.e("SearchViewModel", "Error downloading sample: ${e.message}")
+      }
     }
+  }
 
-    override fun onLikeClick(sample: Sample, isLiked: Boolean) {
+  override fun onLikeClick(sample: Sample, isLiked: Boolean) {
     val sampleId = sample.id
     viewModelScope.launch {
       try {

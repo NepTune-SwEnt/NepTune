@@ -470,28 +470,26 @@ private fun ProfileViewContent(
                       onAddComment = { id, text -> profileSamplesViewModel.onAddComment(id, text) })
                 }
               }
-            downloadPickerSample?.let { s ->
+              downloadPickerSample?.let { s ->
                 DownloadChoiceDialog(
                     sampleName = s.name,
                     processedAvailable = s.storageProcessedSamplePath.isNotBlank(),
                     onDismiss = { downloadPickerSample = null },
                     onDownloadZip = {
-                        downloadPickerSample = null
-                        profileSamplesViewModel.onDownloadZippedSample(s)
+                      downloadPickerSample = null
+                      profileSamplesViewModel.onDownloadZippedSample(s)
                     },
                     onDownloadProcessed = {
-                        downloadPickerSample = null
-                        profileSamplesViewModel.onDownloadProcessedSample(s)
+                      downloadPickerSample = null
+                      profileSamplesViewModel.onDownloadProcessedSample(s)
                     },
                 )
-            }
+              }
 
-            if (downloadProgress != null && downloadProgress != 0) {
+              if (downloadProgress != null && downloadProgress != 0) {
                 DownloadProgressBar(
-                    downloadProgress = downloadProgress!!,
-                    testTag = "profile/downloadProgressBar"
-                )
-            }
+                    downloadProgress = downloadProgress!!, testTag = "profile/downloadProgressBar")
+              }
               // if mode is self profile, show edit button
               viewConfig.bottomScreenButton?.invoke(Modifier.align(Alignment.BottomCenter))
             }

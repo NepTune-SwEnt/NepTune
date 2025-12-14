@@ -316,15 +316,16 @@ open class MainViewModel(
       }
     }
   }
+
   override fun onDownloadProcessedSample(sample: Sample) {
-      viewModelScope.launch {
-          try {
-              actions?.onDownloadProcessedClicked(sample)
-          } catch (e: Exception) {
-              Log.e("MainViewModel", "Error downloading processed sample: ${e.message}")
-              // Handle exception if needed
-          }
+    viewModelScope.launch {
+      try {
+        actions?.onDownloadProcessedClicked(sample)
+      } catch (e: Exception) {
+        Log.e("MainViewModel", "Error downloading processed sample: ${e.message}")
+        // Handle exception if needed
       }
+    }
   }
 
   override fun onLikeClick(sample: Sample, isLiked: Boolean) {

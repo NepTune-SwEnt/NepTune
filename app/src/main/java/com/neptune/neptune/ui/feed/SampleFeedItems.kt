@@ -44,7 +44,7 @@ fun LazyListScope.sampleFeedItems(
     val isLiked = likedSamples[sample.id] == true
     val actions =
         onClickFunctions(
-            onDownloadClick = {onDownloadRequest(sample) },
+            onDownloadClick = { onDownloadRequest(sample) },
             onLikeClick = {
               val newIsLiked = !isLiked
               controller.onLikeClick(sample, newIsLiked)
