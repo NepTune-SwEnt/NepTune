@@ -212,14 +212,7 @@ class ImportScreenTest {
   fun confirmSanitizesNameAndImportsRenamedFile() {
     // Create a File instance that pretends to be a recorded file and succeeds when renameTo is
     // called.
-    val fakeFile =
-        object : File("/tmp/My Recording.m4a") {
-          override fun renameTo(dest: File): Boolean {
-            // Simulate successful rename (the production code will then pass 'dest' to the
-            // ViewModel)
-            return true
-          }
-        }
+    val fakeFile = File("/tmp/My Recording.m4a")
 
     launchScreen(testFile = fakeFile)
 
@@ -231,9 +224,10 @@ class ImportScreenTest {
     composeRule.onNodeWithTag(ImportScreenTestTags.BUTTON_CREATE, true).performClick()
 
     // Verify that importRecordedFile was called with a file whose name matches the sanitized name
-    verify { vm.importRecordedFile(match { it.name == "My_Recording.m4a" }) }
+    verify {
+      vm.processAndImportRecording(rawM4aFile = eq(fakeFile), rawProjectName = eq("My Recording"))
+    }
   }
-
   /** Verify that the mic button and Import audio button are clickable */
   @Test
   fun canClickOnButton() {
