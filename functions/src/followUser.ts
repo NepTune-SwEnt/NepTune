@@ -53,15 +53,12 @@ export const followUser = onCall({region: "us-east1"},
       const dataCurrent = currentSnap.data() || {};
       const dataOther = otherSnap.data() || {};
 
-      const currentFollowing =
-        (dataCurrent.following as string[] | undefined) ?? [];
       const otherSubscribers =
         (dataOther.subscribers as number | undefined) ?? 0;
       const currentSubscriptions =
         (dataCurrent.subscriptions as number | undefined) ?? 0;
 
-      const alreadyFollowing = followEdgeSnap.exists ||
-        currentFollowing.includes(targetUid);
+      const alreadyFollowing = followEdgeSnap.exists;
       const now = admin.firestore.FieldValue.serverTimestamp();
 
       if (follow) {
@@ -78,7 +75,6 @@ export const followUser = onCall({region: "us-east1"},
         }, {merge: true});
 
         tx.update(currentRef, {
-          following: admin.firestore.FieldValue.arrayUnion(targetUid),
           subscriptions: currentSubscriptions + 1,
         });
         tx.update(otherRef, {
@@ -92,7 +88,6 @@ export const followUser = onCall({region: "us-east1"},
         tx.delete(targetFollowersRef);
 
         tx.update(currentRef, {
-          following: admin.firestore.FieldValue.arrayRemove(targetUid),
           subscriptions: Math.max(0, currentSubscriptions - 1),
         });
         tx.update(otherRef, {
