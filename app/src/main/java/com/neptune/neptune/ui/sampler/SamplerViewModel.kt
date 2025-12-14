@@ -801,19 +801,20 @@ open class SamplerViewModel(
       val originalAudioFile = File(state.originalAudioUri?.path)
 
       val projectDataFixed =
-        projectData.copy(
-          audioFiles = listOf(
-            AudioFileMetadata(
-              name = originalAudioFile.name,
-              volume = 1.0f,
-              durationSeconds = state.audioDurationMillis / 1000f
-            )
-          )
-        )
+          projectData.copy(
+              audioFiles =
+                  listOf(
+                      AudioFileMetadata(
+                          name = originalAudioFile.name,
+                          volume = 1.0f,
+                          durationSeconds = state.audioDurationMillis / 1000f)))
 
       val zipFile = File(zipFilePath)
       ProjectWriter()
-          .writeProject(zipFile = zipFile, metadata = projectDataFixed, audioFiles = listOf(originalAudioFile))
+          .writeProject(
+              zipFile = zipFile,
+              metadata = projectDataFixed,
+              audioFiles = listOf(originalAudioFile))
     } catch (e: Exception) {
       Log.e("SamplerViewModel", "Failed to save ZIP file: ${e.message}", e)
     }
