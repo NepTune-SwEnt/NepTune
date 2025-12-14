@@ -435,24 +435,16 @@ private fun MainTopAppBar(
   val logoSize = screenWidth * 0.3f
   Column {
     CenterAlignedTopAppBar(
-        modifier = Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(112.dp)
+          .testTag(MainScreenTestTags.TOP_BAR),
         navigationIcon = {
-          if (isUserLoggedIn) {
-            // Message Button
-            IconButton(
-                onClick = navigateToSelectMessages,
-                modifier =
-                    Modifier.padding(vertical = 38.dp, horizontal = 25.dp)
-                        .size(38.dp)
-                        .testTag(NavigationTestTags.MESSAGE_BUTTON)) {
-                  Icon(
-                      painter = painterResource(id = R.drawable.messageicon),
-                      contentDescription = "Messages",
-                      modifier = Modifier.size(30.dp),
-                      tint = NepTuneTheme.colors.onBackground,
-                  )
-                }
-          }
+          Box(
+            modifier = Modifier
+              .padding(vertical = 38.dp, horizontal = 25.dp)
+              .size(38.dp)
+          )
         },
         title = {
           Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {

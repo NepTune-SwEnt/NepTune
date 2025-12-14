@@ -233,7 +233,7 @@ fun ImportScreen(
 }
 
 @Composable
-private fun RecordControls(
+fun RecordControls(
     isRecording: Boolean,
     onToggleRecord: () -> Unit,
     onImportAudio: () -> Unit,
@@ -276,7 +276,7 @@ private fun RecordControls(
 }
 
 @Composable
-private fun NameProjectDialog(
+fun NameProjectDialog(
     projectName: String,
     onNameChange: (String) -> Unit,
     onConfirm: (String) -> Unit,
@@ -363,7 +363,7 @@ private fun NameProjectDialog(
 }
 
 // Helper: sanitize a project name and attempt to rename the provided file accordingly.
-private fun sanitizeAndRename(fileToImport: File, projectName: String): File {
+fun sanitizeAndRename(fileToImport: File, projectName: String): File {
   val sanitized =
       projectName
           .replace(Regex("[^A-Za-z0-9._-]+"), "_")

@@ -262,7 +262,8 @@ fun NeptuneApp(
                                     Screen.Edit.route + "/$encodedFilePath")
                               }
                             }
-                          })
+                          },
+                        importViewModel = importViewModel)
                     }
                 composable(Screen.Settings.route) {
                   SettingsScreen(
