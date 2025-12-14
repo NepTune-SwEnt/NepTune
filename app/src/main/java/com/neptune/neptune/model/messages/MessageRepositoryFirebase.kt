@@ -4,8 +4,10 @@ import android.util.Log
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.SetOptions
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.util.RealtimeDatabaseProvider
@@ -13,6 +15,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 /**
  * Firebase-backed implementation of [MessageRepository] using Firestore.
@@ -96,5 +99,62 @@ class MessageRepositoryFirebase(
     ref.addValueEventListener(listener)
 
     awaitClose { ref.removeEventListener(listener) }
+  }
+
+  /** Observe messages in real time */
+  override fun observeMessages(conversationId: String): Flow<List<Message>> = callbackFlow {
+    val ref =
+        firestore
+            .collection("messages")
+            .document(conversationId)
+            .collection("messages")
+            .orderBy("timestamp", Query.Direction.ASCENDING)
+
+    val reg =
+        ref.addSnapshotListener { snapshot, error ->
+          if (error != null || snapshot == null) {
+            trySend(emptyList())
+            return@addSnapshotListener
+          }
+
+          val messages =
+              snapshot.documents.mapNotNull { doc ->
+                Message(
+                    id = doc.id,
+                    authorId = doc.getString("authorId") ?: return@mapNotNull null,
+                    text = doc.getString("text") ?: "",
+                    timestamp = doc.getTimestamp("timestamp"))
+              }
+
+          trySend(messages)
+        }
+
+    awaitClose { reg.remove() }
+  }
+
+  /** sends messages */
+  override suspend fun sendMessage(conversationId: String, message: Message) {
+    val convRef = firestore.collection("messages").document(conversationId)
+    val participants = conversationId.split("_")
+    val msgRef = convRef.collection("messages").document(message.id)
+
+    // Add message
+    msgRef
+        .set(
+            mapOf(
+                "authorId" to message.authorId,
+                "text" to message.text,
+                "timestamp" to FieldValue.serverTimestamp()))
+        .await()
+
+    // Update preview
+    convRef
+        .set(
+            mapOf(
+                "participants" to participants,
+                "lastMessage" to message.text,
+                "lastTimestamp" to FieldValue.serverTimestamp()),
+            SetOptions.merge())
+        .await()
   }
 }

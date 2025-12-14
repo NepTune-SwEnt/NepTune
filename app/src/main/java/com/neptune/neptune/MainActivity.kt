@@ -310,14 +310,22 @@ fun NeptuneApp(
                       onSelectUser = { uid ->
                         navigationActions.navigateTo(Screen.Messages.createRoute(uid))
                       },
-                      currentUid = currentUid)
+                      currentUid = currentUid,
+                      navController = navController)
                 }
                 composable(
                     route = Screen.Messages.route,
                     arguments = listOf(navArgument("uid") { type = NavType.StringType })) {
                         backStackEntry ->
-                      val uid = backStackEntry.arguments?.getString("uid") ?: return@composable
-                      MessagesScreen(uid = uid, goBack = { navigationActions.goBack() })
+                      val otherUserId =
+                          backStackEntry.arguments?.getString("uid") ?: return@composable
+
+                      val firebaseUser by signInViewModel.currentUser.collectAsState()
+                      val currentUserId = firebaseUser?.uid ?: return@composable
+                      MessagesScreen(
+                          otherUserId = otherUserId,
+                          currentUserId = currentUserId,
+                          goBack = { navigationActions.goBack() })
                     }
                 composable(
                     route = Screen.Feed.route,

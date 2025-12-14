@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
@@ -22,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -40,9 +42,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.AsyncImage
 import com.neptune.neptune.R
 import com.neptune.neptune.model.messages.UserMessagePreview
+import com.neptune.neptune.ui.navigation.Screen
 import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.NetworkConnectivityObserver
@@ -92,11 +97,28 @@ fun SelectMessagesScreen(
     goBack: () -> Unit,
     onSelectUser: (String) -> Unit,
     currentUid: String,
+    navController: NavHostController,
     selectMessagesViewModel: SelectMessagesViewModel =
         viewModel(factory = SelectMessagesViewModelFactory(currentUid))
 ) {
   val users by selectMessagesViewModel.users.collectAsState()
+  val listState = rememberLazyListState()
   val isOnline by remember { NetworkConnectivityObserver().isOnline }.collectAsState(initial = true)
+
+  // Scroll to top whenever users list changes
+  LaunchedEffect(users) {
+    if (users.isNotEmpty()) {
+      listState.animateScrollToItem(0)
+    }
+  }
+
+  // Trigger reload whenever this screen becomes visible
+  val navBackStackEntry by navController.currentBackStackEntryAsState()
+  LaunchedEffect(navBackStackEntry) {
+    if (navBackStackEntry?.destination?.route == Screen.SelectMessages.route) {
+      selectMessagesViewModel.refreshMessagePreviews()
+    }
+  }
   Column(
       modifier =
           Modifier.fillMaxSize()
@@ -155,6 +177,7 @@ fun SelectMessagesScreen(
 
           // List of Users
           LazyColumn(
+              state = listState,
               modifier = Modifier.fillMaxSize().testTag(SelectMessagesScreenTestTags.USER_LIST),
               verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 items(users, key = { it.profile.uid }) { user ->

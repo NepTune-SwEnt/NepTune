@@ -45,6 +45,11 @@ class SelectMessagesViewModel(
     }
   }
 
+  fun refreshMessagePreviews() {
+    observeProfiles()
+    observeMessages()
+  }
+
   private fun observeProfiles() {
     profileRepo
         .observeAllProfiles()

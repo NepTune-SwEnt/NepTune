@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.google.firebase.Timestamp
@@ -52,13 +53,16 @@ object MessagesScreenTestTags {
  * Factory used to create a [MessagesViewModel] instance with a specific user ID. This has been
  * written with the help of LLMs.
  *
- * @param uid The ID of the user whose conversation should be loaded.
+ * @param currentUserId The ID of the user whose conversation should be loaded.
+ * @param otherUserId The ID of the persons who the user is talking to
  * @author Angéline Bignens
  */
-class MessagesViewModelFactory(private val uid: String) : ViewModelProvider.Factory {
+class MessagesViewModelFactory(private val otherUserId: String, private val currentUserId: String) :
+    ViewModelProvider.Factory {
   override fun <T : ViewModel> create(modelClass: Class<T>): T {
     if (modelClass.isAssignableFrom(MessagesViewModel::class.java)) {
-      @Suppress("UNCHECKED_CAST") return MessagesViewModel(uid) as T
+      @Suppress("UNCHECKED_CAST")
+      return MessagesViewModel(otherUserId = otherUserId, currentUserId = currentUserId) as T
     }
     throw IllegalArgumentException("Unknown ViewModel class")
   }
@@ -68,7 +72,8 @@ class MessagesViewModelFactory(private val uid: String) : ViewModelProvider.Fact
  * Composable function representing the Messages Screen. This has been written with the help of
  * LLMs.
  *
- * @param uid The ID of the user the conversation belongs to.
+ * @param currentUserId The ID of the user the conversation belongs to.
+ * @param otherUserId the ID of the user with the user is talking to.
  * @param goBack Callback used for navigating back.
  * @param messagesViewModel Injected ViewModel.
  * @param autoScroll AutoScroll parameter is always true. Can be optionally disabled while testing
@@ -76,16 +81,19 @@ class MessagesViewModelFactory(private val uid: String) : ViewModelProvider.Fact
  */
 @Composable
 fun MessagesScreen(
-    uid: String,
+    otherUserId: String,
+    currentUserId: String,
     goBack: () -> Unit,
-    messagesViewModel: MessagesViewModel = viewModel(factory = MessagesViewModelFactory(uid)),
+    messagesViewModel: MessagesViewModel =
+        viewModel(
+            factory =
+                MessagesViewModelFactory(otherUserId = otherUserId, currentUserId = currentUserId)),
     autoScroll: Boolean = true // false when testing
 ) {
-  val messages by messagesViewModel.messages.collectAsState()
+  val messages by messagesViewModel.messages.collectAsStateWithLifecycle()
   val otherUsername by messagesViewModel.otherUsername.collectAsState()
   val otherAvatar by messagesViewModel.otherAvatar.collectAsState()
   val isOnline by messagesViewModel.isOnline.collectAsState()
-  val currentUserId = messagesViewModel.currentUserId
   val listState = rememberLazyListState()
 
   // Scroll to latest message when list changes
@@ -188,7 +196,7 @@ fun MessageBubble(isMe: Boolean, text: String, timestamp: Timestamp?, testTag: S
       horizontalArrangement = alignment) {
         Column(horizontalAlignment = if (isMe) Alignment.End else Alignment.Start) {
           Text(
-              text = if (timestamp != null) "• " + formatTime(timestamp) else "",
+              text = if (timestamp != null) "• " + formatTime(timestamp) else "Sending...",
               color = NepTuneTheme.colors.onBackground,
               style =
                   TextStyle(

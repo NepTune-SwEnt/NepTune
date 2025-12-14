@@ -18,4 +18,10 @@ interface MessageRepository {
 
   /** Observe real-time online/offline state of a user */
   fun observeUserOnlineState(uid: String): Flow<Boolean>
+
+  /** Observe real-time messages for a conversation */
+  fun observeMessages(conversationId: String): Flow<List<Message>>
+
+  /** Send a message in a conversation */
+  suspend fun sendMessage(conversationId: String, message: Message)
 }
