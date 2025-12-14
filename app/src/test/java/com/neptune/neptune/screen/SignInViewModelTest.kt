@@ -14,11 +14,13 @@ import com.neptune.neptune.ui.authentification.GoogleIdOptionFactory
 import com.neptune.neptune.ui.authentification.SignInStatus
 import com.neptune.neptune.ui.authentification.SignInViewModel
 import com.neptune.neptune.util.NetworkConnectivityObserver
+import com.neptune.neptune.util.RealtimeDatabaseProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkConstructor
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
@@ -72,6 +74,8 @@ class SignInViewModelTest {
 
     mockkConstructor(NetworkConnectivityObserver::class)
     every { anyConstructed<NetworkConnectivityObserver>().isOnline } returns flowOf(true)
+    mockkObject(RealtimeDatabaseProvider)
+    every { RealtimeDatabaseProvider.getDatabase() } returns mockFirebaseDatabase
 
     viewModel =
         SignInViewModel(mockFirebaseAuth, mockGoogleIdOptionFactory, mockConnectivityObserver)
@@ -162,6 +166,7 @@ class SignInViewModelTest {
     every { mockFirebaseAuth.currentUser } returns mockUser
     every { mockUser.uid } returns "testUid"
     viewModel.initialize(mockCredentialManager, {}, fakeOauthClientId)
+    testDispatcher.scheduler.advanceUntilIdle()
     viewModel.signOut()
     testDispatcher.scheduler.advanceUntilIdle()
     verify { mockFirebaseAuth.signOut() }
