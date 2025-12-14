@@ -13,10 +13,12 @@ import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import com.neptune.neptune.model.project.ProjectExtractor
 import com.neptune.neptune.model.project.TotalProjectItemsRepository
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.util.NetworkConnectivityObserver
+import com.neptune.neptune.util.WaveformExtractor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,6 +48,8 @@ class PostViewModel(
 
   private val _localImageUri = MutableStateFlow<Uri?>(null)
   val localImageUri: StateFlow<Uri?> = _localImageUri.asStateFlow()
+  private val waveformExtractor = WaveformExtractor()
+  private val projectExtractor = ProjectExtractor()
 
   private val _localZipUri = MutableStateFlow<Uri?>(null)
   private val auth: FirebaseAuth = FirebaseAuth.getInstance()
@@ -76,8 +80,21 @@ class PostViewModel(
           Log.e("PostViewModel", "The project don't have a file")
           return@launch
         }
+        val previewPath = project.audioPreviewLocalPath
+        val playbackUri =
+            if (!previewPath.isNullOrBlank()) {
+              previewPath.toUri()
+            } else {
+              null
+            }
         _localZipUri.value = rawPath.toUri()
         val durationSeconds = storageService?.getProjectDuration(_localZipUri.value) ?: 0
+
+        val wf =
+            if (playbackUri != null) {
+              waveformExtractor.extractWaveform(
+                  NepTuneApplication.appContext, playbackUri, samplesCount = 100)
+            } else emptyList()
         val sample =
             Sample(
                 id = project.uid,
@@ -91,7 +108,7 @@ class PostViewModel(
                 downloads = 0,
                 ownerId = FirebaseAuth.getInstance().currentUser?.uid ?: "")
 
-        _uiState.update { it.copy(sample = sample) }
+        _uiState.update { it.copy(sample = sample, playbackUri = playbackUri, waveform = wf) }
       } catch (e: Exception) {
         Log.e("PostViewModel", "Error when downloading the project", e)
       }
@@ -224,5 +241,7 @@ data class PostUiState(
             comments = 0,
             downloads = 0),
     val isUploading: Boolean = false,
-    val postComplete: Boolean = false
+    val postComplete: Boolean = false,
+    val playbackUri: Uri? = null,
+    val waveform: List<Float> = emptyList()
 )
