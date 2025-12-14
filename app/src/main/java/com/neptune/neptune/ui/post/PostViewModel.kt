@@ -13,7 +13,6 @@ import com.neptune.neptune.data.ImageStorageRepository
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
-import com.neptune.neptune.model.project.ProjectExtractor
 import com.neptune.neptune.model.project.TotalProjectItemsRepository
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.model.sample.Sample
@@ -49,7 +48,6 @@ class PostViewModel(
   private val _localImageUri = MutableStateFlow<Uri?>(null)
   val localImageUri: StateFlow<Uri?> = _localImageUri.asStateFlow()
   private val waveformExtractor = WaveformExtractor()
-  private val projectExtractor = ProjectExtractor()
 
   private val _localZipUri = MutableStateFlow<Uri?>(null)
   private val auth: FirebaseAuth = FirebaseAuth.getInstance()
