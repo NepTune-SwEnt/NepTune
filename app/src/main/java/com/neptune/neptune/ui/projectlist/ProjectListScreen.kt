@@ -246,7 +246,7 @@ fun ProjectListScreen(
       onNameChange = { projectName = it },
       onConfirm = { name ->
         val finalFile = sanitizeAndRename(proposedFileToImport!!, name)
-        importViewModel.importRecordedFile(finalFile)
+        importViewModel.importRecordedFile(finalFile) { projectListViewModel.refreshProjects() }
         showNameDialog = false
         proposedFileToImport = null
       },

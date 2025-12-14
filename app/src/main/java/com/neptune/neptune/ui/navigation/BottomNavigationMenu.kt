@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.neptune.neptune.R
 import com.neptune.neptune.ui.theme.NepTuneTheme
@@ -27,15 +28,14 @@ import com.neptune.neptune.ui.theme.NepTuneTheme
  * @param destination The destination screen of the tab
  * @param testTag The test tag of the tab
  */
-sealed class Tab(val name: String, val icon: Int, val destination: Screen, val testTag: String) {
+sealed class Tab(val name: String, val icon: Int, val destination: Screen, val testTag: String, val iconSize: Dp = 25.dp ) {
 
   object Main : Tab(
     "Home",
-    // Credits:
-    // https://www.flaticon.com/free-icon-font/home_3917743
-    R.drawable.home_unselected,
+    R.drawable.home_planet,
     Screen.Main,
-    NavigationTestTags.MAIN_TAB)
+    NavigationTestTags.MAIN_TAB,
+    iconSize = 20.dp)
 
   object ProjectList :
       Tab(
@@ -98,7 +98,7 @@ fun BottomNavigationMenu(
     NavigationBar(
         modifier = Modifier
           .testTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU)
-          .height(65.dp)
+          .height(55.dp)
           .padding(horizontal = 7.dp),
         containerColor = NepTuneTheme.colors.background) {
           tabs.forEach { tab ->
@@ -116,12 +116,12 @@ fun BottomNavigationMenu(
             NavigationBarItem(
                 icon = {
                   Icon(
-                      painter = painterResource(id = tab.icon),
-                      contentDescription = tab.name,
-                      modifier = Modifier.size(30.dp),
-                      tint = NepTuneTheme.colors.onBackground)
+                    painter = painterResource(id = tab.icon),
+                    contentDescription = tab.name,
+                    modifier = Modifier.size(tab.iconSize),
+                    tint = NepTuneTheme.colors.onBackground)
                 },
-                alwaysShowLabel = false,
+              alwaysShowLabel = false,
                 selected = isSelected,
                 onClick = {
                   if (tab.destination == Screen.ProjectList) {
