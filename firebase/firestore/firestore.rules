@@ -23,9 +23,11 @@ service cloud.firestore {
       // Allow reading follow edges for any signed-in user; writes are done via Cloud Functions.
       match /followers/{docId} {
         allow read: if signedIn();
+        allow write: if false;
       }
       match /following/{docId} {
         allow read: if signedIn();
+        allow write: if false;
       }
     }
 
@@ -64,4 +66,3 @@ service cloud.firestore {
     }
   }
 }
-
