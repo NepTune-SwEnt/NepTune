@@ -428,18 +428,7 @@ class MainScreenTest {
     composeTestRule.onNodeWithText(commentText).assertIsDisplayed()
     composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_DELETE_BUTTON).assertDoesNotExist()
   }
-}
 
-// Add this helper to your MainViewModel to allow setting the current user for tests
-fun MainViewModel.setCurrentUserId(userId: String) {
-  com.google.firebase.auth.FirebaseAuth.getInstance()
-  val user = FirebaseUser::class.java.getDeclaredConstructor().newInstance()
-  val field = FirebaseUser::class.java.getDeclaredField("uid")
-  field.isAccessible = true
-  field.set(user, userId)
-  val authStateField = MainViewModel::class.java.getDeclaredField("authState")
-  authStateField.isAccessible = true
-  (authStateField.get(this) as MutableStateFlow<FirebaseUser?>).value = user
   fun clickingDownloadOpensDownloadChoiceDialog() {
     // Click first download icon in Discover feed
     composeTestRule
@@ -544,4 +533,15 @@ fun MainViewModel.setCurrentUserId(userId: String) {
           .assertIsNotEnabled()
     }
   }
+}
+// Add this helper to your MainViewModel to allow setting the current user for tests
+fun MainViewModel.setCurrentUserId(userId: String) {
+  com.google.firebase.auth.FirebaseAuth.getInstance()
+  val user = FirebaseUser::class.java.getDeclaredConstructor().newInstance()
+  val field = FirebaseUser::class.java.getDeclaredField("uid")
+  field.isAccessible = true
+  field.set(user, userId)
+  val authStateField = MainViewModel::class.java.getDeclaredField("authState")
+  authStateField.isAccessible = true
+  (authStateField.get(this) as MutableStateFlow<FirebaseUser?>).value = user
 }
