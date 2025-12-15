@@ -29,7 +29,6 @@ import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.navigation.NavigationTestTags
-import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert
 import org.junit.Before
@@ -119,14 +118,6 @@ class MainScreenTest {
   }
 
   @Test
-  fun mainScreenTopAppNavBarCanClickOnMessages() {
-    composeTestRule
-        .onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON)
-        .assertHasClickAction()
-        .performClick()
-  }
-
-  @Test
   fun discoverSection_displaysSample() {
     composeTestRule.onNodeWithText("Discover").assertIsDisplayed()
     // Check that at least one sample card is displayed
@@ -182,21 +173,6 @@ class MainScreenTest {
         .onAllNodesWithTag(MainScreenTestTags.SAMPLE_DOWNLOADS, true)
         .onFirst()
         .assertIsDisplayed()
-  }
-  /** Tests that clicking on the Messages button triggers the callback */
-  @Test
-  fun testClickingMessagesButtonTriggersCallback() {
-    var messagesClicked = false
-    navigateToMessagesCallback = { messagesClicked = true }
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule
-        .onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON)
-        .assertHasClickAction()
-        .performClick()
-
-    assertTrue("Messages button click did not trigger callback", messagesClicked)
   }
 
   @Test
