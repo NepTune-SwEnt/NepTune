@@ -2,6 +2,11 @@ package com.neptune.neptune.ui.profile
 
 import androidx.compose.runtime.Immutable
 
+/**
+ * Strongly typed container for all user interaction callbacks on the profile screen.
+ *
+ * Keeps composables lightweight by bundling lambdas instead of passing them individually.
+ */
 @Immutable
 data class ProfileScreenCallbacks(
     val onEditClick: () -> Unit,
@@ -30,6 +35,7 @@ data class ProfileScreenCallbacks(
   }
 }
 
+/** Convenience builder that mirrors [ProfileScreenCallbacks] defaults for optional lambdas. */
 fun profileScreenCallbacks(
     onEditClick: () -> Unit = {},
     onSaveClick: (String, String, String) -> Unit = { _, _, _ -> },
