@@ -7,6 +7,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyChild
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -19,6 +20,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
 import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.FakeProfileRepository
@@ -28,7 +31,14 @@ import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
+import com.neptune.neptune.ui.main.SampleUiActionsTestTags
 import com.neptune.neptune.ui.navigation.NavigationTestTags
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.runs
+import io.mockk.spyk
+import io.mockk.verify
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert
@@ -36,6 +46,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+/** This has been written with the help of LLMs. */
 private val testSamples =
     listOf(
         Sample(
@@ -46,6 +57,7 @@ private val testSamples =
             tags = listOf("test", "discover"),
             ownerId = "user1",
             storagePreviewSamplePath = "not_blank", // Important for the new logic
+            storageProcessedSamplePath = "not_blank",
             likes = 2,
             usersLike = emptyList(),
             comments = 3,
@@ -59,6 +71,7 @@ private val testSamples =
             tags = listOf("test", "followed"),
             ownerId = "user2",
             storagePreviewSamplePath = "not_blank", // Important for the new logic
+            storageProcessedSamplePath = "not_blank",
             likes = 2,
             usersLike = emptyList(),
             comments = 3,
@@ -92,12 +105,24 @@ class MainScreenTest {
     // Use fake repo with initial data
     fakeSampleRepo = FakeSampleRepository(initialSamples = testSamples)
     val fakeProfileRepo = FakeProfileRepository()
+    val fakeUser =
+        mockk<FirebaseUser>(relaxed = true) {
+          every { uid } returns "test-user"
+          every { isAnonymous } returns false
+        }
+
+    val fakeAuth = mockk<FirebaseAuth>(relaxed = true) { every { currentUser } returns fakeUser }
     viewModel =
-        MainViewModel(
-            sampleRepo = fakeSampleRepo,
-            profileRepo = fakeProfileRepo,
-            useMockData = false // Set to false to use the real logic with our fake repo
-            )
+        spyk(
+            MainViewModel(
+                sampleRepo = fakeSampleRepo,
+                profileRepo = fakeProfileRepo,
+                useMockData = false, // Set to false to use the real logic with our fake repo
+                auth = fakeAuth))
+    // Prevent real download side effects (Firebase / storage / coroutines timing in CI)
+    every { viewModel.onDownloadZippedSample(any()) } just runs
+    every { viewModel.onDownloadProcessedSample(any()) } just runs
+
     composeTestRule.setContent {
       CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
         MainScreen(
@@ -121,13 +146,13 @@ class MainScreenTest {
   @Test
   fun mainScreenTopAppNavBarCanClickOnMessages() {
     composeTestRule
-        .onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON)
+        .onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON, useUnmergedTree = true)
         .assertHasClickAction()
         .performClick()
   }
 
   @Test
-  fun discoverSection_displaysSample() {
+  fun discoverSectionDisplaysSample() {
     composeTestRule.onNodeWithText("Discover").assertIsDisplayed()
     // Check that at least one sample card is displayed
     composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_CARD).onFirst().assertIsDisplayed()
@@ -376,5 +401,111 @@ class MainScreenTest {
         .performClick()
 
     composeTestRule.runOnIdle { Assert.assertEquals("artist-followed", navigatedTo) }
+  }
+
+  @Test
+  fun clickingDownloadOpensDownloadChoiceDialog() {
+    // Click first download icon in Discover feed
+    composeTestRule
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_DOWNLOADS, useUnmergedTree = true)
+        .onFirst()
+        .assertHasClickAction()
+        .performClick()
+
+    // Dialog buttons should appear (meaning: showDownloadPicker == true)
+    composeTestRule.onNodeWithTag(SampleUiActionsTestTags.DOWNLOAD_ZIP_BTN).assertIsDisplayed()
+    composeTestRule
+        .onNodeWithTag(SampleUiActionsTestTags.DOWNLOAD_PROCESSED_BTN)
+        .assertIsDisplayed()
+  }
+
+  @Test
+  fun downloadProcessedButtonCallsViewModelAndDismissesDialog() {
+    val firstSample = viewModel.discoverSamples.value.first()
+
+    // Open dialog
+    composeTestRule
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_DOWNLOADS, useUnmergedTree = true)
+        .onFirst()
+        .performClick()
+
+    // Click processed
+    composeTestRule.onNodeWithTag(SampleUiActionsTestTags.DOWNLOAD_PROCESSED_BTN).performClick()
+
+    // Verify VM call
+    verify { viewModel.onDownloadProcessedSample(firstSample) }
+
+    // Dialog should be dismissed (buttons disappear)
+    composeTestRule
+        .onNodeWithTag(SampleUiActionsTestTags.DOWNLOAD_PROCESSED_BTN)
+        .assertDoesNotExist()
+  }
+
+  @Test
+  fun downloadZipButtonCallsViewModelAndDismissesDialog() {
+    val firstSample = viewModel.discoverSamples.value.first()
+
+    // Open dialog
+    composeTestRule
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_DOWNLOADS, useUnmergedTree = true)
+        .onFirst()
+        .performClick()
+
+    // Click zip
+    composeTestRule.onNodeWithTag(SampleUiActionsTestTags.DOWNLOAD_ZIP_BTN).performClick()
+
+    // Verify VM call
+    verify { viewModel.onDownloadZippedSample(firstSample) }
+
+    // Dialog should be dismissed
+    composeTestRule.onNodeWithTag(SampleUiActionsTestTags.DOWNLOAD_ZIP_BTN).assertDoesNotExist()
+  }
+
+  @Test
+  fun processedOptionDisabledOrHiddenWhenNoProcessedPath() {
+    val sampleNoProcessed =
+        Sample(
+            id = "no-processed",
+            name = "No Processed",
+            description = "",
+            durationSeconds = 10,
+            tags = emptyList(),
+            likes = 0,
+            usersLike = emptyList(),
+            comments = 0,
+            downloads = 0,
+            ownerId = "u3",
+            storagePreviewSamplePath = "not_blank",
+            storageProcessedSamplePath = "" // <- makes processedAvailable false
+            )
+
+    composeTestRule.runOnIdle {
+      // Put it first so clicking first download targets it deterministically
+      viewModel.discoverSamples.value = listOf(sampleNoProcessed) + viewModel.discoverSamples.value
+    }
+    composeTestRule.waitForIdle()
+
+    // Open dialog for the first card
+    composeTestRule
+        .onAllNodesWithTag(MainScreenTestTags.SAMPLE_DOWNLOADS, useUnmergedTree = true)
+        .onFirst()
+        .performClick()
+
+    // Depending on your dialog implementation:
+    // - either the processed button is hidden
+    // - or it exists but disabled
+    val processed =
+        composeTestRule.onAllNodesWithTag(SampleUiActionsTestTags.DOWNLOAD_PROCESSED_BTN)
+    val nodes = processed.fetchSemanticsNodes()
+
+    if (nodes.isEmpty()) {
+      // Hidden: OK
+      return
+    } else {
+      // Present but should be disabled
+      composeTestRule
+          .onNodeWithTag(SampleUiActionsTestTags.DOWNLOAD_PROCESSED_BTN)
+          .assertIsNotEnabled()
+    }
   }
 }
