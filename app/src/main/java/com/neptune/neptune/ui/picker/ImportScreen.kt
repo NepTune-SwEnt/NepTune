@@ -210,8 +210,7 @@ fun ImportScreen(
         projectName = projectName,
         onNameChange = { projectName = it },
         onConfirm = { name ->
-          val finalFile = sanitizeAndRename(proposedFileToImport!!, name)
-          vm.importRecordedFile(finalFile)
+          vm.processAndImportRecording(proposedFileToImport!!, name)
           showNameDialog = false
           proposedFileToImport = null
         },
@@ -360,30 +359,4 @@ private fun NameProjectDialog(
                           fontWeight = FontWeight(400)))
             }
       })
-}
-
-// Helper: sanitize a project name and attempt to rename the provided file accordingly.
-private fun sanitizeAndRename(fileToImport: File, projectName: String): File {
-  val sanitized =
-      projectName
-          .replace(Regex("[^A-Za-z0-9._-]+"), "_")
-          .replace(Regex("_+"), "_")
-          .trim('_', '.', ' ')
-          .ifEmpty { projectName }
-  val ext = fileToImport.extension
-  val parent = fileToImport.parentFile
-  val desiredName = if (ext.isNotBlank()) "$sanitized.$ext" else sanitized
-  val desiredFile = File(parent, desiredName)
-  return if (desiredFile.exists()) {
-    // avoid overwrite
-    fileToImport
-  } else {
-    val moved =
-        try {
-          fileToImport.renameTo(desiredFile)
-        } catch (_: Exception) {
-          false
-        }
-    if (moved) desiredFile else fileToImport
-  }
 }
