@@ -19,6 +19,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
 import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseUser
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.FakeProfileRepository
@@ -377,4 +378,64 @@ class MainScreenTest {
 
     composeTestRule.runOnIdle { Assert.assertEquals("artist-followed", navigatedTo) }
   }
+
+  @Test
+  fun sampleOwnerCanDeleteAnyComment() {
+    val sample = viewModel.discoverSamples.value.first()
+    val sampleOwnerId = sample.ownerId
+
+    // Pretend to be the sample owner
+    viewModel.setCurrentUserId(sampleOwnerId)
+
+    // Add a comment from another user
+    val otherUserId = "otherUser"
+    val commentText = "This is a comment from another user"
+    val timestamp = Timestamp.now()
+    fakeSampleRepo.addComment(sample.id, otherUserId, "Other User", commentText, timestamp)
+
+    // Open the comment section
+    composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_COMMENTS).onFirst().performClick()
+    composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_SECTION).assertIsDisplayed()
+
+    // The sample owner should see the delete button and be able to click it
+    composeTestRule.onNodeWithText(commentText).assertIsDisplayed()
+    composeTestRule.onNodeWithTag("deleteButton").assertIsDisplayed().performClick()
+
+    // Verify the comment is deleted
+    composeTestRule.onNodeWithText(commentText).assertDoesNotExist()
+  }
+
+  @Test
+  fun userCannotDeleteOthersComment() {
+    val sample = viewModel.discoverSamples.value.first()
+    val otherUserId = "otherUser"
+
+    // Pretend to be a random user
+    viewModel.setCurrentUserId("randomUser")
+
+    // Add a comment from another user
+    val commentText = "This is a comment from another user"
+    val timestamp = Timestamp.now()
+    fakeSampleRepo.addComment(sample.id, otherUserId, "Other User", commentText, timestamp)
+
+    // Open the comment section
+    composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_COMMENTS).onFirst().performClick()
+    composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_SECTION).assertIsDisplayed()
+
+    // The user should not see the delete button
+    composeTestRule.onNodeWithText(commentText).assertIsDisplayed()
+    composeTestRule.onNodeWithTag("deleteButton").assertDoesNotExist()
+  }
+}
+
+// Add this helper to your MainViewModel to allow setting the current user for tests
+fun MainViewModel.setCurrentUserId(userId: String) {
+  com.google.firebase.auth.FirebaseAuth.getInstance()
+  val user = FirebaseUser::class.java.getDeclaredConstructor().newInstance()
+  val field = FirebaseUser::class.java.getDeclaredField("uid")
+  field.isAccessible = true
+  field.set(user, userId)
+  val authStateField = MainViewModel::class.java.getDeclaredField("authState")
+  authStateField.isAccessible = true
+  (authStateField.get(this) as MutableStateFlow<FirebaseUser?>).value = user
 }

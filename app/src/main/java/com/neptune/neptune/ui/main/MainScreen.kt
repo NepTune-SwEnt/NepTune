@@ -157,6 +157,7 @@ object MainScreenTestTags : BaseSampleTestTags {
   const val COMMENT_POST_BUTTON = "commentPostButton"
   const val COMMENT_LIST = "commentList"
   const val COMMENT_PICTURE = "commentPicture"
+  const val COMMENT_DELETE_BUTTON = "commentDeleteButton"
 }
 
 /**
@@ -942,6 +943,8 @@ fun CommentDialog(
                                       currentUserId == sampleOwnerId)
                           if (canDelete) {
                             IconButton(
+                                modifier =
+                                    Modifier.testTag(MainScreenTestTags.COMMENT_DELETE_BUTTON),
                                 onClick = {
                                   onDeleteComment(sampleId, comment.authorId, comment.timestamp)
                                 }) {
