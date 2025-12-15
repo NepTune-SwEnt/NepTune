@@ -4,6 +4,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -75,6 +76,7 @@ class MessagesScreenTest {
     composeTestRule.onNodeWithTag(MessagesScreenTestTags.INPUT_BAR).assertIsDisplayed()
     composeTestRule.onNodeWithTag(MessagesScreenTestTags.INPUT_FIELD).assertIsDisplayed()
     composeTestRule.onNodeWithTag(MessagesScreenTestTags.SEND_BUTTON).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(MessagesScreenTestTags.INPUT_COUNTER).assertIsDisplayed()
   }
 
   @Test
@@ -153,6 +155,34 @@ class MessagesScreenTest {
     setContent(goBack = { backClicked = true })
     composeTestRule.onNodeWithTag(MessagesScreenTestTags.BACK_BUTTON).performClick()
     assertTrue(backClicked)
+  }
+
+  @Test
+  fun characterCounterUpdatesWhenTyping() {
+    setContent()
+
+    // Type text
+    composeTestRule.onNodeWithTag(MessagesScreenTestTags.INPUT_FIELD).performTextInput("Hello")
+
+    // Counter should update
+    composeTestRule
+        .onNodeWithTag(MessagesScreenTestTags.INPUT_COUNTER)
+        .assertExists()
+        .assertTextEquals("5 / 200")
+  }
+
+  @Test
+  fun textIsLimitedToMaxCharacters() {
+    setContent()
+
+    val longText = "a".repeat(250)
+
+    composeTestRule.onNodeWithTag(MessagesScreenTestTags.INPUT_FIELD).performTextInput(longText)
+
+    // Counter should not exceed maxChars (200)
+    composeTestRule
+        .onNodeWithTag(MessagesScreenTestTags.INPUT_COUNTER)
+        .assertTextEquals("200 / 200")
   }
 
   /** Tests that messages Route with user correctly display MessageScreen */
