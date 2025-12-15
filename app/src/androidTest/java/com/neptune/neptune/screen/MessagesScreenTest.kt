@@ -1,19 +1,25 @@
 package com.neptune.neptune.screen
 
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.google.firebase.auth.FirebaseUser
 import com.neptune.neptune.ui.authentification.SignInViewModel
+import com.neptune.neptune.ui.messages.MessagesRoute
 import com.neptune.neptune.ui.messages.MessagesScreen
 import com.neptune.neptune.ui.messages.MessagesScreenTestTags
 import com.neptune.neptune.ui.messages.MessagesViewModel
@@ -107,7 +113,8 @@ class MessagesScreenTest {
     }
 
     composeTestRule
-        .onNodeWithText("Banana")
+        .onAllNodesWithText("Banana")
+        .onFirst()
         .assertExists("Message `Banana` not found after sending.")
   }
 
@@ -148,27 +155,68 @@ class MessagesScreenTest {
     assertTrue(backClicked)
   }
 
-  /** Tests that the messagesScreen receives Uid Argument */
+  /** Tests that messages Route with user correctly display MessageScreen */
   @Test
-  fun messagesScreenReceivesUidArgument() {
-    val testOtherUserId = "otherUser123"
+  fun messagesRouteWithUserShowsMessagesScreen() {
+    val otherUserId = "other123"
+    val currentUserId = "me123"
 
-    // Mock the SignInViewModel with a currentUser
-    val mockSignInViewModel = mockk<SignInViewModel>(relaxed = true)
-    val mockUser = mockk<FirebaseUser>(relaxed = true)
-    every { mockUser.uid } returns "currentUserId"
-    every { mockSignInViewModel.currentUser } returns MutableStateFlow(mockUser)
+    val firebaseUser = mockk<FirebaseUser> { every { uid } returns currentUserId }
+
+    val fakeSignInViewModel = mockk<SignInViewModel>()
+    every { fakeSignInViewModel.currentUser } returns MutableStateFlow(firebaseUser)
 
     composeTestRule.setContent {
-      // Get current user ID from the mocked SignInViewModel
-      val firebaseUser by mockSignInViewModel.currentUser.collectAsState()
-      val currentUserId = firebaseUser?.uid ?: ""
-
-      // Directly call the composable with test arguments
-      MessagesScreen(otherUserId = testOtherUserId, currentUserId = currentUserId, goBack = {})
+      MessagesRoute(otherUserId = otherUserId, signInViewModel = fakeSignInViewModel, goBack = {})
     }
 
-    // Assert that MessagesScreen content is displayed
+    composeTestRule.onNodeWithTag(MessagesScreenTestTags.MESSAGES_SCREEN).assertIsDisplayed()
+  }
+
+  /** Tests that messages Route without user doesn't display MessageScreen */
+  @Test
+  fun messagesRouteWithoutUserDoesNotShowScreen() {
+    val fakeSignInViewModel = mockk<SignInViewModel>()
+    every { fakeSignInViewModel.currentUser } returns MutableStateFlow(null)
+
+    composeTestRule.setContent {
+      MessagesRoute(otherUserId = "other", signInViewModel = fakeSignInViewModel, goBack = {})
+    }
+
+    composeTestRule.onNodeWithTag(MessagesScreenTestTags.MESSAGES_SCREEN).assertDoesNotExist()
+  }
+
+  /** Tests that messages Route correctly reads UID Argument */
+  @Test
+  fun messagesNavRouteReadsUidArgument() {
+    val otherUserId = "other123"
+    val currentUserId = "me123"
+
+    val firebaseUser = mockk<FirebaseUser> { every { uid } returns currentUserId }
+
+    val signInViewModel = mockk<SignInViewModel>()
+    every { signInViewModel.currentUser } returns MutableStateFlow(firebaseUser)
+
+    composeTestRule.setContent {
+      val navController = rememberNavController()
+
+      NavHost(navController = navController, startDestination = "messages/{uid}") {
+        composable(
+            route = "messages/{uid}",
+            arguments = listOf(navArgument("uid") { type = NavType.StringType })) { backStackEntry
+              ->
+              val otherUserIdFromNav =
+                  backStackEntry.arguments?.getString("uid") ?: return@composable
+
+              MessagesRoute(
+                  otherUserId = otherUserIdFromNav, signInViewModel = signInViewModel, goBack = {})
+            }
+      }
+
+      // Trigger navigation
+      LaunchedEffect(Unit) { navController.navigate("messages/$otherUserId") }
+    }
+
     composeTestRule.onNodeWithTag(MessagesScreenTestTags.MESSAGES_SCREEN).assertIsDisplayed()
   }
 }

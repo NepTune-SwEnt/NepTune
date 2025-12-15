@@ -39,7 +39,7 @@ import com.neptune.neptune.ui.follow.FollowListRoute
 import com.neptune.neptune.ui.follow.FollowListTab
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainViewModel
-import com.neptune.neptune.ui.messages.MessagesScreen
+import com.neptune.neptune.ui.messages.MessagesRoute
 import com.neptune.neptune.ui.messages.SelectMessagesScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
@@ -318,12 +318,9 @@ fun NeptuneApp(
                         backStackEntry ->
                       val otherUserId =
                           backStackEntry.arguments?.getString("uid") ?: return@composable
-
-                      val firebaseUser by signInViewModel.currentUser.collectAsState()
-                      val currentUserId = firebaseUser?.uid ?: return@composable
-                      MessagesScreen(
+                      MessagesRoute(
                           otherUserId = otherUserId,
-                          currentUserId = currentUserId,
+                          signInViewModel = signInViewModel,
                           goBack = { navigationActions.goBack() })
                     }
                 composable(

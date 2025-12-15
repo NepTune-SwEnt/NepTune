@@ -31,6 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.google.firebase.Timestamp
 import com.neptune.neptune.R
+import com.neptune.neptune.ui.authentification.SignInViewModel
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.formatTime
 
@@ -66,6 +67,27 @@ class MessagesViewModelFactory(private val otherUserId: String, private val curr
     }
     throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
   }
+}
+
+/**
+ * Composable route for the Messages screen.
+ *
+ * This function acts as a bridge between the navigation layer and the UI layer. It observes the
+ * currently signed-in user from [SignInViewModel] and only displays the [MessagesScreen] if a user
+ * is logged in.This has been written with the help of LLMs.
+ *
+ * @param otherUserId The ID of the user with whom the current user is having a conversation.
+ * @param signInViewModel The [SignInViewModel] that provides the currently authenticated user.
+ * @param goBack Lambda callback invoked to navigate back from the Messages screen.
+ * @see MessagesScreen
+ * @author Angéline Bignens
+ */
+@Composable
+fun MessagesRoute(otherUserId: String, signInViewModel: SignInViewModel, goBack: () -> Unit) {
+  val firebaseUser by signInViewModel.currentUser.collectAsState()
+  val currentUserId = firebaseUser?.uid ?: return
+
+  MessagesScreen(otherUserId = otherUserId, currentUserId = currentUserId, goBack = goBack)
 }
 
 /**

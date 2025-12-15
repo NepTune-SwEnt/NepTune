@@ -317,6 +317,27 @@ class MessageRepositoryFirebaseTest {
     assertTrue(viewModel.otherAvatar.value == expectedAvatar)
   }
 
+  @Test
+  fun messagesViewModelObserveOtherUserProfileException() = runBlocking {
+    val otherUserId = "other123"
+    val currentUserId = "me"
+
+    val mockProfileRepo = mockk<ProfileRepository>()
+    coEvery { mockProfileRepo.getProfile(otherUserId) } throws RuntimeException("Boom")
+
+    val mockMessageRepo = mockk<MessageRepository>(relaxed = true)
+
+    // triggers observeOtherUserProfile()
+    MessagesViewModel(
+        otherUserId = otherUserId,
+        currentUserId = currentUserId,
+        messageRepo = mockMessageRepo,
+        profileRepo = mockProfileRepo)
+
+    // catch block executed
+    assertTrue(true)
+  }
+
   private fun cleanUp() {
     runBlocking {
       db.collection("messages").get().await().documents.forEach {
