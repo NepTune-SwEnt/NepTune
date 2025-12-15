@@ -211,7 +211,7 @@ fun ProjectListScreen(
       },
       floatingActionButton = {
         // Reuse the centralized createProjectButtons to avoid duplication
-        com.neptune.neptune.ui.picker.createProjectButtons(
+        com.neptune.neptune.ui.picker.CreateProjectButtons(
             isRecording = isRecording,
             actualRecorder = actualRecorder,
             hasAudioPermission = hasAudioPermission,

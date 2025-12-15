@@ -29,7 +29,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -100,8 +99,6 @@ fun SignInScreen(
   val signInStatus by signInViewModel.signInStatus.collectAsState()
   val emailState by signInViewModel.emailAuthUiState.collectAsState()
   val isOnline by signInViewModel.isOnline.collectAsState()
-  val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-  val logoSize = screenWidth * 0.3f
 
   LaunchedEffect(credentialManager) {
     signInViewModel.initialize(

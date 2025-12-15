@@ -168,7 +168,6 @@ fun MainScreen(
     navigateToProfile: () -> Unit = {},
     navigateToProjectList: () -> Unit = {},
     navigateToOtherUserProfile: (String) -> Unit = {},
-    navigateToSelectMessages: () -> Unit = {},
     navigateToSampleList: (FeedType) -> Unit = {},
     mainViewModel: MainViewModel = viewModel()
 ) {
