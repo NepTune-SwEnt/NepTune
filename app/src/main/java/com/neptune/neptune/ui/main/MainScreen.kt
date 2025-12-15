@@ -899,7 +899,7 @@ fun CommentDialog(
                               placeholder = painterResource(R.drawable.profile),
                               error = painterResource(R.drawable.profile))
                           Spacer(Modifier.width(8.dp))
-                          Column {
+                          Column(modifier = Modifier.weight(1f)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
