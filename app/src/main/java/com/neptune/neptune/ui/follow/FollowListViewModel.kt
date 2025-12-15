@@ -84,17 +84,26 @@ class FollowListViewModel(
     }
   }
 
+  private fun requireAuthenticatedUid(isFollowers: Boolean): String? {
+    val uid = auth.currentUser?.uid
+    if (uid == null) {
+      _uiState.update {
+        if (isFollowers) {
+          it.copy(
+              isLoadingFollowers = false, errorMessage = "User not authenticated. Please sign in.")
+        } else {
+          it.copy(
+              isLoadingFollowing = false, errorMessage = "User not authenticated. Please sign in.")
+        }
+      }
+    }
+    return uid
+  }
+
   private fun loadFollowers() {
     viewModelScope.launch {
       _uiState.update { it.copy(isLoadingFollowers = true, errorMessage = null) }
-      val uid = auth.currentUser?.uid
-      if (uid == null) {
-        _uiState.update {
-          it.copy(
-              isLoadingFollowers = false, errorMessage = "User not authenticated. Please sign in.")
-        }
-        return@launch
-      }
+      val uid = requireAuthenticatedUid(isFollowers = true) ?: return@launch
 
       try {
         val followersIds = repo.getFollowersIds(uid)
@@ -119,14 +128,7 @@ class FollowListViewModel(
   private fun loadFollowing() {
     viewModelScope.launch {
       _uiState.update { it.copy(isLoadingFollowing = true, errorMessage = null) }
-      val uid = auth.currentUser?.uid
-      if (uid == null) {
-        _uiState.update {
-          it.copy(
-              isLoadingFollowing = false, errorMessage = "User not authenticated. Please sign in.")
-        }
-        return@launch
-      }
+      val uid = requireAuthenticatedUid(isFollowers = false) ?: return@launch
 
       try {
         val followingIds = repo.getFollowingIds(uid)

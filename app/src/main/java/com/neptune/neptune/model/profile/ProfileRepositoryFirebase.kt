@@ -142,6 +142,7 @@ class ProfileRepositoryFirebase(
     val registration =
         profiles.document(uid).collection(subcollection).addSnapshotListener { snap, err ->
           if (err != null) {
+            Log.e("ProfileRepository", "Error observing $subcollection for uid=$uid", err)
             trySend(emptyList())
             return@addSnapshotListener
           }
