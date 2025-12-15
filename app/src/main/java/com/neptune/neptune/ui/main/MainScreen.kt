@@ -505,16 +505,18 @@ fun SampleItem(
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
     testTags: BaseSampleTestTags = MainScreenTestTags,
     resourceState: SampleResourceState = SampleResourceState(),
-    iconSize: Dp = 16.dp
+    iconSize: Dp = 16.dp,
+    showOwnerInfo: Boolean = true
 ) {
 
   Column(modifier = Modifier.width(width)) {
-    // Header (Avatar + Name)
-    SampleCardHeader(
-        avatarUrl = resourceState.ownerAvatarUrl,
-        userName = resourceState.ownerName,
-        onProfileClick = clickHandlers.onProfileClick,
-        testTags = testTags)
+    if (showOwnerInfo) {
+      SampleCardHeader(
+          avatarUrl = resourceState.ownerAvatarUrl,
+          userName = resourceState.ownerName,
+          onProfileClick = clickHandlers.onProfileClick,
+          testTags = testTags)
+    }
 
     // Card (Image + Waveform + Title)
     SampleCard(

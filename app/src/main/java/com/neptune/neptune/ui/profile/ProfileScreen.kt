@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -57,8 +58,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -78,13 +85,21 @@ import com.neptune.neptune.util.NetworkConnectivityObserver
 private val ScreenPadding = 16.dp
 private val SettingsButtonSize = 30.dp
 private val AvatarVerticalSpacing = 15.dp
-private val SectionVerticalSpacing = 40.dp
+private val SectionVerticalSpacing = 50.dp
+private val PreSamplesSectionSpacing = 60.dp
+private val StatsSpacing = 20.dp
 private val BottomButtonBottomPadding = 24.dp
 private val ButtonIconSpacing = 8.dp
+private val TopBarActionsSpacing = 12.dp
 private val TagsSpacing = 8.dp
-private val StatBlockLabelSpacing = 8.dp
-private val SamplesSpacing = 20.dp
+private val StatBlockLabelSpacing = 4.dp
 private const val UNKOWN_CLASS = "Unknown ViewModel class"
+
+private fun appTextStyle(fontSize: TextUnit = 18.sp) =
+    TextStyle(
+        fontSize = fontSize,
+        fontWeight = FontWeight(400),
+        fontFamily = FontFamily(Font(R.font.markazi_text)))
 
 /**
  * Centralized constants defining all `testTag` identifiers used in [ProfileScreen] UI tests.
@@ -189,7 +204,6 @@ private fun SettingsButton(settings: () -> Unit) {
 sealed interface ProfileViewConfig {
   val topBarContent: (@Composable () -> Unit)?
   val belowStatsButton: (@Composable () -> Unit)?
-  val bottomScreenButton: (@Composable (modifier: Modifier) -> Unit)?
   val onFollowingClick: (() -> Unit)?
   val onFollowersClick: (() -> Unit)?
 
@@ -201,24 +215,28 @@ sealed interface ProfileViewConfig {
       override val onFollowersClick: (() -> Unit)? = null,
       val isOnline: Boolean = true
   ) : ProfileViewConfig {
-    override val topBarContent = @Composable { SettingsButton(settings) }
-    override val belowStatsButton = null
-    override val bottomScreenButton =
-        @Composable { modifier: Modifier ->
-          if (canEditProfile) {
-            Button(
-                onClick = onEdit,
-                enabled = isOnline,
-                modifier =
-                    modifier
-                        .padding(bottom = BottomButtonBottomPadding)
-                        .testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
-                  Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
-                  Spacer(Modifier.width(ButtonIconSpacing))
-                  Text("Edit")
+    override val topBarContent =
+        @Composable {
+          Row(
+              horizontalArrangement = Arrangement.spacedBy(TopBarActionsSpacing),
+              verticalAlignment = Alignment.CenterVertically) {
+                if (canEditProfile) {
+                  IconButton(
+                      onClick = onEdit,
+                      enabled = isOnline,
+                      modifier =
+                          Modifier.size(SettingsButtonSize)
+                              .testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit",
+                            tint = NepTuneTheme.colors.onBackground)
+                      }
                 }
-          }
+                SettingsButton(settings)
+              }
         }
+    override val belowStatsButton = null
   }
 
   data class OtherProfileConfig(
@@ -246,19 +264,18 @@ sealed interface ProfileViewConfig {
                 modifier = Modifier.testTag(ProfileScreenTestTags.FOLLOW_BUTTON)) {
                   Icon(imageVector = icon, contentDescription = "Follow")
                   Spacer(Modifier.width(ButtonIconSpacing))
-                  Text(label)
+                  Text(text = label, style = appTextStyle())
                 }
             if (!errorMessage.isNullOrBlank()) {
               Spacer(Modifier.height(8.dp))
               Text(
                   text = errorMessage,
                   color = Color.Red,
-                  style = MaterialTheme.typography.bodySmall,
+                  style = appTextStyle(),
                   modifier = Modifier.testTag("profile/follow_error"))
             }
           }
     }
-    override val bottomScreenButton = null
   }
 }
 
@@ -329,8 +346,7 @@ private fun ProfileViewContent(
                   OfflineBanner()
                 }
                 LazyColumn(
-                    modifier =
-                        Modifier.fillMaxSize().padding(bottom = 88.dp).then(samplesListTagModifier),
+                    modifier = Modifier.fillMaxSize().then(samplesListTagModifier),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                   item { Spacer(Modifier.height(AvatarVerticalSpacing)) }
@@ -352,7 +368,7 @@ private fun ProfileViewContent(
                     Text(
                         text = state.name,
                         color = NepTuneTheme.colors.onBackground,
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = appTextStyle(40.sp),
                         textAlign = TextAlign.Center,
                         modifier = Modifier.testTag(ProfileScreenTestTags.NAME))
                   }
@@ -360,17 +376,24 @@ private fun ProfileViewContent(
                     Text(
                         text = "@${state.username}",
                         color = NepTuneTheme.colors.onBackground,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = appTextStyle(20.sp),
                         modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
                   }
-                  item { Spacer(Modifier.height(SectionVerticalSpacing)) }
+                  item { Spacer(Modifier.height(StatsSpacing)) }
 
                   // Stats row
                   item {
-                    StatRow(
-                        state = state,
-                        onFollowersClick = viewConfig.onFollowersClick,
-                        onFollowingClick = viewConfig.onFollowingClick)
+                    Box(
+                        modifier =
+                            Modifier.border(
+                                width = 0.5.dp,
+                                color = NepTuneTheme.colors.accentPrimary,
+                                shape = RoundedCornerShape(16.dp))) {
+                          StatRow(
+                              state = state,
+                              onFollowersClick = viewConfig.onFollowersClick,
+                              onFollowingClick = viewConfig.onFollowingClick)
+                        }
                   }
                   item { Spacer(Modifier.height(SectionVerticalSpacing)) }
 
@@ -382,7 +405,7 @@ private fun ProfileViewContent(
                     Text(
                         text = if (state.bio != "") "“${state.bio}”" else "",
                         color = NepTuneTheme.colors.onBackground,
-                        style = MaterialTheme.typography.titleLarge,
+                        style = appTextStyle(30.sp),
                         textAlign = TextAlign.Center,
                         modifier = Modifier.testTag(ProfileScreenTestTags.BIO))
                   }
@@ -400,7 +423,7 @@ private fun ProfileViewContent(
                                   selected = false,
                                   onClick = {},
                                   enabled = false,
-                                  label = { Text(tag) },
+                                  label = { Text(text = tag, style = appTextStyle()) },
                                   colors =
                                       InputChipDefaults.inputChipColors(
                                           disabledContainerColor =
@@ -414,24 +437,13 @@ private fun ProfileViewContent(
                     }
                   }
 
-                  item { Spacer(Modifier.height(SectionVerticalSpacing)) }
-
-                  // Posted samples section
-                  item {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                      Text(
-                          text = "Posted samples",
-                          style = MaterialTheme.typography.headlineSmall,
-                          color = NepTuneTheme.colors.onBackground)
-                      Spacer(Modifier.height(SamplesSpacing))
-                    }
-                  }
+                  item { Spacer(Modifier.height(PreSamplesSectionSpacing)) }
 
                   if (samples.isEmpty()) {
                     item {
                       Text(
                           text = "No samples posted yet.",
-                          style = MaterialTheme.typography.bodyMedium,
+                          style = appTextStyle(),
                           color = NepTuneTheme.colors.onBackground)
                     }
                   } else {
@@ -449,7 +461,8 @@ private fun ProfileViewContent(
                           }
                         },
                         width = cardWidth,
-                        height = cardHeight)
+                        height = cardHeight,
+                        showOwnerInfo = false)
                   }
                 }
 
@@ -462,9 +475,6 @@ private fun ProfileViewContent(
                       onAddComment = { id, text -> profileSamplesViewModel.onAddComment(id, text) })
                 }
               }
-
-              // if mode is self profile, show edit button
-              viewConfig.bottomScreenButton?.invoke(Modifier.align(Alignment.BottomCenter))
             }
       }
 }
@@ -536,6 +546,7 @@ private fun ProfileEditContent(
             onValueChange = onNameChange,
             label = { Text("Name") },
             colors = TextFieldColors(),
+            singleLine = true,
             modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_NAME),
             isError = uiState.nameError != null,
             supportingText = {
@@ -560,6 +571,7 @@ private fun ProfileEditContent(
             onValueChange = onUsernameChange,
             label = { Text("Username") },
             colors = TextFieldColors(),
+            singleLine = true,
             modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_USERNAME),
             isError = uiState.usernameError != null,
             supportingText = {
@@ -585,7 +597,7 @@ private fun ProfileEditContent(
             label = { Text("Bio") },
             colors = TextFieldColors(),
             modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_BIO),
-            minLines = 3,
+            singleLine = true,
             isError = uiState.bioError != null,
             supportingText = {
               val err = uiState.bioError
@@ -676,13 +688,13 @@ fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, testTag:
     Text(
         text = label,
         color = NepTuneTheme.colors.onBackground,
-        style = MaterialTheme.typography.bodySmall,
+        style = appTextStyle(),
         textAlign = TextAlign.Center)
     Spacer(Modifier.height(StatBlockLabelSpacing))
     Text(
         text = "$value",
         color = NepTuneTheme.colors.onBackground,
-        style = MaterialTheme.typography.bodyLarge,
+        style = appTextStyle(20.sp),
         textAlign = TextAlign.Center,
         modifier = Modifier.testTag(testTag))
   }

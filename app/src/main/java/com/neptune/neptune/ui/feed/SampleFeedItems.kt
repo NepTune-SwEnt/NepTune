@@ -33,6 +33,7 @@ fun LazyListScope.sampleFeedItems(
     width: Dp,
     height: Dp,
     iconSize: Dp = 20.dp,
+    showOwnerInfo: Boolean = true,
 ) {
   items(samples) { sample ->
     LaunchedEffect(sample.id, sample.storagePreviewSamplePath) {
@@ -69,7 +70,8 @@ fun LazyListScope.sampleFeedItems(
         testTags = testTags,
         mediaPlayer = mediaPlayer,
         resourceState = resources,
-        iconSize = iconSize)
+        iconSize = iconSize,
+        showOwnerInfo = showOwnerInfo)
     Spacer(Modifier.height(12.dp))
   }
 }
