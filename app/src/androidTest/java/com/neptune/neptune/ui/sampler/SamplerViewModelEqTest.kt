@@ -55,7 +55,7 @@ class SamplerViewModelEqTest {
         File(ApplicationProvider.getApplicationContext<Context>().cacheDir, "wav_header_test.wav")
     if (outFile.exists()) outFile.delete()
 
-    viewModel.encodePCMToWAV(samples, sampleRate, channelCount, outFile)
+    viewModel.encodeAudio(samples, sampleRate, channelCount, outFile)
     assertTrue("WAV file should exist", outFile.exists())
     assertTrue("WAV file should be > 44 bytes", outFile.length() > 44)
     val bytes = outFile.readBytes()
@@ -84,7 +84,7 @@ class SamplerViewModelEqTest {
     val sourceFile =
         File(ApplicationProvider.getApplicationContext<Context>().cacheDir, "source_eq.wav")
     if (sourceFile.exists()) sourceFile.delete()
-    viewModel.encodePCMToWAV(samples, sampleRate, channelCount, sourceFile)
+    viewModel.encodeAudio(samples, sampleRate, channelCount, sourceFile)
 
     val sourceUri = Uri.fromFile(sourceFile)
     viewModel.equalizeAudio(sourceUri, listOf(5f, 0f, 0f, 0f, 0f, 0f, 0f, 0f))

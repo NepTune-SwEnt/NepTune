@@ -4,6 +4,7 @@ import android.os.Environment
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.storage.FirebaseStorage
 import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.R
@@ -87,8 +88,11 @@ open class MainViewModel(
 
   private val _userAvatar = MutableStateFlow<String?>(null)
   val userAvatar: StateFlow<String?> = _userAvatar.asStateFlow()
+  private val firebaseAuth: FirebaseAuth? =
+      auth ?: if (useMockData) null else FirebaseAuth.getInstance()
 
-  private val _currentUserFlow = MutableStateFlow(auth?.currentUser)
+  private val _currentUserFlow = MutableStateFlow(firebaseAuth?.currentUser)
+  val currentUser: StateFlow<FirebaseUser?> = _currentUserFlow.asStateFlow()
   private val observingSampleIds = mutableSetOf<String>()
   private val authListener =
       FirebaseAuth.AuthStateListener { firebaseAuth ->
@@ -113,7 +117,7 @@ open class MainViewModel(
     } else {
       loadSamplesFromFirebase()
     }
-    auth?.addAuthStateListener(authListener)
+    firebaseAuth?.addAuthStateListener(authListener)
     observeUserProfile()
   }
 
@@ -367,7 +371,7 @@ open class MainViewModel(
 
   /** Disconnect the user */
   fun signOut() {
-    auth?.signOut()
+    firebaseAuth?.signOut()
     _currentUserFlow.value = null
   }
 
