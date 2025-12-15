@@ -84,8 +84,8 @@ import com.neptune.neptune.ui.picker.NameProjectDialog
 import com.neptune.neptune.ui.picker.RecordControls
 import com.neptune.neptune.ui.picker.sanitizeAndRename
 import com.neptune.neptune.ui.theme.NepTuneTheme
-import kotlinx.coroutines.runBlocking
 import java.io.File
+import kotlinx.coroutines.runBlocking
 
 object ProjectListScreenTestTags {
   const val PROJECT_LIST_SCREEN = "ProjectListScreen"
@@ -117,14 +117,14 @@ private const val SEARCHBAR_FONT_SIZE = 21
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectListScreen(
-  credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
-  onProjectClick: (ProjectItem) -> Unit = {},
-  projectListViewModel: ProjectListViewModel = viewModel(),
-  importViewModel: ImportViewModel = viewModel(),
-  mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
-  recorder: NeptuneRecorder? = null,
-  testRecordedFile: File? = null,
-  onDeleteFailed: (() -> Unit)? = null,
+    credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
+    onProjectClick: (ProjectItem) -> Unit = {},
+    projectListViewModel: ProjectListViewModel = viewModel(),
+    importViewModel: ImportViewModel = viewModel(),
+    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
+    recorder: NeptuneRecorder? = null,
+    testRecordedFile: File? = null,
+    onDeleteFailed: (() -> Unit)? = null,
 ) {
   val uiState by projectListViewModel.uiState.collectAsState()
   // Use the reactive uiState.projects directly so additions trigger recomposition
@@ -135,23 +135,23 @@ fun ProjectListScreen(
 
   var searchText by remember { mutableStateOf("") }
   val filteredProjects =
-    if (searchText.isBlank()) {
-      projects
-    } else {
-      projects.filter { p ->
-        p.name.contains(searchText, ignoreCase = true) ||
-            p.description.contains(searchText, ignoreCase = true) ||
-            p.tags.any { it.contains(searchText, ignoreCase = true) }
+      if (searchText.isBlank()) {
+        projects
+      } else {
+        projects.filter { p ->
+          p.name.contains(searchText, ignoreCase = true) ||
+              p.description.contains(searchText, ignoreCase = true) ||
+              p.tags.any { it.contains(searchText, ignoreCase = true) }
+        }
       }
-    }
 
   // Import audio part
   val context = LocalContext.current
 
   val pickAudio =
-    rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-      uri?.let { importViewModel.importFromSaf(it.toString()) }
-    }
+      rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { importViewModel.importFromSaf(it.toString()) }
+      }
 
   val actualRecorder = recorder ?: remember { NeptuneRecorder(context, StoragePaths(context)) }
   var isRecording by remember { mutableStateOf(actualRecorder.isRecording) }
@@ -178,100 +178,97 @@ fun ProjectListScreen(
   }
 
   val permissionLauncher =
-    rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) {
-        isGranted ->
-      hasAudioPermission = isGranted
-    }
+      rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) {
+          isGranted ->
+        hasAudioPermission = isGranted
+      }
 
   LaunchedEffect(key1 = true) {
     hasAudioPermission =
-      ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
-          PackageManager.PERMISSION_GRANTED
+        ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
   }
 
   Scaffold(
-    containerColor = NepTuneTheme.colors.background,
-    content = { it ->
-      Column(
-        modifier =
-          Modifier
-            .testTag(ProjectListScreenTestTags.PROJECT_LIST_SCREEN)
-            .fillMaxSize()
-            .padding(it)
-      ) {
-        SearchBar(value = searchText, onValueChange = { searchText = it })
-        if (!isOnline && isUserLoggedIn) {
-          OfflineBanner()
-        }
-        ProjectList(
-          projects = filteredProjects,
-          selectedProject = selectedProjects,
-          modifier = Modifier.padding(it),
-          projectListViewModel = projectListViewModel,
-          onProjectClick = onProjectClick,
-          mediaPlayer = mediaPlayer
-        )
-      }
-    },
-    floatingActionButton = {
-      RecordControls(
-        isRecording = isRecording,
-        onToggleRecord = {
-          // Toggle recording: start or stop and handle produced file
-          if (isRecording) {
-            val recorded =
-              try {
-                actualRecorder.stop()
-              } catch (_: Exception) {
-                null
+      containerColor = NepTuneTheme.colors.background,
+      content = { it ->
+        Column(
+            modifier =
+                Modifier.testTag(ProjectListScreenTestTags.PROJECT_LIST_SCREEN)
+                    .fillMaxSize()
+                    .padding(it)) {
+              SearchBar(value = searchText, onValueChange = { searchText = it })
+              if (!isOnline && isUserLoggedIn) {
+                OfflineBanner()
               }
-            if (recorded != null) {
-              proposedFileToImport = recorded
-              projectName = recorded.nameWithoutExtension
-              showNameDialog = true
+              ProjectList(
+                  projects = filteredProjects,
+                  selectedProject = selectedProjects,
+                  modifier = Modifier.padding(it),
+                  projectListViewModel = projectListViewModel,
+                  onProjectClick = onProjectClick,
+                  mediaPlayer = mediaPlayer)
             }
-          } else {
-            if (hasAudioPermission) {
-              try {
-                actualRecorder.start()
-              } catch (_: Exception) {
-                /* ignore */
+      },
+      floatingActionButton = {
+        RecordControls(
+            isRecording = isRecording,
+            onToggleRecord = {
+              // Toggle recording: start or stop and handle produced file
+              if (isRecording) {
+                val recorded =
+                    try {
+                      actualRecorder.stop()
+                    } catch (_: Exception) {
+                      null
+                    }
+                if (recorded != null) {
+                  proposedFileToImport = recorded
+                  projectName = recorded.nameWithoutExtension
+                  showNameDialog = true
+                }
+              } else {
+                if (hasAudioPermission) {
+                  try {
+                    actualRecorder.start()
+                  } catch (_: Exception) {
+                    /* ignore */
+                  }
+                } else {
+                  permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
               }
-            } else {
-              permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-            }
-          }
-          isRecording = actualRecorder.isRecording
-        },
-        onImportAudio = { pickAudio.launch(arrayOf("audio/*")) })
-    })
+              isRecording = actualRecorder.isRecording
+            },
+            onImportAudio = { pickAudio.launch(arrayOf("audio/*")) })
+      })
 
   // Name dialog
   if (showNameDialog && proposedFileToImport != null) {
     NameProjectDialog(
-      projectName = projectName,
-      onNameChange = { projectName = it },
-      onConfirm = { name ->
-        val finalFile = sanitizeAndRename(proposedFileToImport!!, name)
-        // For recorded files we already call refresh after import via the lambda param.
-        importViewModel.importRecordedFile(finalFile) { projectListViewModel.refreshProjects() }
-        showNameDialog = false
-        proposedFileToImport = null
-      },
-      onCancel = {
-        val deleted = proposedFileToImport?.delete() ?: true
-        if (!deleted) {
-          onDeleteFailed?.invoke()
-          // provide the same toast behavior as before
-          Toast.makeText(
-            context,
-            "Could not delete temporary file ${proposedFileToImport?.absolutePath}",
-            Toast.LENGTH_SHORT)
-            .show()
-        }
-        showNameDialog = false
-        proposedFileToImport = null
-      })
+        projectName = projectName,
+        onNameChange = { projectName = it },
+        onConfirm = { name ->
+          val finalFile = sanitizeAndRename(proposedFileToImport!!, name)
+          // For recorded files we already call refresh after import via the lambda param.
+          importViewModel.importRecordedFile(finalFile) { projectListViewModel.refreshProjects() }
+          showNameDialog = false
+          proposedFileToImport = null
+        },
+        onCancel = {
+          val deleted = proposedFileToImport?.delete() ?: true
+          if (!deleted) {
+            onDeleteFailed?.invoke()
+            // provide the same toast behavior as before
+            Toast.makeText(
+                    context,
+                    "Could not delete temporary file ${proposedFileToImport?.absolutePath}",
+                    Toast.LENGTH_SHORT)
+                .show()
+          }
+          showNameDialog = false
+          proposedFileToImport = null
+        })
   }
 }
 
@@ -288,36 +285,34 @@ fun ProjectListScreen(
  */
 @Composable
 fun ProjectList(
-  modifier: Modifier = Modifier,
-  projects: List<ProjectItem>,
-  selectedProject: String? = null,
-  projectListViewModel: ProjectListViewModel,
-  onProjectClick: (ProjectItem) -> Unit = {},
-  mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
+    modifier: Modifier = Modifier,
+    projects: List<ProjectItem>,
+    selectedProject: String? = null,
+    projectListViewModel: ProjectListViewModel,
+    onProjectClick: (ProjectItem) -> Unit = {},
+    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
 ) {
 
   val lineColor = NepTuneTheme.colors.onBackground
   Column(
-    modifier =
-      modifier.drawBehind {
-        drawLine(
-          color = lineColor,
-          start = Offset(0f, 0f),
-          end = Offset(size.width, 0f),
-          strokeWidth = 2.dp.toPx()
-        )
-      },
+      modifier =
+          modifier.drawBehind {
+            drawLine(
+                color = lineColor,
+                start = Offset(0f, 0f),
+                end = Offset(size.width, 0f),
+                strokeWidth = 2.dp.toPx())
+          },
   ) {
     if (projects.isNotEmpty()) {
       LazyColumn(modifier = modifier.testTag(ProjectListScreenTestTags.PROJECT_LIST)) {
         items(items = projects, key = { project -> project.uid }) { project ->
           ProjectListItem(
-            project = project,
-            selectedProject = selectedProject,
-            onProjectClick = onProjectClick,
-            projectListViewModel = projectListViewModel,
-            mediaPlayer = mediaPlayer
-          )
+              project = project,
+              selectedProject = selectedProject,
+              onProjectClick = onProjectClick,
+              projectListViewModel = projectListViewModel,
+              mediaPlayer = mediaPlayer)
         }
       }
     }
@@ -337,95 +332,86 @@ fun ProjectList(
  */
 @Composable
 fun ProjectListItem(
-  project: ProjectItem,
-  selectedProject: String? = null,
-  onProjectClick: (ProjectItem) -> Unit = {},
-  projectListViewModel: ProjectListViewModel,
-  mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
+    project: ProjectItem,
+    selectedProject: String? = null,
+    onProjectClick: (ProjectItem) -> Unit = {},
+    projectListViewModel: ProjectListViewModel,
+    mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
 ) {
   val backGroundColor =
-    if (project.uid == selectedProject) NepTuneTheme.colors.listBackground
-    else NepTuneTheme.colors.background
+      if (project.uid == selectedProject) NepTuneTheme.colors.listBackground
+      else NepTuneTheme.colors.background
   val lineColor = NepTuneTheme.colors.onBackground
   Card(
-    modifier =
-      Modifier
-        .fillMaxWidth()
-        .padding(vertical = 2.dp)
-        .clickable(
-          onClick = {
-            projectListViewModel.selectProject(project)
-            onProjectClick(project)
-          })
-        .drawBehind {
-          drawLine(
-            color = lineColor,
-            start = Offset(0f, size.height),
-            end = Offset(size.width, size.height),
-            strokeWidth = 2.dp.toPx()
-          )
-        }
-        .testTag("project_${project.uid}"),
-    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    colors = CardDefaults.cardColors(backGroundColor),
-    shape = RoundedCornerShape(0.dp),
+      modifier =
+          Modifier.fillMaxWidth()
+              .padding(vertical = 2.dp)
+              .clickable(
+                  onClick = {
+                    projectListViewModel.selectProject(project)
+                    onProjectClick(project)
+                  })
+              .drawBehind {
+                drawLine(
+                    color = lineColor,
+                    start = Offset(0f, size.height),
+                    end = Offset(size.width, size.height),
+                    strokeWidth = 2.dp.toPx())
+              }
+              .testTag("project_${project.uid}"),
+      elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+      colors = CardDefaults.cardColors(backGroundColor),
+      shape = RoundedCornerShape(0.dp),
   ) {
     Row(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 10.dp, vertical = 4.dp),
-      horizontalArrangement = Arrangement.SpaceBetween,
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      Row(
-        modifier = Modifier.padding(start = 5.dp),
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        IconButton(
-          onClick = {
-            // Play the project's preview audio if available, otherwise fall back to a
-            // demo resource
-            try {
-              val path = project.audioPreviewLocalPath
-              val uri =
-                if (!path.isNullOrBlank()) {
-                  path.toUri()
-                } else {
-                  // fallback demo URI from the media player helper
-                  mediaPlayer.getUriFromSampleId(project.uid)
-                }
-              mediaPlayer.togglePlay(uri)
-            } catch (e: Exception) {
-              Log.e("ProjectListItem", "Error playing preview for ${project.uid}", e)
-            }
-          },
-          modifier = Modifier.testTag("play_${project.uid}"),
-          content = {
-            Icon(
-              Icons.Default.PlayArrow,
-              contentDescription = "Play",
-              tint = NepTuneTheme.colors.onBackground,
-              modifier = Modifier.size(26.dp)
-            )
-          })
-        Spacer(modifier = Modifier.width(8.dp))
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically) {
+          Row(
+              modifier = Modifier.padding(start = 5.dp),
+              verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = {
+                      // Play the project's preview audio if available, otherwise fall back to a
+                      // demo resource
+                      try {
+                        val path = project.audioPreviewLocalPath
+                        val uri =
+                            if (!path.isNullOrBlank()) {
+                              path.toUri()
+                            } else {
+                              // fallback demo URI from the media player helper
+                              mediaPlayer.getUriFromSampleId(project.uid)
+                            }
+                        mediaPlayer.togglePlay(uri)
+                      } catch (e: Exception) {
+                        Log.e("ProjectListItem", "Error playing preview for ${project.uid}", e)
+                      }
+                    },
+                    modifier = Modifier.testTag("play_${project.uid}"),
+                    content = {
+                      Icon(
+                          Icons.Default.PlayArrow,
+                          contentDescription = "Play",
+                          tint = NepTuneTheme.colors.onBackground,
+                          modifier = Modifier.size(26.dp))
+                    })
+                Spacer(modifier = Modifier.width(8.dp))
 
-        Text(
-          text = project.name,
-          modifier = Modifier.testTag(ProjectListScreenTestTags.PROJECT_NAME),
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis,
-          style =
-            TextStyle(
-              fontSize = 27.sp,
-              fontFamily = FontFamily(Font(R.font.markazi_text)),
-              fontWeight = FontWeight(150),
-              color = NepTuneTheme.colors.onBackground
-            )
-        )
-      }
-      EditMenu(project, projectListViewModel = projectListViewModel)
-    }
+                Text(
+                    text = project.name,
+                    modifier = Modifier.testTag(ProjectListScreenTestTags.PROJECT_NAME),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style =
+                        TextStyle(
+                            fontSize = 27.sp,
+                            fontFamily = FontFamily(Font(R.font.markazi_text)),
+                            fontWeight = FontWeight(150),
+                            color = NepTuneTheme.colors.onBackground))
+              }
+          EditMenu(project, projectListViewModel = projectListViewModel)
+        }
   }
 }
 
@@ -439,8 +425,8 @@ fun ProjectListItem(
  */
 @Composable
 fun EditMenu(
-  project: ProjectItem,
-  projectListViewModel: ProjectListViewModel,
+    project: ProjectItem,
+    projectListViewModel: ProjectListViewModel,
 ) {
   var expanded by remember { mutableStateOf(false) }
   var showRenameDialog by remember { mutableStateOf(false) }
@@ -450,31 +436,31 @@ fun EditMenu(
 
   if (showRenameDialog) {
     RenameProjectDialog(
-      initialName = project.name,
-      onDismiss = { showRenameDialog = false },
-      onConfirm = { newName ->
-        projectListViewModel.renameProject(project.uid, newName)
-        showRenameDialog = false
-      })
+        initialName = project.name,
+        onDismiss = { showRenameDialog = false },
+        onConfirm = { newName ->
+          projectListViewModel.renameProject(project.uid, newName)
+          showRenameDialog = false
+        })
   }
 
   if (showChangeDescDialog) {
     ChangeDescriptionDialog(
-      initialDescription = project.description,
-      onDismiss = { showChangeDescDialog = false },
-      onConfirm = { newDesc ->
-        projectListViewModel.changeProjectDescription(project.uid, newDesc)
-        showChangeDescDialog = false
-      })
+        initialDescription = project.description,
+        onDismiss = { showChangeDescDialog = false },
+        onConfirm = { newDesc ->
+          projectListViewModel.changeProjectDescription(project.uid, newDesc)
+          showChangeDescDialog = false
+        })
   }
 
   if (showDeleteDialog) {
     DeleteConfirmationDialog(
-      onConfirm = {
-        projectListViewModel.deleteProject(project.uid)
-        showDeleteDialog = false
-      },
-      onDismiss = { showDeleteDialog = false })
+        onConfirm = {
+          projectListViewModel.deleteProject(project.uid)
+          showDeleteDialog = false
+        },
+        onDismiss = { showDeleteDialog = false })
   }
 
   if (isOnline) {
@@ -482,70 +468,65 @@ fun EditMenu(
     Row {
       // Star favorite toggle
       IconButton(
-        onClick = { projectListViewModel.toggleFavorite(project.uid) },
-        modifier = Modifier.testTag("favorite_${project.uid}")
-      ) {
-        Icon(
-          imageVector =
-            if (project.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
-          contentDescription = "Favorite",
-          tint = NepTuneTheme.colors.onBackground,
-          modifier = Modifier.size(26.dp)
-        )
-      }
+          onClick = { projectListViewModel.toggleFavorite(project.uid) },
+          modifier = Modifier.testTag("favorite_${project.uid}")) {
+            Icon(
+                imageVector =
+                    if (project.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
+                contentDescription = "Favorite",
+                tint = NepTuneTheme.colors.onBackground,
+                modifier = Modifier.size(26.dp))
+          }
 
       Box(modifier = Modifier.padding(end = 0.dp)) {
         IconButton(
-          onClick = { expanded = true }, modifier = Modifier.testTag("menu_${project.uid}")
-        ) {
-          Icon(
-            Icons.Rounded.MoreVert,
-            contentDescription = "Edit",
-            tint = NepTuneTheme.colors.onBackground,
-            modifier = Modifier
-              .size(30.dp)
-              .padding(end = 0.dp),
-          )
-        }
+            onClick = { expanded = true }, modifier = Modifier.testTag("menu_${project.uid}")) {
+              Icon(
+                  Icons.Rounded.MoreVert,
+                  contentDescription = "Edit",
+                  tint = NepTuneTheme.colors.onBackground,
+                  modifier = Modifier.size(30.dp).padding(end = 0.dp),
+              )
+            }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
           DropdownMenuItem(
-            modifier = Modifier.testTag(ProjectListScreenTestTags.RENAME_BUTTON),
-            text = { Text("Rename") },
-            onClick = {
-              showRenameDialog = true
-              expanded = false
-            })
+              modifier = Modifier.testTag(ProjectListScreenTestTags.RENAME_BUTTON),
+              text = { Text("Rename") },
+              onClick = {
+                showRenameDialog = true
+                expanded = false
+              })
           DropdownMenuItem(
-            modifier = Modifier.testTag(ProjectListScreenTestTags.CHANGE_DESCRIPTION_BUTTON),
-            text = { Text("Change Description") },
-            onClick = {
-              showChangeDescDialog = true
-              expanded = false
-            })
+              modifier = Modifier.testTag(ProjectListScreenTestTags.CHANGE_DESCRIPTION_BUTTON),
+              text = { Text("Change Description") },
+              onClick = {
+                showChangeDescDialog = true
+                expanded = false
+              })
           if (!project.isStoredInCloud) {
             DropdownMenuItem(
-              modifier = Modifier.testTag(ProjectListScreenTestTags.ADD_TO_CLOUD_BUTTON),
-              text = { Text("Add to Cloud") },
-              onClick = {
-                projectListViewModel.addProjectToCloud(project.uid)
-                expanded = false
-              })
+                modifier = Modifier.testTag(ProjectListScreenTestTags.ADD_TO_CLOUD_BUTTON),
+                text = { Text("Add to Cloud") },
+                onClick = {
+                  projectListViewModel.addProjectToCloud(project.uid)
+                  expanded = false
+                })
           } else {
             DropdownMenuItem(
-              modifier = Modifier.testTag(ProjectListScreenTestTags.REMOVE_FROM_CLOUD_BUTTON),
-              text = { Text("Remove from Cloud") },
-              onClick = {
-                projectListViewModel.removeProjectFromCloud(project.uid)
-                expanded = false
-              })
+                modifier = Modifier.testTag(ProjectListScreenTestTags.REMOVE_FROM_CLOUD_BUTTON),
+                text = { Text("Remove from Cloud") },
+                onClick = {
+                  projectListViewModel.removeProjectFromCloud(project.uid)
+                  expanded = false
+                })
           }
           DropdownMenuItem(
-            modifier = Modifier.testTag(ProjectListScreenTestTags.DELETE_BUTTON),
-            text = { Text("Delete") },
-            onClick = {
-              showDeleteDialog = true
-              expanded = false
-            })
+              modifier = Modifier.testTag(ProjectListScreenTestTags.DELETE_BUTTON),
+              text = { Text("Delete") },
+              onClick = {
+                showDeleteDialog = true
+                expanded = false
+              })
         }
       }
     }
@@ -562,27 +543,26 @@ fun EditMenu(
  */
 @Composable
 fun RenameProjectDialog(
-  initialName: String = "",
-  onDismiss: () -> Unit,
-  onConfirm: (String) -> Unit
+    initialName: String = "",
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
 ) {
   var text by remember { mutableStateOf(initialName) }
 
   AlertDialog(
-    onDismissRequest = onDismiss,
-    title = { Text("Rename Project") },
-    text = {
-      OutlinedTextField(value = text, onValueChange = { text = it }, label = { Text("New name") })
-    },
-    confirmButton = {
-      Button(
-        onClick = { onConfirm(text) },
-        modifier = Modifier.testTag(ProjectListScreenTestTags.CONFIRM_DIALOG)
-      ) {
-        Text("Confirm")
-      }
-    },
-    dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
+      onDismissRequest = onDismiss,
+      title = { Text("Rename Project") },
+      text = {
+        OutlinedTextField(value = text, onValueChange = { text = it }, label = { Text("New name") })
+      },
+      confirmButton = {
+        Button(
+            onClick = { onConfirm(text) },
+            modifier = Modifier.testTag(ProjectListScreenTestTags.CONFIRM_DIALOG)) {
+              Text("Confirm")
+            }
+      },
+      dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
 }
 
 /**
@@ -596,34 +576,32 @@ fun RenameProjectDialog(
  */
 @Composable
 fun ChangeDescriptionDialog(
-  initialDescription: String,
-  onDismiss: () -> Unit,
-  onConfirm: (String) -> Unit
+    initialDescription: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
 ) {
   var text by remember { mutableStateOf(initialDescription) }
 
   AlertDialog(
-    onDismissRequest = onDismiss,
-    title = { Text("Change Description") },
-    text = {
-      OutlinedTextField(
-        modifier = Modifier.testTag(ProjectListScreenTestTags.DESCRIPTION_TEXT_FIELD),
-        value = text,
-        onValueChange = { text = it },
-        label = { Text("Description") },
-        singleLine = false,
-        maxLines = 4
-      )
-    },
-    confirmButton = {
-      Button(
-        onClick = { onConfirm(text) },
-        modifier = Modifier.testTag(ProjectListScreenTestTags.CONFIRM_DIALOG)
-      ) {
-        Text("Confirm")
-      }
-    },
-    dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
+      onDismissRequest = onDismiss,
+      title = { Text("Change Description") },
+      text = {
+        OutlinedTextField(
+            modifier = Modifier.testTag(ProjectListScreenTestTags.DESCRIPTION_TEXT_FIELD),
+            value = text,
+            onValueChange = { text = it },
+            label = { Text("Description") },
+            singleLine = false,
+            maxLines = 4)
+      },
+      confirmButton = {
+        Button(
+            onClick = { onConfirm(text) },
+            modifier = Modifier.testTag(ProjectListScreenTestTags.CONFIRM_DIALOG)) {
+              Text("Confirm")
+            }
+      },
+      dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
 }
 
 /**
@@ -637,20 +615,19 @@ fun ChangeDescriptionDialog(
 @Composable
 fun DeleteConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
   AlertDialog(
-    onDismissRequest = onDismiss,
-    title = { Text("Delete Project") },
-    text = {
-      Text("Are you sure you want to delete this project? This action cannot be undone.")
-    },
-    confirmButton = {
-      TextButton(
-        onClick = onConfirm,
-        modifier = Modifier.testTag(ProjectListScreenTestTags.CONFIRM_DIALOG)
-      ) {
-        Text("Delete")
-      }
-    },
-    dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
+      onDismissRequest = onDismiss,
+      title = { Text("Delete Project") },
+      text = {
+        Text("Are you sure you want to delete this project? This action cannot be undone.")
+      },
+      confirmButton = {
+        TextButton(
+            onClick = onConfirm,
+            modifier = Modifier.testTag(ProjectListScreenTestTags.CONFIRM_DIALOG)) {
+              Text("Delete")
+            }
+      },
+      dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
 }
 
 /**
@@ -662,63 +639,55 @@ fun DeleteConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
  */
 @Composable
 fun SearchBar(
-  value: String,
-  onValueChange: (String) -> Unit,
-  testTag: String = ProjectListScreenTestTags.SEARCH_BAR,
-  whatToSearchFor: String? = "a Project"
+    value: String,
+    onValueChange: (String) -> Unit,
+    testTag: String = ProjectListScreenTestTags.SEARCH_BAR,
+    whatToSearchFor: String? = "a Project"
 ) {
   Row(
-    verticalAlignment = Alignment.CenterVertically,
-    modifier = Modifier
-      .fillMaxWidth()
-      .testTag(testTag),
-    horizontalArrangement = Arrangement.Center
-  ) {
-    TextField(
-      value = value,
-      onValueChange = onValueChange,
-      placeholder = {
-        Text(
-          text = "Search for $whatToSearchFor",
-          color = NepTuneTheme.colors.onBackground,
-          style =
-            TextStyle(
-              fontSize = SEARCHBAR_FONT_SIZE.sp,
-              fontFamily = FontFamily(Font(R.font.markazi_text)),
-              fontWeight = FontWeight(100)
-            )
+      verticalAlignment = Alignment.CenterVertically,
+      modifier = Modifier.fillMaxWidth().testTag(testTag),
+      horizontalArrangement = Arrangement.Center) {
+        TextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = {
+              Text(
+                  text = "Search for $whatToSearchFor",
+                  color = NepTuneTheme.colors.onBackground,
+                  style =
+                      TextStyle(
+                          fontSize = SEARCHBAR_FONT_SIZE.sp,
+                          fontFamily = FontFamily(Font(R.font.markazi_text)),
+                          fontWeight = FontWeight(100)))
+            },
+            modifier =
+                Modifier.height(70.dp)
+                    .testTag(ProjectListScreenTestTags.SEARCH_TEXT_FIELD)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(NepTuneTheme.colors.background, RoundedCornerShape(8.dp))
+                    .padding(top = 9.dp, bottom = 9.dp),
+            singleLine = true,
+            colors =
+                TextFieldDefaults.colors(
+                    focusedContainerColor = NepTuneTheme.colors.searchBar,
+                    unfocusedContainerColor = NepTuneTheme.colors.searchBar,
+                    disabledContainerColor = NepTuneTheme.colors.searchBar,
+                    cursorColor = Color.Unspecified,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
+                    focusedTextColor = NepTuneTheme.colors.onBackground,
+                    unfocusedTextColor = NepTuneTheme.colors.onBackground),
+            leadingIcon = {
+              Icon(
+                  imageVector = Icons.Default.Search,
+                  contentDescription = "Search Icon",
+                  tint = NepTuneTheme.colors.onBackground,
+                  modifier = Modifier.size(30.dp))
+            },
         )
-      },
-      modifier =
-        Modifier
-          .height(70.dp)
-          .testTag(ProjectListScreenTestTags.SEARCH_TEXT_FIELD)
-          .clip(RoundedCornerShape(8.dp))
-          .background(NepTuneTheme.colors.background, RoundedCornerShape(8.dp))
-          .padding(top = 9.dp, bottom = 9.dp),
-      singleLine = true,
-      colors =
-        TextFieldDefaults.colors(
-          focusedContainerColor = NepTuneTheme.colors.searchBar,
-          unfocusedContainerColor = NepTuneTheme.colors.searchBar,
-          disabledContainerColor = NepTuneTheme.colors.searchBar,
-          cursorColor = Color.Unspecified,
-          focusedIndicatorColor = Color.Transparent,
-          unfocusedIndicatorColor = Color.Transparent,
-          disabledIndicatorColor = Color.Transparent,
-          focusedTextColor = NepTuneTheme.colors.onBackground,
-          unfocusedTextColor = NepTuneTheme.colors.onBackground
-        ),
-      leadingIcon = {
-        Icon(
-          imageVector = Icons.Default.Search,
-          contentDescription = "Search Icon",
-          tint = NepTuneTheme.colors.onBackground,
-          modifier = Modifier.size(30.dp)
-        )
-      },
-    )
-  }
+      }
 }
 
 /**
@@ -731,39 +700,37 @@ fun SearchBar(
 @Preview
 @Composable
 fun ProjectListScreenPreview(
-  navigateBack: () -> Unit = {},
-  onProjectClick: (ProjectItem) -> Unit = {},
+    navigateBack: () -> Unit = {},
+    onProjectClick: (ProjectItem) -> Unit = {},
 ) {
   val repo = TotalProjectItemsRepositoryProvider.repository
   runBlocking {
     repo.addProject(
-      ProjectItem(
-        uid = "1",
-        name = "Project 1",
-        description = "Description 1",
-        isFavorite = false,
-        tags = listOf(),
-        audioPreviewCloudUri = null,
-        projectFileCloudUri = null,
-        lastUpdated = Timestamp.now(),
-        ownerId = null,
-        collaborators = listOf(),
-      )
-    )
+        ProjectItem(
+            uid = "1",
+            name = "Project 1",
+            description = "Description 1",
+            isFavorite = false,
+            tags = listOf(),
+            audioPreviewCloudUri = null,
+            projectFileCloudUri = null,
+            lastUpdated = Timestamp.now(),
+            ownerId = null,
+            collaborators = listOf(),
+        ))
     repo.addProject(
-      ProjectItem(
-        uid = "2",
-        name = "Project 2",
-        description = "Description 2",
-        isFavorite = true,
-        tags = listOf(),
-        audioPreviewCloudUri = null,
-        projectFileCloudUri = null,
-        lastUpdated = Timestamp.now(),
-        ownerId = null,
-        collaborators = listOf(),
-      )
-    )
+        ProjectItem(
+            uid = "2",
+            name = "Project 2",
+            description = "Description 2",
+            isFavorite = true,
+            tags = listOf(),
+            audioPreviewCloudUri = null,
+            projectFileCloudUri = null,
+            lastUpdated = Timestamp.now(),
+            ownerId = null,
+            collaborators = listOf(),
+        ))
   }
   val vm = ProjectListViewModel(projectRepository = repo)
 
@@ -771,6 +738,5 @@ fun ProjectListScreenPreview(
   val previewPlayer = NeptuneMediaPlayer()
 
   ProjectListScreen(
-    projectListViewModel = vm, onProjectClick = onProjectClick, mediaPlayer = previewPlayer
-  )
+      projectListViewModel = vm, onProjectClick = onProjectClick, mediaPlayer = previewPlayer)
 }

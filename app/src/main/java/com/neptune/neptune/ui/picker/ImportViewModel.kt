@@ -56,8 +56,8 @@ private var onImportFinished = {}
  * @author Angéline Bignens
  */
 class ImportViewModel(
-  private val importMedia: ImportMediaUseCase,
-  getLibrary: GetLibraryUseCase,
+    private val importMedia: ImportMediaUseCase,
+    getLibrary: GetLibraryUseCase,
 ) : ViewModel() {
   val library: StateFlow<List<MediaItem>> =
       getLibrary().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
@@ -110,10 +110,11 @@ class ImportViewModel(
   }
 
   // New convenience: import a File produced by the in-app recorder directly
-  fun importRecordedFile(file: File, refreshProjects: () -> Unit = {}) = viewModelScope.launch {
-    importMedia(file)
-    refreshProjects()
-  }
+  fun importRecordedFile(file: File, refreshProjects: () -> Unit = {}) =
+      viewModelScope.launch {
+        importMedia(file)
+        refreshProjects()
+      }
 
   // Register a callback that will be invoked when an import completes (used for SAF / external
   // imports). We assign the top-level `onImportFinished` so the ImportMediaUseCase created in
@@ -150,7 +151,7 @@ fun importAppRoot(): ImportVMFactory {
   val paths = remember { StoragePaths(context) }
   val importer = remember { FileImporterImpl(context, context.contentResolver, paths) }
   val packager = remember { NeptunePackager(paths) }
-  val importUC = remember { ImportMediaUseCase(importer, repo, packager){ onImportFinished() } }
+  val importUC = remember { ImportMediaUseCase(importer, repo, packager) { onImportFinished() } }
   val libraryUC = remember { GetLibraryUseCase(repo) }
 
   return ImportVMFactory(importUC, libraryUC)

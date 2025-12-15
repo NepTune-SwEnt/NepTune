@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,14 +16,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -32,7 +29,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -50,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
+import com.neptune.neptune.ui.main.MainTopAppBar
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
 object SignInScreenTags {
@@ -116,20 +113,7 @@ fun SignInScreen(
   Scaffold(
       topBar = {
         Column {
-          CenterAlignedTopAppBar(
-              modifier = Modifier.fillMaxWidth().height(112.dp).testTag(SignInScreenTags.TOP_BAR),
-              title = {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                  Image(
-                      painter = painterResource(id = R.drawable.neptune_logo),
-                      contentDescription = "NepTune Logo",
-                      modifier = Modifier.size(logoSize).testTag(SignInScreenTags.TOP_BAR_LOGO),
-                      contentScale = ContentScale.Fit)
-                }
-              },
-              colors =
-                  TopAppBarDefaults.centerAlignedTopAppBarColors(
-                      containerColor = NepTuneTheme.colors.background))
+          MainTopAppBar(null, {}, false)
           HorizontalDivider(
               modifier = Modifier.fillMaxWidth(),
               thickness = 0.75.dp,

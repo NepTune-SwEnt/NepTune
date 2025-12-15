@@ -228,11 +228,7 @@ fun MainScreen(
               .testTag(MainScreenTestTags.MAIN_SCREEN)) {
         Scaffold(
             topBar = {
-              MainTopAppBar(
-                  userAvatar = userAvatar,
-                  navigateToSelectMessages = navigateToSelectMessages,
-                  navigateToProfile = navigateToProfile,
-                  isUserLoggedIn = isUserLoggedIn)
+              MainTopAppBar(userAvatar = userAvatar, navigateToProfile = navigateToProfile)
             },
             floatingActionButton = {
               if (isUserLoggedIn && !isAnonymous) {
@@ -426,56 +422,44 @@ private fun SampleSectionLazyRow(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MainTopAppBar(
-    userAvatar: String?,
-    navigateToSelectMessages: () -> Unit,
-    navigateToProfile: () -> Unit,
-    isUserLoggedIn: Boolean = true
-) {
+fun MainTopAppBar(userAvatar: String?, navigateToProfile: () -> Unit, signedIn: Boolean = true) {
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
   val logoSize = screenWidth * 0.3f
   Column {
     CenterAlignedTopAppBar(
-        modifier = Modifier
-          .fillMaxWidth()
-          .height(112.dp)
-          .testTag(MainScreenTestTags.TOP_BAR),
-        navigationIcon = {
-          Box(
-            modifier = Modifier
-              .padding(vertical = 38.dp, horizontal = 25.dp)
-              .size(38.dp)
-          )
-        },
+        modifier = Modifier.fillMaxWidth().height(90.dp).testTag(MainScreenTestTags.TOP_BAR),
         title = {
-          Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+          // Keep the title constrained to the center area so the actions stay to the right
+          Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Image(
                 painter = painterResource(id = R.drawable.neptune_logo),
                 contentDescription = "NepTune Logo",
                 modifier = Modifier.size(logoSize).testTag(MainScreenTestTags.TOP_BAR_LOGO),
                 contentScale = ContentScale.Fit)
+
+            // Profile Button
+            if (signedIn) {
+              IconButton(
+                  onClick = navigateToProfile,
+                  modifier =
+                      Modifier.align(Alignment.CenterEnd)
+                          .padding(horizontal = 5.dp)
+                          .size(57.dp)
+                          .testTag(NavigationTestTags.PROFILE_BUTTON)) {
+                    AsyncImage(
+                        model =
+                            ImageRequest.Builder(LocalContext.current)
+                                .data(userAvatar ?: R.drawable.profile)
+                                .crossfade(true)
+                                .build(),
+                        contentDescription = "Profile",
+                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                        contentScale = ContentScale.Crop,
+                        placeholder = painterResource(R.drawable.profile),
+                        error = painterResource(R.drawable.profile))
+                  }
+            }
           }
-        },
-        actions = {
-          // Profile Button
-          IconButton(
-              onClick = navigateToProfile,
-              modifier =
-                  Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
-                      .size(57.dp)
-                      .testTag(NavigationTestTags.PROFILE_BUTTON)) {
-                AsyncImage(
-                    model =
-                        ImageRequest.Builder(LocalContext.current)
-                            .data(userAvatar ?: R.drawable.profile)
-                            .crossfade(true)
-                            .build(),
-                    contentDescription = "Profile",
-                    modifier = Modifier.fillMaxSize().clip(CircleShape),
-                    contentScale = ContentScale.Crop,
-                    placeholder = painterResource(R.drawable.profile),
-                    error = painterResource(R.drawable.profile))
-              }
         },
         colors =
             TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -598,6 +582,7 @@ data class ClickHandlers(
     val onDownloadClick: () -> Unit,
     val onLikeClick: (Boolean) -> Unit
 )
+
 // Function to create click handlers with default empty implementations
 fun onClickFunctions(
     onProfileClick: () -> Unit = {},
@@ -733,7 +718,7 @@ fun SampleCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween) {
                       Text(
-                          text = sample.tags.joinToString(" ") { "#$it" },
+                          text = sample.tags.joinToString(" ") { "#${it}" },
                           color = NepTuneTheme.colors.background,
                           modifier = Modifier.testTag(testTags.SAMPLE_TAGS).weight(1f),
                           maxLines = 1,
