@@ -49,6 +49,7 @@ object MessagesScreenTestTags {
   const val INPUT_BAR = "MessageInputBar"
   const val INPUT_FIELD = "MessageInputField"
   const val SEND_BUTTON = "SendButton"
+  const val INPUT_COUNTER = "InputCounter"
 }
 /**
  * Factory used to create a [MessagesViewModel] instance with a specific user ID. This has been
@@ -249,76 +250,96 @@ fun MessageBubble(isMe: Boolean, text: String, timestamp: Timestamp?, testTag: S
  * Bottom input bar used to write and send messages.
  *
  * @param onSend Callback triggered when the send button is pressed.
+ * @param maxChars Max characters when sending a text.
  */
 @Composable
-fun MessageInputBar(onSend: (String) -> Unit) {
+fun MessageInputBar(onSend: (String) -> Unit, maxChars: Int = 200) {
   var text by remember { mutableStateOf("") }
 
-  Row(
-      modifier =
-          Modifier.fillMaxWidth()
-              .padding(horizontal = 12.dp, vertical = 10.dp)
-              .testTag(MessagesScreenTestTags.INPUT_BAR),
-      verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier =
-                Modifier.weight(1f)
-                    .height(57.dp)
-                    .background(
-                        color = NepTuneTheme.colors.searchBar, shape = RoundedCornerShape(10.dp)),
-            contentAlignment = Alignment.CenterStart) {
-              TextField(
-                  value = text,
-                  onValueChange = { text = it },
-                  placeholder = {
-                    Text(
-                        text = "Message...",
-                        color = NepTuneTheme.colors.onBackground.copy(alpha = 0.6f),
-                        style =
-                            TextStyle(
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight(500),
-                                fontFamily = FontFamily(Font(R.font.markazi_text))))
-                  },
-                  modifier = Modifier.fillMaxSize().testTag(MessagesScreenTestTags.INPUT_FIELD),
-                  colors =
-                      TextFieldDefaults.colors(
-                          focusedContainerColor = Color.Transparent,
-                          unfocusedContainerColor = Color.Transparent,
-                          focusedIndicatorColor = Color.Transparent,
-                          unfocusedIndicatorColor = Color.Transparent,
-                          cursorColor = NepTuneTheme.colors.onBackground,
-                          focusedTextColor = NepTuneTheme.colors.onBackground,
-                          unfocusedTextColor = NepTuneTheme.colors.onBackground),
-                  maxLines = 3,
-                  textStyle =
-                      TextStyle(
-                          fontSize = 24.sp,
-                          fontFamily = FontFamily(Font(R.font.markazi_text)),
-                          fontWeight = FontWeight(300),
-                          color = NepTuneTheme.colors.onBackground))
-            }
-
-        Spacer(modifier = Modifier.width(10.dp))
-
-        IconButton(
-            onClick = {
-              if (text.isNotBlank()) {
-                onSend(text.trim())
-                text = ""
+  Column {
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+                .testTag(MessagesScreenTestTags.INPUT_BAR),
+        verticalAlignment = Alignment.CenterVertically) {
+          Box(
+              modifier =
+                  Modifier.weight(1f)
+                      .height(57.dp)
+                      .background(
+                          color = NepTuneTheme.colors.searchBar, shape = RoundedCornerShape(10.dp)),
+              contentAlignment = Alignment.CenterStart) {
+                TextField(
+                    value = text,
+                    onValueChange = { newText ->
+                      if (newText.length <= maxChars) {
+                        text = newText
+                      } else {
+                        text = newText.take(maxChars) // Truncate if exceeding
+                      }
+                    },
+                    placeholder = {
+                      Text(
+                          text = "Message...",
+                          color = NepTuneTheme.colors.onBackground.copy(alpha = 0.6f),
+                          style =
+                              TextStyle(
+                                  fontSize = 24.sp,
+                                  fontWeight = FontWeight(500),
+                                  fontFamily = FontFamily(Font(R.font.markazi_text))))
+                    },
+                    modifier = Modifier.fillMaxSize().testTag(MessagesScreenTestTags.INPUT_FIELD),
+                    colors =
+                        TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            cursorColor = NepTuneTheme.colors.onBackground,
+                            focusedTextColor = NepTuneTheme.colors.onBackground,
+                            unfocusedTextColor = NepTuneTheme.colors.onBackground),
+                    maxLines = 3,
+                    textStyle =
+                        TextStyle(
+                            fontSize = 24.sp,
+                            fontFamily = FontFamily(Font(R.font.markazi_text)),
+                            fontWeight = FontWeight(300),
+                            color = NepTuneTheme.colors.onBackground))
               }
-            },
-            modifier =
-                Modifier.testTag(MessagesScreenTestTags.SEND_BUTTON)
-                    .size(57.dp)
-                    .background(
-                        color = NepTuneTheme.colors.postButton,
-                        shape = RoundedCornerShape(16.dp))) {
-              Icon(
-                  painter = painterResource(id = R.drawable.messageicon),
-                  contentDescription = "Send",
-                  modifier = Modifier.size(30.dp),
-                  tint = NepTuneTheme.colors.onBackground)
-            }
-      }
+
+          Spacer(modifier = Modifier.width(10.dp))
+
+          IconButton(
+              onClick = {
+                if (text.isNotBlank()) {
+                  onSend(text.trim())
+                  text = ""
+                }
+              },
+              modifier =
+                  Modifier.testTag(MessagesScreenTestTags.SEND_BUTTON)
+                      .size(57.dp)
+                      .background(
+                          color = NepTuneTheme.colors.postButton,
+                          shape = RoundedCornerShape(16.dp))) {
+                Icon(
+                    painter = painterResource(id = R.drawable.messageicon),
+                    contentDescription = "Send",
+                    modifier = Modifier.size(30.dp),
+                    tint = NepTuneTheme.colors.onBackground)
+              }
+        }
+
+    // Character counter
+    Text(
+        text = "${text.length} / $maxChars",
+        color =
+            if (text.length == maxChars) NepTuneTheme.colors.error
+            else NepTuneTheme.colors.onBackground.copy(alpha = 0.6f),
+        style = TextStyle(fontSize = 14.sp, fontFamily = FontFamily(Font(R.font.markazi_text))),
+        modifier =
+            Modifier.padding(start = 16.dp, bottom = 4.dp)
+                .testTag(MessagesScreenTestTags.INPUT_COUNTER))
+  }
 }
