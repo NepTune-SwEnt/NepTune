@@ -45,6 +45,7 @@ import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -52,6 +53,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,6 +67,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -88,17 +91,52 @@ import com.neptune.neptune.ui.profile.ProfileScreenTestTags.DOWNLOAD_PROGRESS_BA
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.NetworkConnectivityObserver
 
-private val ScreenPadding = 16.dp
-private val SettingsButtonSize = 30.dp
-private val AvatarVerticalSpacing = 15.dp
-private val SectionVerticalSpacing = 50.dp
-private val PreSamplesSectionSpacing = 60.dp
-private val StatsSpacing = 20.dp
-private val BottomButtonBottomPadding = 24.dp
-private val ButtonIconSpacing = 8.dp
-private val TopBarActionsSpacing = 12.dp
-private val TagsSpacing = 8.dp
-private val StatBlockLabelSpacing = 4.dp
+private data class ProfileDimensions(
+    val screenPadding: Dp,
+    val settingsButtonSize: Dp,
+    val avatarVerticalSpacing: Dp,
+    val sectionVerticalSpacing: Dp,
+    val preSamplesSectionSpacing: Dp,
+    val statsSpacing: Dp,
+    val bottomButtonBottomPadding: Dp,
+    val buttonIconSpacing: Dp,
+    val topBarActionsSpacing: Dp,
+    val tagsSpacing: Dp,
+    val statBlockLabelSpacing: Dp,
+    val inlineSpacing: Dp,
+    val listBottomPadding: Dp,
+)
+
+private val LocalProfileDimensions = staticCompositionLocalOf {
+  defaultProfileDimensions(scale = 1f)
+}
+
+private fun defaultProfileDimensions(scale: Float) =
+    ProfileDimensions(
+        screenPadding = (16 * scale).dp,
+        settingsButtonSize = (30 * scale).dp,
+        avatarVerticalSpacing = (15 * scale).dp,
+        sectionVerticalSpacing = (50 * scale).dp,
+        preSamplesSectionSpacing = (60 * scale).dp,
+        statsSpacing = (20 * scale).dp,
+        bottomButtonBottomPadding = (24 * scale).dp,
+        buttonIconSpacing = (8 * scale).dp,
+        topBarActionsSpacing = (12 * scale).dp,
+        tagsSpacing = (8 * scale).dp,
+        statBlockLabelSpacing = (4 * scale).dp,
+        inlineSpacing = (12 * scale).dp,
+        listBottomPadding = (88 * scale).dp,
+    )
+
+@Composable
+private fun rememberProfileDimensions(): ProfileDimensions {
+  val configuration = LocalConfiguration.current
+  val baseWidth = 375f
+  val screenWidth = configuration.screenWidthDp.takeIf { it > 0 }?.toFloat() ?: baseWidth
+  val scale = (screenWidth / baseWidth).coerceIn(0.85f, 1.25f)
+  return defaultProfileDimensions(scale)
+}
+
 private const val UNKOWN_CLASS = "Unknown ViewModel class"
 
 private fun appTextStyle(fontSize: TextUnit = 18.sp) =
@@ -162,46 +200,53 @@ fun ProfileScreen(
     isOnline: Boolean = true,
     isUserLoggedIn: Boolean = true
 ) {
-  Column(modifier = Modifier.padding(ScreenPadding).testTag(ProfileScreenTestTags.ROOT)) {
-    when (uiState.mode) {
-      // Create profile screen view content
-      ProfileMode.VIEW -> {
-        ProfileViewContent(
-            state = uiState,
-            localAvatarUri = localAvatarUri,
-            viewConfig = viewConfig,
-            goBack = callbacks.goBackClick,
-            profileSamplesViewModel = profileSamplesViewModel,
-            isOnline = isOnline,
-            isUserLoggedIn = isUserLoggedIn)
-      }
-      // Create profile screen edit content
-      ProfileMode.EDIT -> {
-        if (!isOnline) OfflineBanner()
-        ProfileEditContent(
-            uiState = uiState,
-            localAvatarUri = localAvatarUri,
-            onSave = { callbacks.onSaveClick(uiState.name, uiState.username, uiState.bio) },
-            onNameChange = callbacks.onNameChange,
-            onUsernameChange = callbacks.onUsernameChange,
-            onBioChange = callbacks.onBioChange,
-            onTagInputFieldChange = callbacks.onTagInputFieldChange,
-            onTagSubmit = callbacks.onTagSubmit,
-            onRemoveTag = callbacks.onRemoveTag,
-            onAvatarEditClick = onAvatarEditClick,
-            isOnline = isOnline)
-      }
-    }
+  val dimensions = rememberProfileDimensions()
+  CompositionLocalProvider(LocalProfileDimensions provides dimensions) {
+    Column(
+        modifier = Modifier.padding(dimensions.screenPadding).testTag(ProfileScreenTestTags.ROOT)) {
+          when (uiState.mode) {
+            // Create profile screen view content
+            ProfileMode.VIEW -> {
+              ProfileViewContent(
+                  state = uiState,
+                  localAvatarUri = localAvatarUri,
+                  viewConfig = viewConfig,
+                  goBack = callbacks.goBackClick,
+                  profileSamplesViewModel = profileSamplesViewModel,
+                  isOnline = isOnline,
+                  isUserLoggedIn = isUserLoggedIn)
+            }
+            // Create profile screen edit content
+            ProfileMode.EDIT -> {
+              if (!isOnline) OfflineBanner()
+              ProfileEditContent(
+                  uiState = uiState,
+                  localAvatarUri = localAvatarUri,
+                  onSave = { callbacks.onSaveClick(uiState.name, uiState.username, uiState.bio) },
+                  onNameChange = callbacks.onNameChange,
+                  onUsernameChange = callbacks.onUsernameChange,
+                  onBioChange = callbacks.onBioChange,
+                  onTagInputFieldChange = callbacks.onTagInputFieldChange,
+                  onTagSubmit = callbacks.onTagSubmit,
+                  onRemoveTag = callbacks.onRemoveTag,
+                  onAvatarEditClick = onAvatarEditClick,
+                  isOnline = isOnline)
+            }
+          }
+        }
   }
 }
 
 @Composable
 private fun SettingsButton(settings: () -> Unit) {
+  val dimensions = LocalProfileDimensions.current
   IconButton(
-      modifier = Modifier.size(SettingsButtonSize).testTag(ProfileScreenTestTags.SETTINGS_BUTTON),
+      modifier =
+          Modifier.size(dimensions.settingsButtonSize)
+              .testTag(ProfileScreenTestTags.SETTINGS_BUTTON),
       onClick = settings) {
         Icon(
-            modifier = Modifier.size(SettingsButtonSize),
+            modifier = Modifier.size(dimensions.settingsButtonSize),
             imageVector = Icons.Default.Settings,
             contentDescription = "Logout",
             tint = NepTuneTheme.colors.onBackground)
@@ -224,15 +269,16 @@ sealed interface ProfileViewConfig {
   ) : ProfileViewConfig {
     override val topBarContent =
         @Composable {
+          val dimensions = LocalProfileDimensions.current
           Row(
-              horizontalArrangement = Arrangement.spacedBy(TopBarActionsSpacing),
+              horizontalArrangement = Arrangement.spacedBy(dimensions.topBarActionsSpacing),
               verticalAlignment = Alignment.CenterVertically) {
                 if (canEditProfile) {
                   IconButton(
                       onClick = onEdit,
                       enabled = isOnline,
                       modifier =
-                          Modifier.size(SettingsButtonSize)
+                          Modifier.size(dimensions.settingsButtonSize)
                               .testTag(ProfileScreenTestTags.EDIT_BUTTON)) {
                         Icon(
                             imageVector = Icons.Default.Edit,
@@ -258,23 +304,24 @@ sealed interface ProfileViewConfig {
   ) : ProfileViewConfig {
     override val topBarContent = null
     override val belowStatsButton: @Composable () -> Unit = composable@{
+      val dimensions = LocalProfileDimensions.current
       if (!canFollowTarget) return@composable
       val label = if (isFollowing) "Unfollow" else "Follow"
       val icon = if (isFollowing) Icons.Default.Clear else Icons.Default.Add
 
       Column(
-          modifier = Modifier.padding(bottom = BottomButtonBottomPadding),
+          modifier = Modifier.padding(bottom = dimensions.bottomButtonBottomPadding),
           horizontalAlignment = Alignment.CenterHorizontally) {
             Button(
                 onClick = onFollow,
                 enabled = !isFollowActionInProgress && isOnline,
                 modifier = Modifier.testTag(ProfileScreenTestTags.FOLLOW_BUTTON)) {
                   Icon(imageVector = icon, contentDescription = "Follow")
-                  Spacer(Modifier.width(ButtonIconSpacing))
+                  Spacer(Modifier.width(dimensions.buttonIconSpacing))
                   Text(text = label, style = appTextStyle())
                 }
             if (!errorMessage.isNullOrBlank()) {
-              Spacer(Modifier.height(8.dp))
+              Spacer(Modifier.height(dimensions.tagsSpacing))
               Text(
                   text = errorMessage,
                   color = Color.Red,
@@ -317,9 +364,10 @@ private fun ProfileViewContent(
   val sampleResources by profileSamplesViewModel.sampleResources.collectAsState()
   val usernames by profileSamplesViewModel.usernames.collectAsState()
   val mediaPlayer = LocalMediaPlayer.current
+  val dimensions = LocalProfileDimensions.current
   val configuration = LocalConfiguration.current
   val screenWidth = configuration.screenWidthDp.dp
-  val cardWidth = screenWidth - 20.dp
+  val cardWidth = screenWidth - (dimensions.screenPadding * 2f)
   val cardHeight = cardWidth * (150f / 166f)
   val samplesListTagModifier =
       if (samples.isNotEmpty()) Modifier.testTag("profile/samples/list") else Modifier
@@ -358,7 +406,7 @@ private fun ProfileViewContent(
                     modifier = Modifier.fillMaxSize().then(samplesListTagModifier),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                  item { Spacer(Modifier.height(AvatarVerticalSpacing)) }
+                  item { Spacer(Modifier.height(dimensions.avatarVerticalSpacing)) }
 
                   // Avatar image
                   item {
@@ -370,7 +418,7 @@ private fun ProfileViewContent(
                         showEditPencil = false)
                   }
 
-                  item { Spacer(Modifier.height(AvatarVerticalSpacing)) }
+                  item { Spacer(Modifier.height(dimensions.avatarVerticalSpacing)) }
 
                   // Name and username
                   item {
@@ -388,7 +436,7 @@ private fun ProfileViewContent(
                         style = appTextStyle(20.sp),
                         modifier = Modifier.testTag(ProfileScreenTestTags.USERNAME))
                   }
-                  item { Spacer(Modifier.height(StatsSpacing)) }
+                  item { Spacer(Modifier.height(dimensions.statsSpacing)) }
 
                   // Stats row
                   item {
@@ -404,7 +452,7 @@ private fun ProfileViewContent(
                               onFollowingClick = viewConfig.onFollowingClick)
                         }
                   }
-                  item { Spacer(Modifier.height(SectionVerticalSpacing)) }
+                  item { Spacer(Modifier.height(dimensions.sectionVerticalSpacing)) }
 
                   // if view mode is for other users profile, show follow button
                   viewConfig.belowStatsButton?.let { button -> item { button() } }
@@ -421,11 +469,11 @@ private fun ProfileViewContent(
 
                   // Tags
                   if (state.tags.isNotEmpty()) {
-                    item { Spacer(Modifier.height(TagsSpacing)) }
+                    item { Spacer(Modifier.height(dimensions.tagsSpacing)) }
                     item {
                       FlowRow(
-                          horizontalArrangement = Arrangement.spacedBy(TagsSpacing),
-                          verticalArrangement = Arrangement.spacedBy(TagsSpacing),
+                          horizontalArrangement = Arrangement.spacedBy(dimensions.tagsSpacing),
+                          verticalArrangement = Arrangement.spacedBy(dimensions.tagsSpacing),
                           modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_VIEW_SECTION)) {
                             state.tags.forEach { tag ->
                               InputChip(
@@ -446,7 +494,7 @@ private fun ProfileViewContent(
                     }
                   }
 
-                  item { Spacer(Modifier.height(PreSamplesSectionSpacing)) }
+                  item { Spacer(Modifier.height(dimensions.preSamplesSectionSpacing)) }
 
                   if (samples.isEmpty()) {
                     item {
@@ -552,6 +600,7 @@ private fun ProfileEditContent(
     onAvatarEditClick: () -> Unit,
     isOnline: Boolean = true
 ) {
+  val dimensions = LocalProfileDimensions.current
   Column(
       modifier =
           Modifier.fillMaxSize()
@@ -559,7 +608,7 @@ private fun ProfileEditContent(
               .testTag(ProfileScreenTestTags.EDIT_CONTENT),
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.Center) {
-        Spacer(modifier = Modifier.height(SectionVerticalSpacing))
+        Spacer(modifier = Modifier.height(dimensions.sectionVerticalSpacing))
 
         // Avatar image
         val avatarModel = localAvatarUri ?: uiState.avatarUrl ?: R.drawable.ic_avatar_placeholder
@@ -568,7 +617,7 @@ private fun ProfileEditContent(
             modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
             showEditPencil = true,
             onEditClick = onAvatarEditClick)
-        Spacer(modifier = Modifier.height(SectionVerticalSpacing))
+        Spacer(modifier = Modifier.height(dimensions.sectionVerticalSpacing))
 
         // Field for name input
         OutlinedTextField(
@@ -593,7 +642,7 @@ private fun ProfileEditContent(
                     style = MaterialTheme.typography.bodySmall)
               }
             })
-        Spacer(modifier = Modifier.height(SectionVerticalSpacing))
+        Spacer(modifier = Modifier.height(dimensions.sectionVerticalSpacing))
 
         // Field for username input
         OutlinedTextField(
@@ -618,7 +667,7 @@ private fun ProfileEditContent(
                     style = MaterialTheme.typography.bodySmall)
               }
             })
-        Spacer(modifier = Modifier.height(SectionVerticalSpacing))
+        Spacer(modifier = Modifier.height(dimensions.sectionVerticalSpacing))
 
         // Field for bio input
         OutlinedTextField(
@@ -643,7 +692,7 @@ private fun ProfileEditContent(
                     style = MaterialTheme.typography.bodySmall)
               }
             })
-        Spacer(modifier = Modifier.height(SectionVerticalSpacing))
+        Spacer(modifier = Modifier.height(dimensions.sectionVerticalSpacing))
 
         // Tag input and addition
         Row(
@@ -668,19 +717,19 @@ private fun ProfileEditContent(
                         else NepTuneTheme.colors.onBackground,
                     style = MaterialTheme.typography.bodySmall)
               })
-          Spacer(Modifier.width(12.dp))
+          Spacer(Modifier.width(dimensions.inlineSpacing))
           Button(
               onClick = onTagSubmit,
               modifier = Modifier.fillMaxHeight().testTag(ProfileScreenTestTags.ADD_TAG_BUTTON)) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Add")
               }
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(dimensions.inlineSpacing))
 
         // Tags display
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(TagsSpacing),
-            verticalArrangement = Arrangement.spacedBy(TagsSpacing),
+            horizontalArrangement = Arrangement.spacedBy(dimensions.tagsSpacing),
+            verticalArrangement = Arrangement.spacedBy(dimensions.tagsSpacing),
             modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_EDIT_SECTION)) {
               uiState.tags.forEach { tag ->
                 key(tag) { // <— ensures slot stability and proper disposal on removal
@@ -691,7 +740,7 @@ private fun ProfileEditContent(
                 }
               }
             }
-        Spacer(modifier = Modifier.height(SectionVerticalSpacing))
+        Spacer(modifier = Modifier.height(dimensions.sectionVerticalSpacing))
 
         // Save button
         Button(
@@ -699,7 +748,7 @@ private fun ProfileEditContent(
             enabled = !uiState.isSaving && uiState.isValid && isOnline,
             modifier = Modifier.testTag(ProfileScreenTestTags.SAVE_BUTTON)) {
               Icon(imageVector = Icons.Default.Check, contentDescription = "Save")
-              Spacer(Modifier.width(ButtonIconSpacing))
+              Spacer(Modifier.width(dimensions.buttonIconSpacing))
               Text("Save")
             }
       }
@@ -714,13 +763,14 @@ private fun ProfileEditContent(
  */
 @Composable
 fun StatBlock(label: String, value: Int, modifier: Modifier = Modifier, testTag: String) {
+  val dimensions = LocalProfileDimensions.current
   Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
     Text(
         text = label,
         color = NepTuneTheme.colors.onBackground,
         style = appTextStyle(),
         textAlign = TextAlign.Center)
-    Spacer(Modifier.height(StatBlockLabelSpacing))
+    Spacer(Modifier.height(dimensions.statBlockLabelSpacing))
     Text(
         text = "$value",
         color = NepTuneTheme.colors.onBackground,
