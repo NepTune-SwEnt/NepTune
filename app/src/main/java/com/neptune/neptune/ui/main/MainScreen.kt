@@ -106,7 +106,7 @@ import com.neptune.neptune.util.formatTime
 import kotlinx.coroutines.delay
 
 val TOP_BAR_HEIGHT = 90.dp
-val PROFILE_ICON_SIZE = 90.dp
+val PROFILE_ICON_SIZE = 57.dp
 
 object MainScreenTestTags : BaseSampleTestTags {
   override val prefix = "MainScreen"
