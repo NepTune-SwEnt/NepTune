@@ -136,7 +136,10 @@ open class MainViewModel(
           _recommendedSamples.value = emptyList()
           return@launch
         }
-        val candidates = allSamplesCache
+        val candidates =
+            allSamplesCache.filter { sample ->
+              sample.ownerId !in latestFollowing && sample.ownerId != auth.currentUser?.uid
+            }
         if (candidates.isEmpty()) {
           Log.d("RecoDebug", "No candidates (cache empty) – skipping ranking")
           _recommendedSamples.value = emptyList()
