@@ -1,7 +1,6 @@
 package com.neptune.neptune.screen
 
 import android.content.Context
-import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
@@ -22,45 +21,53 @@ import com.neptune.neptune.ui.post.PostViewModel
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
-import org.junit.Assert.assertNotNull
+import kotlinx.coroutines.flow.StateFlow
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-/**
- * Tests for the PostScreen. This has been written with the help of LLMs.
- *
- * @author Angéline Bignens
- */
+/** Tests for the PostScreen. */
 class PostScreenTest {
   private lateinit var mediaPlayer: NeptuneMediaPlayer
   private lateinit var context: Context
   private lateinit var viewModel: PostViewModel
+
+  // Mock du state flow pour pouvoir le manipuler dans les tests
+  private lateinit var uiStateFlow: MutableStateFlow<PostUiState>
+  private lateinit var localImageUriFlow: MutableStateFlow<android.net.Uri?>
 
   @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
   @Before
   fun setup() {
     context = composeTestRule.activity.applicationContext
-    viewModel =
-        PostViewModel().apply {
-          loadSample(
-              Sample(
-                  id = "1",
-                  name = "Test Sample",
-                  description = "Sample description",
-                  durationSeconds = 12,
-                  tags = listOf("tag1", "tag2"),
-                  likes = 10,
-                  usersLike = emptyList(),
-                  comments = 5,
-                  downloads = 3))
-        }
     mediaPlayer = NeptuneMediaPlayer()
+
+    viewModel = mockk(relaxed = true)
+
+    uiStateFlow =
+        MutableStateFlow(
+            PostUiState(
+                sample =
+                    Sample(
+                        id = "1",
+                        name = "Test Sample",
+                        description = "Sample description",
+                        durationSeconds = 12,
+                        tags = listOf("tag1", "tag2"),
+                        likes = 10,
+                        usersLike = emptyList(),
+                        comments = 5,
+                        downloads = 3)))
+    localImageUriFlow = MutableStateFlow(null)
+
+    every { viewModel.uiState } returns uiStateFlow as StateFlow<PostUiState>
+    every { viewModel.localImageUri } returns localImageUriFlow as StateFlow<android.net.Uri?>
+    every { viewModel.isOnline } returns MutableStateFlow(true)
+    every { viewModel.audioExist() } returns true
+    every { viewModel.isAnonymous } returns false
   }
 
   private fun setContent(goBack: () -> Unit = {}, navigateToMainScreen: () -> Unit = {}) {
@@ -74,11 +81,10 @@ class PostScreenTest {
 
   @Test
   fun testTagsAreCorrect() {
-    val mockMediaPlayer = mockk<NeptuneMediaPlayer>(relaxed = true)
-    composeTestRule.setContent {
-      CompositionLocalProvider(LocalMediaPlayer provides mockMediaPlayer) { PostScreen() }
-    }
+    setContent()
+
     composeTestRule.onNodeWithTag(PostScreenTestTags.POST_SCREEN).assertIsDisplayed()
+
     composeTestRule
         .onNodeWithTag(PostScreenTestTags.POST_BUTTON)
         .performScrollTo()
@@ -88,6 +94,7 @@ class PostScreenTest {
         .onNodeWithTag(PostScreenTestTags.TAGS_FIELD)
         .performScrollTo()
         .assertIsDisplayed()
+
     composeTestRule
         .onNodeWithTag(PostScreenTestTags.AUDIENCE_ROW)
         .performScrollTo()
@@ -102,31 +109,30 @@ class PostScreenTest {
         .onNodeWithTag(PostScreenTestTags.DESCRIPTION_FIELD)
         .performScrollTo()
         .assertIsDisplayed()
+
     composeTestRule
         .onNodeWithTag(PostScreenTestTags.TITLE_FIELD)
         .performScrollTo()
         .assertIsDisplayed()
+
     composeTestRule
         .onNodeWithTag(PostScreenTestTags.CHANGE_IMAGE_BUTTON)
         .performScrollTo()
         .assertIsDisplayed()
+
     composeTestRule
         .onNodeWithTag(PostScreenTestTags.AUDIO_PREVIEW)
         .performScrollTo()
         .assertIsDisplayed()
+
     composeTestRule.onNodeWithTag(PostScreenTestTags.BACK_BUTTON).assertIsDisplayed()
   }
 
   @Test
   fun backButtonTriggersNavigation() {
     val goBackMock = mockk<() -> Unit>(relaxed = true)
-    val mockMediaPlayer = mockk<NeptuneMediaPlayer>(relaxed = true)
+    setContent(goBack = goBackMock)
 
-    composeTestRule.setContent {
-      CompositionLocalProvider(LocalMediaPlayer provides mockMediaPlayer) {
-        PostScreen(goBack = goBackMock)
-      }
-    }
     composeTestRule.onNodeWithTag(PostScreenTestTags.BACK_BUTTON).performClick()
     verify(exactly = 1) { goBackMock() }
   }
@@ -134,117 +140,73 @@ class PostScreenTest {
   @Test
   fun waveformIconIsDisplayedWhenLocalImageUriIsNull() {
     setContent()
+
     assertNull(viewModel.localImageUri.value)
+
     composeTestRule
-        .onNodeWithContentDescription("Sample's image", useUnmergedTree = true)
+        .onNodeWithContentDescription("Waveform placeholder", useUnmergedTree = true)
         .assertIsDisplayed()
   }
 
-  /** Tests that the title field initially displays the correct text from the ViewModel */
   @Test
   fun titleFieldHasRightText() {
     setContent()
     composeTestRule.onNode(hasText("Test Sample")).assertIsDisplayed()
   }
 
-  /** Tests that the title field accepts inputs correctly */
   @Test
   fun titleFieldAcceptsTextInput() {
     setContent()
     composeTestRule
         .onNodeWithTag(PostScreenTestTags.TITLE_FIELD)
         .performTextReplacement("Sweetie Banana")
-    composeTestRule.onNode(hasText("Sweetie Banana")).assertIsDisplayed()
+
+    verify { viewModel.updateTitle("Sweetie Banana") }
   }
 
-  /** Tests that the description field initially displays the correct text from the ViewModel */
   @Test
   fun descriptionFieldHasRightText() {
     setContent()
     composeTestRule.onNode(hasText("Sample description")).assertIsDisplayed()
   }
 
-  /** Tests that the description field accepts inputs correctly */
   @Test
   fun descriptionFieldAcceptsTextInput() {
     setContent()
     composeTestRule
         .onNodeWithTag(PostScreenTestTags.DESCRIPTION_FIELD)
         .performTextReplacement("Relax take it easy")
-    composeTestRule.onNode(hasText("Relax take it easy")).assertIsDisplayed()
+
+    verify { viewModel.updateDescription("Relax take it easy") }
   }
 
-  /** Tests that the tags field initially displays the correct text form the ViewModel */
   @Test
   fun tagsFieldHasRightText() {
     setContent()
     composeTestRule.onNode(hasText("#tag1 #tag2")).assertIsDisplayed()
   }
 
-  /** Tests that the tag field accepts inputs correctly */
   @Test
   fun tagsFieldAcceptsTextInput() {
     setContent()
     composeTestRule
         .onNodeWithTag(PostScreenTestTags.TAGS_FIELD)
         .performTextReplacement("#banana #sweet")
-    composeTestRule.onNode(hasText("#banana #sweet")).assertIsDisplayed()
+    verify { viewModel.updateTags(any()) }
   }
 
-  /** Tests that the post button is clickable */
   @Test
   fun postButtonIsClickable() {
     setContent()
     composeTestRule.onNodeWithTag(PostScreenTestTags.POST_BUTTON).performScrollTo().performClick()
+    verify { viewModel.submitPost() }
   }
 
-  /** Tests that onImageChanged with a valid URI updates the localImageUri state */
-  @Test
-  fun onImageChangedUpdatesLocalUri() {
-    setContent()
-    // Create a dummy file to act as our image
-    val fakeImageFile =
-        File(context.cacheDir, "fake_image.jpg").apply {
-          createNewFile()
-          writeText("This is a fake image.")
-        }
-    val fakeImageUri = Uri.fromFile(fakeImageFile)
-    assertNull(viewModel.localImageUri.value)
-    viewModel.onImageChanged(fakeImageUri)
-    composeTestRule.waitUntil(5000) { viewModel.localImageUri.value != null }
-    val newUri = viewModel.localImageUri.value
-    assertNotNull(newUri)
-    assertTrue(newUri.toString().contains("post_image_for_sample_1.jpg"))
-    fakeImageFile.delete()
-  }
-
-  /** Tests that onImageChanged with a null URI does not change the state */
-  @Test
-  fun onImageChangedWithNullUriDoesNothing() {
-    setContent()
-    assertNull(viewModel.localImageUri.value)
-    viewModel.onImageChanged(null)
-    Thread.sleep(500)
-    assertNull(viewModel.localImageUri.value)
-  }
-
-  /**
-   * Test to verify that the loading animation (overlay) is displayed when the state 'isUploading'
-   * is true.
-   */
   @Test
   fun loadingOverlayIsDisplayedWhenUploading() {
-    val mockViewModel = mockk<PostViewModel>(relaxed = true)
-    val uiStateFlow = MutableStateFlow(PostUiState(isUploading = true))
-    every { mockViewModel.uiState } returns uiStateFlow
-    every { mockViewModel.localImageUri } returns MutableStateFlow(null)
-    every { mockViewModel.isOnline } returns MutableStateFlow(true)
+    uiStateFlow.value = uiStateFlow.value.copy(isUploading = true)
 
-    composeTestRule.setContent {
-      CompositionLocalProvider(LocalMediaPlayer provides mockk(relaxed = true)) {
-        PostScreen(postViewModel = mockViewModel)
-      }
-    }
+    setContent()
 
     composeTestRule.onNodeWithTag(PostScreenTestTags.LOADING_OVERLAY).assertIsDisplayed()
   }

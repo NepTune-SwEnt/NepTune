@@ -19,6 +19,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.neptune.neptune.NeptuneApp
 import com.neptune.neptune.media.LocalMediaPlayer
@@ -305,6 +306,8 @@ class NavigationTest {
     every { mockViewModel.recommendedSamples } returns MutableStateFlow(emptyList())
     every { mockViewModel.isUserLoggedIn } returns true
     every { mockViewModel.isOnline } returns MutableStateFlow(true)
+    val mockUser = mockk<FirebaseUser>(relaxed = true)
+    every { mockViewModel.currentUser } returns MutableStateFlow(mockUser)
 
     composeTestRule.setContent {
       MainScreen(navigateToProjectList = navigateToProjectListMock, mainViewModel = mockViewModel)
