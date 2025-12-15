@@ -20,6 +20,11 @@ import androidx.compose.ui.unit.dp
 import com.neptune.neptune.R
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
+val DEFAULT_ICON_SIZE = 25.dp
+val BOTTOM_BAR_HEIGHT = 55.dp
+val BOTTOM_BAR_LEFT_RIGHT_PADDING = 7.dp
+val BOTTOM_BAR_ITEM_SIZE = 25.dp
+
 /**
  * Tabs used in the bottom navigation bar.
  *
@@ -33,16 +38,10 @@ sealed class Tab(
     val icon: Int,
     val destination: Screen,
     val testTag: String,
-    val iconSize: Dp = 25.dp
+    val iconSize: Dp = DEFAULT_ICON_SIZE
 ) {
 
-  object Main :
-      Tab(
-          "Home",
-          R.drawable.home_planet,
-          Screen.Main,
-          NavigationTestTags.MAIN_TAB,
-          iconSize = 25.dp)
+  object Main : Tab("Home", R.drawable.home_planet, Screen.Main, NavigationTestTags.MAIN_TAB)
 
   object ProjectList :
       Tab(
@@ -105,8 +104,8 @@ fun BottomNavigationMenu(
     NavigationBar(
         modifier =
             Modifier.testTag(NavigationTestTags.BOTTOM_NAVIGATION_MENU)
-                .height(55.dp)
-                .padding(horizontal = 7.dp),
+                .height(BOTTOM_BAR_HEIGHT)
+                .padding(horizontal = BOTTOM_BAR_LEFT_RIGHT_PADDING),
         containerColor = NepTuneTheme.colors.background) {
           tabs.forEach { tab ->
             val isSelected: Boolean =
@@ -121,7 +120,7 @@ fun BottomNavigationMenu(
                   }
                 }
             NavigationBarItem(
-                modifier = Modifier.size(25.dp).testTag(tab.testTag),
+                modifier = Modifier.size(BOTTOM_BAR_ITEM_SIZE).testTag(tab.testTag),
                 icon = {
                   Icon(
                       painter = painterResource(id = tab.icon),

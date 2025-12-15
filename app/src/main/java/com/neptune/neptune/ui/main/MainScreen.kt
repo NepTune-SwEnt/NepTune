@@ -105,6 +105,9 @@ import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.formatTime
 import kotlinx.coroutines.delay
 
+val TOP_BAR_HEIGHT = 90.dp
+val PROFILE_ICON_SIZE = 90.dp
+
 object MainScreenTestTags : BaseSampleTestTags {
   override val prefix = "MainScreen"
 
@@ -426,7 +429,8 @@ fun MainTopAppBar(userAvatar: String?, navigateToProfile: () -> Unit, signedIn: 
   val logoSize = screenWidth * 0.3f
   Column {
     CenterAlignedTopAppBar(
-        modifier = Modifier.fillMaxWidth().height(90.dp).testTag(MainScreenTestTags.TOP_BAR),
+        modifier =
+            Modifier.fillMaxWidth().height(TOP_BAR_HEIGHT).testTag(MainScreenTestTags.TOP_BAR),
         title = {
           // Keep the title constrained to the center area so the actions stay to the right
           Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -443,7 +447,7 @@ fun MainTopAppBar(userAvatar: String?, navigateToProfile: () -> Unit, signedIn: 
                   modifier =
                       Modifier.align(Alignment.CenterEnd)
                           .padding(horizontal = 5.dp)
-                          .size(57.dp)
+                          .size(PROFILE_ICON_SIZE)
                           .testTag(NavigationTestTags.PROFILE_BUTTON)) {
                     AsyncImage(
                         model =
