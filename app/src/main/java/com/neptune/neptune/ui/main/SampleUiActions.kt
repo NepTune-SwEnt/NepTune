@@ -46,7 +46,7 @@ object SampleUiActionsTestTags {
  * @property ioDispatcher CoroutineDispatcher for IO-bound operations, defaults to Dispatchers.IO.
  *   written with assistance from ChatGPT
  */
-class SampleUiActions(
+open class SampleUiActions(
     private val repo: SampleRepository,
     private val storageService: StorageService,
     private val downloadsFolder: File,
@@ -59,7 +59,7 @@ class SampleUiActions(
   val downloadError = MutableStateFlow<String?>(null)
 
   @Throws(IOException::class)
-  suspend fun onDownloadZippedClicked(sample: Sample) {
+  open suspend fun onDownloadZippedClicked(sample: Sample) {
     if (downloadBusy.value) return
     downloadBusy.value = true
     downloadError.value = null
@@ -125,7 +125,7 @@ class SampleUiActions(
   }
 
   @Throws(IOException::class)
-  suspend fun onDownloadProcessedClicked(sample: Sample) {
+  open suspend fun onDownloadProcessedClicked(sample: Sample) {
     if (downloadBusy.value) return
     downloadBusy.value = true
     downloadError.value = null
