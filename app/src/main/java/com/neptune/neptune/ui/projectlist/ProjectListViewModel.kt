@@ -105,7 +105,8 @@ class ProjectListViewModel(
         if (!isUserLoggedIn) {
           val localProjects = localItems.map { toLocalProjectItem(it) }
           val sortedProjects = localProjects.sortedByDescending { it.lastUpdated }
-          _uiState.value = ProjectListUiState(projects = sortedProjects, isLoading = false)
+          // Make a defensive copy to ensure new list instance is emitted
+          _uiState.value = ProjectListUiState(projects = sortedProjects.toList(), isLoading = false)
           return@launch
         }
 
@@ -114,7 +115,7 @@ class ProjectListViewModel(
           localItems.forEach { item -> importProjectInFirebaseSuspend(item.id) }
         }
 
-        val projects =
+        var projects =
             if (online) {
               try {
                 projectRepository.getAllProjects()
@@ -127,12 +128,15 @@ class ProjectListViewModel(
               localItems.map { toLocalProjectItem(it) }
             }
 
+        // Defensive copy of list items and list itself so StateFlow always sees new instances
+        projects = projects.map { it.copy() }
+
         val sortedProjects =
             projects.sortedWith(
                 compareByDescending<ProjectItem> { it.isFavorite }
                     .thenByDescending { it.lastUpdated })
 
-        _uiState.value = ProjectListUiState(projects = sortedProjects, isLoading = false)
+        _uiState.value = ProjectListUiState(projects = sortedProjects.toList(), isLoading = false)
       } catch (e: Exception) {
         Log.e("ProjectListVM", "Error downloading", e)
         _uiState.value = _uiState.value.copy(isLoading = false)

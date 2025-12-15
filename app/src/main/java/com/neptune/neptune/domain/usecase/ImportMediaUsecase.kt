@@ -17,7 +17,8 @@ open class ImportMediaUseCase(
     private val repo: MediaRepository,
     private val packager: NeptunePackager,
     private val audioPreviewGenerator: SamplerProvider? = null,
-    private val previewStoreHelper: PreviewStoreHelper = PreviewStoreHelper()
+    private val previewStoreHelper: PreviewStoreHelper = PreviewStoreHelper(),
+    private val onImportFinished: () -> Unit = {}
 ) {
   suspend operator fun invoke(sourceUriString: String): MediaItem {
     val probe = importer.importFile(URI(sourceUriString))
@@ -79,6 +80,7 @@ open class ImportMediaUseCase(
             name = projectZip.nameWithoutExtension,
             projectFileLocalPath = projectZipPath,
             audioPreviewLocalPath = audioPreviewLocalPath))
+    onImportFinished()
     return item
   }
 }

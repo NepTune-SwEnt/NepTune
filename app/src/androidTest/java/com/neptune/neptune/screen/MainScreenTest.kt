@@ -39,7 +39,6 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.spyk
 import io.mockk.verify
-import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert
 import org.junit.Before
@@ -127,8 +126,7 @@ class MainScreenTest {
       CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
         MainScreen(
             mainViewModel = viewModel,
-            navigateToOtherUserProfile = { id -> navigateToOtherUserProfileCallback?.invoke(id) },
-            navigateToSelectMessages = { navigateToMessagesCallback?.invoke() })
+            navigateToOtherUserProfile = { id -> navigateToOtherUserProfileCallback?.invoke(id) })
       }
     }
     // Wait for the initial data to be loaded and UI to be ready
@@ -139,14 +137,6 @@ class MainScreenTest {
   fun mainScreenTopAppNavBarCanClickOnProfile() {
     composeTestRule
         .onNodeWithTag(NavigationTestTags.PROFILE_BUTTON)
-        .assertHasClickAction()
-        .performClick()
-  }
-
-  @Test
-  fun mainScreenTopAppNavBarCanClickOnMessages() {
-    composeTestRule
-        .onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON, useUnmergedTree = true)
         .assertHasClickAction()
         .performClick()
   }
@@ -207,21 +197,6 @@ class MainScreenTest {
         .onAllNodesWithTag(MainScreenTestTags.SAMPLE_DOWNLOADS, true)
         .onFirst()
         .assertIsDisplayed()
-  }
-  /** Tests that clicking on the Messages button triggers the callback */
-  @Test
-  fun testClickingMessagesButtonTriggersCallback() {
-    var messagesClicked = false
-    navigateToMessagesCallback = { messagesClicked = true }
-
-    composeTestRule.waitForIdle()
-
-    composeTestRule
-        .onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON)
-        .assertHasClickAction()
-        .performClick()
-
-    assertTrue("Messages button click did not trigger callback", messagesClicked)
   }
 
   @Test
