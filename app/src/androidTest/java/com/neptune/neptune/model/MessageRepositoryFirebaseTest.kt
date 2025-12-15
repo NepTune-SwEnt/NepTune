@@ -15,6 +15,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.neptune.neptune.model.messages.Message
+import com.neptune.neptune.model.messages.MessageRepository
 import com.neptune.neptune.model.messages.MessageRepositoryFirebase
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
@@ -258,6 +259,62 @@ class MessageRepositoryFirebaseTest {
       assertTrue(messages.isEmpty())
       cancelAndIgnoreRemainingEvents()
     }
+  }
+
+  @Test
+  fun observeMessagePreviewsSkipsPreviewWhenNoOtherUid() = runBlocking {
+    val currentUid = "me"
+
+    // Insert a document where the only participant is the current user
+    val doc = db.collection("messages").document("solo")
+    doc.set(
+            mapOf(
+                "participants" to listOf(currentUid),
+                "lastMessage" to "Hello self",
+                "lastTimestamp" to Timestamp.now()))
+        .await()
+
+    // Run the flow
+    repo.observeMessagePreviews(currentUid).test {
+      val previews = awaitItem()
+
+      // Since there is no otherUid, the document should be skipped
+      assertTrue(previews.isEmpty())
+
+      cancelAndIgnoreRemainingEvents()
+    }
+  }
+
+  @Test
+  fun messagesViewModelObserveOtherUserProfile() = runBlocking {
+    val otherUserId = "other123"
+    val currentUserId = "me"
+    val expectedUsername = "OtherUser"
+    val expectedAvatar = "https://avatar.url"
+
+    // Mock ProfileRepository
+    val mockProfileRepo = mockk<ProfileRepository>()
+    coEvery { mockProfileRepo.getProfile(otherUserId) } returns
+        Profile(
+            uid = otherUserId,
+            username = expectedUsername,
+            avatarUrl = expectedAvatar,
+            bio = "",
+            isAnonymous = false)
+
+    // Mock MessageRepository (unused in this test)
+    val mockMessageRepo = mockk<MessageRepository>(relaxed = true)
+
+    // Create ViewModel with mocked repos
+    val viewModel =
+        MessagesViewModel(
+            otherUserId = otherUserId,
+            currentUserId = currentUserId,
+            messageRepo = mockMessageRepo,
+            profileRepo = mockProfileRepo)
+
+    assertTrue(viewModel.otherUsername.value == expectedUsername)
+    assertTrue(viewModel.otherAvatar.value == expectedAvatar)
   }
 
   private fun cleanUp() {

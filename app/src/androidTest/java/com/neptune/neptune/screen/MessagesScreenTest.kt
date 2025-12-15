@@ -1,5 +1,7 @@
 package com.neptune.neptune.screen
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
@@ -10,9 +12,14 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
+import com.google.firebase.auth.FirebaseUser
+import com.neptune.neptune.ui.authentification.SignInViewModel
 import com.neptune.neptune.ui.messages.MessagesScreen
 import com.neptune.neptune.ui.messages.MessagesScreenTestTags
 import com.neptune.neptune.ui.messages.MessagesViewModel
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -139,5 +146,29 @@ class MessagesScreenTest {
     setContent(goBack = { backClicked = true })
     composeTestRule.onNodeWithTag(MessagesScreenTestTags.BACK_BUTTON).performClick()
     assertTrue(backClicked)
+  }
+
+  /** Tests that the messagesScreen receives Uid Argument */
+  @Test
+  fun messagesScreenReceivesUidArgument() {
+    val testOtherUserId = "otherUser123"
+
+    // Mock the SignInViewModel with a currentUser
+    val mockSignInViewModel = mockk<SignInViewModel>(relaxed = true)
+    val mockUser = mockk<FirebaseUser>(relaxed = true)
+    every { mockUser.uid } returns "currentUserId"
+    every { mockSignInViewModel.currentUser } returns MutableStateFlow(mockUser)
+
+    composeTestRule.setContent {
+      // Get current user ID from the mocked SignInViewModel
+      val firebaseUser by mockSignInViewModel.currentUser.collectAsState()
+      val currentUserId = firebaseUser?.uid ?: ""
+
+      // Directly call the composable with test arguments
+      MessagesScreen(otherUserId = testOtherUserId, currentUserId = currentUserId, goBack = {})
+    }
+
+    // Assert that MessagesScreen content is displayed
+    composeTestRule.onNodeWithTag(MessagesScreenTestTags.MESSAGES_SCREEN).assertIsDisplayed()
   }
 }
