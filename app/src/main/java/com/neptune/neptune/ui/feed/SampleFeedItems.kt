@@ -27,6 +27,7 @@ fun LazyListScope.sampleFeedItems(
     mediaPlayer: NeptuneMediaPlayer,
     likedSamples: Map<String, Boolean>,
     sampleResources: Map<String, SampleResourceState>,
+    onDownloadRequest: (Sample) -> Unit,
     navigateToProfile: () -> Unit,
     navigateToOtherUserProfile: (String) -> Unit,
     testTagsForSample: (Sample) -> BaseSampleTestTags,
@@ -44,7 +45,7 @@ fun LazyListScope.sampleFeedItems(
     val isLiked = likedSamples[sample.id] == true
     val actions =
         onClickFunctions(
-            onDownloadClick = { controller.onDownloadSample(sample) },
+            onDownloadClick = { onDownloadRequest(sample) },
             onLikeClick = {
               val newIsLiked = !isLiked
               controller.onLikeClick(sample, newIsLiked)

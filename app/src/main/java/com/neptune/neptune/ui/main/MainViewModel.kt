@@ -300,12 +300,23 @@ open class MainViewModel(
     }
   }
 
-  override fun onDownloadSample(sample: Sample) {
+  override fun onDownloadZippedSample(sample: Sample) {
     viewModelScope.launch {
       try {
-        actions?.onDownloadClicked(sample)
+        actions?.onDownloadZippedClicked(sample)
       } catch (e: Exception) {
-        Log.e("MainViewModel", "Error downloading sample: ${e.message}")
+        Log.e("MainViewModel", "Error downloading zipped sample: ${e.message}")
+        // Handle exception if needed
+      }
+    }
+  }
+
+  override fun onDownloadProcessedSample(sample: Sample) {
+    viewModelScope.launch {
+      try {
+        actions?.onDownloadProcessedClicked(sample)
+      } catch (e: Exception) {
+        Log.e("MainViewModel", "Error downloading processed sample: ${e.message}")
         // Handle exception if needed
       }
     }

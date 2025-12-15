@@ -27,7 +27,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.R
 import com.neptune.neptune.media.LocalMediaPlayer
+import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
+import com.neptune.neptune.ui.main.DownloadChoiceDialog
 import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.main.SampleCommentManager
@@ -59,7 +61,8 @@ fun FeedScreen(
     navigateToOtherUserProfile: (String) -> Unit = {}
 ) {
   var currentType by remember { mutableStateOf(initialType) }
-
+  var downloadPickerSample by remember { mutableStateOf<Sample?>(null) }
+  val showDownloadPicker = downloadPickerSample != null
   val isRefreshing by mainViewModel.isRefreshing.collectAsState()
   val pullRefreshState = rememberPullToRefreshState()
   val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
@@ -109,7 +112,8 @@ fun FeedScreen(
                   mainViewModel = mainViewModel,
                   currentType = currentType,
                   navigateToProfile = navigateToProfile,
-                  navigateToOtherUserProfile = navigateToOtherUserProfile)
+                  navigateToOtherUserProfile = navigateToOtherUserProfile,
+                  onDownloadRequest = { sample -> downloadPickerSample = sample })
 
               if (isOnline) {
                 PullToRefreshContainer(
@@ -131,6 +135,21 @@ fun FeedScreen(
             navigateToOtherUserProfile(userId)
           }
         })
+    if (showDownloadPicker) {
+      val s = downloadPickerSample!!
+      DownloadChoiceDialog(
+          sampleName = s.name,
+          processedAvailable = s.storageProcessedSamplePath.isNotBlank(),
+          onDismiss = { downloadPickerSample = null },
+          onDownloadZip = {
+            downloadPickerSample = null
+            mainViewModel.onDownloadZippedSample(s)
+          },
+          onDownloadProcessed = {
+            downloadPickerSample = null
+            mainViewModel.onDownloadProcessedSample(s)
+          })
+    }
     if (downloadProgress != null && downloadProgress != 0) {
       DownloadProgressBar(
           downloadProgress = downloadProgress!!, testTag = FeedScreenTestTag.DOWNLOAD_PROGRESS)
@@ -144,7 +163,8 @@ private fun FeedContent(
     mainViewModel: MainViewModel,
     currentType: FeedType,
     navigateToProfile: () -> Unit,
-    navigateToOtherUserProfile: (String) -> Unit
+    navigateToOtherUserProfile: (String) -> Unit,
+    onDownloadRequest: (Sample) -> Unit
 ) {
   val discoverListState = rememberLazyListState()
   val followedListState = rememberLazyListState()
@@ -184,7 +204,7 @@ private fun FeedContent(
 
                 val clickHandlers =
                     onClickFunctions(
-                        onDownloadClick = { mainViewModel.onDownloadSample(sample) },
+                        onDownloadClick = { onDownloadRequest(sample) },
                         onLikeClick = { isLiked -> mainViewModel.onLikeClick(sample, isLiked) },
                         onCommentClick = { mainViewModel.openCommentSection(sample) },
                         onProfileClick = {

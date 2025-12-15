@@ -2,6 +2,7 @@ package com.neptune.neptune.ui.navigation
 
 import android.os.Bundle
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
@@ -36,7 +37,7 @@ class BottomNavigationMenuTest {
         .assertIsNotEnabled()
 
     composeTestRule
-        .onNodeWithTag(NavigationTestTags.IMPORT_FILE_TAB)
+        .onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON)
         .assertIsDisplayed()
         .assertIsNotEnabled()
   }
@@ -54,7 +55,7 @@ class BottomNavigationMenuTest {
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsDisplayed()
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsDisplayed()
-    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE_TAB).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).assertIsDisplayed()
   }
 
   @Test
@@ -72,7 +73,7 @@ class BottomNavigationMenuTest {
     // Assert that the other tab are NOT selected
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsNotSelected()
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsNotSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE_TAB).assertIsNotSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).assertIsNotSelected()
   }
 
   @Test
@@ -90,20 +91,38 @@ class BottomNavigationMenuTest {
     // Assert that the other tab are NOT selected
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
     composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsNotSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE_TAB).assertIsNotSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).assertIsNotSelected()
   }
 
   @Test
-  fun bottomNavigationMenuImportTabIsSelectedWhenScreenIsImport() {
+  fun bottomNavigationMenuImportTabIsSelectedWhenScreenIsMessage() {
     composeTestRule.setContent {
       val navController = rememberNavController()
       val navigationActions = NavigationActions(navController)
-      // Set the current screen to Import
-      BottomNavigationMenu(screen = Screen.ImportFile, navigationActions = navigationActions)
+      // Set the current screen to Message
+      BottomNavigationMenu(screen = Screen.Messages, navigationActions = navigationActions)
     }
 
     // Assert that the Import tab is marked as selected
-    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE_TAB).assertIsSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).assertIsNotDisplayed()
+
+    // Assert that the other tab are NOT selected
+    composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsNotDisplayed()
+    composeTestRule.onNodeWithTag(NavigationTestTags.PROJECTLIST_TAB).assertIsNotDisplayed()
+  }
+
+  @Test
+  fun bottomNavigationMenuImportTabIsSelectedWhenScreenIsMessageSelection() {
+    composeTestRule.setContent {
+      val navController = rememberNavController()
+      val navigationActions = NavigationActions(navController)
+      // Set the current screen to Message
+      BottomNavigationMenu(screen = Screen.SelectMessages, navigationActions = navigationActions)
+    }
+
+    // Assert that the Import tab is marked as selected
+    composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).assertIsSelected()
 
     // Assert that the other tab are NOT selected
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
@@ -130,7 +149,7 @@ class BottomNavigationMenuTest {
     // Assert that the other tab are NOT selected
     composeTestRule.onNodeWithTag(NavigationTestTags.MAIN_TAB).assertIsNotSelected()
     composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).assertIsNotSelected()
-    composeTestRule.onNodeWithTag(NavigationTestTags.IMPORT_FILE_TAB).assertIsNotSelected()
+    composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).assertIsNotSelected()
   }
 
   @Test

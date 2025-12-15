@@ -49,7 +49,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -75,10 +77,14 @@ import com.neptune.neptune.R
 import com.neptune.neptune.data.rememberImagePickerLauncher
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.feed.sampleFeedItems
 import com.neptune.neptune.ui.main.CommentDialog
+import com.neptune.neptune.ui.main.DownloadChoiceDialog
+import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.offline.OfflineBanner
+import com.neptune.neptune.ui.profile.ProfileScreenTestTags.DOWNLOAD_PROGRESS_BAR
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.NetworkConnectivityObserver
 
@@ -134,6 +140,7 @@ object ProfileScreenTestTags {
   const val FIELD_NAME = "profile/field/name"
   const val FIELD_USERNAME = "profile/field/username"
   const val FIELD_BIO = "profile/field/bio"
+  const val DOWNLOAD_PROGRESS_BAR = "profile/downloadProgressBar"
   const val FIELD_ADD_TAG = "profile/field/add_tag"
 }
 
@@ -301,6 +308,8 @@ private fun ProfileViewContent(
     isOnline: Boolean = true,
     isUserLoggedIn: Boolean = true
 ) {
+  var downloadPickerSample by remember { mutableStateOf<Sample?>(null) }
+  val downloadProgress: Int? by profileSamplesViewModel.downloadProgress.collectAsState()
   val samples by profileSamplesViewModel.samples.collectAsState()
   val likedSamples by profileSamplesViewModel.likedSamples.collectAsState()
   val activeCommentSampleId by profileSamplesViewModel.activeCommentSampleId.collectAsState()
@@ -453,6 +462,7 @@ private fun ProfileViewContent(
                         mediaPlayer = mediaPlayer,
                         likedSamples = likedSamples,
                         sampleResources = sampleResources,
+                        onDownloadRequest = { sample -> downloadPickerSample = sample },
                         navigateToProfile = {},
                         navigateToOtherUserProfile = {},
                         testTagsForSample = {
@@ -475,6 +485,28 @@ private fun ProfileViewContent(
                       onAddComment = { id, text -> profileSamplesViewModel.onAddComment(id, text) })
                 }
               }
+              downloadPickerSample?.let { s ->
+                DownloadChoiceDialog(
+                    sampleName = s.name,
+                    processedAvailable = s.storageProcessedSamplePath.isNotBlank(),
+                    onDismiss = { downloadPickerSample = null },
+                    onDownloadZip = {
+                      downloadPickerSample = null
+                      profileSamplesViewModel.onDownloadZippedSample(s)
+                    },
+                    onDownloadProcessed = {
+                      downloadPickerSample = null
+                      profileSamplesViewModel.onDownloadProcessedSample(s)
+                    },
+                )
+              }
+
+              if (downloadProgress != null && downloadProgress != 0) {
+                DownloadProgressBar(
+                    downloadProgress = downloadProgress!!, testTag = DOWNLOAD_PROGRESS_BAR)
+              }
+              // if mode is self profile, show edit button
+              viewConfig.bottomScreenButton?.invoke(Modifier.align(Alignment.BottomCenter))
             }
       }
 }
