@@ -167,24 +167,6 @@ internal fun ProfileViewContent(
 
   Scaffold(
       modifier = Modifier.testTag(ProfileScreenTestTags.ROOT),
-      topBar = {
-        Column {
-          Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = goBack,
-                    modifier = Modifier.testTag(ProfileScreenTestTags.GOBACK_BUTTON)) {
-                      Icon(
-                          imageVector = Icons.Default.ArrowBackIosNew,
-                          contentDescription = "Go Back",
-                          tint = NepTuneTheme.colors.onBackground)
-                    }
-                viewConfig.topBarContent?.invoke()
-              }
-        }
-      },
       containerColor = NepTuneTheme.colors.background) { innerPadding ->
         Box(
             Modifier.fillMaxSize()
@@ -198,6 +180,22 @@ internal fun ProfileViewContent(
                     modifier = Modifier.fillMaxSize().then(samplesListTagModifier),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
+                  item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically) {
+                          IconButton(
+                              onClick = goBack,
+                              modifier = Modifier.testTag(ProfileScreenTestTags.GOBACK_BUTTON)) {
+                                Icon(
+                                    imageVector = Icons.Default.ArrowBackIosNew,
+                                    contentDescription = "Go Back",
+                                    tint = NepTuneTheme.colors.onBackground)
+                              }
+                          viewConfig.topBarContent?.invoke()
+                        }
+                  }
                   item { Spacer(Modifier.height(dimensions.topScreenPadding)) }
                   item {
                     val avatarModel =
@@ -369,177 +367,162 @@ internal fun ProfileEditContent(
     isOnline: Boolean = true
 ) {
   val dimensions = LocalProfileDimensions.current
-  Scaffold(
-      topBar = {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically) {
-              Button(
-                  onClick = onSave,
-                  enabled = !uiState.isSaving && uiState.isValid && isOnline,
-                  border = BorderStroke(2.dp, color = NepTuneTheme.colors.onBackground),
-                  colors =
-                      ButtonDefaults.buttonColors(
-                          containerColor = NepTuneTheme.colors.background,
-                          contentColor = NepTuneTheme.colors.onPrimary),
-                  modifier = Modifier.testTag(ProfileScreenTestTags.SAVE_BUTTON)) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Save",
-                        tint = NepTuneTheme.colors.onBackground)
-                  }
-            }
-      },
-      containerColor = NepTuneTheme.colors.background) { innerPadding ->
-        Column(
-            modifier =
-                Modifier.fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(innerPadding)
-                    .testTag(ProfileScreenTestTags.EDIT_CONTENT),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top) {
-              Spacer(modifier = Modifier.height(dimensions.topScreenPadding))
-              val avatarModel =
-                  localAvatarUri ?: uiState.avatarUrl ?: R.drawable.ic_avatar_placeholder
-              Avatar(
-                  model = avatarModel,
-                  modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
-                  showEditPencil = true,
-                  onEditClick = onAvatarEditClick)
-              Spacer(modifier = Modifier.height(dimensions.sectionVerticalSpacing))
-              OutlinedTextField(
-                  value = uiState.name,
-                  textStyle = appTextStyle(EDIT_FIELDS_FONT_SIZE),
-                  onValueChange = onNameChange,
-                  label = { Text(text = "Name", style = appTextStyle()) },
-                  colors = TextFieldColors(),
-                  singleLine = true,
-                  modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_NAME),
-                  isError = uiState.nameError != null,
-                  supportingText = {
-                    val err = uiState.nameError
-                    if (err != null) {
-                      Text(
-                          text = err,
-                          color = MaterialTheme.colorScheme.error,
-                          style = appTextStyle())
-                    } else {
-                      Text(
-                          text = "${uiState.name.trim().length}/30",
-                          color = NepTuneTheme.colors.onBackground,
-                          style = appTextStyle())
-                    }
-                  })
-              Spacer(modifier = Modifier.height(dimensions.textFieldSpacing))
-              OutlinedTextField(
-                  value = uiState.username,
-                  textStyle = appTextStyle(EDIT_FIELDS_FONT_SIZE),
-                  onValueChange = onUsernameChange,
-                  label = { Text(text = "Username", style = appTextStyle()) },
-                  colors = TextFieldColors(),
-                  singleLine = true,
-                  modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_USERNAME),
-                  isError = uiState.usernameError != null,
-                  supportingText = {
-                    val err = uiState.usernameError
-                    if (err != null) {
-                      Text(
-                          text = err,
-                          color = MaterialTheme.colorScheme.error,
-                          style = appTextStyle())
-                    } else {
-                      Text(
-                          color = NepTuneTheme.colors.onBackground,
-                          text = "${uiState.username.trim().length}/15",
-                          style = appTextStyle())
-                    }
-                  })
-              Spacer(modifier = Modifier.height(dimensions.textFieldSpacing))
-              OutlinedTextField(
-                  value = uiState.bio,
-                  textStyle = appTextStyle(EDIT_FIELDS_FONT_SIZE),
-                  onValueChange = onBioChange,
-                  label = { Text(text = "Bio", style = appTextStyle()) },
-                  colors = TextFieldColors(),
-                  modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_BIO),
-                  singleLine = true,
-                  isError = uiState.bioError != null,
-                  supportingText = {
-                    val err = uiState.bioError
-                    if (err != null) {
-                      Text(
-                          text = err,
-                          color = MaterialTheme.colorScheme.error,
-                          style = appTextStyle())
-                    } else {
-                      Text(
-                          text = "${uiState.bio.length}/160",
-                          color = NepTuneTheme.colors.onBackground,
-                          style = appTextStyle())
-                    }
-                  })
-              Spacer(modifier = Modifier.height(dimensions.textFieldSpacing))
-              Row(
-                  verticalAlignment = Alignment.CenterVertically,
-              ) {
-                OutlinedTextField(
-                    value = uiState.inputTag,
-                    textStyle = appTextStyle(EDIT_FIELDS_FONT_SIZE),
-                    onValueChange = onTagInputFieldChange,
-                    label = {
-                      Text(text = "My music genre", style = appTextStyle(EDIT_FIELDS_FONT_SIZE))
-                    },
-                    colors = TextFieldColors(),
-                    singleLine = true,
-                    modifier = Modifier.weight(1f).testTag(ProfileScreenTestTags.FIELD_ADD_TAG),
-                    supportingText = {
-                      Text(
-                          text =
-                              buildString {
-                                append("${uiState.inputTag.trim().length}/20")
-                                if (uiState.tagError != null) append(" • ${uiState.tagError}")
-                              },
-                          color =
-                              if (uiState.tagError != null) MaterialTheme.colorScheme.error
-                              else NepTuneTheme.colors.onBackground,
-                          style = appTextStyle())
-                    })
-                Spacer(Modifier.width(dimensions.inlineSpacing))
+  Scaffold(containerColor = NepTuneTheme.colors.background) { innerPadding ->
+    Column(
+        modifier =
+            Modifier.fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(innerPadding)
+                .testTag(ProfileScreenTestTags.EDIT_CONTENT),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top) {
+          Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.End,
+              verticalAlignment = Alignment.CenterVertically) {
                 Button(
-                    onClick = onTagSubmit,
+                    onClick = onSave,
+                    enabled = !uiState.isSaving && uiState.isValid && isOnline,
                     border = BorderStroke(2.dp, color = NepTuneTheme.colors.onBackground),
                     colors =
                         ButtonDefaults.buttonColors(
                             containerColor = NepTuneTheme.colors.background,
                             contentColor = NepTuneTheme.colors.onPrimary),
-                    modifier =
-                        Modifier.fillMaxHeight().testTag(ProfileScreenTestTags.ADD_TAG_BUTTON)) {
+                    modifier = Modifier.testTag(ProfileScreenTestTags.SAVE_BUTTON)) {
                       Icon(
-                          imageVector = Icons.Default.Add,
-                          contentDescription = "Add",
+                          imageVector = Icons.Default.Check,
+                          contentDescription = "Save",
                           tint = NepTuneTheme.colors.onBackground)
                     }
               }
-              Spacer(Modifier.height(dimensions.inlineSpacing))
-              FlowRow(
-                  horizontalArrangement = Arrangement.spacedBy(dimensions.tagsSpacing),
-                  verticalArrangement = Arrangement.spacedBy(dimensions.tagsSpacing),
-                  modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_EDIT_SECTION)) {
-                    uiState.tags.forEach { tag ->
-                      key(tag) {
-                        EditableTagChip(
-                            tagText = tag,
-                            onRemove = onRemoveTag,
-                            modifier =
-                                Modifier.testTag("profile/tag/chip/${tag.replace(' ', '_')}"))
-                      }
-                    }
+          Spacer(modifier = Modifier.height(dimensions.topScreenPadding))
+          val avatarModel = localAvatarUri ?: uiState.avatarUrl ?: R.drawable.ic_avatar_placeholder
+          Avatar(
+              model = avatarModel,
+              modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
+              showEditPencil = true,
+              onEditClick = onAvatarEditClick)
+          Spacer(modifier = Modifier.height(dimensions.sectionVerticalSpacing))
+          OutlinedTextField(
+              value = uiState.name,
+              textStyle = appTextStyle(EDIT_FIELDS_FONT_SIZE),
+              onValueChange = onNameChange,
+              label = { Text(text = "Name", style = appTextStyle()) },
+              colors = TextFieldColors(),
+              singleLine = true,
+              modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_NAME),
+              isError = uiState.nameError != null,
+              supportingText = {
+                val err = uiState.nameError
+                if (err != null) {
+                  Text(text = err, color = MaterialTheme.colorScheme.error, style = appTextStyle())
+                } else {
+                  Text(
+                      text = "${uiState.name.trim().length}/30",
+                      color = NepTuneTheme.colors.onBackground,
+                      style = appTextStyle())
+                }
+              })
+          Spacer(modifier = Modifier.height(dimensions.textFieldSpacing))
+          OutlinedTextField(
+              value = uiState.username,
+              textStyle = appTextStyle(EDIT_FIELDS_FONT_SIZE),
+              onValueChange = onUsernameChange,
+              label = { Text(text = "Username", style = appTextStyle()) },
+              colors = TextFieldColors(),
+              singleLine = true,
+              modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_USERNAME),
+              isError = uiState.usernameError != null,
+              supportingText = {
+                val err = uiState.usernameError
+                if (err != null) {
+                  Text(text = err, color = MaterialTheme.colorScheme.error, style = appTextStyle())
+                } else {
+                  Text(
+                      color = NepTuneTheme.colors.onBackground,
+                      text = "${uiState.username.trim().length}/15",
+                      style = appTextStyle())
+                }
+              })
+          Spacer(modifier = Modifier.height(dimensions.textFieldSpacing))
+          OutlinedTextField(
+              value = uiState.bio,
+              textStyle = appTextStyle(EDIT_FIELDS_FONT_SIZE),
+              onValueChange = onBioChange,
+              label = { Text(text = "Bio", style = appTextStyle()) },
+              colors = TextFieldColors(),
+              modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_BIO),
+              singleLine = true,
+              isError = uiState.bioError != null,
+              supportingText = {
+                val err = uiState.bioError
+                if (err != null) {
+                  Text(text = err, color = MaterialTheme.colorScheme.error, style = appTextStyle())
+                } else {
+                  Text(
+                      text = "${uiState.bio.length}/160",
+                      color = NepTuneTheme.colors.onBackground,
+                      style = appTextStyle())
+                }
+              })
+          Spacer(modifier = Modifier.height(dimensions.textFieldSpacing))
+          Row(
+              verticalAlignment = Alignment.CenterVertically,
+          ) {
+            OutlinedTextField(
+                value = uiState.inputTag,
+                textStyle = appTextStyle(EDIT_FIELDS_FONT_SIZE),
+                onValueChange = onTagInputFieldChange,
+                label = {
+                  Text(text = "My music genre", style = appTextStyle(EDIT_FIELDS_FONT_SIZE))
+                },
+                colors = TextFieldColors(),
+                singleLine = true,
+                modifier = Modifier.weight(1f).testTag(ProfileScreenTestTags.FIELD_ADD_TAG),
+                supportingText = {
+                  Text(
+                      text =
+                          buildString {
+                            append("${uiState.inputTag.trim().length}/20")
+                            if (uiState.tagError != null) append(" • ${uiState.tagError}")
+                          },
+                      color =
+                          if (uiState.tagError != null) MaterialTheme.colorScheme.error
+                          else NepTuneTheme.colors.onBackground,
+                      style = appTextStyle())
+                })
+            Spacer(Modifier.width(dimensions.inlineSpacing))
+            Button(
+                onClick = onTagSubmit,
+                border = BorderStroke(2.dp, color = NepTuneTheme.colors.onBackground),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = NepTuneTheme.colors.background,
+                        contentColor = NepTuneTheme.colors.onPrimary),
+                modifier = Modifier.fillMaxHeight().testTag(ProfileScreenTestTags.ADD_TAG_BUTTON)) {
+                  Icon(
+                      imageVector = Icons.Default.Add,
+                      contentDescription = "Add",
+                      tint = NepTuneTheme.colors.onBackground)
+                }
+          }
+          Spacer(Modifier.height(dimensions.inlineSpacing))
+          FlowRow(
+              horizontalArrangement = Arrangement.spacedBy(dimensions.tagsSpacing),
+              verticalArrangement = Arrangement.spacedBy(dimensions.tagsSpacing),
+              modifier = Modifier.testTag(ProfileScreenTestTags.TAGS_EDIT_SECTION)) {
+                uiState.tags.forEach { tag ->
+                  key(tag) {
+                    EditableTagChip(
+                        tagText = tag,
+                        onRemove = onRemoveTag,
+                        modifier = Modifier.testTag("profile/tag/chip/${tag.replace(' ', '_')}"))
                   }
-              Spacer(modifier = Modifier.height(dimensions.sectionVerticalSpacing))
-            }
-      }
+                }
+              }
+          Spacer(modifier = Modifier.height(dimensions.sectionVerticalSpacing))
+        }
+  }
 }
 
 /**
