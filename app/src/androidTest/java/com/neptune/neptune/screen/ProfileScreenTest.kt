@@ -218,6 +218,53 @@ class ProfileScreenTest {
   }
 
   @Test
+  fun downloadProgressBarAppearsWhenProgressIsSetProfile() {
+    val samplesViewModel =
+        createFakeSamplesViewModel(
+            initialSamples =
+                listOf(
+                    com.neptune.neptune.model.sample.Sample(
+                        id = "s1",
+                        name = "S1",
+                        description = "",
+                        durationSeconds = 1,
+                        tags = emptyList(),
+                        likes = 0,
+                        usersLike = emptyList(),
+                        comments = 0,
+                        downloads = 0,
+                        isPublic = true,
+                        ownerId = "owner",
+                        storagePreviewSamplePath = "preview.mp3",
+                        storageProcessedSamplePath = "processed.mp3",
+                    )))
+
+    setContentViewMode(samplesViewModel = samplesViewModel)
+
+    // initially absent
+    composeTestRule
+        .onAllNodes(hasTestTag(ProfileScreenTestTags.DOWNLOAD_PROGRESS_BAR), useUnmergedTree = true)
+        .assertCountEquals(0)
+
+    // set non-zero progress in the VM
+    samplesViewModel.downloadProgress.value = 20
+    composeTestRule.waitForIdle()
+
+    composeTestRule.waitForTag(ProfileScreenTestTags.DOWNLOAD_PROGRESS_BAR)
+    composeTestRule
+        .onNodeWithTag(ProfileScreenTestTags.DOWNLOAD_PROGRESS_BAR, useUnmergedTree = true)
+        .assertIsDisplayed()
+
+    // progress 0 should hide it again (covers the != 0 condition)
+    samplesViewModel.downloadProgress.value = 0
+    composeTestRule.waitForIdle()
+
+    composeTestRule
+        .onAllNodes(hasTestTag(ProfileScreenTestTags.DOWNLOAD_PROGRESS_BAR), useUnmergedTree = true)
+        .assertCountEquals(0)
+  }
+
+  @Test
   fun viewModeDisplaysNameUsernameBioAndStats() {
     val state =
         SelfProfileUiState(
