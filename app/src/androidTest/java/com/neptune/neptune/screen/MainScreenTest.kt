@@ -39,7 +39,6 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.spyk
 import io.mockk.verify
-import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert
 import org.junit.Before
@@ -127,8 +126,7 @@ class MainScreenTest {
       CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
         MainScreen(
             mainViewModel = viewModel,
-            navigateToOtherUserProfile = { id -> navigateToOtherUserProfileCallback?.invoke(id) },
-            navigateToSelectMessages = { navigateToMessagesCallback?.invoke() })
+            navigateToOtherUserProfile = { id -> navigateToOtherUserProfileCallback?.invoke(id) })
       }
     }
     // Wait for the initial data to be loaded and UI to be ready
