@@ -399,7 +399,10 @@ class MainScreenTest {
 
     // The sample owner should see the delete button and be able to click it
     composeTestRule.onNodeWithText(commentText).assertIsDisplayed()
-    composeTestRule.onNodeWithTag("deleteButton").assertIsDisplayed().performClick()
+    composeTestRule
+        .onNodeWithTag(MainScreenTestTags.COMMENT_DELETE_BUTTON)
+        .assertIsDisplayed()
+        .performClick()
 
     // Verify the comment is deleted
     composeTestRule.onNodeWithText(commentText).assertDoesNotExist()
@@ -424,7 +427,7 @@ class MainScreenTest {
 
     // The user should not see the delete button
     composeTestRule.onNodeWithText(commentText).assertIsDisplayed()
-    composeTestRule.onNodeWithTag("deleteButton").assertDoesNotExist()
+    composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_DELETE_BUTTON).assertDoesNotExist()
   }
 }
 
