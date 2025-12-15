@@ -81,7 +81,6 @@ import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.picker.ImportViewModel
 import com.neptune.neptune.ui.picker.NameProjectDialog
-import com.neptune.neptune.ui.picker.RecordControls
 import com.neptune.neptune.ui.picker.sanitizeAndRename
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import java.io.File
@@ -211,36 +210,19 @@ fun ProjectListScreen(
             }
       },
       floatingActionButton = {
-        RecordControls(
+        // Reuse the centralized createProjectButtons to avoid duplication
+        com.neptune.neptune.ui.picker.createProjectButtons(
             isRecording = isRecording,
-            onToggleRecord = {
-              // Toggle recording: start or stop and handle produced file
-              if (isRecording) {
-                val recorded =
-                    try {
-                      actualRecorder.stop()
-                    } catch (_: Exception) {
-                      null
-                    }
-                if (recorded != null) {
-                  proposedFileToImport = recorded
-                  projectName = recorded.nameWithoutExtension
-                  showNameDialog = true
-                }
-              } else {
-                if (hasAudioPermission) {
-                  try {
-                    actualRecorder.start()
-                  } catch (_: Exception) {
-                    /* ignore */
-                  }
-                } else {
-                  permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                }
-              }
-              isRecording = actualRecorder.isRecording
+            actualRecorder = actualRecorder,
+            hasAudioPermission = hasAudioPermission,
+            requestPermission = { permissionLauncher.launch(it) },
+            onRecordedFile = { recorded ->
+              proposedFileToImport = recorded
+              projectName = recorded.nameWithoutExtension
+              showNameDialog = true
             },
-            onImportAudio = { pickAudio.launch(arrayOf("audio/*")) })
+            onImportAudio = { pickAudio.launch(arrayOf("audio/*")) },
+            updateIsRecording = { isRecording = it })
       })
 
   // Name dialog

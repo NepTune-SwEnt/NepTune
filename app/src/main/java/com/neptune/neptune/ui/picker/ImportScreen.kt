@@ -142,36 +142,19 @@ fun ImportScreen(
             }
       },
       floatingActionButton = {
-        RecordControls(
+        // Use the shared helper to avoid duplicating the recording + import logic
+        createProjectButtons(
             isRecording = isRecording,
-            onToggleRecord = {
-              // Toggle recording: start or stop and handle produced file
-              if (isRecording) {
-                val recorded =
-                    try {
-                      actualRecorder.stop()
-                    } catch (_: Exception) {
-                      null
-                    }
-                if (recorded != null) {
-                  proposedFileToImport = recorded
-                  projectName = recorded.nameWithoutExtension
-                  showNameDialog = true
-                }
-              } else {
-                if (hasAudioPermission) {
-                  try {
-                    actualRecorder.start()
-                  } catch (_: Exception) {
-                    /* ignore */
-                  }
-                } else {
-                  permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                }
-              }
-              isRecording = actualRecorder.isRecording
+            actualRecorder = actualRecorder,
+            hasAudioPermission = hasAudioPermission,
+            requestPermission = { permissionLauncher.launch(it) },
+            onRecordedFile = { recorded ->
+              proposedFileToImport = recorded
+              projectName = recorded.nameWithoutExtension
+              showNameDialog = true
             },
-            onImportAudio = { pickAudio.launch(arrayOf("audio/*")) })
+            onImportAudio = { pickAudio.launch(arrayOf("audio/*")) },
+            updateIsRecording = { isRecording = it })
       },
       containerColor = NepTuneTheme.colors.background) { padding ->
         if (items.isEmpty()) {
@@ -359,6 +342,46 @@ fun NameProjectDialog(
                           fontWeight = FontWeight(400)))
             }
       })
+}
+
+@Composable
+fun createProjectButtons(
+    isRecording: Boolean,
+    actualRecorder: NeptuneRecorder,
+    hasAudioPermission: Boolean,
+    requestPermission: (String) -> Unit,
+    onRecordedFile: (File) -> Unit,
+    onImportAudio: () -> Unit,
+    updateIsRecording: (Boolean) -> Unit,
+) {
+  // Centralized implementation of the recording/import button behaviour used by multiple screens
+  RecordControls(
+      isRecording = isRecording,
+      onToggleRecord = {
+        if (isRecording) {
+          val recorded =
+              try {
+                actualRecorder.stop()
+              } catch (_: Exception) {
+                null
+              }
+          if (recorded != null) {
+            onRecordedFile(recorded)
+          }
+        } else {
+          if (hasAudioPermission) {
+            try {
+              actualRecorder.start()
+            } catch (_: Exception) {
+              /* ignore */
+            }
+          } else {
+            requestPermission(Manifest.permission.RECORD_AUDIO)
+          }
+        }
+        updateIsRecording(actualRecorder.isRecording)
+      },
+      onImportAudio = onImportAudio)
 }
 
 // Helper: sanitize a project name and attempt to rename the provided file accordingly.
