@@ -99,6 +99,8 @@ private data class ProfileDimensions(
     val avatarVerticalSpacing: Dp,
     val textFieldSpacing: Dp,
     val sectionVerticalSpacing: Dp,
+    val topScreenPadding: Dp,
+    val bioVerticalSpacing: Dp,
     val preSamplesSectionSpacing: Dp,
     val statsSpacing: Dp,
     val bottomButtonBottomPadding: Dp,
@@ -121,6 +123,8 @@ private fun defaultProfileDimensions(scale: Float) =
         avatarVerticalSpacing = (15 * scale).dp,
         textFieldSpacing = (15 * scale).dp,
         sectionVerticalSpacing = (50 * scale).dp,
+        topScreenPadding = (40 * scale).dp,
+        bioVerticalSpacing = (30 * scale).dp,
         preSamplesSectionSpacing = (60 * scale).dp,
         statsSpacing = (20 * scale).dp,
         bottomButtonBottomPadding = (24 * scale).dp,
@@ -260,7 +264,6 @@ private fun SettingsButton(settings: () -> Unit) {
 
 sealed interface ProfileViewConfig {
   val topBarContent: (@Composable () -> Unit)?
-  val belowStatsButton: (@Composable () -> Unit)?
   val onFollowingClick: (() -> Unit)?
   val onFollowersClick: (() -> Unit)?
 
@@ -294,7 +297,6 @@ sealed interface ProfileViewConfig {
                 SettingsButton(settings)
               }
         }
-    override val belowStatsButton = null
   }
 
   data class OtherProfileConfig(
@@ -336,7 +338,6 @@ sealed interface ProfileViewConfig {
                       color = NepTuneTheme.colors.onBackground)
                 }
             if (!errorMessage.isNullOrBlank()) {
-              Spacer(Modifier.height(dimensions.tagsSpacing))
               Text(
                   text = errorMessage,
                   color = Color.Red,
@@ -346,7 +347,6 @@ sealed interface ProfileViewConfig {
             }
           }
         }
-    override val belowStatsButton = null
   }
 }
 
@@ -423,7 +423,7 @@ private fun ProfileViewContent(
                     modifier = Modifier.fillMaxSize().then(samplesListTagModifier),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                  item { Spacer(Modifier.height(dimensions.sectionVerticalSpacing)) }
+                  item { Spacer(Modifier.height(dimensions.topScreenPadding)) }
 
                   // Avatar image
                   item {
@@ -469,10 +469,7 @@ private fun ProfileViewContent(
                               onFollowingClick = viewConfig.onFollowingClick)
                         }
                   }
-                  item { Spacer(Modifier.height(dimensions.sectionVerticalSpacing)) }
-
-                  // if view mode is for other users profile, show follow button
-                  viewConfig.belowStatsButton?.let { button -> item { button() } }
+                  item { Spacer(Modifier.height(dimensions.bioVerticalSpacing)) }
 
                   // Bio
                   item {
@@ -486,7 +483,6 @@ private fun ProfileViewContent(
 
                   // Tags
                   if (state.tags.isNotEmpty()) {
-                    item { Spacer(Modifier.height(dimensions.tagsSpacing)) }
                     item {
                       FlowRow(
                           horizontalArrangement = Arrangement.spacedBy(dimensions.tagsSpacing),
@@ -511,7 +507,7 @@ private fun ProfileViewContent(
                     }
                   }
 
-                  item { Spacer(Modifier.height(dimensions.preSamplesSectionSpacing)) }
+                  item { Spacer(Modifier.height(dimensions.bioVerticalSpacing)) }
 
                   if (samples.isEmpty()) {
                     item {
@@ -649,7 +645,7 @@ private fun ProfileEditContent(
                     .testTag(ProfileScreenTestTags.EDIT_CONTENT),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top) {
-              Spacer(modifier = Modifier.height(dimensions.sectionVerticalSpacing))
+              Spacer(modifier = Modifier.height(dimensions.topScreenPadding))
 
               // Avatar image
               val avatarModel =
