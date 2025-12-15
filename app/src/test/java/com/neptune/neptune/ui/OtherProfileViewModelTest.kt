@@ -5,8 +5,6 @@ package com.neptune.neptune.ui
 import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.neptune.neptune.data.ImageStorageRepository
-import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.recommendation.RecoUserProfile
@@ -48,21 +46,16 @@ class OtherProfileViewModelTest {
                 subscriptions = 25,
                 likes = 10,
                 posts = 3)
-        val currentProfile =
-            Profile(
-                uid = "viewer-1", username = "listener", name = "Listener", following = emptyList())
+        val currentProfile = Profile(uid = "viewer-1", username = "listener", name = "Listener")
 
         val repo = FollowToggleTestRepository(otherProfile, currentProfile)
         val mockAuth: FirebaseAuth = mock()
-        val mockImageRepo: ImageStorageRepository = mock()
-        val mockStorageService: StorageService = mock()
         val viewModel =
             OtherProfileViewModel(
                 repo = repo,
                 userId = targetUserId,
                 auth = mockAuth,
-                imageRepo = mockImageRepo,
-                storageService = mockStorageService)
+            )
         advanceUntilIdle()
 
         val initialState = viewModel.uiState.value
@@ -73,12 +66,10 @@ class OtherProfileViewModelTest {
         advanceUntilIdle()
         assertEquals(listOf(targetUserId), repo.followCalls)
         val pendingState = viewModel.uiState.value
-        assertFalse(pendingState.isCurrentUserFollowing)
-        assertEquals(120, pendingState.profile.subscribers)
+        assertTrue(pendingState.isCurrentUserFollowing)
 
-        val followedCurrent = currentProfile.copy(following = listOf(targetUserId))
         val followedOther = otherProfile.copy(subscribers = otherProfile.subscribers + 1)
-        repo.updateCurrent(followedCurrent)
+        repo.updateFollowing(listOf(targetUserId))
         repo.updateOther(followedOther)
         advanceUntilIdle()
 
@@ -90,7 +81,7 @@ class OtherProfileViewModelTest {
         advanceUntilIdle()
         assertEquals(listOf(targetUserId), repo.unfollowCalls)
 
-        repo.updateCurrent(currentProfile)
+        repo.updateFollowing(emptyList())
         repo.updateOther(otherProfile)
         advanceUntilIdle()
 
@@ -104,20 +95,15 @@ class OtherProfileViewModelTest {
       runTest(dispatcher) {
         val targetUserId = "artist-42"
         val otherProfile = Profile(uid = targetUserId, username = "artist")
-        val currentProfile =
-            Profile(
-                uid = "viewer-1", username = "viewer", isAnonymous = true, following = emptyList())
+        val currentProfile = Profile(uid = "viewer-1", username = "viewer", isAnonymous = true)
         val repo = FollowToggleTestRepository(otherProfile, currentProfile)
         val mockAuth: FirebaseAuth = mock()
-        val mockImageRepo: ImageStorageRepository = mock()
-        val mockStorageService: StorageService = mock()
         val viewModel =
             OtherProfileViewModel(
                 repo = repo,
                 userId = targetUserId,
                 auth = mockAuth,
-                imageRepo = mockImageRepo,
-                storageService = mockStorageService)
+            )
         advanceUntilIdle()
 
         assertTrue(viewModel.uiState.value.isCurrentUserAnonymous)
@@ -139,16 +125,13 @@ class OtherProfileViewModelTest {
         val mockUser: FirebaseUser = mock()
         whenever(mockAuth.currentUser).thenReturn(mockUser)
         whenever(mockUser.isAnonymous).thenReturn(true)
-        val mockImageRepo: ImageStorageRepository = mock()
-        val mockStorageService: StorageService = mock()
 
         val viewModel =
             OtherProfileViewModel(
                 repo = repo,
                 userId = targetUserId,
                 auth = mockAuth,
-                imageRepo = mockImageRepo,
-                storageService = mockStorageService)
+            )
         advanceUntilIdle()
 
         assertTrue(viewModel.uiState.value.isCurrentUserAnonymous)
@@ -163,11 +146,13 @@ class OtherProfileViewModelTest {
 
 private class FollowToggleTestRepository(
     initialOtherProfile: Profile,
-    initialCurrentProfile: Profile?
+    initialCurrentProfile: Profile?,
+    initialFollowing: List<String> = emptyList()
 ) : ProfileRepository {
 
   private val otherProfileState = MutableStateFlow<Profile?>(initialOtherProfile)
   private val currentProfileState = MutableStateFlow<Profile?>(initialCurrentProfile)
+  private val followingState = MutableStateFlow(initialFollowing)
 
   val followCalls = mutableListOf<String>()
   val unfollowCalls = mutableListOf<String>()
@@ -176,8 +161,8 @@ private class FollowToggleTestRepository(
     otherProfileState.value = profile
   }
 
-  fun updateCurrent(profile: Profile?) {
-    currentProfileState.value = profile
+  fun updateFollowing(newFollowing: List<String>) {
+    followingState.value = newFollowing
   }
 
   override suspend fun getCurrentProfile(): Profile? = currentProfileState.value
@@ -205,6 +190,14 @@ private class FollowToggleTestRepository(
   override suspend fun followUser(uid: String) {
     followCalls.add(uid)
   }
+
+  override suspend fun getFollowingIds(uid: String): List<String> = followingState.value
+
+  override suspend fun getFollowersIds(uid: String): List<String> = emptyList()
+
+  override fun observeFollowingIds(uid: String): Flow<List<String>> = followingState
+
+  override fun observeFollowersIds(uid: String): Flow<List<String>> = MutableStateFlow(emptyList())
 
   override suspend fun ensureProfile(
       suggestedUsernameBase: String?,

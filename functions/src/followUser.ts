@@ -34,10 +34,17 @@ export const followUser = onCall({region: "us-east1"},
     const profiles = db.collection("profiles");
     const currentRef = profiles.doc(currentUid);
     const otherRef = profiles.doc(targetUid);
+    const currentFollowingRef = currentRef.collection("following")
+      .doc(targetUid);
+    const targetFollowersRef = otherRef.collection("followers")
+      .doc(currentUid);
 
     await db.runTransaction(async (tx) => {
-      const currentSnap = await tx.get(currentRef);
-      const otherSnap = await tx.get(otherRef);
+      const [currentSnap, otherSnap, followEdgeSnap] = await Promise.all([
+        tx.get(currentRef),
+        tx.get(otherRef),
+        tx.get(currentFollowingRef),
+      ]);
 
       if (!currentSnap.exists || !otherSnap.exists) {
         throw new HttpsError("not-found", "Profile document not found");
@@ -46,35 +53,46 @@ export const followUser = onCall({region: "us-east1"},
       const dataCurrent = currentSnap.data() || {};
       const dataOther = otherSnap.data() || {};
 
-      const currentFollowing =
-        (dataCurrent.following as string[] | undefined) ?? [];
       const otherSubscribers =
         (dataOther.subscribers as number | undefined) ?? 0;
       const currentSubscriptions =
         (dataCurrent.subscriptions as number | undefined) ?? 0;
 
+      const alreadyFollowing = followEdgeSnap.exists;
+      const now = admin.firestore.FieldValue.serverTimestamp();
+
       if (follow) {
         // Follow user
-        if (!currentFollowing.includes(targetUid)) {
-          tx.update(currentRef, {
-            following: admin.firestore.FieldValue.arrayUnion(targetUid),
-            subscriptions: currentSubscriptions + 1,
-          });
-          tx.update(otherRef, {
-            subscribers: otherSubscribers + 1,
-          });
-        }
+        if (alreadyFollowing) return;
+
+        tx.set(currentFollowingRef, {
+          uid: targetUid,
+          createdAt: now,
+        }, {merge: true});
+        tx.set(targetFollowersRef, {
+          uid: currentUid,
+          createdAt: now,
+        }, {merge: true});
+
+        tx.update(currentRef, {
+          subscriptions: currentSubscriptions + 1,
+        });
+        tx.update(otherRef, {
+          subscribers: otherSubscribers + 1,
+        });
       } else {
         // Unfollow user
-        if (currentFollowing.includes(targetUid)) {
-          tx.update(currentRef, {
-            following: admin.firestore.FieldValue.arrayRemove(targetUid),
-            subscriptions: Math.max(0, currentSubscriptions - 1),
-          });
-          tx.update(otherRef, {
-            subscribers: Math.max(0, otherSubscribers - 1),
-          });
-        }
+        if (!alreadyFollowing) return;
+
+        tx.delete(currentFollowingRef);
+        tx.delete(targetFollowersRef);
+
+        tx.update(currentRef, {
+          subscriptions: Math.max(0, currentSubscriptions - 1),
+        });
+        tx.update(otherRef, {
+          subscribers: Math.max(0, otherSubscribers - 1),
+        });
       }
     });
 

@@ -8,11 +8,20 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.storage.FirebaseStorage
 import com.neptune.neptune.data.storage.StorageService
+import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.model.sample.Sample
+import com.neptune.neptune.model.sample.SampleRepository
 import com.neptune.neptune.model.sample.SampleRepositoryFirebase
+import com.neptune.neptune.ui.main.SampleUiActions
 import com.neptune.neptune.ui.search.SearchViewModel
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.runs
 import java.util.UUID
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -55,6 +64,116 @@ class SearchViewModelTest {
 
     val settings = FirebaseFirestoreSettings.Builder().build()
     firestore.firestoreSettings = settings
+  }
+
+  private class TestSearchViewModel(
+      sampleRepo: SampleRepository,
+      profileRepo: ProfileRepository,
+      explicitStorageService: StorageService,
+      auth: FirebaseAuth,
+      private val injectedActions: SampleUiActions
+  ) :
+      SearchViewModel(
+          sampleRepo = sampleRepo,
+          useMockData = false,
+          profileRepo = profileRepo,
+          explicitStorageService = explicitStorageService,
+          explicitDownloadsFolder = null,
+          auth = auth) {
+    override val actions: SampleUiActions = injectedActions
+  }
+
+  @Test
+  fun onDownloadZippedSampleDelegatesToActions() = runBlocking {
+    // mock actions (suspend functions)
+    val actions = mockk<SampleUiActions>(relaxed = true)
+    coEvery { actions.onDownloadZippedClicked(any()) } just runs
+
+    val realRepo = SampleRepositoryFirebase(firestore)
+    val realStorageService = StorageService(storage)
+
+    val viewModel =
+        TestSearchViewModel(
+            sampleRepo = realRepo,
+            profileRepo = ProfileRepositoryProvider.repository,
+            explicitStorageService = realStorageService,
+            auth = auth,
+            injectedActions = actions)
+
+    val s =
+        Sample(
+            id = "id_${UUID.randomUUID()}",
+            name = "ZipTest",
+            description = "",
+            durationSeconds = 1,
+            tags = emptyList(),
+            likes = 0,
+            usersLike = emptyList(),
+            comments = 0,
+            downloads = 0,
+            ownerId = "tester",
+            storagePreviewSamplePath = "path",
+            isPublic = true)
+
+    viewModel.onDownloadZippedSample(s)
+
+    // wait until the launched coroutine runs
+    withTimeout(timeOut) {
+      while (true) {
+        try {
+          coVerify(exactly = 1) { actions.onDownloadZippedClicked(s) }
+          break
+        } catch (_: AssertionError) {
+          delay(50)
+        }
+      }
+    }
+  }
+
+  @Test
+  fun onDownloadProcessedSampleDelegatesToActions() = runBlocking {
+    val actions = mockk<SampleUiActions>(relaxed = true)
+    coEvery { actions.onDownloadProcessedClicked(any()) } just runs
+
+    val realRepo = SampleRepositoryFirebase(firestore)
+    val realStorageService = StorageService(storage)
+
+    val viewModel =
+        TestSearchViewModel(
+            sampleRepo = realRepo,
+            profileRepo = ProfileRepositoryProvider.repository,
+            explicitStorageService = realStorageService,
+            auth = auth,
+            injectedActions = actions)
+
+    val s =
+        Sample(
+            id = "id_${UUID.randomUUID()}",
+            name = "ProcessedTest",
+            description = "",
+            durationSeconds = 1,
+            tags = emptyList(),
+            likes = 0,
+            usersLike = emptyList(),
+            comments = 0,
+            downloads = 0,
+            ownerId = "tester",
+            storagePreviewSamplePath = "path",
+            storageProcessedSamplePath = "processed/path.wav",
+            isPublic = true)
+
+    viewModel.onDownloadProcessedSample(s)
+
+    withTimeout(timeOut) {
+      while (true) {
+        try {
+          coVerify(exactly = 1) { actions.onDownloadProcessedClicked(s) }
+          break
+        } catch (_: AssertionError) {
+          delay(50)
+        }
+      }
+    }
   }
 
   @Test

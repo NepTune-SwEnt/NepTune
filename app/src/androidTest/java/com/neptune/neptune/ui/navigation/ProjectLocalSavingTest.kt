@@ -30,7 +30,9 @@ class ProjectLocalSavingTest {
       audioFile.writeBytes(ByteArray(1024))
     }
 
-    viewModel._uiState.update { it.copy(currentAudioUri = Uri.fromFile(audioFile)) }
+    viewModel._uiState.update {
+      it.copy(currentAudioUri = Uri.fromFile(audioFile), originalAudioUri = Uri.fromFile(audioFile))
+    }
 
     viewModel.updateSustain(0.8f)
     viewModel.updateAttack(0.35f)

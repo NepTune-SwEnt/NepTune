@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -109,6 +110,7 @@ open class MainViewModel(
   val isAnonymous: StateFlow<Boolean> = _isAnonymous.asStateFlow()
   private val _recommendedSamples = MutableStateFlow<List<Sample>>(emptyList())
   val recommendedSamples: StateFlow<List<Sample>> = _recommendedSamples
+  private var latestFollowing: List<String> = emptyList()
 
   init {
     if (useMockData) {
@@ -161,49 +163,40 @@ open class MainViewModel(
     if (auth?.currentUser == null) return
     viewModelScope.launch {
       try {
-        val profile = profileRepo.getCurrentProfile()
-        val currentUserId = auth.currentUser?.uid
-        val following = profile?.following.orEmpty()
-        sampleRepo.observeSamples().collectLatest { rawSamples ->
-          val visibleSamples =
-              rawSamples.filter { sample ->
-                sample.isPublic || sample.ownerId == currentUserId || (sample.ownerId in following)
-              }
-          if (allSamplesCache.isEmpty()) {
-            allSamplesCache = visibleSamples
-            val readySamples = visibleSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
-            updateLists(readySamples, following)
-
-            val pendingSamples = visibleSamples.filter { it.storagePreviewSamplePath.isBlank() }
-            pendingSamples.forEach { pendingSample ->
-              watchPendingSample(pendingSample.id, following)
+        val uid = auth.currentUser?.uid ?: return@launch
+        combine(sampleRepo.observeSamples(), profileRepo.observeFollowingIds(uid)) {
+                samples,
+                following ->
+              samples to following
             }
-          } else {
-            val existingIds = allSamplesCache.map { it.id }.toSet()
-            val currentUserId = auth.currentUser?.uid
+            .collectLatest { (rawSamples, following) ->
+              latestFollowing = following
+              val currentUserId = auth.currentUser?.uid
+              val visibleSamples =
+                  rawSamples.filter { sample ->
+                    sample.isPublic ||
+                        sample.ownerId == currentUserId ||
+                        (sample.ownerId in following)
+                  }
 
-            val samplesToDisplay =
-                visibleSamples.filter { sample ->
-                  val isExisting = sample.id in existingIds
-                  val isMine = sample.ownerId == currentUserId
+              val existingIds = allSamplesCache.map { it.id }.toSet()
+              allSamplesCache = visibleSamples
 
-                  isExisting || isMine
-                }
+              val readySamples = visibleSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
+              updateLists(readySamples)
 
-            allSamplesCache = samplesToDisplay
+              val pendingSamples = visibleSamples.filter { it.storagePreviewSamplePath.isBlank() }
+              pendingSamples.forEach { pendingSample -> watchPendingSample(pendingSample.id) }
 
-            val readySamples = allSamplesCache.filter { it.storagePreviewSamplePath.isNotBlank() }
-            updateLists(readySamples, following)
+              val newSamples = visibleSamples.filter { it.id !in existingIds }
+              newSamples.forEach { loadSampleResources(it) }
 
-            val newAddedSamples = allSamplesCache.filter { it.id !in existingIds }
-            newAddedSamples.forEach { loadSampleResources(it) }
-          }
-          refreshLikeStates()
-          if (_isRefreshing.value) {
-            _isRefreshing.value = false
-          }
-          viewModelScope.launch { loadRecommendations() }
-        }
+              refreshLikeStates()
+              if (_isRefreshing.value) {
+                _isRefreshing.value = false
+              }
+              viewModelScope.launch { loadRecommendations() }
+            }
       } catch (e: Exception) {
         Log.e("MainViewModel", "Error loading samples", e)
         _isRefreshing.value = false
@@ -211,7 +204,7 @@ open class MainViewModel(
     }
   }
 
-  private fun watchPendingSample(sampleId: String, following: List<String>) {
+  private fun watchPendingSample(sampleId: String) {
     if (observingSampleIds.contains(sampleId)) return
     viewModelScope.launch {
       try {
@@ -224,7 +217,7 @@ open class MainViewModel(
             ?.let { finishedSample ->
               allSamplesCache =
                   allSamplesCache.map { if (it.id == finishedSample.id) finishedSample else it }
-              addSampleToList(finishedSample, following)
+              addSampleToList(finishedSample)
             }
       } catch (e: Exception) {
         Log.w("MainViewModel", "Stop watching sample $sampleId", e)
@@ -234,13 +227,13 @@ open class MainViewModel(
     }
   }
 
-  private fun updateLists(samples: List<Sample>, following: List<String>) {
-    _discoverSamples.value = samples.filter { it.ownerId !in following }
-    _followedSamples.value = samples.filter { it.ownerId in following }
+  private fun updateLists(samples: List<Sample>) {
+    _discoverSamples.value = samples.filter { it.ownerId !in latestFollowing }
+    _followedSamples.value = samples.filter { it.ownerId in latestFollowing }
   }
 
-  private fun addSampleToList(newSample: Sample, following: List<String>) {
-    if (newSample.ownerId !in following) {
+  private fun addSampleToList(newSample: Sample) {
+    if (newSample.ownerId !in latestFollowing) {
       _discoverSamples.update { currentList ->
         if (currentList.any { it.id == newSample.id }) currentList
         else listOf(newSample) + currentList
@@ -264,6 +257,8 @@ open class MainViewModel(
     val currentUser = auth?.currentUser
     if (currentUser == null) {
       _userAvatar.value = null
+      latestFollowing = emptyList()
+      updateLists(allSamplesCache.filter { it.storagePreviewSamplePath.isNotBlank() })
       return
     }
     viewModelScope.launch {
@@ -298,11 +293,6 @@ open class MainViewModel(
             }
             updatedResources
           }
-          val following = profile?.following.orEmpty()
-          if (allSamplesCache.isNotEmpty()) {
-            val readySamples = allSamplesCache.filter { it.storagePreviewSamplePath.isNotBlank() }
-            updateLists(readySamples, following)
-          }
         }
       } catch (e: Exception) {
         Log.e("MainViewModel", "Error observing profile: ${e.message}")
@@ -310,12 +300,23 @@ open class MainViewModel(
     }
   }
 
-  override fun onDownloadSample(sample: Sample) {
+  override fun onDownloadZippedSample(sample: Sample) {
     viewModelScope.launch {
       try {
-        actions?.onDownloadClicked(sample)
+        actions?.onDownloadZippedClicked(sample)
       } catch (e: Exception) {
-        Log.e("MainViewModel", "Error downloading sample: ${e.message}")
+        Log.e("MainViewModel", "Error downloading zipped sample: ${e.message}")
+        // Handle exception if needed
+      }
+    }
+  }
+
+  override fun onDownloadProcessedSample(sample: Sample) {
+    viewModelScope.launch {
+      try {
+        actions?.onDownloadProcessedClicked(sample)
+      } catch (e: Exception) {
+        Log.e("MainViewModel", "Error downloading processed sample: ${e.message}")
         // Handle exception if needed
       }
     }

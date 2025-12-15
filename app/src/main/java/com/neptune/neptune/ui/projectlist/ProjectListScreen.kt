@@ -1,6 +1,11 @@
 package com.neptune.neptune.ui.projectlist
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +44,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,17 +66,24 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Timestamp
 import com.neptune.neptune.R
+import com.neptune.neptune.data.StoragePaths
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
+import com.neptune.neptune.media.NeptuneRecorder
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.ui.offline.OfflineBanner
+import com.neptune.neptune.ui.picker.ImportViewModel
+import com.neptune.neptune.ui.picker.NameProjectDialog
+import com.neptune.neptune.ui.picker.sanitizeAndRename
 import com.neptune.neptune.ui.theme.NepTuneTheme
+import java.io.File
 import kotlinx.coroutines.runBlocking
 
 object ProjectListScreenTestTags {
@@ -106,9 +119,14 @@ fun ProjectListScreen(
     credentialManager: CredentialManager = CredentialManager.create(LocalContext.current),
     onProjectClick: (ProjectItem) -> Unit = {},
     projectListViewModel: ProjectListViewModel = viewModel(),
+    importViewModel: ImportViewModel = viewModel(),
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
+    recorder: NeptuneRecorder? = null,
+    testRecordedFile: File? = null,
+    onDeleteFailed: (() -> Unit)? = null,
 ) {
   val uiState by projectListViewModel.uiState.collectAsState()
+  // Use the reactive uiState.projects directly so additions trigger recomposition
   val projects: List<ProjectItem> = uiState.projects
   val selectedProjects: String? = uiState.selectedProject
   val isOnline by projectListViewModel.isOnline.collectAsState()
@@ -125,6 +143,50 @@ fun ProjectListScreen(
               p.tags.any { it.contains(searchText, ignoreCase = true) }
         }
       }
+
+  // Import audio part
+  val context = LocalContext.current
+
+  val pickAudio =
+      rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { importViewModel.importFromSaf(it.toString()) }
+      }
+
+  val actualRecorder = recorder ?: remember { NeptuneRecorder(context, StoragePaths(context)) }
+  var isRecording by remember { mutableStateOf(actualRecorder.isRecording) }
+  var hasAudioPermission by remember { mutableStateOf(false) }
+
+  // Dialog state for naming the recorded project
+  var showNameDialog by remember { mutableStateOf(false) }
+  var proposedFileToImport by remember { mutableStateOf<File?>(null) }
+  var projectName by remember { mutableStateOf("") }
+
+  LaunchedEffect(testRecordedFile) {
+    testRecordedFile?.let {
+      proposedFileToImport = it
+      projectName = it.nameWithoutExtension
+      showNameDialog = true
+    }
+  }
+
+  // Ensure SAF / external imports refresh the project list after completion by registering a
+  // callback on the ImportViewModel. This will be called by ImportMediaUseCase via the
+  // top-level onImportFinished captured when the use case was created in importAppRoot().
+  LaunchedEffect(importViewModel) {
+    importViewModel.setOnImportFinished { projectListViewModel.refreshProjects() }
+  }
+
+  val permissionLauncher =
+      rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) {
+          isGranted ->
+        hasAudioPermission = isGranted
+      }
+
+  LaunchedEffect(key1 = true) {
+    hasAudioPermission =
+        ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+  }
 
   Scaffold(
       containerColor = NepTuneTheme.colors.background,
@@ -146,7 +208,50 @@ fun ProjectListScreen(
                   onProjectClick = onProjectClick,
                   mediaPlayer = mediaPlayer)
             }
+      },
+      floatingActionButton = {
+        // Reuse the centralized createProjectButtons to avoid duplication
+        com.neptune.neptune.ui.picker.CreateProjectButtons(
+            isRecording = isRecording,
+            actualRecorder = actualRecorder,
+            hasAudioPermission = hasAudioPermission,
+            requestPermission = { permissionLauncher.launch(it) },
+            onRecordedFile = { recorded ->
+              proposedFileToImport = recorded
+              projectName = recorded.nameWithoutExtension
+              showNameDialog = true
+            },
+            onImportAudio = { pickAudio.launch(arrayOf("audio/*")) },
+            updateIsRecording = { isRecording = it })
       })
+
+  // Name dialog
+  if (showNameDialog && proposedFileToImport != null) {
+    NameProjectDialog(
+        projectName = projectName,
+        onNameChange = { projectName = it },
+        onConfirm = { name ->
+          val finalFile = sanitizeAndRename(proposedFileToImport!!, name)
+          // For recorded files we already call refresh after import via the lambda param.
+          importViewModel.importRecordedFile(finalFile) { projectListViewModel.refreshProjects() }
+          showNameDialog = false
+          proposedFileToImport = null
+        },
+        onCancel = {
+          val deleted = proposedFileToImport?.delete() ?: true
+          if (!deleted) {
+            onDeleteFailed?.invoke()
+            // provide the same toast behavior as before
+            Toast.makeText(
+                    context,
+                    "Could not delete temporary file ${proposedFileToImport?.absolutePath}",
+                    Toast.LENGTH_SHORT)
+                .show()
+          }
+          showNameDialog = false
+          proposedFileToImport = null
+        })
+  }
 }
 
 /**
