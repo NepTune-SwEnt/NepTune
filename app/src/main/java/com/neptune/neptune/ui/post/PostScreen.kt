@@ -47,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
@@ -72,6 +73,7 @@ import com.neptune.neptune.data.rememberImagePickerLauncher
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.sample.Sample
+import com.neptune.neptune.ui.main.SampleWaveform
 import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
@@ -108,6 +110,8 @@ fun PostScreen(
 ) {
   val uiState by postViewModel.uiState.collectAsState()
   val localImageUri by postViewModel.localImageUri.collectAsState()
+  val playbackUri = uiState.playbackUri
+  val waveform = uiState.waveform
 
   // This animation was taken from https://lottiefiles.com/free-animation/loading-qjrg8ygl9S
   val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.loading))
@@ -204,7 +208,9 @@ fun PostScreen(
                                   .clickable(
                                       onClick = {
                                         mediaPlayer.togglePlay(
-                                            mediaPlayer.getUriFromSampleId(uiState.sample.id))
+                                            playbackUri
+                                                ?: mediaPlayer.getUriFromSampleId(
+                                                    uiState.sample.id))
                                       })
                                   .aspectRatio(1.6f)
                                   .border(
@@ -216,13 +222,19 @@ fun PostScreen(
                             if (localImageUri != null) {
                               AsyncImage(
                                   model = localImageUri,
-                                  contentDescription = "Sample's image",
-                                  modifier = Modifier.align(Alignment.Center).fillMaxSize(),
-                                  error = painterResource(id = R.drawable.waveform))
-                            } else {
+                                  contentDescription = "Sample Cover",
+                                  modifier = Modifier.fillMaxSize(),
+                                  contentScale = ContentScale.Crop)
+                            }
+                            if (waveform.isNotEmpty()) {
+                              SampleWaveform(
+                                  amplitudes = waveform,
+                                  color = NepTuneTheme.colors.onBackground,
+                                  modifier = Modifier.fillMaxWidth(0.9f).height(60.dp))
+                            } else if (localImageUri == null) {
                               Icon(
                                   painter = painterResource(id = R.drawable.waveform),
-                                  contentDescription = "Sample's image",
+                                  contentDescription = "Waveform placeholder",
                                   tint = NepTuneTheme.colors.onBackground,
                                   modifier = Modifier.fillMaxWidth(0.7f).height(100.dp))
                             }

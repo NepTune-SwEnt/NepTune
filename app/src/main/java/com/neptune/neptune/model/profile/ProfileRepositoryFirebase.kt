@@ -280,6 +280,20 @@ class ProfileRepositoryFirebase(
     return owner == uid
   }
 
+  /** Updates the current user's post counter. Use delta = 1 to add, delta = -1 to delete. */
+  override suspend fun updatePostCount(delta: Int) {
+    val uid = requireCurrentUid()
+    profiles.document(uid).update("posts", FieldValue.increment(delta.toLong())).await()
+  }
+
+  /**
+   * Updates the overall like count for a target user. This method takes a userId as a parameter
+   * because we often like someone else's content.
+   */
+  override suspend fun updateLikeCount(targetUserId: String, delta: Int) {
+    profiles.document(targetUserId).update("likes", FieldValue.increment(delta.toLong())).await()
+  }
+
   /**
    * Atomically sets a new username for the current user via Firestore transaction. Updates
    * `profiles/{uid}` and reserves/releases entries in `usernames/{username}`.

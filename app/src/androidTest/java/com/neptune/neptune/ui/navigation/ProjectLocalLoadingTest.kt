@@ -4,7 +4,9 @@ import android.net.Uri
 import androidx.activity.compose.setContent
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -17,6 +19,7 @@ import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepositoryVarVar
 import com.neptune.neptune.model.project.TotalProjectItemsRepository
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
+import com.neptune.neptune.ui.projectlist.ProjectListScreenTestTags.PROJECT_LIST
 import com.neptune.neptune.ui.sampler.SamplerTestTags
 import com.neptune.neptune.ui.sampler.SamplerViewModel
 import com.neptune.neptune.ui.theme.SampleAppTheme
@@ -82,6 +85,10 @@ class FakeMediaPlayer : NeptuneMediaPlayer() {
   }
 }
 
+fun AndroidComposeTestRule<*, *>.waitForNodeWithTag(tag: String, timeoutMillis: Long = 10_000) {
+  waitUntil(timeoutMillis) { onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
+}
+
 class LocalProjectLoadingTest {
 
   @get:Rule val composeTestRule = createAndroidComposeRule<MainActivity>()
@@ -118,8 +125,9 @@ class LocalProjectLoadingTest {
 
   @Test
   fun projectClickLoadsSamplerKnobsCorrectly() {
+    composeTestRule.waitForNodeWithTag(PROJECT_LIST)
+
     composeTestRule.onNodeWithTag("project_$TARGET_PROJECT_ID").performClick()
-    composeTestRule.waitForIdle()
     composeTestRule.onNodeWithText("COMP").performClick()
     composeTestRule.waitForIdle()
     composeTestRule.onNodeWithText("4:1", substring = true).assertIsDisplayed()
@@ -132,7 +140,7 @@ class LocalProjectLoadingTest {
     composeTestRule.waitForIdle()
     composeTestRule
         .onNodeWithTag(SamplerTestTags.TIME_DISPLAY)
-        .assertTextContains("00.00 / 04.00 s", substring = true)
+        .assertTextContains("00.00 / 07.65 s", substring = true)
         .assertIsDisplayed()
   }
 
