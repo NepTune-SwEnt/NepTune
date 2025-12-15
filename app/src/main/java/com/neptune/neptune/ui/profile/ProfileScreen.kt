@@ -505,8 +505,6 @@ private fun ProfileViewContent(
                 DownloadProgressBar(
                     downloadProgress = downloadProgress!!, testTag = DOWNLOAD_PROGRESS_BAR)
               }
-              // if mode is self profile, show edit button
-              viewConfig.bottomScreenButton?.invoke(Modifier.align(Alignment.BottomCenter))
             }
       }
 }
