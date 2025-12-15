@@ -160,10 +160,11 @@ class StorageServiceTest {
 
         val newZipUri = createDummyFile("new_sample.zip", "new zip data")
         val newImageUri = createDummyFile(newImageName, "new image data")
+        val processedUri = createDummyFile("new_sample.wav", "new wav data")
 
         // --- Act ---
         val sampleWithNewData = oldSample.copy(name = "New Sample Name")
-        storageService.uploadSampleFiles(sampleWithNewData, newZipUri, newImageUri)
+        storageService.uploadSampleFiles(sampleWithNewData, newZipUri, newImageUri, processedUri)
 
         // --- Assert ---
 
@@ -232,6 +233,94 @@ class StorageServiceTest {
         // --- Assert ---
         Assert.assertEquals("image.png", fileName)
       }
+
+  @Test
+  fun downloadFileByPathWhenFileExistsDownloadsToOutFileAndReturnsIt() {
+    runBlocking(testDispatcher) {
+      val storagePath = "processed/test-audio.txt"
+      val content = "hello processed audio"
+      val srcUri = createDummyFile("src-processed.txt", content)
+
+      storageService.uploadFile(srcUri, storagePath)
+
+      val outFile = File(context.cacheDir, "downloaded-processed.txt")
+      if (outFile.exists()) outFile.delete()
+
+      val progressEvents = mutableListOf<Int>()
+
+      val returned =
+          storageService.downloadFileByPath(storagePath, outFile) { p -> progressEvents.add(p) }
+
+      Assert.assertEquals(outFile.absolutePath, returned.absolutePath)
+      Assert.assertTrue(outFile.exists())
+      Assert.assertEquals(content, outFile.readText())
+
+      Assert.assertTrue(progressEvents.isNotEmpty())
+      Assert.assertTrue(progressEvents.contains(100))
+
+      outFile.delete()
+    }
+  }
+
+  @Test
+  fun downloadFileByPathWithBlankPathThrowsIllegalArgumentException() {
+    runBlocking(testDispatcher) {
+      val outFile = File(context.cacheDir, "x.txt")
+
+      try {
+        storageService.downloadFileByPath("   ", outFile) {}
+        Assert.fail("Should have thrown IllegalArgumentException")
+      } catch (e: IllegalArgumentException) {
+        Assert.assertTrue(e.message?.contains("storagePath is blank") == true)
+      }
+    }
+  }
+
+  @Test
+  fun downloadFileByPathWhenFileDoesNotExistThrowsIllegalArgumentException() {
+    runBlocking(testDispatcher) {
+      val missingPath = "processed/missing-${UUID.randomUUID()}.wav"
+      val outFile = File(context.cacheDir, "missing.wav")
+      if (outFile.exists()) outFile.delete()
+
+      try {
+        storageService.downloadFileByPath(missingPath, outFile) {}
+        Assert.fail("Should have thrown IllegalArgumentException")
+      } catch (e: IllegalArgumentException) {
+        Assert.assertTrue(e.message?.contains("File not found in storage") == true)
+        Assert.assertTrue(e.message?.contains(missingPath) == true)
+      }
+    }
+  }
+
+  @Test
+  fun downloadFileByPathProgressIsNonDecreasingAndEndsAt100() {
+    runBlocking(testDispatcher) {
+      val storagePath = "processed/large-${UUID.randomUUID()}.bin"
+      val bigContent = "a".repeat(300_000)
+      val srcUri = createDummyFile("large.bin", bigContent)
+      storageService.uploadFile(srcUri, storagePath)
+
+      val outFile = File(context.cacheDir, "large-downloaded.bin")
+      if (outFile.exists()) outFile.delete()
+
+      val progressEvents = mutableListOf<Int>()
+
+      storageService.downloadFileByPath(storagePath, outFile) { p -> progressEvents.add(p) }
+
+      Assert.assertTrue(outFile.exists())
+      Assert.assertEquals(bigContent.length, outFile.readText().length)
+
+      Assert.assertTrue(progressEvents.isNotEmpty())
+      Assert.assertTrue(progressEvents.contains(100))
+
+      for (i in 1 until progressEvents.size) {
+        Assert.assertTrue(progressEvents[i] >= progressEvents[i - 1])
+      }
+
+      outFile.delete()
+    }
+  }
 
   @Test
   fun getFileNameFromUriWithContentUriQueriesContentResolver() =

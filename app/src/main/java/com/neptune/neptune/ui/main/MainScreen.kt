@@ -174,6 +174,8 @@ fun MainScreen(
     navigateToSampleList: (FeedType) -> Unit = {},
     mainViewModel: MainViewModel = viewModel()
 ) {
+  var downloadPickerSample by remember { mutableStateOf<Sample?>(null) }
+  val showDownloadPicker = downloadPickerSample != null
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
   val userAvatar by mainViewModel.userAvatar.collectAsState()
@@ -265,6 +267,7 @@ fun MainScreen(
                   handleProfileNavigation = { handleProfileNavigation(it) },
                   navigateToSampleList = navigateToSampleList,
                   pullRefreshState = pullRefreshState,
+                  onDownloadRequest = { sample -> downloadPickerSample = sample },
                   isAnonymous = isAnonymous,
                   isOnline = isOnline,
                   isUserLoggedIn = isUserLoggedIn)
@@ -277,6 +280,21 @@ fun MainScreen(
         if (downloadProgress != null && downloadProgress != 0) {
           DownloadProgressBar(
               downloadProgress = downloadProgress!!, MainScreenTestTags.DOWNLOAD_PROGRESS)
+        }
+        if (showDownloadPicker) {
+          val s = downloadPickerSample!!
+          DownloadChoiceDialog(
+              sampleName = s.name,
+              processedAvailable = s.storageProcessedSamplePath.isNotBlank(),
+              onDismiss = { downloadPickerSample = null },
+              onDownloadZip = {
+                downloadPickerSample = null // hide dialog first
+                mainViewModel.onDownloadZippedSample(s) // start download
+              },
+              onDownloadProcessed = {
+                downloadPickerSample = null
+                mainViewModel.onDownloadProcessedSample(s)
+              })
         }
       }
 }
@@ -293,6 +311,7 @@ private fun MainContent(
     handleProfileNavigation: (String) -> Unit,
     navigateToSampleList: (FeedType) -> Unit,
     pullRefreshState: PullToRefreshState,
+    onDownloadRequest: (Sample) -> Unit,
     isAnonymous: Boolean = false,
     isOnline: Boolean = true,
     isUserLoggedIn: Boolean = true
@@ -332,6 +351,7 @@ private fun MainContent(
                         rowsPerColumn = 2,
                         onCommentClick = { onCommentClicked(it) },
                         onProfileClick = { handleProfileNavigation(it) },
+                        onDownloadRequest = { onDownloadRequest(it) },
                         isAnonymous = isAnonymous)
                   }
                   // ----------------Followed Section-----------------
@@ -348,7 +368,9 @@ private fun MainContent(
                         samples = followedSamples,
                         rowsPerColumn = maxColumns,
                         onCommentClick = { onCommentClicked(it) },
-                        onProfileClick = { handleProfileNavigation(it) })
+                        onProfileClick = { handleProfileNavigation(it) },
+                        onDownloadRequest = { onDownloadRequest(it) },
+                    )
                     Spacer(modifier = Modifier.height(50.dp))
                   }
                 }
@@ -373,6 +395,7 @@ private fun SampleSectionLazyRow(
     rowsPerColumn: Int,
     onCommentClick: (Sample) -> Unit,
     onProfileClick: (String) -> Unit,
+    onDownloadRequest: (Sample) -> Unit,
     isAnonymous: Boolean = false
 ) {
   val configuration = LocalConfiguration.current
@@ -402,7 +425,7 @@ private fun SampleSectionLazyRow(
 
               val clickHandlers =
                   onClickFunctions(
-                      onDownloadClick = { mainViewModel.onDownloadSample(sample) },
+                      onDownloadClick = { onDownloadRequest(sample) },
                       onLikeClick = { isLiked ->
                         if (!isAnonymous) mainViewModel.onLikeClick(sample, isLiked)
                       },

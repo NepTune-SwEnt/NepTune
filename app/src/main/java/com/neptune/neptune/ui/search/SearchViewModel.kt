@@ -99,7 +99,7 @@ open class SearchViewModel(
   private val _userResults = MutableStateFlow<List<Profile>>(emptyList())
   val userResults: StateFlow<List<Profile>> = _userResults.asStateFlow()
 
-  // Current User Profile (to track following list)
+  // Current User Profile (metadata needed by the UI)
   // Logic: Observe the current user flow. If a user is logged in, observe their profile.
   // If no user is logged in, emit null.
   @OptIn(ExperimentalCoroutinesApi::class)
@@ -128,9 +128,15 @@ open class SearchViewModel(
     }
     viewModelScope.launch {
       try {
-        currentUserProfile.collectLatest { profile ->
-          _followingIds.value = profile?.following?.toSet() ?: emptySet()
-        }
+        _currentUserFlow
+            .flatMapLatest { user ->
+              if (user == null) {
+                flowOf(emptySet<String>())
+              } else {
+                profileRepo.observeFollowingIds(user.uid)
+              }
+            }
+            .collectLatest { ids -> _followingIds.value = ids.toSet() }
       } catch (e: Exception) {
         Log.e("SearchViewModel", "Error collecting current user profile", e)
       }
@@ -294,15 +300,27 @@ open class SearchViewModel(
 
   // ---------- Public API used by UI ----------
 
-  override fun onDownloadSample(sample: Sample) {
+  override fun onDownloadZippedSample(sample: Sample) {
     val safeActions = actions ?: return // no-op in tests
     viewModelScope.launch {
       try {
-        safeActions.onDownloadClicked(sample)
+        safeActions.onDownloadZippedClicked(sample)
         load(useMockData)
       } catch (e: Exception) {
         Log.e("SearchViewModel", "Error downloading sample: ${e.message}")
         // optional: log or expose error
+      }
+    }
+  }
+
+  override fun onDownloadProcessedSample(sample: Sample) {
+    val safeActions = actions ?: return // no-op in tests
+    viewModelScope.launch {
+      try {
+        safeActions.onDownloadProcessedClicked(sample)
+        load(useMockData)
+      } catch (e: Exception) {
+        Log.e("SearchViewModel", "Error downloading sample: ${e.message}")
       }
     }
   }

@@ -22,6 +22,8 @@ const val USERNAMES_COLLECTION_PATH = "usernames"
 const val GUEST_NAME = "anonymous"
 const val TAG_WEIGHT_MAX = 50.0
 private const val DEFAULT_BIO = "Hello! New NepTune user here!"
+private const val FOLLOWING_SUBCOLLECTION = "following"
+private const val FOLLOWERS_SUBCOLLECTION = "followers"
 
 /**
  * Firebase-backed implementation of [ProfileRepository] using Firestore.
@@ -98,10 +100,74 @@ class ProfileRepositoryFirebase(
     awaitClose { reg.remove() }
   }
 
+  /** Returns the list of user IDs the given [uid] is following. */
+  override suspend fun getFollowingIds(uid: String): List<String> =
+      readFollowSubcollectionIds(uid, FOLLOWING_SUBCOLLECTION)
+
+  /** Returns the list of user IDs following the given [uid]. */
+  override suspend fun getFollowersIds(uid: String): List<String> =
+      readFollowSubcollectionIds(uid, FOLLOWERS_SUBCOLLECTION)
+
+  /** Observes changes to the IDs the given [uid] follows. */
+  override fun observeFollowingIds(uid: String): Flow<List<String>> =
+      observeFollowSubcollectionIds(uid, FOLLOWING_SUBCOLLECTION)
+
+  /** Observes changes to the IDs following the given [uid]. */
+  override fun observeFollowersIds(uid: String): Flow<List<String>> =
+      observeFollowSubcollectionIds(uid, FOLLOWERS_SUBCOLLECTION)
+
+  /**
+   * Reads IDs from the given follow [subcollection] (either `followers` or `following`) for [uid].
+   * Falls back to the document ID if the `uid` field is missing.
+   */
+  private suspend fun readFollowSubcollectionIds(uid: String, subcollection: String): List<String> {
+    val snapshot = profiles.document(uid).collection(subcollection).get().await()
+    return snapshot.documents
+        .mapNotNull { doc ->
+          val fromId = doc.id
+          val fieldUid = doc.getString("uid")
+          (fromId.takeIf { it.isNotBlank() } ?: fieldUid)?.takeIf { it.isNotBlank() }
+        }
+        .distinct()
+  }
+
+  /**
+   * Observes IDs from the given follow [subcollection] for [uid], emitting distinct IDs each time
+   * the snapshot updates.
+   */
+  private fun observeFollowSubcollectionIds(
+      uid: String,
+      subcollection: String
+  ): Flow<List<String>> = callbackFlow {
+    val registration =
+        profiles.document(uid).collection(subcollection).addSnapshotListener { snap, err ->
+          if (err != null) {
+            Log.e("ProfileRepository", "Error observing $subcollection for uid=$uid", err)
+            trySend(emptyList())
+            return@addSnapshotListener
+          }
+
+          val ids =
+              snap
+                  ?.documents
+                  ?.mapNotNull { doc ->
+                    val fromId = doc.id
+                    val fieldUid = doc.getString("uid")
+                    (fromId.takeIf { it.isNotBlank() } ?: fieldUid)?.takeIf { it.isNotBlank() }
+                  }
+                  ?.distinct() ?: emptyList()
+
+          trySend(ids)
+        }
+    awaitClose { registration.remove() }
+  }
+
+  /** Unfollows the target user with the provided [uid]. */
   override suspend fun unfollowUser(uid: String) {
     callFollowFunction(targetUid = uid, follow = false)
   }
 
+  /** Follows the target user with the provided [uid]. */
   override suspend fun followUser(uid: String) {
     callFollowFunction(targetUid = uid, follow = true)
   }
@@ -148,11 +214,14 @@ class ProfileRepositoryFirebase(
           tags = (get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
           tagsWeight = tagsWeight,
           avatarUrl = getString("avatarUrl").orEmpty(),
-          following = (get("following") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
           isAnonymous = getBoolean("isAnonymous") ?: false)
     }
   }
 
+  /**
+   * Builds a [RecoUserProfile] for the current user, deriving tag weights from `tagsWeight` if
+   * present or defaulting to a weight of 1.0 for each tag.
+   */
   override suspend fun getCurrentRecoUserProfile(): RecoUserProfile? {
     val uid = auth.currentUser?.uid ?: return null
     val profile = getCurrentProfile()
@@ -215,7 +284,6 @@ class ProfileRepositoryFirebase(
                     avatarUrl = "",
                     subscribers = 0L,
                     subscriptions = 0L,
-                    following = emptyList(),
                     likes = 0L,
                     posts = 0L,
                     isAnonymous = auth.currentUser?.isAnonymous == true)
@@ -234,7 +302,6 @@ class ProfileRepositoryFirebase(
                     "likes" to 0L,
                     "posts" to 0L,
                     "tags" to emptyList<String>(),
-                    "following" to emptyList<String>(),
                     "isAnonymous" to (auth.currentUser?.isAnonymous == true),
                     "tagsWeight" to emptyMap<String, Double>()))
 
@@ -409,6 +476,7 @@ class ProfileRepositoryFirebase(
     profiles.document(uid).update("avatarUrl", "").await()
   }
 
+  /** Retrieves the avatar URL for the user identified by [userId], or null on failure. */
   override suspend fun getAvatarUrlByUserId(userId: String): String? {
     return try {
       val snapshot = profiles.document(userId).get().await()
@@ -420,6 +488,7 @@ class ProfileRepositoryFirebase(
     }
   }
 
+  /** Retrieves the username for the user identified by [userId], or null on failure. */
   override suspend fun getUserNameByUserId(userId: String): String? {
     return try {
       val snapshot = profiles.document(userId).get().await()
@@ -431,6 +500,10 @@ class ProfileRepositoryFirebase(
     }
   }
 
+  /**
+   * Adjusts tag weights for the current user based on interactions. Positive [likeDelta] or
+   * [downloadDelta] increases weights, negative values decrease them, bounded by [TAG_WEIGHT_MAX].
+   */
   override suspend fun recordTagInteraction(
       tags: List<String>,
       likeDelta: Int,

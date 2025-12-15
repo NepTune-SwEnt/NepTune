@@ -47,6 +47,7 @@ class ProfileSamplesViewModel(
 
   private val _samples = MutableStateFlow<List<Sample>>(emptyList())
   val samples: StateFlow<List<Sample>> = _samples.asStateFlow()
+  val downloadProgress = MutableStateFlow<Int?>(null)
 
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples.asStateFlow()
@@ -72,7 +73,8 @@ class ProfileSamplesViewModel(
             profileRepo = profileRepo,
             downloadsFolder = downloadsFolder,
             context = NepTuneApplication.appContext,
-            ioDispatcher = downloadDispatcher)
+            ioDispatcher = downloadDispatcher,
+            downloadProgress = downloadProgress)
       }
 
   init {
@@ -92,11 +94,22 @@ class ProfileSamplesViewModel(
     }
   }
 
-  override fun onDownloadSample(sample: Sample) {
+  override fun onDownloadZippedSample(sample: Sample) {
     val safeActions = actions ?: return
     viewModelScope.launch {
       try {
-        withContext(downloadDispatcher) { safeActions.onDownloadClicked(sample) }
+        withContext(downloadDispatcher) { safeActions.onDownloadZippedClicked(sample) }
+      } catch (e: Exception) {
+        Log.e("ProfileSamplesViewModel", "Error downloading sample: ${e.message}")
+      }
+    }
+  }
+
+  override fun onDownloadProcessedSample(sample: Sample) {
+    val safeActions = actions ?: return
+    viewModelScope.launch {
+      try {
+        withContext(downloadDispatcher) { safeActions.onDownloadProcessedClicked(sample) }
       } catch (e: Exception) {
         Log.e("ProfileSamplesViewModel", "Error downloading sample: ${e.message}")
       }

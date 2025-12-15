@@ -5,9 +5,9 @@ package com.neptune.neptune.ui.follow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -62,33 +62,65 @@ class FollowListViewModel(
     saveList(isFollowers, updated)
   }
 
-  private fun toggleFollowFlag(uid: String, isFollowers: Boolean) {
-    val updated =
-        currentList(isFollowers).map {
-          if (it.uid == uid)
-              it.copy(
-                  isFollowedByCurrentUser = !it.isFollowedByCurrentUser, isActionInProgress = false)
-          else it
-        }
-    saveList(isFollowers, updated)
-  }
-
   fun toggleFollow(uid: String, isFromFollowersList: Boolean) {
     markInProgress(uid, isFromFollowersList)
     viewModelScope.launch {
-      delay(250)
-      // TODO: replace with repo.followUser/unfollowUser calls and rollback on failure
-      toggleFollowFlag(uid, isFromFollowersList)
+      val isCurrentlyFollowed =
+          currentList(isFromFollowersList).firstOrNull { it.uid == uid }?.isFollowedByCurrentUser
+              ?: false
+      try {
+        if (isCurrentlyFollowed) {
+          repo.unfollowUser(uid)
+        } else {
+          repo.followUser(uid)
+        }
+        applyFollowChange(uid, isFromFollowersList, isNowFollowed = !isCurrentlyFollowed)
+      } catch (e: Exception) {
+        resetProgress(uid, isCurrentlyFollowed)
+        _uiState.update {
+          it.copy(errorMessage = e.message ?: "Failed to update follow state. Please try again.")
+        }
+      }
     }
+  }
+
+  private fun requireAuthenticatedUid(isFollowers: Boolean): String? {
+    val uid = auth.currentUser?.uid
+    if (uid == null) {
+      _uiState.update {
+        if (isFollowers) {
+          it.copy(
+              isLoadingFollowers = false, errorMessage = "User not authenticated. Please sign in.")
+        } else {
+          it.copy(
+              isLoadingFollowing = false, errorMessage = "User not authenticated. Please sign in.")
+        }
+      }
+    }
+    return uid
   }
 
   private fun loadFollowers() {
     viewModelScope.launch {
       _uiState.update { it.copy(isLoadingFollowers = true, errorMessage = null) }
-      delay(400) // simulate backend fetch
-      // TODO: replace fakeFollowers() with repo call + map to FollowListUserItem
-      _uiState.update {
-        it.copy(followers = fakeFollowers(), isLoadingFollowers = false, errorMessage = null)
+      val uid = requireAuthenticatedUid(isFollowers = true) ?: return@launch
+
+      try {
+        val followersIds = repo.getFollowersIds(uid)
+        val followingIds = repo.getFollowingIds(uid).toSet()
+        val followers =
+            buildUserItems(
+                ids = followersIds,
+                isFollowedByCurrentUser = { targetUid -> followingIds.contains(targetUid) })
+        _uiState.update {
+          it.copy(followers = followers, isLoadingFollowers = false, errorMessage = null)
+        }
+      } catch (e: Exception) {
+        _uiState.update {
+          it.copy(
+              isLoadingFollowers = false,
+              errorMessage = e.message ?: "Failed to load followers. Please try again.")
+        }
       }
     }
   }
@@ -96,58 +128,103 @@ class FollowListViewModel(
   private fun loadFollowing() {
     viewModelScope.launch {
       _uiState.update { it.copy(isLoadingFollowing = true, errorMessage = null) }
-      delay(400)
-      // TODO: replace fakeFollowing() with repo call + map to FollowListUserItem
-      _uiState.update {
-        it.copy(following = fakeFollowing(), isLoadingFollowing = false, errorMessage = null)
+      val uid = requireAuthenticatedUid(isFollowers = false) ?: return@launch
+
+      try {
+        val followingIds = repo.getFollowingIds(uid)
+        val following = buildUserItems(ids = followingIds, isFollowedByCurrentUser = { true })
+        _uiState.update {
+          it.copy(following = following, isLoadingFollowing = false, errorMessage = null)
+        }
+      } catch (e: Exception) {
+        _uiState.update {
+          it.copy(
+              isLoadingFollowing = false,
+              errorMessage = e.message ?: "Failed to load following list. Please try again.")
+        }
       }
     }
   }
 
-  // ====================== MOCK DATA FOR TESTING ======================
-  private fun fakeFollowers(): List<FollowListUserItem> =
-      listOf(
-          FollowListUserItem(
-              uid = "u1",
-              username = "luca",
-              avatarUrl = SAMPLE_AVATAR,
-              isFollowedByCurrentUser = true),
-          FollowListUserItem(uid = "u2", username = "longestusername", avatarUrl = SAMPLE_AVATAR),
-          FollowListUserItem(
-              uid = "u3",
-              username = "chiara",
-              avatarUrl = SAMPLE_AVATAR,
-              isFollowedByCurrentUser = true),
-          FollowListUserItem(uid = "u4", username = "cate", avatarUrl = SAMPLE_AVATAR),
-          FollowListUserItem(
-              uid = "u5",
-              username = "alice",
-              avatarUrl = SAMPLE_AVATAR,
-              isFollowedByCurrentUser = true),
-      )
+  private suspend fun buildUserItems(
+      ids: List<String>,
+      isFollowedByCurrentUser: (String) -> Boolean
+  ): List<FollowListUserItem> {
+    return ids.distinct().mapNotNull { targetUid ->
+      val profile = runCatching { repo.getProfile(targetUid) }.getOrNull() ?: return@mapNotNull null
+      toUserItem(profile, isFollowedByCurrentUser(targetUid))
+    }
+  }
 
-  private fun fakeFollowing(): List<FollowListUserItem> =
-      listOf(
-          FollowListUserItem(
-              uid = "u3",
-              username = "chiara",
-              avatarUrl = SAMPLE_AVATAR,
-              isFollowedByCurrentUser = true),
-          FollowListUserItem(
-              uid = "u6",
-              username = "eleonora",
-              avatarUrl = SAMPLE_AVATAR,
-              isFollowedByCurrentUser = true),
-          FollowListUserItem(uid = "u7", username = "mattia", avatarUrl = SAMPLE_AVATAR),
-          FollowListUserItem(
-              uid = "u8",
-              username = "anto",
-              avatarUrl = SAMPLE_AVATAR,
-              isFollowedByCurrentUser = true),
-      )
+  private fun toUserItem(profile: Profile, isFollowedByCurrentUser: Boolean) =
+      FollowListUserItem(
+          uid = profile.uid,
+          username = profile.username.ifBlank { profile.name ?: profile.uid },
+          avatarUrl = profile.avatarUrl.takeUnless { it.isBlank() },
+          isFollowedByCurrentUser = isFollowedByCurrentUser)
 
-  companion object {
-    private const val SAMPLE_AVATAR =
-        "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80"
+  private fun applyFollowChange(uid: String, fromFollowersTab: Boolean, isNowFollowed: Boolean) {
+    val followers = _uiState.value.followers.toMutableList()
+    val following = _uiState.value.following.toMutableList()
+
+    val followerIdx = followers.indexOfFirst { it.uid == uid }
+    val followingIdx = following.indexOfFirst { it.uid == uid }
+
+    if (followerIdx >= 0) {
+      followers[followerIdx] =
+          followers[followerIdx].copy(
+              isFollowedByCurrentUser = isNowFollowed, isActionInProgress = false)
+    }
+
+    if (fromFollowersTab) {
+      if (isNowFollowed) {
+        if (followingIdx >= 0) {
+          following[followingIdx] =
+              following[followingIdx].copy(
+                  isFollowedByCurrentUser = true, isActionInProgress = false)
+        } else if (followerIdx >= 0) {
+          following.add(
+              followers[followerIdx].copy(
+                  isFollowedByCurrentUser = true, isActionInProgress = false))
+        }
+      } else if (followingIdx >= 0) {
+        following.removeAt(followingIdx)
+      }
+    } else {
+      if (followingIdx >= 0) {
+        following[followingIdx] =
+            following[followingIdx].copy(
+                isFollowedByCurrentUser = isNowFollowed, isActionInProgress = false)
+      }
+      if (followerIdx >= 0) {
+        followers[followerIdx] =
+            followers[followerIdx].copy(
+                isFollowedByCurrentUser = isNowFollowed, isActionInProgress = false)
+      }
+    }
+
+    _uiState.update { it.copy(followers = followers, following = following) }
+  }
+
+  private fun resetProgress(uid: String, followState: Boolean) {
+    val followers = _uiState.value.followers.toMutableList()
+    val following = _uiState.value.following.toMutableList()
+
+    val followerIdx = followers.indexOfFirst { it.uid == uid }
+    val followingIdx = following.indexOfFirst { it.uid == uid }
+
+    if (followerIdx >= 0) {
+      followers[followerIdx] =
+          followers[followerIdx].copy(
+              isActionInProgress = false, isFollowedByCurrentUser = followState)
+    }
+
+    if (followingIdx >= 0) {
+      following[followingIdx] =
+          following[followingIdx].copy(
+              isActionInProgress = false, isFollowedByCurrentUser = followState)
+    }
+
+    _uiState.update { it.copy(followers = followers, following = following) }
   }
 }
