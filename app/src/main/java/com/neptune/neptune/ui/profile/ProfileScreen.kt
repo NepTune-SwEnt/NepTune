@@ -1,6 +1,7 @@
 package com.neptune.neptune.ui.profile
 
 import android.net.Uri
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -306,23 +307,33 @@ sealed interface ProfileViewConfig {
       override val onFollowersClick: (() -> Unit)? = null,
       val isOnline: Boolean = true
   ) : ProfileViewConfig {
-    override val topBarContent = null
-    override val belowStatsButton: @Composable () -> Unit = composable@{
-      val dimensions = LocalProfileDimensions.current
-      if (!canFollowTarget) return@composable
-      val label = if (isFollowing) "Unfollow" else "Follow"
-      val icon = if (isFollowing) Icons.Default.Clear else Icons.Default.Add
+    override val topBarContent =
+        @Composable
+        Composable@{
+          val dimensions = LocalProfileDimensions.current
+          if (!canFollowTarget) return@Composable
+          val label = if (isFollowing) "Unfollow" else "Follow"
+          val icon = if (isFollowing) Icons.Default.Clear else Icons.Default.Add
 
-      Column(
-          modifier = Modifier.padding(bottom = dimensions.bottomButtonBottomPadding),
-          horizontalAlignment = Alignment.CenterHorizontally) {
+          Column(horizontalAlignment = Alignment.End) {
             Button(
                 onClick = onFollow,
                 enabled = !isFollowActionInProgress && isOnline,
+                border = BorderStroke(2.dp, color = NepTuneTheme.colors.onBackground),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = NepTuneTheme.colors.background,
+                        contentColor = NepTuneTheme.colors.onPrimary),
                 modifier = Modifier.testTag(ProfileScreenTestTags.FOLLOW_BUTTON)) {
-                  Icon(imageVector = icon, contentDescription = "Follow")
+                  Icon(
+                      imageVector = icon,
+                      contentDescription = "Follow",
+                      tint = NepTuneTheme.colors.onBackground)
                   Spacer(Modifier.width(dimensions.buttonIconSpacing))
-                  Text(text = label, style = appTextStyle())
+                  Text(
+                      text = label,
+                      style = appTextStyle(),
+                      color = NepTuneTheme.colors.onBackground)
                 }
             if (!errorMessage.isNullOrBlank()) {
               Spacer(Modifier.height(dimensions.tagsSpacing))
@@ -330,10 +341,12 @@ sealed interface ProfileViewConfig {
                   text = errorMessage,
                   color = Color.Red,
                   style = appTextStyle(),
+                  textAlign = TextAlign.End,
                   modifier = Modifier.testTag("profile/follow_error"))
             }
           }
-    }
+        }
+    override val belowStatsButton = null
   }
 }
 
@@ -410,7 +423,7 @@ private fun ProfileViewContent(
                     modifier = Modifier.fillMaxSize().then(samplesListTagModifier),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                  item { Spacer(Modifier.height(dimensions.avatarVerticalSpacing)) }
+                  item { Spacer(Modifier.height(dimensions.sectionVerticalSpacing)) }
 
                   // Avatar image
                   item {
@@ -614,12 +627,16 @@ private fun ProfileEditContent(
               Button(
                   onClick = onSave,
                   enabled = !uiState.isSaving && uiState.isValid && isOnline,
+                  border = BorderStroke(2.dp, color = NepTuneTheme.colors.onBackground),
                   colors =
                       ButtonDefaults.buttonColors(
-                          containerColor = NepTuneTheme.colors.accentPrimary,
+                          containerColor = NepTuneTheme.colors.background,
                           contentColor = NepTuneTheme.colors.onPrimary),
                   modifier = Modifier.testTag(ProfileScreenTestTags.SAVE_BUTTON)) {
-                    Icon(imageVector = Icons.Default.Check, contentDescription = "Save")
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Save",
+                        tint = NepTuneTheme.colors.onBackground)
                   }
             }
       },
@@ -751,13 +768,17 @@ private fun ProfileEditContent(
                 Spacer(Modifier.width(dimensions.inlineSpacing))
                 Button(
                     onClick = onTagSubmit,
+                    border = BorderStroke(2.dp, color = NepTuneTheme.colors.onBackground),
                     colors =
                         ButtonDefaults.buttonColors(
-                            containerColor = NepTuneTheme.colors.accentPrimary,
+                            containerColor = NepTuneTheme.colors.background,
                             contentColor = NepTuneTheme.colors.onPrimary),
                     modifier =
                         Modifier.fillMaxHeight().testTag(ProfileScreenTestTags.ADD_TAG_BUTTON)) {
-                      Icon(imageVector = Icons.Default.Add, contentDescription = "Add")
+                      Icon(
+                          imageVector = Icons.Default.Add,
+                          contentDescription = "Add",
+                          tint = NepTuneTheme.colors.onBackground)
                     }
               }
               Spacer(Modifier.height(dimensions.inlineSpacing))
