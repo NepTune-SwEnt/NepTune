@@ -19,8 +19,10 @@ import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.util.NetworkConnectivityObserver
 import com.neptune.neptune.util.WaveformExtractor
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -55,19 +57,14 @@ class PostViewModel(
     get() = auth.currentUser?.isAnonymous ?: true
 
   private val _processedAudioUri = MutableStateFlow<Uri?>(null)
-  private val _isOnline = MutableStateFlow(true)
-  val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
-
-  init {
-    try {
-      val observer = NetworkConnectivityObserver()
-      viewModelScope.launch {
-        observer.isOnline.collect { isConnected -> _isOnline.value = isConnected }
-      }
-    } catch (e: Exception) {
-      Log.e("PostViewModel", "Network observer init failed", e)
-    }
-  }
+  private val timeout = 5000L
+  val isOnline: StateFlow<Boolean> =
+      NetworkConnectivityObserver()
+          .isOnline
+          .stateIn(
+              scope = viewModelScope,
+              started = SharingStarted.WhileSubscribed(timeout),
+              initialValue = true)
 
   /** Loads a project by its ID and converts it into a Sample. */
   fun loadProject(projectId: String) {

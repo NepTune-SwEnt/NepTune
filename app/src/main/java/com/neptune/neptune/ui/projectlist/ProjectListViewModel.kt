@@ -18,10 +18,12 @@ import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.util.NetworkConnectivityObserver
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class ProjectListViewModelFactory(
@@ -54,12 +56,16 @@ class ProjectListViewModel(
     private val mediaRepository: MediaRepository? = null,
     private val storageService: StorageService? = null,
     private val auth: FirebaseAuth? = null,
-    private val connectivityObserver: NetworkConnectivityObserver = NetworkConnectivityObserver()
+    connectivityObserver: NetworkConnectivityObserver = NetworkConnectivityObserver()
 ) : ViewModel() {
   private var _uiState = MutableStateFlow(ProjectListUiState(projects = emptyList()))
   val uiState: StateFlow<ProjectListUiState> = _uiState.asStateFlow()
-  private val _isOnline = MutableStateFlow(true)
-  val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+  private val timeout = 5000L
+  val isOnline: StateFlow<Boolean> =
+      connectivityObserver.isOnline.stateIn(
+          scope = viewModelScope,
+          started = SharingStarted.WhileSubscribed(timeout),
+          initialValue = true)
 
   val isUserLoggedIn: Boolean
     get() = auth?.currentUser != null
@@ -67,11 +73,7 @@ class ProjectListViewModel(
   init {
     viewModelScope.launch {
       try {
-
-        connectivityObserver.isOnline.collectLatest { connected ->
-          _isOnline.value = connected
-          refreshProjects()
-        }
+        isOnline.collect { refreshProjects() }
       } catch (e: Exception) {
         Log.e("ProjectListViewModel", "Network observer error", e)
       }
@@ -100,7 +102,7 @@ class ProjectListViewModel(
     viewModelScope.launch {
       try {
         val localItems = getLibraryUseCase?.invoke()?.first() ?: emptyList()
-        val online = _isOnline.value
+        val online = isOnline.value
 
         if (!isUserLoggedIn) {
           val localProjects = localItems.map { toLocalProjectItem(it) }
