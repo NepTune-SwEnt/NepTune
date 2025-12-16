@@ -192,7 +192,10 @@ private fun FeedContent(
               FeedType.DISCOVER -> discoverSamples to discoverListState
               FeedType.FOLLOWED -> followedSamples to followedListState
             }
-        val currentSamples = rawSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
+        val currentSamples =
+            rawSamples.filter {
+              it.storageProcessedSamplePath.isNotBlank() || it.storagePreviewSamplePath.isNotBlank()
+            }
         LazyColumn(
             state = currentState,
             modifier = Modifier.fillMaxSize(),

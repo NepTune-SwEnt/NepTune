@@ -185,10 +185,17 @@ open class MainViewModel(
               val existingIds = allSamplesCache.map { it.id }.toSet()
               allSamplesCache = visibleSamples
 
-              val readySamples = visibleSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
+              val readySamples =
+                  visibleSamples.filter {
+                    it.storageProcessedSamplePath.isNotBlank() ||
+                        it.storagePreviewSamplePath.isNotBlank()
+                  }
               updateLists(readySamples)
 
-              val pendingSamples = visibleSamples.filter { it.storagePreviewSamplePath.isBlank() }
+              val pendingSamples =
+                  visibleSamples.filter {
+                    it.storageProcessedSamplePath.isBlank() && it.storagePreviewSamplePath.isBlank()
+                  }
               pendingSamples.forEach { pendingSample -> watchPendingSample(pendingSample.id) }
 
               val newSamples = visibleSamples.filter { it.id !in existingIds }
@@ -215,7 +222,9 @@ open class MainViewModel(
         sampleRepo
             .observeSample(sampleId)
             .first { updatedSample ->
-              updatedSample != null && updatedSample.storagePreviewSamplePath.isNotBlank()
+              updatedSample != null &&
+                  (updatedSample.storageProcessedSamplePath.isNotBlank() ||
+                      updatedSample.storagePreviewSamplePath.isNotBlank())
             }
             ?.let { finishedSample ->
               allSamplesCache =
@@ -261,7 +270,10 @@ open class MainViewModel(
     if (currentUser == null) {
       _userAvatar.value = null
       latestFollowing = emptyList()
-      updateLists(allSamplesCache.filter { it.storagePreviewSamplePath.isNotBlank() })
+      updateLists(
+          allSamplesCache.filter {
+            it.storageProcessedSamplePath.isNotBlank() || it.storagePreviewSamplePath.isNotBlank()
+          })
       return
     }
     viewModelScope.launch {
