@@ -19,6 +19,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextInput
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -62,6 +63,20 @@ private val testSamples =
             comments = 3,
             downloads = 2,
             isPublic = true),
+        Sample(
+            id = "sample3",
+            name = "Private Sample",
+            description = "A private sample",
+            durationSeconds = 45,
+            tags = listOf("private"),
+            ownerId = "test-user",
+            storagePreviewSamplePath = "not_blank", // Important for the new logic
+            storageProcessedSamplePath = "not_blank",
+            likes = 5,
+            usersLike = emptyList(),
+            comments = 1,
+            downloads = 0,
+            isPublic = false),
         Sample(
             id = "sample2",
             name = "Followed Sample",
@@ -379,6 +394,47 @@ class MainScreenTest {
   }
 
   @Test
+  fun sampleOwnerCanDeleteAnyComment() {
+    // Get a sample owned by the test user
+    val sample = viewModel.discoverSamples.value.first { it.ownerId == "test-user" }
+
+    // Add a comment from another user
+    val otherUserId = "otherUser"
+    val commentText = "This is a comment from another user"
+    val timestamp = Timestamp.now()
+    fakeSampleRepo.addComment(sample.id, otherUserId, "Other User", commentText, timestamp)
+
+    // Open the comment section
+    composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_COMMENTS)[1].performClick()
+    composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_SECTION).assertIsDisplayed()
+
+    // The sample owner should see the delete button and be able to click it
+    composeTestRule.onNodeWithText(commentText).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_DELETE_BUTTON).assertIsDisplayed()
+  }
+
+  @Test
+  fun userCannotDeleteOthersComment() {
+    val sample = viewModel.discoverSamples.value.first()
+    val otherUserId = "otherUser"
+
+    // Pretend to be a random user
+    viewModel.setCurrentUserId("randomUser")
+
+    // Add a comment from another user
+    val commentText = "This is a comment from another user"
+    val timestamp = Timestamp.now()
+    fakeSampleRepo.addComment(sample.id, otherUserId, "Other User", commentText, timestamp)
+
+    // Open the comment section
+    composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_COMMENTS).onFirst().performClick()
+    composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_SECTION).assertIsDisplayed()
+
+    // The user should not see the delete button
+    composeTestRule.onNodeWithText(commentText).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_DELETE_BUTTON).assertDoesNotExist()
+  }
+
   fun clickingDownloadOpensDownloadChoiceDialog() {
     // Click first download icon in Discover feed
     composeTestRule
@@ -482,5 +538,54 @@ class MainScreenTest {
           .onNodeWithTag(SampleUiActionsTestTags.DOWNLOAD_PROCESSED_BTN)
           .assertIsNotEnabled()
     }
+  }
+
+  @Test
+  fun postAndDeleteComment() {
+    // 1. Setup: Define user and sample
+    // We use "test-user" (defined in setup) who is NOT the owner of sample1 ("user1")
+    viewModel.setCurrentUserId("test-user")
+
+    // 2. Open the comment section of the first sample
+    composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_COMMENTS).onFirst().performClick()
+
+    composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_SECTION).assertIsDisplayed()
+
+    // 3. Post a new comment
+    val commentText = "Test Comment"
+    composeTestRule
+        .onNodeWithTag(MainScreenTestTags.COMMENT_TEXT_FIELD)
+        .performTextInput(commentText)
+
+    composeTestRule.onNodeWithTag(MainScreenTestTags.COMMENT_POST_BUTTON).performClick()
+
+    // 4. Verify the comment appears on screen
+    composeTestRule.onNodeWithText(commentText).assertIsDisplayed()
+
+    // 5. Delete the comment
+    // Since "test-user" is not the sample owner, they only see the delete button for their own
+    // comment.
+    // This ensures we are clicking the correct delete button.
+    composeTestRule
+        .onNodeWithTag(MainScreenTestTags.COMMENT_DELETE_BUTTON)
+        .assertIsDisplayed()
+        .performClick()
+
+    // 6. Verify the comment is removed
+    composeTestRule.onNodeWithText(commentText).assertDoesNotExist()
+  }
+}
+// Add this helper to your MainViewModel to allow setting the current user for tests
+fun MainViewModel.setCurrentUserId(userId: String) {
+  val user = mockk<FirebaseUser>(relaxed = true)
+  every { user.uid } returns userId
+
+  try {
+    val field = MainViewModel::class.java.getDeclaredField("_currentUserFlow")
+    field.isAccessible = true
+    @Suppress("UNCHECKED_CAST") val flow = field.get(this) as MutableStateFlow<FirebaseUser?>
+    flow.value = user
+  } catch (e: NoSuchFieldException) {
+    throw e
   }
 }

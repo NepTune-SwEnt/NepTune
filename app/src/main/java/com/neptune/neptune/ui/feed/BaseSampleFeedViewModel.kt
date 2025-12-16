@@ -82,10 +82,37 @@ abstract class BaseSampleFeedViewModel(
         val authorId = profile?.uid ?: "unknown"
         val authorName = profile?.username ?: defaultName
         val authorProfilePicUrl = profile?.avatarUrl ?: ""
-        sampleRepo.addComment(sampleId, authorId, authorName, authorProfilePicUrl, text.trim())
+        sampleRepo.addComment(sampleId, authorId, authorName, text.trim(), authorProfilePicUrl)
         observeCommentsForSample(sampleId)
       } catch (e: Exception) {
         Log.e("BaseSampleFeedViewModel", "Error adding comment: ${e.message}")
+      }
+    }
+  }
+
+  override fun onDeleteComment(
+      sampleId: String,
+      authorId: String,
+      timestamp: com.google.firebase.Timestamp?
+  ) {
+    viewModelScope.launch {
+      try {
+        // Authorization: only comment author or sample owner may delete
+        val currentUserId = auth?.currentUser?.uid
+        val sample =
+            try {
+              sampleRepo.getSample(sampleId)
+            } catch (e: Exception) {
+              null
+            }
+        val isOwner = sample?.ownerId?.let { isCurrentUser(it) } ?: false
+        if (currentUserId == authorId || isOwner) {
+          sampleRepo.deleteComment(sampleId, authorId, timestamp)
+          // Re-observe to refresh local state
+          observeCommentsForSample(sampleId)
+        }
+      } catch (e: Exception) {
+        // ignore or log
       }
     }
   }
@@ -133,9 +160,10 @@ abstract class BaseSampleFeedViewModel(
 
   /** Function to trigger loading */
   override fun loadSampleResources(sample: Sample) {
+    val effectivePath =
+        sample.storagePreviewSamplePath.ifBlank { sample.storageProcessedSamplePath }
     val currentResources = _sampleResources.value[sample.id]
-    if (currentResources != null &&
-        currentResources.loadedSamplePath == sample.storagePreviewSamplePath) {
+    if (currentResources != null && currentResources.loadedSamplePath == effectivePath) {
       return
     }
 
@@ -153,8 +181,7 @@ abstract class BaseSampleFeedViewModel(
         val coverUrl =
             if (sample.storageImagePath.isNotBlank()) getSampleCoverUrl(sample.storageImagePath)
             else null
-        val audioUrl =
-            if (sample.storagePreviewSamplePath.isNotBlank()) getSampleAudioUrl(sample) else null
+        val audioUrl = if (effectivePath.isNotBlank()) getSampleAudioUrl(sample) else null
         val waveform = getSampleWaveform(sample)
 
         _sampleResources.update { current ->
@@ -167,7 +194,7 @@ abstract class BaseSampleFeedViewModel(
                       audioUrl = audioUrl,
                       waveform = waveform,
                       isLoading = false,
-                      loadedSamplePath = sample.storagePreviewSamplePath))
+                      loadedSamplePath = effectivePath))
         }
       } catch (e: Exception) {
         Log.e("BaseSampleFeedViewModel", "Error loading sample resources: ${e.message}")
@@ -214,7 +241,7 @@ abstract class BaseSampleFeedViewModel(
   }
 
   private suspend fun getSampleAudioUrl(sample: Sample): String? {
-    val storagePath = sample.storagePreviewSamplePath
+    val storagePath = sample.storagePreviewSamplePath.ifBlank { sample.storageProcessedSamplePath }
     if (storagePath.isBlank()) return null
     if (audioUrlCache.containsKey(storagePath)) return audioUrlCache[storagePath]
 
