@@ -22,9 +22,10 @@ Key features
 - Server-side sample processing & preview generation (Firebase Functions + FFmpeg)
 
 ## Screenshots
-
-![Capture screen](docs/images/capture.png)
-![Edit screen](docs/images/editor.png)
+### Feed
+![Feed](docs/images/feed_screen.png)
+### Editor
+![Edit screen](docs/images/editor_screen.png)
 
 ## Build the project
 ### Setup
@@ -86,23 +87,13 @@ Android (from repo root):
 - We use `pull_request_template.md` in the repository root to standardize PRs. Please follow it when opening PRs.
 - Branching model: create feature branches from `main` (or your current default branch), open a PR and request reviews.
 
-## Troubleshooting
-
-- Gradle sync errors:
-  - Run `./gradlew --refresh-dependencies` and ensure Android SDK versions are installed.
-  - Check `local.properties` contains a valid `sdk.dir`.
-- Emulator / device issues:
-  - Use `adb devices` to confirm your device is visible.
-  - For audio capture testing consider using a hardware device rather than emulator (some emulators have limited audio input support).
-- Cloud functions failing locally:
-  - Ensure Node 22 is active (use nvm to switch). Check `node -v`.
-  - If FFmpeg operations fail, confirm `ffmpeg-static` binary is compatible with your environment; logs are printed in the emulator output.
-- Tests OOM on CI:
-  - The project config increases test JVM heap; in CI you can increase runner memory or adjust Gradle test JVM args.
-
-Security & secrets
-- Never commit service account JSONs, keystores, or passwords.
-- Use CI provider secrets or `~/.gradle/gradle.properties` for local secrets.
-
-Contact / Maintainers
-- See the repository owners and the project team for questions. Use issues for bug reports and feature requests.
+## Creators
+| Name                  | GitHub                                       |
+|-----------------------|----------------------------------------------|
+| Adrien Jangal         | [@Ryukriss-f](https://github.com/Ryukriss-f) |
+| Angéline Bignens      | [@AngeB21](https://github.com/AngeB21)       |
+| Arianna Baur          | [@abaur3](https://github.com/abaur3)         |
+| Gregory Blanc         | [@xgby](https://github.com/xgby)             |
+| Timéo Golaz           | [@Timeo21](https://github.com/Timeo21)       |
+| Tony Andriamampianina | [@touunyy](https://github.com/touunyy)       |
+| Uri Jaquet            | [@uri-j](https://github.com/uri-j)           |
