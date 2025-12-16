@@ -48,14 +48,17 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 private const val MEDIA_DB = "media.db"
+private var onImportFinished = {}
 
 /**
  * ViewModel for the ImportScreen. This has been written with the help of LLMs.
  *
  * @author Angéline Bignens
  */
-class ImportViewModel(private val importMedia: ImportMediaUseCase, getLibrary: GetLibraryUseCase) :
-    ViewModel() {
+class ImportViewModel(
+    private val importMedia: ImportMediaUseCase,
+    getLibrary: GetLibraryUseCase,
+) : ViewModel() {
   val library: StateFlow<List<MediaItem>> =
       getLibrary().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
@@ -107,12 +110,23 @@ class ImportViewModel(private val importMedia: ImportMediaUseCase, getLibrary: G
   }
 
   // New convenience: import a File produced by the in-app recorder directly
-  fun importRecordedFile(file: File) = viewModelScope.launch { importMedia(file) }
+  fun importRecordedFile(file: File, refreshProjects: () -> Unit = {}) =
+      viewModelScope.launch {
+        importMedia(file)
+        refreshProjects()
+      }
+
+  // Register a callback that will be invoked when an import completes (used for SAF / external
+  // imports). We assign the top-level `onImportFinished` so the ImportMediaUseCase created in
+  // `importAppRoot` (which captures a lambda calling that var) will call this callback.
+  fun setOnImportFinished(callback: () -> Unit) {
+    onImportFinished = callback
+  }
 }
 
 class ImportVMFactory(
     private val importUC: ImportMediaUseCase,
-    private val libraryUC: GetLibraryUseCase
+    private val libraryUC: GetLibraryUseCase,
 ) : ViewModelProvider.Factory {
   @Suppress("UNCHECKED_CAST")
   override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -137,7 +151,7 @@ fun importAppRoot(): ImportVMFactory {
   val paths = remember { StoragePaths(context) }
   val importer = remember { FileImporterImpl(context, context.contentResolver, paths) }
   val packager = remember { NeptunePackager(paths) }
-  val importUC = remember { ImportMediaUseCase(importer, repo, packager) }
+  val importUC = remember { ImportMediaUseCase(importer, repo, packager) { onImportFinished() } }
   val libraryUC = remember { GetLibraryUseCase(repo) }
 
   return ImportVMFactory(importUC, libraryUC)

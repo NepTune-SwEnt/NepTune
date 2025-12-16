@@ -56,7 +56,7 @@ sealed class Screen(val route: String, val showBottomBar: Boolean = true) {
 
   object ImportFile : Screen(route = "import_file")
 
-  object SelectMessages : Screen(route = "select_messages", showBottomBar = false)
+  object SelectMessages : Screen(route = "select_messages", showBottomBar = true)
 
   object FollowList : Screen(route = "follow_list/{initialTab}", showBottomBar = false) {
     fun createRoute(initialTab: FollowListTab): String = "follow_list/${initialTab.name}"

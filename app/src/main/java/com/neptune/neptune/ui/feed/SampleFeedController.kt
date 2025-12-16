@@ -7,7 +7,9 @@ import kotlinx.coroutines.flow.StateFlow
 interface SampleFeedController {
   fun loadSampleResources(sample: Sample)
 
-  fun onDownloadSample(sample: Sample)
+  fun onDownloadZippedSample(sample: Sample)
+
+  fun onDownloadProcessedSample(sample: Sample)
 
   fun onLikeClick(sample: Sample, isLiked: Boolean)
 

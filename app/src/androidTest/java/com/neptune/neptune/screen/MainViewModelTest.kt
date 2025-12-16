@@ -7,12 +7,16 @@ import com.neptune.neptune.model.FakeProfileRepository
 import com.neptune.neptune.model.FakeSampleRepository
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.main.MainViewModel
+import com.neptune.neptune.ui.main.SampleUiActions
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.Assert
 import org.junit.Before
@@ -71,6 +75,113 @@ class MainViewModelTest {
             useMockData = true,
             auth = mockAuth,
             storageService = mockStorageService)
+  }
+  // --- NEW: helper fake actions we can assert on ---
+  private class RecordingActions :
+      SampleUiActions(
+          repo = mock(),
+          storageService = mock(),
+          downloadsFolder = File("/tmp"),
+          context = mock(),
+          downloadProgress = MutableStateFlow(null),
+          profileRepo = mock()) {
+    var zippedCalls = 0
+    var processedCalls = 0
+    var lastZippedSample: Sample? = null
+    var lastProcessedSample: Sample? = null
+
+    override suspend fun onDownloadZippedClicked(sample: Sample) {
+      zippedCalls++
+      lastZippedSample = sample
+    }
+
+    override suspend fun onDownloadProcessedClicked(sample: Sample) {
+      processedCalls++
+      lastProcessedSample = sample
+    }
+  }
+
+  // --- NEW: Test VM that injects our fake actions ---
+  private class TestMainViewModel(
+      sampleRepo: FakeSampleRepository,
+      profileRepo: FakeProfileRepository,
+      storageService: StorageService,
+      auth: FirebaseAuth,
+      private val injectedActions: SampleUiActions
+  ) :
+      MainViewModel(
+          sampleRepo = sampleRepo,
+          profileRepo = profileRepo,
+          storageService = storageService,
+          useMockData = false, // IMPORTANT: keep actions enabled
+          auth = auth) {
+    override val actions: SampleUiActions = injectedActions
+  }
+
+  @Test
+  fun onDownloadZippedSampleDelegatesToActions() = runTest {
+    val actions = RecordingActions()
+
+    val vm =
+        TestMainViewModel(
+            sampleRepo = fakeRepository,
+            profileRepo = fakeProfileRepository,
+            storageService = mockStorageService,
+            auth = mockAuth,
+            injectedActions = actions)
+
+    val sample =
+        Sample(
+            id = "s1",
+            name = "Zip",
+            description = "",
+            durationSeconds = 0,
+            tags = emptyList(),
+            likes = 0,
+            usersLike = emptyList(),
+            comments = 0,
+            downloads = 0,
+            ownerId = "u1",
+            storagePreviewSamplePath = "path")
+
+    vm.onDownloadZippedSample(sample)
+
+    // runTest will execute launched coroutines on the test scheduler
+    Assert.assertEquals(1, actions.zippedCalls)
+    Assert.assertTrue(actions.lastZippedSample == sample)
+  }
+
+  @Test
+  fun onDownloadProcessedSampleDelegatesToActions() = runTest {
+    val actions = RecordingActions()
+
+    val vm =
+        TestMainViewModel(
+            sampleRepo = fakeRepository,
+            profileRepo = fakeProfileRepository,
+            storageService = mockStorageService,
+            auth = mockAuth,
+            injectedActions = actions)
+
+    val sample =
+        Sample(
+            id = "s2",
+            name = "Processed",
+            description = "",
+            durationSeconds = 0,
+            tags = emptyList(),
+            likes = 0,
+            usersLike = emptyList(),
+            comments = 0,
+            downloads = 0,
+            ownerId = "u1",
+            storagePreviewSamplePath = "path",
+            storageProcessedSamplePath = "processed/path.wav")
+
+    vm.onDownloadProcessedSample(sample)
+
+    Assert.assertEquals(1, actions.processedCalls)
+    Assert.assertTrue(actions.lastProcessedSample == sample)
   }
 
   @Test

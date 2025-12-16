@@ -105,6 +105,9 @@ import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.formatTime
 import kotlinx.coroutines.delay
 
+val TOP_BAR_HEIGHT = 90.dp
+val PROFILE_ICON_SIZE = 90.dp
+
 object MainScreenTestTags : BaseSampleTestTags {
   override val prefix = "MainScreen"
 
@@ -168,10 +171,11 @@ fun MainScreen(
     navigateToProfile: () -> Unit = {},
     navigateToProjectList: () -> Unit = {},
     navigateToOtherUserProfile: (String) -> Unit = {},
-    navigateToSelectMessages: () -> Unit = {},
     navigateToSampleList: (FeedType) -> Unit = {},
     mainViewModel: MainViewModel = viewModel()
 ) {
+  var downloadPickerSample by remember { mutableStateOf<Sample?>(null) }
+  val showDownloadPicker = downloadPickerSample != null
   val discoverSamples by mainViewModel.discoverSamples.collectAsState()
   val followedSamples by mainViewModel.followedSamples.collectAsState()
   val userAvatar by mainViewModel.userAvatar.collectAsState()
@@ -228,11 +232,7 @@ fun MainScreen(
               .testTag(MainScreenTestTags.MAIN_SCREEN)) {
         Scaffold(
             topBar = {
-              MainTopAppBar(
-                  userAvatar = userAvatar,
-                  navigateToSelectMessages = navigateToSelectMessages,
-                  navigateToProfile = navigateToProfile,
-                  isUserLoggedIn = isUserLoggedIn)
+              MainTopAppBar(userAvatar = userAvatar, navigateToProfile = navigateToProfile)
             },
             floatingActionButton = {
               if (isUserLoggedIn && !isAnonymous) {
@@ -267,6 +267,7 @@ fun MainScreen(
                   handleProfileNavigation = { handleProfileNavigation(it) },
                   navigateToSampleList = navigateToSampleList,
                   pullRefreshState = pullRefreshState,
+                  onDownloadRequest = { sample -> downloadPickerSample = sample },
                   isAnonymous = isAnonymous,
                   isOnline = isOnline,
                   isUserLoggedIn = isUserLoggedIn)
@@ -279,6 +280,21 @@ fun MainScreen(
         if (downloadProgress != null && downloadProgress != 0) {
           DownloadProgressBar(
               downloadProgress = downloadProgress!!, MainScreenTestTags.DOWNLOAD_PROGRESS)
+        }
+        if (showDownloadPicker) {
+          val s = downloadPickerSample!!
+          DownloadChoiceDialog(
+              sampleName = s.name,
+              processedAvailable = s.storageProcessedSamplePath.isNotBlank(),
+              onDismiss = { downloadPickerSample = null },
+              onDownloadZip = {
+                downloadPickerSample = null // hide dialog first
+                mainViewModel.onDownloadZippedSample(s) // start download
+              },
+              onDownloadProcessed = {
+                downloadPickerSample = null
+                mainViewModel.onDownloadProcessedSample(s)
+              })
         }
       }
 }
@@ -295,6 +311,7 @@ private fun MainContent(
     handleProfileNavigation: (String) -> Unit,
     navigateToSampleList: (FeedType) -> Unit,
     pullRefreshState: PullToRefreshState,
+    onDownloadRequest: (Sample) -> Unit,
     isAnonymous: Boolean = false,
     isOnline: Boolean = true,
     isUserLoggedIn: Boolean = true
@@ -334,6 +351,7 @@ private fun MainContent(
                         rowsPerColumn = 2,
                         onCommentClick = { onCommentClicked(it) },
                         onProfileClick = { handleProfileNavigation(it) },
+                        onDownloadRequest = { onDownloadRequest(it) },
                         isAnonymous = isAnonymous)
                   }
                   // ----------------Followed Section-----------------
@@ -350,7 +368,9 @@ private fun MainContent(
                         samples = followedSamples,
                         rowsPerColumn = maxColumns,
                         onCommentClick = { onCommentClicked(it) },
-                        onProfileClick = { handleProfileNavigation(it) })
+                        onProfileClick = { handleProfileNavigation(it) },
+                        onDownloadRequest = { onDownloadRequest(it) },
+                    )
                     Spacer(modifier = Modifier.height(50.dp))
                   }
                 }
@@ -375,6 +395,7 @@ private fun SampleSectionLazyRow(
     rowsPerColumn: Int,
     onCommentClick: (Sample) -> Unit,
     onProfileClick: (String) -> Unit,
+    onDownloadRequest: (Sample) -> Unit,
     isAnonymous: Boolean = false
 ) {
   val configuration = LocalConfiguration.current
@@ -404,7 +425,7 @@ private fun SampleSectionLazyRow(
 
               val clickHandlers =
                   onClickFunctions(
-                      onDownloadClick = { mainViewModel.onDownloadSample(sample) },
+                      onDownloadClick = { onDownloadRequest(sample) },
                       onLikeClick = { isLiked ->
                         if (!isAnonymous) mainViewModel.onLikeClick(sample, isLiked)
                       },
@@ -426,64 +447,45 @@ private fun SampleSectionLazyRow(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MainTopAppBar(
-    userAvatar: String?,
-    navigateToSelectMessages: () -> Unit,
-    navigateToProfile: () -> Unit,
-    isUserLoggedIn: Boolean = true
-) {
+fun MainTopAppBar(userAvatar: String?, navigateToProfile: () -> Unit, signedIn: Boolean = true) {
   val screenWidth = LocalConfiguration.current.screenWidthDp.dp
   val logoSize = screenWidth * 0.3f
   Column {
     CenterAlignedTopAppBar(
-        modifier = Modifier.fillMaxWidth().height(112.dp).testTag(MainScreenTestTags.TOP_BAR),
-        navigationIcon = {
-          if (isUserLoggedIn) {
-            // Message Button
-            IconButton(
-                onClick = navigateToSelectMessages,
-                modifier =
-                    Modifier.padding(vertical = 38.dp, horizontal = 25.dp)
-                        .size(38.dp)
-                        .testTag(NavigationTestTags.MESSAGE_BUTTON)) {
-                  Icon(
-                      painter = painterResource(id = R.drawable.messageicon),
-                      contentDescription = "Messages",
-                      modifier = Modifier.size(30.dp),
-                      tint = NepTuneTheme.colors.onBackground,
-                  )
-                }
-          }
-        },
+        modifier =
+            Modifier.fillMaxWidth().height(TOP_BAR_HEIGHT).testTag(MainScreenTestTags.TOP_BAR),
         title = {
-          Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+          // Keep the title constrained to the center area so the actions stay to the right
+          Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Image(
                 painter = painterResource(id = R.drawable.neptune_logo),
                 contentDescription = "NepTune Logo",
                 modifier = Modifier.size(logoSize).testTag(MainScreenTestTags.TOP_BAR_LOGO),
                 contentScale = ContentScale.Fit)
+
+            // Profile Button
+            if (signedIn) {
+              IconButton(
+                  onClick = navigateToProfile,
+                  modifier =
+                      Modifier.align(Alignment.CenterEnd)
+                          .padding(horizontal = 5.dp)
+                          .size(PROFILE_ICON_SIZE)
+                          .testTag(NavigationTestTags.PROFILE_BUTTON)) {
+                    AsyncImage(
+                        model =
+                            ImageRequest.Builder(LocalContext.current)
+                                .data(userAvatar ?: R.drawable.profile)
+                                .crossfade(true)
+                                .build(),
+                        contentDescription = "Profile",
+                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                        contentScale = ContentScale.Crop,
+                        placeholder = painterResource(R.drawable.profile),
+                        error = painterResource(R.drawable.profile))
+                  }
+            }
           }
-        },
-        actions = {
-          // Profile Button
-          IconButton(
-              onClick = navigateToProfile,
-              modifier =
-                  Modifier.padding(vertical = 25.dp, horizontal = 17.dp)
-                      .size(57.dp)
-                      .testTag(NavigationTestTags.PROFILE_BUTTON)) {
-                AsyncImage(
-                    model =
-                        ImageRequest.Builder(LocalContext.current)
-                            .data(userAvatar ?: R.drawable.profile)
-                            .crossfade(true)
-                            .build(),
-                    contentDescription = "Profile",
-                    modifier = Modifier.fillMaxSize().clip(CircleShape),
-                    contentScale = ContentScale.Crop,
-                    placeholder = painterResource(R.drawable.profile),
-                    error = painterResource(R.drawable.profile))
-              }
         },
         colors =
             TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -606,6 +608,7 @@ data class ClickHandlers(
     val onDownloadClick: () -> Unit,
     val onLikeClick: (Boolean) -> Unit
 )
+
 // Function to create click handlers with default empty implementations
 fun onClickFunctions(
     onProfileClick: () -> Unit = {},
@@ -741,7 +744,7 @@ fun SampleCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween) {
                       Text(
-                          text = sample.tags.joinToString(" ") { "#$it" },
+                          text = sample.tags.joinToString(" ") { "#${it}" },
                           color = NepTuneTheme.colors.background,
                           modifier = Modifier.testTag(testTags.SAMPLE_TAGS).weight(1f),
                           maxLines = 1,

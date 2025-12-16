@@ -103,7 +103,7 @@ class ProfileSamplesViewModelTest {
                 explicitIoDispatcher = dispatcher,
                 auth = null)
 
-        viewModel.onDownloadSample(sample)
+        viewModel.onDownloadZippedSample(sample)
         advanceUntilIdle()
 
         verify(storageService).downloadZippedSample(eq(sample), eq(context), any())

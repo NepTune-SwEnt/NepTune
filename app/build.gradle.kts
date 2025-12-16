@@ -248,8 +248,13 @@ dependencies {
     implementation("com.godaddy.android.colorpicker:compose-color-picker:0.7.0")
 }
 
-tasks.withType<Test> {
-    // Configure Jacoco for each tests
+tasks.withType<Test>().configureEach {
+    // Give Robolectric enough heap on CI (start with 3g; bump to 4g if still OOM)
+    maxHeapSize = "3g"
+    // Avoid multiple test worker JVMs each loading Android resources
+    maxParallelForks = 1
+    forkEvery = 0
+
     configure<JacocoTaskExtension> {
         isIncludeNoLocationClasses = true
         excludes = listOf("jdk.internal.*")

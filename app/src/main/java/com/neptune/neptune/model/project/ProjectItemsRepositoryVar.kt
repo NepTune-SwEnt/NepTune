@@ -12,7 +12,7 @@ class ProjectItemsRepositoryVar : ProjectItemsRepository {
   }
 
   override suspend fun getAllProjects(): List<ProjectItem> {
-    return projects
+    return projects.toList()
   }
 
   override suspend fun getProject(projectID: String): ProjectItem {

@@ -14,6 +14,7 @@ import com.neptune.neptune.ui.feed.FeedType
 import com.neptune.neptune.ui.main.MainScreenTestTags
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.main.SampleResourceState
+import com.neptune.neptune.ui.main.SampleUiActionsTestTags
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -272,7 +273,15 @@ class FeedScreenTest {
             comments = 0,
             downloads = 0,
             ownerId = "u1",
-            storagePreviewSamplePath = "path")
+            storagePreviewSamplePath = "path",
+            storageProcessedSamplePath = "path")
+
+    // IMPORTANT: simulate what the real VM would do: set progress after download starts
+    every { mockViewModel.onDownloadProcessedSample(sample) } answers
+        {
+          downloadProgressFlow.value = 10 // non-null and non-zero => progress bar should appear
+        }
+
     discoverFlow.value = listOf(sample)
     setContent()
 
@@ -280,9 +289,24 @@ class FeedScreenTest {
     composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_LIKES).onFirst().performClick()
     verify { mockViewModel.onLikeClick(sample, any()) }
 
-    // Download
+    // Download -> open dialog -> click processed
     composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_DOWNLOADS).onFirst().performClick()
-    verify { mockViewModel.onDownloadSample(sample) }
+    composeTestRule.waitForIdle()
+
+    composeTestRule.onNodeWithTag(SampleUiActionsTestTags.DOWNLOAD_PROCESSED_BTN).performClick()
+    verify { mockViewModel.onDownloadProcessedSample(sample) }
+
+    // Wait until progress bar actually exists in the tree (CI-safe)
+    composeTestRule.waitUntil(timeoutMillis = 3_000) {
+      composeTestRule
+          .onAllNodesWithTag(FeedScreenTestTag.DOWNLOAD_PROGRESS, useUnmergedTree = true)
+          .fetchSemanticsNodes()
+          .isNotEmpty()
+    }
+
+    composeTestRule
+        .onNodeWithTag(FeedScreenTestTag.DOWNLOAD_PROGRESS, useUnmergedTree = true)
+        .assertIsDisplayed()
 
     // Comment
     composeTestRule.onAllNodesWithTag(MainScreenTestTags.SAMPLE_COMMENTS).onFirst().performClick()

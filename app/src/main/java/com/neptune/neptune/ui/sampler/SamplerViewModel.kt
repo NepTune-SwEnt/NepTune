@@ -798,9 +798,23 @@ open class SamplerViewModel(
                           durationSeconds = state.audioDurationMillis / 1000f)),
               parameters = parametersList)
 
+      val originalAudioFile = File(state.originalAudioUri?.path)
+
+      val projectDataFixed =
+          projectData.copy(
+              audioFiles =
+                  listOf(
+                      AudioFileMetadata(
+                          name = originalAudioFile.name,
+                          volume = 1.0f,
+                          durationSeconds = state.audioDurationMillis / 1000f)))
+
       val zipFile = File(zipFilePath)
       ProjectWriter()
-          .writeProject(zipFile = zipFile, metadata = projectData, audioFiles = listOf(audioFile))
+          .writeProject(
+              zipFile = zipFile,
+              metadata = projectDataFixed,
+              audioFiles = listOf(originalAudioFile))
     } catch (e: Exception) {
       Log.e("SamplerViewModel", "Failed to save ZIP file: ${e.message}", e)
     }
@@ -905,6 +919,18 @@ open class SamplerViewModel(
 
     // 2. Apply EQ: Parametric equalization is applied non-destructively to the samples
     samples = applyEQFilters(samples, sampleRate, eqBands)
+
+    val state = _uiState.value
+    val compressor =
+        Compressor(
+            sampleRate = sampleRate,
+            thresholdDb = state.compThreshold,
+            ratio = state.compRatio.toFloat(),
+            kneeDb = state.compKnee,
+            makeUpDb = state.compGain,
+            attackSeconds = state.compAttack,
+            releaseSeconds = state.compDecay)
+    samples = compressor.process(samples)
 
     if (tempoRatio != 1.0) {
       samples = audioProcessor.timeStretch(samples, tempoRatio.toFloat())

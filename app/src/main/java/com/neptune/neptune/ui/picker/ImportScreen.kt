@@ -142,36 +142,19 @@ fun ImportScreen(
             }
       },
       floatingActionButton = {
-        RecordControls(
+        // Use the shared helper to avoid duplicating the recording + import logic
+        CreateProjectButtons(
             isRecording = isRecording,
-            onToggleRecord = {
-              // Toggle recording: start or stop and handle produced file
-              if (isRecording) {
-                val recorded =
-                    try {
-                      actualRecorder.stop()
-                    } catch (_: Exception) {
-                      null
-                    }
-                if (recorded != null) {
-                  proposedFileToImport = recorded
-                  projectName = recorded.nameWithoutExtension
-                  showNameDialog = true
-                }
-              } else {
-                if (hasAudioPermission) {
-                  try {
-                    actualRecorder.start()
-                  } catch (_: Exception) {
-                    /* ignore */
-                  }
-                } else {
-                  permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                }
-              }
-              isRecording = actualRecorder.isRecording
+            actualRecorder = actualRecorder,
+            hasAudioPermission = hasAudioPermission,
+            requestPermission = { permissionLauncher.launch(it) },
+            onRecordedFile = { recorded ->
+              proposedFileToImport = recorded
+              projectName = recorded.nameWithoutExtension
+              showNameDialog = true
             },
-            onImportAudio = { pickAudio.launch(arrayOf("audio/*")) })
+            onImportAudio = { pickAudio.launch(arrayOf("audio/*")) },
+            updateIsRecording = { isRecording = it })
       },
       containerColor = NepTuneTheme.colors.background) { padding ->
         if (items.isEmpty()) {
@@ -232,7 +215,7 @@ fun ImportScreen(
 }
 
 @Composable
-private fun RecordControls(
+fun RecordControls(
     isRecording: Boolean,
     onToggleRecord: () -> Unit,
     onImportAudio: () -> Unit,
@@ -275,7 +258,7 @@ private fun RecordControls(
 }
 
 @Composable
-private fun NameProjectDialog(
+fun NameProjectDialog(
     projectName: String,
     onNameChange: (String) -> Unit,
     onConfirm: (String) -> Unit,
@@ -359,4 +342,87 @@ private fun NameProjectDialog(
                           fontWeight = FontWeight(400)))
             }
       })
+}
+
+@Composable
+fun CreateProjectButtons(
+    isRecording: Boolean,
+    actualRecorder: NeptuneRecorder,
+    hasAudioPermission: Boolean,
+    requestPermission: (String) -> Unit,
+    onRecordedFile: (File) -> Unit,
+    onImportAudio: () -> Unit,
+    updateIsRecording: (Boolean) -> Unit,
+) =
+    RecordControls(
+        isRecording = isRecording,
+        onToggleRecord = {
+          performToggleRecord(
+              isRecording = isRecording,
+              actualRecorder = actualRecorder,
+              hasAudioPermission = hasAudioPermission,
+              requestPermission = requestPermission,
+              onRecordedFile = onRecordedFile,
+              updateIsRecording = updateIsRecording)
+        },
+        onImportAudio = onImportAudio)
+
+// Helper that encapsulates the toggle-recording logic so the composable stays small and
+// easy to read. Kept non-composable and pure (no UI code) to improve testability.
+fun performToggleRecord(
+    isRecording: Boolean,
+    actualRecorder: NeptuneRecorder,
+    hasAudioPermission: Boolean,
+    requestPermission: (String) -> Unit,
+    onRecordedFile: (File) -> Unit,
+    updateIsRecording: (Boolean) -> Unit,
+) {
+  if (isRecording) {
+    val recorded =
+        try {
+          actualRecorder.stop()
+        } catch (_: Exception) {
+          null
+        }
+    if (recorded != null) {
+      onRecordedFile(recorded)
+    }
+  } else {
+    if (hasAudioPermission) {
+      try {
+        actualRecorder.start()
+      } catch (_: Exception) {
+        /* ignore */
+      }
+    } else {
+      requestPermission(Manifest.permission.RECORD_AUDIO)
+    }
+  }
+  updateIsRecording(actualRecorder.isRecording)
+}
+
+// Helper: sanitize a project name and attempt to rename the provided file accordingly.
+fun sanitizeAndRename(fileToImport: File, projectName: String): File {
+  val sanitized =
+      projectName
+          .replace(Regex("[^A-Za-z0-9._-]+"), "_")
+          .replace(Regex("_+"), "_")
+          .trim('_', '.', ' ')
+          .ifEmpty { projectName }
+  val ext = fileToImport.extension
+  val parent = fileToImport.parentFile
+  val desiredName = if (ext.isNotBlank()) "$sanitized.$ext" else sanitized
+  val desiredFile = File(parent, desiredName)
+  return if (desiredFile.exists()) {
+    // avoid overwrite
+    fileToImport
+  } else {
+    val moved =
+        try {
+          fileToImport.renameTo(desiredFile)
+        } catch (_: Exception) {
+          false
+        }
+    if (moved) desiredFile else fileToImport
+  }
 }

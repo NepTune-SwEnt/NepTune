@@ -16,6 +16,10 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 const val SAMPLES_COLLECTION_PATH = "samples"
+const val STORAGE_PROCESSED_PATH = "storageProcessedSamplePath"
+const val STORAGE_PREVIEW_PATH = "storagePreviewSamplePath"
+const val STORAGE_ZIP_PATH = "storageZipPath"
+const val STORAGE_IMAGE_PATH = "storageImagePath"
 
 /**
  * Firebase-backed implementation of [SampleRepository] using Firestore.
@@ -304,9 +308,10 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
         ownerId = ownerId,
         isPublic = (get("isPublic") as? Boolean) ?: false,
         usersLike = (get("usersLike") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
-        storageZipPath = getString("storageZipPath").orEmpty(),
-        storageImagePath = getString("storageImagePath").orEmpty(),
-        storagePreviewSamplePath = getString("storagePreviewSamplePath").orEmpty(),
+        storageZipPath = getString(STORAGE_ZIP_PATH).orEmpty(),
+        storageImagePath = getString(STORAGE_IMAGE_PATH).orEmpty(),
+        storagePreviewSamplePath = getString(STORAGE_PREVIEW_PATH).orEmpty(),
+        storageProcessedSamplePath = getString(STORAGE_PROCESSED_PATH).orEmpty(),
         creationTime = getTimestamp("creationTime")?.toDate()?.time ?: 0L)
   }
 
@@ -323,7 +328,8 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
           "ownerId" to ownerId,
           "isPublic" to isPublic,
           "usersLike" to usersLike,
-          "storageZipPath" to storageZipPath,
-          "storageImagePath" to storageImagePath,
-          "storagePreviewSamplePath" to storagePreviewSamplePath)
+          STORAGE_ZIP_PATH to storageZipPath,
+          STORAGE_IMAGE_PATH to storageImagePath,
+          STORAGE_PREVIEW_PATH to storagePreviewSamplePath,
+          STORAGE_PROCESSED_PATH to storageProcessedSamplePath)
 }

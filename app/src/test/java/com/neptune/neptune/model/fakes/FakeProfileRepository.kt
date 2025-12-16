@@ -20,12 +20,17 @@ class FakeProfileRepository(
 ) : ProfileRepository {
 
   private val state = MutableStateFlow(initial)
+  private val profiles = mutableMapOf<String, Profile>()
+
+  init {
+    initial?.let { profiles[it.uid] = it }
+  }
 
   override suspend fun getCurrentProfile(): Profile? {
     return state.value
   }
 
-  override suspend fun getProfile(uid: String): Profile? = state.value
+  override suspend fun getProfile(uid: String): Profile? = profiles[uid] ?: state.value
 
   override fun observeCurrentProfile(): Flow<Profile?> = state.asStateFlow()
 
@@ -37,17 +42,32 @@ class FakeProfileRepository(
     throw UnsupportedOperationException("Not needed in this test")
   }
 
+  private val followingIds = MutableStateFlow<List<String>>(emptyList())
+  private val followersIds = MutableStateFlow<List<String>>(emptyList())
+
   override suspend fun updatePostCount(delta: Int) {}
 
   override suspend fun updateLikeCount(targetUserId: String, delta: Int) {}
 
   override suspend fun unfollowUser(uid: String) {
-    throw UnsupportedOperationException("Not needed in this test")
+    followingIds.value = followingIds.value.filterNot { it == uid }
   }
 
   override suspend fun followUser(uid: String) {
-    throw UnsupportedOperationException("Not needed in this test")
+    val updated = followingIds.value.toMutableList()
+    if (!updated.contains(uid)) {
+      updated.add(uid)
+      followingIds.value = updated
+    }
   }
+
+  override suspend fun getFollowingIds(uid: String): List<String> = followingIds.value
+
+  override suspend fun getFollowersIds(uid: String): List<String> = followersIds.value
+
+  override fun observeFollowingIds(uid: String): Flow<List<String>> = followingIds.asStateFlow()
+
+  override fun observeFollowersIds(uid: String): Flow<List<String>> = followersIds.asStateFlow()
 
   override suspend fun ensureProfile(
       suggestedUsernameBase: String?,
@@ -67,6 +87,7 @@ class FakeProfileRepository(
             bio = "Hello! New NepTune user here!",
             avatarUrl = "")
     state.value = new
+    profiles[new.uid] = new
     return new
   }
 
@@ -94,12 +115,16 @@ class FakeProfileRepository(
 
   override suspend fun updateName(newName: String) {
     val cur = state.value ?: return
-    state.value = cur.copy(name = newName)
+    val updated = cur.copy(name = newName)
+    state.value = updated
+    profiles[updated.uid] = updated
   }
 
   override suspend fun updateBio(newBio: String) {
     val cur = state.value ?: return
-    state.value = cur.copy(bio = newBio)
+    val updated = cur.copy(bio = newBio)
+    state.value = updated
+    profiles[updated.uid] = updated
   }
 
   override suspend fun updateAvatarUrl(newUrl: String) {}
@@ -107,7 +132,9 @@ class FakeProfileRepository(
   override suspend fun uploadAvatar(localUri: Uri): String {
     val cur = state.value ?: return ""
     val url = "https://example.invalid/avatars/${cur.uid}.jpg"
-    state.value = cur.copy(avatarUrl = url)
+    val updated = cur.copy(avatarUrl = url)
+    state.value = updated
+    profiles[updated.uid] = updated
     return url
   }
 
@@ -130,16 +157,18 @@ class FakeProfileRepository(
 
   override suspend fun removeAvatar() {
     val cur = state.value ?: return
-    state.value = cur.copy(avatarUrl = "")
+    val updated = cur.copy(avatarUrl = "")
+    state.value = updated
+    profiles[updated.uid] = updated
   }
 
   override suspend fun getAvatarUrlByUserId(userId: String): String? {
-    return userId
+    return profiles[userId]?.avatarUrl ?: userId
   }
 
   override suspend fun getUserNameByUserId(userId: String): String? {
     val current = state.value
-    return if (current?.uid == userId) current.username else null
+    return profiles[userId]?.username ?: current?.takeIf { it.uid == userId }?.username
   }
 
   override suspend fun searchUsers(query: String): List<Profile> = emptyList()
@@ -190,6 +219,20 @@ class FakeProfileRepository(
     // Keep tag list in sync too
     val newTags = (cur.tags + tags).distinct()
 
-    state.value = cur.copy(tagsWeight = newWeights, tags = newTags)
+    val updated = cur.copy(tagsWeight = newWeights, tags = newTags)
+    state.value = updated
+    profiles[updated.uid] = updated
+  }
+
+  fun setFollowersIds(ids: List<String>) {
+    followersIds.value = ids
+  }
+
+  fun setFollowingIds(ids: List<String>) {
+    followingIds.value = ids
+  }
+
+  fun addProfiles(newProfiles: List<Profile>) {
+    newProfiles.forEach { profiles[it.uid] = it }
   }
 }
