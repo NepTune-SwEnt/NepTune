@@ -20,9 +20,11 @@ import com.neptune.neptune.util.WaveformExtractor
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -53,23 +55,16 @@ abstract class BaseSampleFeedViewModel(
   private val coverImageCache = mutableMapOf<String, String?>()
   private val audioUrlCache = mutableMapOf<String, String?>()
   private val waveformCache = mutableMapOf<String, List<Float>>()
-  private val _isOnline = MutableStateFlow(true)
-  val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+  private val timeout = 5000L
+  open val isOnline: StateFlow<Boolean> =
+      NetworkConnectivityObserver()
+          .isOnline
+          .stateIn(
+              scope = viewModelScope,
+              started = SharingStarted.WhileSubscribed(timeout),
+              initialValue = true)
   open val isUserLoggedIn: Boolean
     get() = auth?.currentUser != null
-
-  init {
-    // Initialisation unique du monitoring réseau
-    viewModelScope.launch {
-      try {
-        NetworkConnectivityObserver().isOnline.collectLatest { connected ->
-          _isOnline.value = connected
-        }
-      } catch (e: Exception) {
-        Log.e("BaseViewModel", "Error initializing connectivity observer", e)
-      }
-    }
-  }
 
   override fun onCommentClicked(sample: Sample) {
     observeCommentsForSample(sample.id)
