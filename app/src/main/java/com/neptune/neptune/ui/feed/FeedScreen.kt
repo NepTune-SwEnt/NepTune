@@ -187,11 +187,12 @@ private fun FeedContent(
       label = "ListTransition",
       animationSpec = tween(durationMillis = effectDuration),
       modifier = modifier.background(NepTuneTheme.colors.background)) { type ->
-        val (currentSamples, currentState) =
+        val (rawSamples, currentState) =
             when (type) {
               FeedType.DISCOVER -> discoverSamples to discoverListState
               FeedType.FOLLOWED -> followedSamples to followedListState
             }
+        val currentSamples = rawSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
         LazyColumn(
             state = currentState,
             modifier = Modifier.fillMaxSize(),
