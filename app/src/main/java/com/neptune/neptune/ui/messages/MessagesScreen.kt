@@ -253,8 +253,11 @@ fun MessageBubble(isMe: Boolean, text: String, timestamp: Timestamp?, testTag: S
  * @param maxChars Max characters when sending a text.
  */
 @Composable
-fun MessageInputBar(onSend: (String) -> Unit, maxChars: Int = 200) {
+fun MessageInputBar(onSend: (String) -> Unit, maxChars: Int = 1000) {
   var text by remember { mutableStateOf("") }
+
+  val minHeight = 57.dp
+  val maxHeight = 140.dp
 
   Column {
     Row(
@@ -262,22 +265,23 @@ fun MessageInputBar(onSend: (String) -> Unit, maxChars: Int = 200) {
             Modifier.fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 10.dp)
                 .testTag(MessagesScreenTestTags.INPUT_BAR),
-        verticalAlignment = Alignment.CenterVertically) {
+        verticalAlignment = Alignment.Bottom) {
           Box(
               modifier =
                   Modifier.weight(1f)
-                      .height(57.dp)
+                      .heightIn(minHeight, maxHeight)
                       .background(
                           color = NepTuneTheme.colors.searchBar, shape = RoundedCornerShape(10.dp)),
               contentAlignment = Alignment.CenterStart) {
                 TextField(
                     value = text,
                     onValueChange = { newText ->
-                      if (newText.length <= maxChars) {
-                        text = newText
-                      } else {
-                        text = newText.take(maxChars) // Truncate if exceeding
-                      }
+                      text =
+                          if (newText.length <= maxChars) {
+                            newText
+                          } else {
+                            newText.take(maxChars) // Truncate if exceeding
+                          }
                     },
                     placeholder = {
                       Text(
@@ -289,7 +293,7 @@ fun MessageInputBar(onSend: (String) -> Unit, maxChars: Int = 200) {
                                   fontWeight = FontWeight(500),
                                   fontFamily = FontFamily(Font(R.font.markazi_text))))
                     },
-                    modifier = Modifier.fillMaxSize().testTag(MessagesScreenTestTags.INPUT_FIELD),
+                    modifier = Modifier.fillMaxWidth().testTag(MessagesScreenTestTags.INPUT_FIELD),
                     colors =
                         TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
@@ -299,7 +303,6 @@ fun MessageInputBar(onSend: (String) -> Unit, maxChars: Int = 200) {
                             cursorColor = NepTuneTheme.colors.onBackground,
                             focusedTextColor = NepTuneTheme.colors.onBackground,
                             unfocusedTextColor = NepTuneTheme.colors.onBackground),
-                    maxLines = 3,
                     textStyle =
                         TextStyle(
                             fontSize = 24.sp,

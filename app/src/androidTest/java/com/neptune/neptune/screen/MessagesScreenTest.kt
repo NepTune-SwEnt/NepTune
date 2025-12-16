@@ -1,7 +1,6 @@
 package com.neptune.neptune.screen
 
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
@@ -157,6 +156,7 @@ class MessagesScreenTest {
     assertTrue(backClicked)
   }
 
+  /** Tests that the character counter updates when typing */
   @Test
   fun characterCounterUpdatesWhenTyping() {
     setContent()
@@ -168,21 +168,22 @@ class MessagesScreenTest {
     composeTestRule
         .onNodeWithTag(MessagesScreenTestTags.INPUT_COUNTER)
         .assertExists()
-        .assertTextEquals("5 / 200")
+        .assertTextEquals("5 / 1000")
   }
 
+  /** Tests that the text is limited to the max characters */
   @Test
   fun textIsLimitedToMaxCharacters() {
     setContent()
 
-    val longText = "a".repeat(250)
+    val longText = "a".repeat(1050)
 
     composeTestRule.onNodeWithTag(MessagesScreenTestTags.INPUT_FIELD).performTextInput(longText)
 
     // Counter should not exceed maxChars (200)
     composeTestRule
         .onNodeWithTag(MessagesScreenTestTags.INPUT_COUNTER)
-        .assertTextEquals("200 / 200")
+        .assertTextEquals("1000 / 1000")
   }
 
   /** Tests that messages Route with user correctly display MessageScreen */
