@@ -359,6 +359,69 @@ class SampleRepositoryFirebaseTest {
     assertTrue(result.isEmpty())
   }
 
+  @Test
+  fun deleteCommentRemovesCommentAndUpdatesCount() = runBlocking {
+    val sampleId = "comment_delete_sample"
+    val sample =
+        Sample(
+            id = sampleId,
+            name = "Delete Comment Sample",
+            description = "Testing comment deletion",
+            durationSeconds = 10,
+            tags = listOf("#test"),
+            likes = 0,
+            comments = 0,
+            downloads = 0,
+            usersLike = emptyList())
+    repository.addSample(sample)
+
+    // 1. Add a comment
+    val authorId = "author1"
+    repository.addComment(sampleId, authorId, "Author", "To be deleted", "")
+
+    // 2. Fetch the comment to get its generated Timestamp
+    // We use 'first { it.isNotEmpty() }' to wait until the listener receives the new comment
+    val comments = repository.observeComments(sampleId).first { it.isNotEmpty() }
+    val commentToDelete = comments.first()
+
+    // Pre-check: Verify count is 1
+    val sampleBefore = repository.getSample(sampleId)
+    assertEquals(1, sampleBefore.comments)
+
+    // 3. Delete the comment using the authorId and timestamp
+    repository.deleteComment(sampleId, authorId, commentToDelete.timestamp)
+
+    // 4. Verify deletion: wait for the flow to emit an empty list
+    val commentsAfter = repository.observeComments(sampleId).first { it.isEmpty() }
+    assertTrue(commentsAfter.isEmpty())
+
+    // 5. Verify the sample's comment count decreased to 0
+    val sampleAfter = repository.getSample(sampleId)
+    assertEquals(0, sampleAfter.comments)
+  }
+
+  @Test
+  fun increaseDownloadCountIncrementsValue() = runBlocking {
+    val sampleId = "download_inc_sample"
+    val sample =
+        Sample(
+            id = sampleId,
+            name = "Download Counter",
+            description = "Testing download increment",
+            durationSeconds = 5,
+            tags = emptyList(),
+            likes = 0,
+            comments = 0,
+            downloads = 10, // Initial download count
+            usersLike = emptyList())
+    repository.addSample(sample)
+
+    repository.increaseDownloadCount(sampleId)
+
+    val updatedSample = repository.getSample(sampleId)
+    assertEquals(11, updatedSample.downloads)
+  }
+
   private fun cleanUp() {
     runBlocking {
       val col = db.collection("samples")
