@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.domain.usecase.PreviewStoreHelper
 import com.neptune.neptune.media.NeptuneMediaPlayer
+import com.neptune.neptune.media.fadeOutAndRelease
 import com.neptune.neptune.model.project.AudioFileMetadata
 import com.neptune.neptune.model.project.ParameterMetadata
 import com.neptune.neptune.model.project.ProjectExtractor
@@ -112,6 +113,9 @@ open class SamplerViewModel(
   val context: Context = NepTuneApplication.appContext
 
   open val mediaPlayer = NeptuneMediaPlayer()
+
+  private var previewJob: Job? = null
+  private var previewUri: Uri? = null
 
   private val audioProcessor: AudioProcessor = NativeAudioProcessor()
 
@@ -289,7 +293,7 @@ open class SamplerViewModel(
 
   private val tapTimes = mutableListOf<Long>()
 
-  fun playPreview(context: Context) {
+  fun playPreview(context: Context, semitoneOffset: Int = 0) {
     stopPreview()
 
     val previewUri = uiState.value.currentAudioUri ?: return
@@ -499,30 +503,68 @@ open class SamplerViewModel(
 
   var adsrPlaying = false
 
-  open fun startADSRSample() {
-    val uri = _uiState.value.currentAudioUri ?: _uiState.value.originalAudioUri ?: return
+  open fun startADSRSampleWithPitch(semitoneOffset: Int) {
+    val baseUri = _uiState.value.originalAudioUri ?: return
+    if (adsrPlaying) return
 
-    if (mediaPlayer.getCurrentUri() == uri && mediaPlayer.isPlaying()) return
-
-    mediaPlayer.play(uri)
     adsrPlaying = true
-    _uiState.update { it.copy(previewPlaying = true) }
+
+    previewJob =
+        viewModelScope.launch {
+          val previewUri =
+              withContext(dispatcherProvider.default) {
+                processAudio(
+                    currentAudioUri = baseUri,
+                    eqBands = _uiState.value.eqBands,
+                    reverbWet = _uiState.value.reverbWet,
+                    reverbSize = _uiState.value.reverbSize,
+                    reverbWidth = _uiState.value.reverbWidth,
+                    reverbDepth = _uiState.value.reverbDepth,
+                    reverbPredelay = _uiState.value.reverbPredelay,
+                    semitones = semitoneOffset,
+                    tempoRatio = 1.0,
+                    audioProcessor = audioProcessor,
+                    attack = _uiState.value.attack,
+                    decay = _uiState.value.decay,
+                    sustain = _uiState.value.sustain,
+                    release = _uiState.value.release,
+                    mode = AudioProcessMode.PREVIEW,
+                    outputNameSuffix = "note_$semitoneOffset")
+              }
+
+          withContext(Dispatchers.Main) {
+            if (previewUri != null) {
+              previewPlayer?.release()
+              previewPlayer =
+                  MediaPlayer().apply {
+                    setDataSource(context, previewUri)
+                    prepare()
+                    start()
+                    setOnCompletionListener { stopADSRSample() }
+                  }
+              _uiState.update { it.copy(previewPlaying = true) }
+            }
+          }
+        }
   }
 
   open fun stopADSRSample() {
     if (!adsrPlaying) return
     adsrPlaying = false
 
-    val releaseSeconds = _uiState.value.release.coerceAtLeast(0f)
-    val releaseMillis = (releaseSeconds * 1000f).toLong()
+    previewJob?.cancel()
+    previewJob = null
 
-    if (releaseMillis <= 0L) {
-      mediaPlayer.forceStopAndRelease()
-      _uiState.update { it.copy(previewPlaying = false) }
-    } else {
-      mediaPlayer.stopWithFade(releaseMillis)
-      _uiState.update { it.copy(previewPlaying = false) }
+    val player = previewPlayer
+    previewPlayer = null
+
+    if (player != null) {
+      val releaseMillis = (_uiState.value.release * 1000f).toLong()
+
+      fadeOutAndRelease(mediaPlayer = player, releaseMillis = releaseMillis)
     }
+
+    _uiState.update { it.copy(previewPlaying = false) }
   }
 
   open fun loadProjectData(zipFilePath: String) {
@@ -867,8 +909,7 @@ open class SamplerViewModel(
             val newUri =
                 withContext(dispatcherProvider.default) {
                   processAudio(
-                      currentAudioUri =
-                          originalUri, // Source is the original file (non-destructive)
+                      currentAudioUri = originalUri,
                       eqBands = state.eqBands,
                       reverbWet = state.reverbWet,
                       reverbSize = state.reverbSize,
@@ -881,7 +922,8 @@ open class SamplerViewModel(
                       attack = state.attack,
                       decay = state.decay,
                       sustain = state.sustain,
-                      release = state.release)
+                      release = state.release,
+                      mode = AudioProcessMode.PROJECT)
                 }
 
             if (newUri != null) {
@@ -893,6 +935,11 @@ open class SamplerViewModel(
         }
 
     return job
+  }
+
+  enum class AudioProcessMode {
+    PROJECT,
+    PREVIEW
   }
 
   internal fun processAudio(
@@ -909,7 +956,9 @@ open class SamplerViewModel(
       attack: Float = 0f,
       decay: Float = 0f,
       sustain: Float = 1f,
-      release: Float = 0f
+      release: Float = 0f,
+      mode: AudioProcessMode = AudioProcessMode.PROJECT,
+      outputNameSuffix: String = "processed"
   ): Uri? {
     if (currentAudioUri == null) return null
 
@@ -949,14 +998,19 @@ open class SamplerViewModel(
     // 4. Encode and Save: Prepare the output file path
     val originalName = currentAudioUri.lastPathSegment ?: DEFAULT_AUDIO_BASENAME
     val base = originalName.substringBeforeLast(".")
-    // Output file is saved in the app's cache directory (safe location for temporary/processed
-    // files)
-    val out = File(context.cacheDir, "${base}_processed.wav")
 
-    // Encode processed FloatArray back into a standard WAV file (PCM16 format)
-    encodeAudio(samples, sampleRate, channelCount, out)
+    val outFile =
+        when (mode) {
+          AudioProcessMode.PROJECT -> File(context.cacheDir, "${base}_processed.wav")
+          AudioProcessMode.PREVIEW ->
+              File(
+                  context.cacheDir,
+                  "${base}_preview_${outputNameSuffix}_${System.currentTimeMillis()}.wav")
+        }
 
-    return Uri.fromFile(out) // Return the URI of the newly processed file
+    encodeAudio(samples, sampleRate, channelCount, outFile)
+
+    return Uri.fromFile(outFile) // Return the URI of the newly processed file
   }
 
   interface AudioProcessor {

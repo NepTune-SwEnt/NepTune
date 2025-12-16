@@ -7,10 +7,6 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.core.net.toUri
 import com.neptune.neptune.NepTuneApplication
 import kotlin.math.abs
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 open class NeptuneMediaPlayer() {
   val context = NepTuneApplication.appContext
@@ -185,45 +181,8 @@ open class NeptuneMediaPlayer() {
 
   open fun stopWithFade(releaseMillis: Long) {
     val mp = mediaPlayer ?: return
-    if (releaseMillis <= 0L) {
-      try {
-        if (mp.isPlaying) mp.stop()
-      } catch (e: Exception) {
-        Log.e("NeptuneMediaPlayer", "Error stopping media player", e)
-      }
-      try {
-        mp.release()
-      } catch (e: Exception) {
-        Log.e("NeptuneMediaPlayer", "Error releasing media player", e)
-      }
-      mediaPlayer = null
-      currentUri = null
-      return
-    }
 
-    CoroutineScope(Dispatchers.Main).launch {
-      val steps = 20
-      val stepDelay = (releaseMillis / steps).coerceAtLeast(5L)
-      for (i in steps downTo 1) {
-        val level = i.toFloat() / steps.toFloat()
-        try {
-          mp.setVolume(level, level)
-        } catch (e: Exception) {
-          Log.e("NeptuneMediaPlayer", "Error setting volume during fade", e)
-        }
-        delay(stepDelay)
-      }
-      try {
-        mp.setVolume(0f, 0f)
-        if (mp.isPlaying) mp.stop()
-      } catch (e: Exception) {
-        Log.e("NeptuneMediaPlayer", "Error stopping media player at fade end", e)
-      }
-      try {
-        mp.release()
-      } catch (e: Exception) {
-        Log.e("NeptuneMediaPlayer", "Error releasing media player at fade end", e)
-      }
+    fadeOutAndRelease(mediaPlayer = mp, releaseMillis = releaseMillis) {
       mediaPlayer = null
       currentUri = null
     }

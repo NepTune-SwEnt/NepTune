@@ -236,7 +236,15 @@ fun SamplerScreen(
                 viewModel = viewModel)
             Spacer(modifier = Modifier.height(16.dp))
 
-            ADSRTestButton(viewModel = viewModel)
+            var showPiano by remember { mutableStateOf(false) }
+
+            ADSRTestButton(
+                onOpenPiano = { showPiano = true },
+            )
+
+            if (showPiano) {
+              PianoDialog(viewModel = viewModel, onClose = { showPiano = false })
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -286,28 +294,85 @@ fun HelpButton(onClick: () -> Unit) {
 }
 
 @Composable
-fun ADSRTestButton(viewModel: SamplerViewModel, modifier: Modifier = Modifier) {
+fun ADSRTestButton(onOpenPiano: () -> Unit, modifier: Modifier = Modifier) {
   Surface(
       modifier =
-          modifier.testTag("ADSR_TEST_BUTTON").fillMaxWidth().height(30.dp).pointerInput(Unit) {
-            detectTapGestures(
-                onPress = {
-                  viewModel.startADSRSample()
-                  tryAwaitRelease()
-                  viewModel.stopADSRSample()
-                })
+          modifier.testTag("ADSR_TEST_BUTTON").fillMaxWidth().height(30.dp).clickable {
+            onOpenPiano()
           },
       color = NepTuneTheme.colors.soundWave,
       shape = RoundedCornerShape(12.dp),
       tonalElevation = 2.dp,
       shadowElevation = 4.dp) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
           Icon(
               imageVector = Icons.Default.Piano,
-              contentDescription = "Play ADSR",
+              contentDescription = "Open piano",
               tint = Color.White)
         }
       }
+}
+
+val pianoNotes =
+    listOf(
+        Pair("C", 0),
+        Pair("C#", 1),
+        Pair("D", 2),
+        Pair("D#", 3),
+        Pair("E", 4),
+        Pair("F", 5),
+        Pair("F#", 6),
+        Pair("G", 7),
+        Pair("G#", 8),
+        Pair("A", 9),
+        Pair("A#", 10),
+        Pair("B", 11))
+
+@Composable
+fun PianoDialog(viewModel: SamplerViewModel, onClose: () -> Unit) {
+  Dialog(onDismissRequest = onClose) {
+    Surface(shape = RoundedCornerShape(16.dp), color = NepTuneTheme.colors.background) {
+      Column(modifier = Modifier.padding(16.dp)) {
+        Text(text = "ADSR Test Piano", style = MaterialTheme.typography.titleMedium)
+
+        Spacer(Modifier.height(12.dp))
+
+        PianoOctave(viewModel)
+
+        Spacer(Modifier.height(12.dp))
+
+        Button(onClick = onClose, modifier = Modifier.align(Alignment.End)) { Text("Close") }
+      }
+    }
+  }
+}
+
+@Composable
+fun PianoOctave(viewModel: SamplerViewModel) {
+  val notes = listOf(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+
+  Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    notes.forEach { semitone ->
+      PianoKey(semitone = semitone, viewModel = viewModel, modifier = Modifier.weight(1f))
+    }
+  }
+}
+
+@Composable
+fun PianoKey(semitone: Int, viewModel: SamplerViewModel, modifier: Modifier = Modifier) {
+  Surface(
+      modifier =
+          modifier.height(120.dp).pointerInput(Unit) {
+            detectTapGestures(
+                onPress = {
+                  viewModel.startADSRSampleWithPitch(semitone)
+                  tryAwaitRelease()
+                  viewModel.stopADSRSample()
+                })
+          },
+      shape = RoundedCornerShape(8.dp),
+      color = NepTuneTheme.colors.soundWave,
+      shadowElevation = 2.dp) {}
 }
 
 @Composable
