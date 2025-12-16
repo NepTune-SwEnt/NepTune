@@ -176,20 +176,22 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
               .await()
               .documents
         } else {
-          commentsCol.whereEqualTo("authorId", authorId).limit(1).get().await().documents
+          null
         }
 
-    val deletedCount = docsToDelete.size
+    val deletedCount = docsToDelete?.size
     if (deletedCount == 0) return
 
     // Use a single WriteBatch to perform all deletes and the counter update in one network request
     val batch = db.batch()
-    for (doc in docsToDelete) {
-      batch.delete(doc.reference)
+    if (docsToDelete != null) {
+      for (doc in docsToDelete) {
+        batch.delete(doc.reference)
+      }
     }
 
     // Atomic decrement to avoid race conditions with concurrent comment additions
-    batch.update(sampleDoc, "comments", FieldValue.increment(-deletedCount.toLong()))
+    batch.update(sampleDoc, "comments", deletedCount?.toLong()?.let { FieldValue.increment(-it) })
 
     batch.commit().await()
   }
