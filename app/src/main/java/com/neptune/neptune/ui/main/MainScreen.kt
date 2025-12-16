@@ -93,7 +93,6 @@ import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.google.firebase.auth.FirebaseAuth
 import com.neptune.neptune.R
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.media.NeptuneMediaPlayer
@@ -837,6 +836,7 @@ fun CommentDialog(
         { _, _, _ ->
         },
     sampleOwnerId: String? = null,
+    currentUserId: String? = null,
 ) {
   var commentText by remember { mutableStateOf("") }
   val listScrollingState = rememberLazyListState()
@@ -939,7 +939,6 @@ fun CommentDialog(
                           }
                           // Delete button shown only to the comment author or the sample owner
                           // (UI-level hint).
-                          val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
                           val canDelete =
                               currentUserId != null &&
                                   (currentUserId == comment.authorId ||

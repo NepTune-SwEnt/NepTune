@@ -112,6 +112,10 @@ open class MainViewModel(
   val recommendedSamples: StateFlow<List<Sample>> = _recommendedSamples
   private var latestFollowing: List<String> = emptyList()
 
+  // Track the full sample object currently open in comments
+  private val _activeCommentSample = MutableStateFlow<Sample?>(null)
+  val activeCommentSample: StateFlow<Sample?> = _activeCommentSample.asStateFlow()
+
   init {
     if (useMockData) {
       // If we are testing we load mock data
@@ -367,10 +371,13 @@ open class MainViewModel(
 
   /** Function to open the comment section. */
   fun openCommentSection(sample: Sample) {
+    _activeCommentSample.value = sample
     onCommentClicked(sample)
   }
+
   /** Function to close the comment section. */
   fun closeCommentSection() {
+    _activeCommentSample.value = null
     resetCommentSampleId()
   }
 

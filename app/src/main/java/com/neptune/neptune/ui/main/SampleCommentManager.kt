@@ -12,7 +12,9 @@ import androidx.compose.runtime.getValue
 @Composable
 fun SampleCommentManager(mainViewModel: MainViewModel, onProfileClicked: (String) -> Unit) {
   val activeCommentSampleId by mainViewModel.activeCommentSampleId.collectAsState()
+  val activeSample by mainViewModel.activeCommentSample.collectAsState()
   val isAnonymous by mainViewModel.isAnonymous.collectAsState()
+  val currentUser by mainViewModel.currentUser.collectAsState()
 
   if (activeCommentSampleId != null) {
     val comments by mainViewModel.comments.collectAsState()
@@ -20,8 +22,13 @@ fun SampleCommentManager(mainViewModel: MainViewModel, onProfileClicked: (String
     val discoverSamples by mainViewModel.discoverSamples.collectAsState()
     val followedSamples by mainViewModel.followedSamples.collectAsState()
 
+    // Priority to activeSample (most reliable), fallback to lists
     val sampleOwnerId =
-        (discoverSamples + followedSamples).firstOrNull { it.id == activeCommentSampleId }?.ownerId
+        activeSample?.ownerId
+            ?: (discoverSamples + followedSamples)
+                .firstOrNull { it.id == activeCommentSampleId }
+                ?.ownerId
+
     CommentDialog(
         sampleId = activeCommentSampleId!!,
         comments = comments,
@@ -33,6 +40,7 @@ fun SampleCommentManager(mainViewModel: MainViewModel, onProfileClicked: (String
         },
         isAnonymous = isAnonymous,
         onProfileClicked = onProfileClicked,
-        sampleOwnerId = sampleOwnerId)
+        sampleOwnerId = sampleOwnerId,
+        currentUserId = currentUser?.uid)
   }
 }
