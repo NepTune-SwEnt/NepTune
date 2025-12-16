@@ -152,9 +152,6 @@ fun NeptuneApp(
                       navigateToOtherUserProfile = { userId ->
                         navigationActions.navigateTo(Screen.OtherUserProfile.createRoute(userId))
                       },
-                      navigateToSelectMessages = {
-                        navigationActions.navigateTo(Screen.SelectMessages)
-                      },
                       navigateToSampleList = { type ->
                         navigationActions.navigateTo(Screen.Feed.createRoute(type))
                       },
@@ -262,7 +259,8 @@ fun NeptuneApp(
                                     Screen.Edit.route + "/$encodedFilePath")
                               }
                             }
-                          })
+                          },
+                          importViewModel = importViewModel)
                     }
                 composable(Screen.Settings.route) {
                   SettingsScreen(

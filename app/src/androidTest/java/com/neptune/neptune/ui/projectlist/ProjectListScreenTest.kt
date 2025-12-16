@@ -18,12 +18,16 @@ import androidx.compose.ui.test.performTextInput
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.neptune.neptune.domain.model.MediaItem
 import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepositoryVar
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryCompose
+import com.neptune.neptune.ui.picker.ImportViewModel
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -34,9 +38,12 @@ class ProjectListScreenTest {
 
   @get:Rule val composeTestRule = createComposeRule()
 
-  private lateinit var viewModel: ProjectListViewModel
+  private lateinit var projectListViewModel: ProjectListViewModel
   private lateinit var localRepository: ProjectItemsRepositoryVar
   private lateinit var cloudRepository: ProjectItemsRepositoryVar
+  private lateinit var importViewModel: ImportViewModel
+  private lateinit var libraryFlow: MutableStateFlow<List<MediaItem>>
+
   private val navCalls = mutableListOf<String>()
   // Shared fake player used for all tests so we don't call setContent more than once
   class FakePlayer : NeptuneMediaPlayer() {
@@ -83,7 +90,7 @@ class ProjectListScreenTest {
     val mockAuth = mockk<FirebaseAuth>(relaxed = true)
     every { mockAuth.currentUser } returns mockUser
 
-    viewModel =
+    projectListViewModel =
         ProjectListViewModel(
             projectRepository =
                 TotalProjectItemsRepositoryCompose(localRepository, cloudRepository),
@@ -95,11 +102,15 @@ class ProjectListScreenTest {
 
   // Call at the start of each test to set the Compose content exactly once for that test
   private fun setContentOnce() {
+    importViewModel = mockk(relaxed = true)
+    libraryFlow = MutableStateFlow(emptyList())
+    every { importViewModel.library } returns libraryFlow as StateFlow<List<MediaItem>>
     composeTestRule.setContent {
       ProjectListScreen(
-          projectListViewModel = viewModel,
+          projectListViewModel = projectListViewModel,
           onProjectClick = { navCalls.add("2") },
-          mediaPlayer = fakePlayer)
+          mediaPlayer = fakePlayer,
+          importViewModel = importViewModel)
     }
   }
 
