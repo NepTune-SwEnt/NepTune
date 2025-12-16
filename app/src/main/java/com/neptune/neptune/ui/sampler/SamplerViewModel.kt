@@ -198,7 +198,7 @@ open class SamplerViewModel(
 
     val shouldResetFromEnd = currentState.playbackPosition >= 0.99f
     val isNearZero = currentState.playbackPosition < 0.01f
-    val isFirstPlay = mediaPlayer.getCurrentUri() != currentUri
+    val isFirstPlay = mediaPlayer.currentUri != currentUri
 
     val durationMillis = currentState.audioDurationMillis
     val currentUIPositionNorm = currentState.playbackPosition
@@ -502,7 +502,7 @@ open class SamplerViewModel(
   open fun startADSRSample() {
     val uri = _uiState.value.currentAudioUri ?: _uiState.value.originalAudioUri ?: return
 
-    if (mediaPlayer.getCurrentUri() == uri && mediaPlayer.isPlaying()) return
+    if (mediaPlayer.currentUri == uri && mediaPlayer.isPlaying()) return
 
     mediaPlayer.play(uri)
     adsrPlaying = true
