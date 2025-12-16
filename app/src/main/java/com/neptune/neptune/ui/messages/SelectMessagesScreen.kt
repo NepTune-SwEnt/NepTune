@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -101,9 +102,14 @@ fun SelectMessagesScreen(
   val listState = rememberLazyListState()
   val isOnline by remember { NetworkConnectivityObserver().isOnline }.collectAsState(initial = true)
 
-  // Scroll to top whenever users list changes
+  val lastSeenTimestamp = remember { mutableStateOf<Long?>(null) }
+
+  // Scroll to top whenever last timestamp changes
   LaunchedEffect(users) {
-    if (users.isNotEmpty()) {
+    val newestTimestamp = users.firstOrNull()?.lastTimestamp?.toDate()?.time
+
+    if (newestTimestamp != null && newestTimestamp != lastSeenTimestamp.value) {
+      lastSeenTimestamp.value = newestTimestamp
       listState.animateScrollToItem(0)
     }
   }
