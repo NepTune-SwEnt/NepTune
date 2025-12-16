@@ -37,7 +37,10 @@ open class StorageService(
       ref.metadata.await()
       true
     } catch (e: StorageException) {
-      if (e.errorCode == StorageException.ERROR_OBJECT_NOT_FOUND) false else throw e
+      if (e.errorCode != StorageException.ERROR_OBJECT_NOT_FOUND) {
+        throw e
+      }
+      false
     }
   }
   // correct -> obtain path from Firestore and not Storage
