@@ -3,6 +3,8 @@ package com.neptune.neptune.model.project
 import android.util.Log
 import java.util.UUID
 
+private const val NOT_FOUND = "ProjectItemsRepositoryVar: ProjectItem not found"
+
 class ProjectItemsRepositoryVar : ProjectItemsRepository {
 
   private val projects = mutableListOf<ProjectItem>()
@@ -17,7 +19,7 @@ class ProjectItemsRepositoryVar : ProjectItemsRepository {
 
   override suspend fun getProject(projectID: String): ProjectItem {
     return projects.find { it.uid == projectID }
-        ?: throw Exception("ProjectItemsRepositoryVar: ProjectItem not found")
+        ?: throw Exception(NOT_FOUND)
   }
 
   override suspend fun addProject(project: ProjectItem) {
@@ -39,7 +41,7 @@ class ProjectItemsRepositoryVar : ProjectItemsRepository {
 
       return
     }
-    throw Exception("ProjectItemsRepositoryVar: ProjectItem not found")
+    throw Exception(NOT_FOUND)
   }
 
   override suspend fun deleteProject(projectID: String) {
@@ -48,6 +50,6 @@ class ProjectItemsRepositoryVar : ProjectItemsRepository {
       projects.removeAt(index)
       return
     }
-    throw Exception("ProjectItemsRepositoryVar: ProjectItem not found")
+    throw Exception(NOT_FOUND)
   }
 }
