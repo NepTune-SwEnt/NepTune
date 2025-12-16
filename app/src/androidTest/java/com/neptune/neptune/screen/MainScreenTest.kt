@@ -536,12 +536,15 @@ class MainScreenTest {
 }
 // Add this helper to your MainViewModel to allow setting the current user for tests
 fun MainViewModel.setCurrentUserId(userId: String) {
-  com.google.firebase.auth.FirebaseAuth.getInstance()
-  val user = FirebaseUser::class.java.getDeclaredConstructor().newInstance()
-  val field = FirebaseUser::class.java.getDeclaredField("uid")
-  field.isAccessible = true
-  field.set(user, userId)
-  val authStateField = MainViewModel::class.java.getDeclaredField("authState")
-  authStateField.isAccessible = true
-  (authStateField.get(this) as MutableStateFlow<FirebaseUser?>).value = user
+  val user = mockk<FirebaseUser>(relaxed = true)
+  every { user.uid } returns userId
+
+  try {
+    val field = MainViewModel::class.java.getDeclaredField("_currentUserFlow")
+    field.isAccessible = true
+    @Suppress("UNCHECKED_CAST") val flow = field.get(this) as MutableStateFlow<FirebaseUser?>
+    flow.value = user
+  } catch (e: NoSuchFieldException) {
+    throw e
+  }
 }
