@@ -470,6 +470,9 @@ private fun ProfileViewContent(
                       usernames = usernames,
                       onDismiss = { profileSamplesViewModel.resetCommentSampleId() },
                       onAddComment = { id, text -> profileSamplesViewModel.onAddComment(id, text) },
+                      onDeleteComment = { sampleId, authorId, timestamp ->
+                        profileSamplesViewModel.onDeleteComment(sampleId, authorId, timestamp)
+                      },
                       sampleOwnerId = samples.firstOrNull { it.id == activeId }?.ownerId,
                       currentUserId =
                           profileSamplesViewModel.currentUser.collectAsState().value?.uid)
