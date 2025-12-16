@@ -160,9 +160,10 @@ abstract class BaseSampleFeedViewModel(
 
   /** Function to trigger loading */
   override fun loadSampleResources(sample: Sample) {
+    val effectivePath =
+        sample.storagePreviewSamplePath.ifBlank { sample.storageProcessedSamplePath }
     val currentResources = _sampleResources.value[sample.id]
-    if (currentResources != null &&
-        currentResources.loadedSamplePath == sample.storagePreviewSamplePath) {
+    if (currentResources != null && currentResources.loadedSamplePath == effectivePath) {
       return
     }
 
@@ -180,8 +181,7 @@ abstract class BaseSampleFeedViewModel(
         val coverUrl =
             if (sample.storageImagePath.isNotBlank()) getSampleCoverUrl(sample.storageImagePath)
             else null
-        val audioUrl =
-            if (sample.storagePreviewSamplePath.isNotBlank()) getSampleAudioUrl(sample) else null
+        val audioUrl = if (effectivePath.isNotBlank()) getSampleAudioUrl(sample) else null
         val waveform = getSampleWaveform(sample)
 
         _sampleResources.update { current ->
@@ -194,7 +194,7 @@ abstract class BaseSampleFeedViewModel(
                       audioUrl = audioUrl,
                       waveform = waveform,
                       isLoading = false,
-                      loadedSamplePath = sample.storagePreviewSamplePath))
+                      loadedSamplePath = effectivePath))
         }
       } catch (e: Exception) {
         Log.e("BaseSampleFeedViewModel", "Error loading sample resources: ${e.message}")
@@ -241,7 +241,7 @@ abstract class BaseSampleFeedViewModel(
   }
 
   private suspend fun getSampleAudioUrl(sample: Sample): String? {
-    val storagePath = sample.storagePreviewSamplePath
+    val storagePath = sample.storagePreviewSamplePath.ifBlank { sample.storageProcessedSamplePath }
     if (storagePath.isBlank()) return null
     if (audioUrlCache.containsKey(storagePath)) return audioUrlCache[storagePath]
 

@@ -414,7 +414,10 @@ private fun SampleSectionLazyRow(
       horizontalArrangement = Arrangement.spacedBy(spacing),
       contentPadding = PaddingValues(horizontal = horizontalPadding),
       modifier = Modifier.fillMaxWidth()) {
-        val validSamples = samples.filter { it.storagePreviewSamplePath.isNotBlank() }
+        val validSamples =
+            samples.filter {
+              it.storageProcessedSamplePath.isNotBlank() || it.storagePreviewSamplePath.isNotBlank()
+            }
         val columns = validSamples.chunked(rowsPerColumn)
 
         items(columns) { samplesColumn ->

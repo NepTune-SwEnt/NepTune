@@ -36,7 +36,7 @@ fun LazyListScope.sampleFeedItems(
     iconSize: Dp = 20.dp,
 ) {
   items(samples) { sample ->
-    LaunchedEffect(sample.id, sample.storagePreviewSamplePath) {
+    LaunchedEffect(sample.id, sample.storagePreviewSamplePath, sample.storageProcessedSamplePath) {
       controller.loadSampleResources(sample)
     }
     val resources = sampleResources[sample.id] ?: SampleResourceState()

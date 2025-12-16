@@ -287,7 +287,11 @@ open class SearchViewModel(
               samples.filter { sample ->
                 sample.isPublic || sample.ownerId == currentUserId || (sample.ownerId in following)
               }
-          val readySamples = visibleSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
+          val readySamples =
+              visibleSamples.filter {
+                it.storageProcessedSamplePath.isNotBlank() ||
+                    it.storagePreviewSamplePath.isNotBlank()
+              }
           allSamples.value = readySamples
           readySamples.forEach { loadSampleResources(it) }
           applyFilter(query)
