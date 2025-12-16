@@ -63,6 +63,20 @@ private val testSamples =
             downloads = 2,
             isPublic = true),
         Sample(
+            id = "sample3",
+            name = "Private Sample",
+            description = "A private sample",
+            durationSeconds = 45,
+            tags = listOf("private"),
+            ownerId = "test-user",
+            storagePreviewSamplePath = "not_blank", // Important for the new logic
+            storageProcessedSamplePath = "not_blank",
+            likes = 5,
+            usersLike = emptyList(),
+            comments = 1,
+            downloads = 0,
+            isPublic = false),
+        Sample(
             id = "sample2",
             name = "Followed Sample",
             description = "A sample from a followed user",
@@ -380,7 +394,8 @@ class MainScreenTest {
 
   @Test
   fun sampleOwnerCanDeleteAnyComment() {
-    val sample = viewModel.discoverSamples.value.first()
+    // Get a sample owned by the test user
+    val sample = viewModel.discoverSamples.value.first { it.ownerId == "test-user" }
     val sampleOwnerId = sample.ownerId
 
     // Pretend to be the sample owner
