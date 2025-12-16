@@ -63,9 +63,24 @@ open class StorageService(
    * @throws IllegalArgumentException if no audio or no json file is found
    * @throws java.io.IOException for I/O errors or unsafe paths
    */
-  open fun persistZipToDownloads(zipFile: File, outputDir: File): File {
-    require(zipFile.isFile) { "zipFile must be a file: ${zipFile.path}" }
+  open suspend fun persistZipToDownloads(zipFile: File, outputDir: File): File {
+    return withContext(ioDispatcher) {
+      require(zipFile.isFile) { "zipFile must be a file: ${zipFile.path}" }
 
+      if (!checkZipContainsRequiredFiles(zipFile)) {
+        throw IllegalArgumentException("Archive missing required files in ${zipFile.name}")
+      }
+
+      // Now extract files
+      val outFile = File(outputDir, zipFile.name)
+      FileInputStream(zipFile).use { input ->
+        FileOutputStream(outFile).use { output -> input.copyTo(output) }
+      }
+      outFile
+    }
+  }
+
+  private fun checkZipContainsRequiredFiles(zipFile: File): Boolean {
     var hasAudio = false
     var hasJson = false
 
@@ -81,15 +96,7 @@ open class StorageService(
         entry = zis.nextEntry
       }
     }
-
-    if (!hasAudio || !hasJson)
-        throw IllegalArgumentException("Archive missing required files in ${zipFile.name}")
-    // Now extract files
-    val outFile = File(outputDir, zipFile.name)
-    FileInputStream(zipFile).use { input ->
-      FileOutputStream(outFile).use { output -> input.copyTo(output) }
-    }
-    return outFile
+    return hasAudio && hasJson
   }
 
   /**
@@ -267,7 +274,9 @@ open class StorageService(
           Log.w("StorageService", "Failed to calculate project duration")
         }
 
-        File(path).delete()
+        if (!File(path).delete()) {
+          Log.e("StorageService", "Temporary audio file could not be deleted: $path")
+        }
 
         return@withContext realDuration
       } catch (e: Exception) {
@@ -286,9 +295,7 @@ open class StorageService(
         require(storagePath.isNotBlank()) { "storagePath is blank" }
 
         val ref = storageRef.child(storagePath)
-        if (!exists(ref)) {
-          throw IllegalArgumentException("File not found in storage at: $storagePath")
-        }
+        require(exists(ref)) { "File not found in storage at: $storagePath" }
 
         ref.getFile(outFile)
             .addOnProgressListener { snap ->
