@@ -471,7 +471,8 @@ private fun ProfileViewContent(
                       onDismiss = { profileSamplesViewModel.resetCommentSampleId() },
                       onAddComment = { id, text -> profileSamplesViewModel.onAddComment(id, text) },
                       sampleOwnerId = samples.firstOrNull { it.id == activeId }?.ownerId,
-                  )
+                      currentUserId =
+                          profileSamplesViewModel.currentUser.collectAsState().value?.uid)
                 }
               }
               downloadPickerSample?.let { s ->

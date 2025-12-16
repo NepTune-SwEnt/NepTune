@@ -87,7 +87,7 @@ abstract class BaseSampleFeedViewModel(
         val authorId = profile?.uid ?: "unknown"
         val authorName = profile?.username ?: defaultName
         val authorProfilePicUrl = profile?.avatarUrl ?: ""
-        sampleRepo.addComment(sampleId, authorId, authorName, authorProfilePicUrl, text.trim())
+        sampleRepo.addComment(sampleId, authorId, authorName, text.trim(), authorProfilePicUrl)
         observeCommentsForSample(sampleId)
       } catch (e: Exception) {
         Log.e("BaseSampleFeedViewModel", "Error adding comment: ${e.message}")
