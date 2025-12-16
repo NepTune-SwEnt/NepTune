@@ -157,6 +157,44 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
     val currentCount = snapshot.getLong("comments") ?: 0L
     sampleDoc.update("comments", currentCount + 1).await()
   }
+  /** Delete a comment identified by authorId and timestamp (if provided). */
+  override suspend fun deleteComment(sampleId: String, authorId: String, timestamp: Timestamp?) {
+    val sampleDoc = samples.document(sampleId)
+    val snapshot = sampleDoc.get().await()
+
+    check(snapshot.exists()) {
+      "SampleRepositoryFirebase.deleteComment: Sample with id=$sampleId doesn't exist"
+    }
+
+    val commentsCol = sampleDoc.collection("comments")
+    val docsToDelete =
+        if (timestamp != null) {
+          commentsCol
+              .whereEqualTo("authorId", authorId)
+              .whereEqualTo("timestamp", timestamp)
+              .get()
+              .await()
+              .documents
+        } else {
+          null
+        }
+
+    val deletedCount = docsToDelete?.size
+    if (deletedCount == 0) return
+
+    // Use a single WriteBatch to perform all deletes and the counter update in one network request
+    val batch = db.batch()
+    if (docsToDelete != null) {
+      for (doc in docsToDelete) {
+        batch.delete(doc.reference)
+      }
+    }
+
+    // Atomic decrement to avoid race conditions with concurrent comment additions
+    batch.update(sampleDoc, "comments", deletedCount?.toLong()?.let { FieldValue.increment(-it) })
+
+    batch.commit().await()
+  }
   /** Observe the comment of a sample */
   override fun observeComments(sampleId: String): Flow<List<Comment>> = callbackFlow {
     val listener =

@@ -3,6 +3,7 @@ package com.neptune.neptune.ui.search
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.storage.FirebaseStorage
 import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.R
@@ -67,8 +68,8 @@ open class SearchViewModel(
 
   // ---------- Firebase auth (disabled in tests when useMockData = true) ----------
   private val effectiveAuth = if (useMockData) null else auth ?: FirebaseAuth.getInstance()
-
   private val _currentUserFlow = MutableStateFlow(auth?.currentUser)
+  val currentUser: StateFlow<FirebaseUser?> = _currentUserFlow.asStateFlow()
 
   private val authListener: FirebaseAuth.AuthStateListener? =
       effectiveAuth?.let {
