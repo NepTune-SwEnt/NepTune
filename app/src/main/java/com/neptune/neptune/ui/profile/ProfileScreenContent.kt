@@ -68,8 +68,11 @@ import com.neptune.neptune.R
 import com.neptune.neptune.media.LocalMediaPlayer
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
+import com.neptune.neptune.ui.feed.FeedCallbacks
+import com.neptune.neptune.ui.feed.FeedItemStyle
 import com.neptune.neptune.ui.feed.sampleFeedItems
 import com.neptune.neptune.ui.main.CommentDialog
+import com.neptune.neptune.ui.main.CommentDialogAction
 import com.neptune.neptune.ui.main.DownloadChoiceDialog
 import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.offline.OfflineBanner
@@ -283,15 +286,20 @@ internal fun ProfileViewContent(
                         mediaPlayer = mediaPlayer,
                         likedSamples = likedSamples,
                         sampleResources = sampleResources,
-                        onDownloadRequest = { sample -> downloadPickerSample = sample },
-                        navigateToProfile = {},
-                        navigateToOtherUserProfile = {},
-                        testTagsForSample = {
-                          object : BaseSampleTestTags {
-                            override val prefix = "sampleList"
-                          }
-                        },
-                        showOwnerInfo = false)
+                        feedCallbacks =
+                            FeedCallbacks(
+                                onDownloadRequest = { sample -> downloadPickerSample = sample },
+                                navigateToProfile = {},
+                                navigateToOtherUserProfile = {}),
+                        feedItemStyle =
+                            FeedItemStyle(
+                                testTagsForSample = {
+                                  object : BaseSampleTestTags {
+                                    override val prefix = "sampleList"
+                                  }
+                                },
+                                width = cardWidth,
+                                height = cardHeight))
                   }
                 }
 
@@ -301,7 +309,18 @@ internal fun ProfileViewContent(
                       comments = comments,
                       usernames = usernames,
                       onDismiss = { profileSamplesViewModel.resetCommentSampleId() },
-                      onAddComment = { id, text -> profileSamplesViewModel.onAddComment(id, text) })
+                      sampleOwnerId = samples.firstOrNull { it.id == activeId }?.ownerId,
+                      currentUserId =
+                          profileSamplesViewModel.currentUser.collectAsState().value?.uid,
+                      commentDialogAction =
+                          CommentDialogAction(
+                              onAddComment = { id, text ->
+                                profileSamplesViewModel.onAddComment(id, text)
+                              },
+                              onDeleteComment = { sampleId, authorId, timestamp ->
+                                profileSamplesViewModel.onDeleteComment(
+                                    sampleId, authorId, timestamp)
+                              }))
                 }
               }
               downloadPickerSample?.let { s ->
