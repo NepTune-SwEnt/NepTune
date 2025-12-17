@@ -90,7 +90,6 @@ fun ProfileScreen(
     uiState: SelfProfileUiState,
     localAvatarUri: Uri? = null,
     callbacks: ProfileScreenCallbacks = ProfileScreenCallbacks.Empty,
-    onAvatarEditClick: () -> Unit = {},
     viewConfig: ProfileViewConfig,
     profileSamplesViewModel: ProfileSamplesViewModel,
     isOnline: Boolean = true,
@@ -116,14 +115,18 @@ fun ProfileScreen(
               ProfileEditContent(
                   uiState = uiState,
                   localAvatarUri = localAvatarUri,
-                  onSave = { callbacks.onSaveClick(uiState.name, uiState.username, uiState.bio) },
-                  onNameChange = callbacks.onNameChange,
-                  onUsernameChange = callbacks.onUsernameChange,
-                  onBioChange = callbacks.onBioChange,
-                  onTagInputFieldChange = callbacks.onTagInputFieldChange,
-                  onTagSubmit = callbacks.onTagSubmit,
-                  onRemoveTag = callbacks.onRemoveTag,
-                  onAvatarEditClick = onAvatarEditClick,
+                  ProfileEditCallbacks(
+                      onSave = {
+                        callbacks.onSaveClick(uiState.name, uiState.username, uiState.bio)
+                      },
+                      onNameChange = callbacks.onNameChange,
+                      onUsernameChange = callbacks.onUsernameChange,
+                      onBioChange = callbacks.onBioChange,
+                      onTagInputFieldChange = callbacks.onTagInputFieldChange,
+                      onTagSubmit = callbacks.onTagSubmit,
+                      onRemoveTag = callbacks.onRemoveTag,
+                      onAvatarEditClick = callbacks.onAvatarEditClick,
+                  ),
                   isOnline = isOnline)
             }
           }
@@ -362,6 +365,17 @@ val TextFieldColors: @Composable () -> TextFieldColors = {
   )
 }
 
+data class ProfileEditCallbacks(
+    val onSave: () -> Unit,
+    val onNameChange: (String) -> Unit,
+    val onUsernameChange: (String) -> Unit,
+    val onBioChange: (String) -> Unit,
+    val onTagInputFieldChange: (String) -> Unit,
+    val onTagSubmit: () -> Unit,
+    val onRemoveTag: (String) -> Unit,
+    val onAvatarEditClick: () -> Unit,
+)
+
 /**
  * Displays the editable profile form.
  *
@@ -373,14 +387,7 @@ val TextFieldColors: @Composable () -> TextFieldColors = {
 internal fun ProfileEditContent(
     uiState: SelfProfileUiState,
     localAvatarUri: Uri?,
-    onSave: () -> Unit,
-    onNameChange: (String) -> Unit,
-    onUsernameChange: (String) -> Unit,
-    onBioChange: (String) -> Unit,
-    onTagInputFieldChange: (String) -> Unit,
-    onTagSubmit: () -> Unit,
-    onRemoveTag: (String) -> Unit,
-    onAvatarEditClick: () -> Unit,
+    callbacks: ProfileEditCallbacks,
     isOnline: Boolean = true
 ) {
   val dimensions = LocalProfileDimensions.current
@@ -398,7 +405,7 @@ internal fun ProfileEditContent(
               horizontalArrangement = Arrangement.End,
               verticalAlignment = Alignment.CenterVertically) {
                 Button(
-                    onClick = onSave,
+                    onClick = callbacks.onSave,
                     enabled = !uiState.isSaving && uiState.isValid && isOnline,
                     border = BorderStroke(2.dp, color = NepTuneTheme.colors.onBackground),
                     colors =
@@ -418,12 +425,12 @@ internal fun ProfileEditContent(
               model = avatarModel,
               modifier = Modifier.testTag(ProfileScreenTestTags.AVATAR),
               showEditPencil = true,
-              onEditClick = onAvatarEditClick)
+              onEditClick = callbacks.onAvatarEditClick)
           Spacer(modifier = Modifier.height(dimensions.sectionVerticalSpacing))
           OutlinedTextField(
               value = uiState.name,
               textStyle = appTextStyle(EDIT_FIELDS_FONT_SIZE),
-              onValueChange = onNameChange,
+              onValueChange = callbacks.onNameChange,
               label = { Text(text = "Name", style = appTextStyle()) },
               colors = TextFieldColors(),
               singleLine = true,
@@ -444,7 +451,7 @@ internal fun ProfileEditContent(
           OutlinedTextField(
               value = uiState.username,
               textStyle = appTextStyle(EDIT_FIELDS_FONT_SIZE),
-              onValueChange = onUsernameChange,
+              onValueChange = callbacks.onUsernameChange,
               label = { Text(text = "Username", style = appTextStyle()) },
               colors = TextFieldColors(),
               singleLine = true,
@@ -465,7 +472,7 @@ internal fun ProfileEditContent(
           OutlinedTextField(
               value = uiState.bio,
               textStyle = appTextStyle(EDIT_FIELDS_FONT_SIZE),
-              onValueChange = onBioChange,
+              onValueChange = callbacks.onBioChange,
               label = { Text(text = "Bio", style = appTextStyle()) },
               colors = TextFieldColors(),
               modifier = Modifier.fillMaxWidth().testTag(ProfileScreenTestTags.FIELD_BIO),
@@ -489,7 +496,7 @@ internal fun ProfileEditContent(
             OutlinedTextField(
                 value = uiState.inputTag,
                 textStyle = appTextStyle(EDIT_FIELDS_FONT_SIZE),
-                onValueChange = onTagInputFieldChange,
+                onValueChange = callbacks.onTagInputFieldChange,
                 label = {
                   Text(text = "My music genre", style = appTextStyle(EDIT_FIELDS_FONT_SIZE))
                 },
@@ -510,7 +517,7 @@ internal fun ProfileEditContent(
                 })
             Spacer(Modifier.width(dimensions.inlineSpacing))
             Button(
-                onClick = onTagSubmit,
+                onClick = callbacks.onTagSubmit,
                 border = BorderStroke(2.dp, color = NepTuneTheme.colors.onBackground),
                 colors =
                     ButtonDefaults.buttonColors(
@@ -532,7 +539,7 @@ internal fun ProfileEditContent(
                   key(tag) {
                     EditableTagChip(
                         tagText = tag,
-                        onRemove = onRemoveTag,
+                        onRemove = callbacks.onRemoveTag,
                         modifier = Modifier.testTag("profile/tag/chip/${tag.replace(' ', '_')}"))
                   }
                 }

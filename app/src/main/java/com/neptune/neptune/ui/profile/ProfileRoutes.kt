@@ -100,7 +100,6 @@ fun SelfProfileRoute(
           } else {
             localAvatarUri
           },
-      onAvatarEditClick = { imagePickerLauncher.launch("image/*") },
       viewConfig = viewConfig,
       profileSamplesViewModel = samplesViewModel,
       callbacks =
@@ -113,7 +112,9 @@ fun SelfProfileRoute(
               onTagInputFieldChange = viewModel::onTagInputFieldChange,
               onTagSubmit = viewModel::onTagAddition,
               onRemoveTag = viewModel::onTagDeletion,
-              goBackClick = goBack),
+              goBackClick = goBack,
+              onAvatarEditClick = { imagePickerLauncher.launch("image/*") },
+          ),
       isOnline = isOnline,
       isUserLoggedIn = isUserLoggedIn)
 }

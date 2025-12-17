@@ -559,7 +559,12 @@ fun MainTopAppBar(userAvatar: String?, navigateToProfile: () -> Unit, signedIn: 
 }
 
 /** Data class to group the state variables for MainContent. */
-data class SampleItemStyle(val width: Dp, val height: Dp = 166.dp, val iconSize: Dp = 16.dp)
+data class SampleItemStyle(
+    val width: Dp,
+    val height: Dp = 166.dp,
+    val iconSize: Dp = 16.dp,
+    val showOwnerInfo: Boolean = true
+)
 
 @Composable
 fun SampleItem(
@@ -569,14 +574,12 @@ fun SampleItem(
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
     testTags: BaseSampleTestTags = MainScreenTestTags,
     resourceState: SampleResourceState = SampleResourceState(),
-    sampleItemStyle: SampleItemStyle,
-    iconSize: Dp = 16.dp,
-    showOwnerInfo: Boolean = true
+    sampleItemStyle: SampleItemStyle
 ) {
 
   Column(modifier = Modifier.width(sampleItemStyle.width)) {
     // Header (Avatar + Name)
-    if (showOwnerInfo) {
+    if (sampleItemStyle.showOwnerInfo) {
       SampleCardHeader(
           avatarUrl = resourceState.ownerAvatarUrl,
           userName = resourceState.ownerName,

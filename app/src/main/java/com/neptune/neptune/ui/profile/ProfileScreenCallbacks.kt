@@ -18,6 +18,7 @@ data class ProfileScreenCallbacks(
     val onTagSubmit: () -> Unit,
     val onRemoveTag: (String) -> Unit,
     val goBackClick: () -> Unit,
+    val onAvatarEditClick: () -> Unit,
 ) {
   companion object {
     val Empty =
@@ -31,6 +32,7 @@ data class ProfileScreenCallbacks(
             onTagSubmit = {},
             onRemoveTag = {},
             goBackClick = {},
+            onAvatarEditClick = {},
         )
   }
 }
@@ -46,6 +48,7 @@ fun profileScreenCallbacks(
     onTagSubmit: () -> Unit = {},
     onRemoveTag: (String) -> Unit = {},
     goBackClick: () -> Unit = {},
+    onAvatarEditClick: () -> Unit = {},
 ) =
     ProfileScreenCallbacks(
         onEditClick,
@@ -56,4 +59,5 @@ fun profileScreenCallbacks(
         onTagInputFieldChange,
         onTagSubmit,
         onRemoveTag,
-        goBackClick)
+        goBackClick,
+        onAvatarEditClick)
