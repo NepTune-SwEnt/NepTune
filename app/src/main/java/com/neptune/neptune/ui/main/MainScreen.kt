@@ -110,6 +110,7 @@ import kotlinx.coroutines.delay
 
 val TOP_BAR_HEIGHT = 90.dp
 val PROFILE_ICON_SIZE = 57.dp
+val LOGO_HEIGHT = TOP_BAR_HEIGHT-20.dp
 
 object MainScreenTestTags : BaseSampleTestTags {
   override val prefix = "MainScreen"
@@ -456,21 +457,20 @@ private fun SampleSectionLazyRow(
 @Composable
 fun MainTopAppBar(userAvatar: String?, navigateToProfile: () -> Unit, signedIn: Boolean = true) {
   Column {
-    CenterAlignedTopAppBar(
+    Box(
         modifier =
             Modifier
               .padding(0.dp)
               .fillMaxWidth()
               .height(TOP_BAR_HEIGHT)
-              .testTag(MainScreenTestTags.TOP_BAR),
-        title = {
+              .testTag(MainScreenTestTags.TOP_BAR)){
           // Keep the title constrained to the center area so the actions stay to the right
-          Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+      Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Image(
                 painter = painterResource(id = R.drawable.neptune_logo),
                 contentDescription = "NepTune Logo",
                 modifier = Modifier
-                  .height(PROFILE_ICON_SIZE)
+                  .height(LOGO_HEIGHT)
                   .testTag(MainScreenTestTags.TOP_BAR_LOGO),
                 contentScale = ContentScale.Fit)
 
@@ -480,7 +480,7 @@ fun MainTopAppBar(userAvatar: String?, navigateToProfile: () -> Unit, signedIn: 
                   onClick = navigateToProfile,
                   modifier =
                       Modifier.align(Alignment.CenterEnd)
-                          .padding(horizontal = 5.dp)
+                          .padding(horizontal = (TOP_BAR_HEIGHT - PROFILE_ICON_SIZE)/2)
                           .size(PROFILE_ICON_SIZE)
                           .testTag(NavigationTestTags.PROFILE_BUTTON)) {
                     AsyncImage(
@@ -497,10 +497,7 @@ fun MainTopAppBar(userAvatar: String?, navigateToProfile: () -> Unit, signedIn: 
                   }
             }
           }
-        },
-        colors =
-            TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = NepTuneTheme.colors.background))
+        }
     HorizontalDivider(
         modifier = Modifier.fillMaxWidth(),
         thickness = 0.75.dp,
