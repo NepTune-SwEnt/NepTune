@@ -1287,6 +1287,12 @@ fun ADSRCurveEditor(
       }
 }
 
+
+private const val MIN_ANGLE = -135f
+private const val MAX_ANGLE = 135f
+private const val DEAD_ZONE_START = -90f
+private const val DEAD_ZONE_END = 90f
+private const val ACTIVE_RANGE = DEAD_ZONE_END - DEAD_ZONE_START
 @Composable
 fun UniversalKnob(
     label: String,
@@ -1320,18 +1326,31 @@ fun UniversalKnob(
                 .pointerInput(Unit) {
                   detectDragGestures(
                       onDrag = { change, _ ->
-                        val centerX = size.width / 2f
-                        val centerY = size.height / 2f
-                        var angleRadians: Float =
-                            atan2(change.position.y - centerY, change.position.x - centerX)
-                        angleRadians += (PI / 2).toFloat()
-                        var angleDeg = Math.toDegrees(angleRadians.toDouble()).toFloat()
-                        if (angleDeg < -135) angleDeg += 360
-                        if (angleDeg > 225) angleDeg -= 360
+                          val centerX = size.width / 2f
+                          val centerY = size.height / 2f
 
-                        val normalizedValue = ((angleDeg + 135f) / 270f).coerceIn(0f, 1f)
-                        val newKnobValue = (normalizedValue * (maxValue - minValue)) + minValue
-                        onValueChange(newKnobValue)
+                          var angleRad =
+                              atan2(change.position.y - centerY, change.position.x - centerX)
+                          angleRad += (PI / 2).toFloat()
+
+                          var angleDeg = Math.toDegrees(angleRad.toDouble()).toFloat()
+
+                          // wrap angle
+                          if (angleDeg < MIN_ANGLE) angleDeg += 360f
+                          if (angleDeg > MAX_ANGLE) angleDeg -= 360f
+
+                          val newValue =
+                              when {
+                                  angleDeg <= DEAD_ZONE_START -> minValue
+                                  angleDeg >= DEAD_ZONE_END -> maxValue
+                                  else -> {
+                                      val normalized =
+                                          (angleDeg - DEAD_ZONE_START) / ACTIVE_RANGE
+                                      minValue + normalized * (maxValue - minValue)
+                                  }
+                              }
+
+                          onValueChange(newValue.coerceIn(minValue, maxValue))
                       })
                 },
         contentAlignment = Alignment.Center) {
