@@ -69,6 +69,7 @@ open class MainViewModel(
         waveformExtractor = waveformExtractor),
     SampleFeedController {
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
+  private var shouldComputeRecommendations = true
   val downloadProgress = MutableStateFlow<Int?>(null)
 
   override val actions: SampleUiActions? =
@@ -152,7 +153,7 @@ open class MainViewModel(
               "#$index  id=${sample.id}  name=${sample.name}  score=${"%.4f".format(score)}")
         }
         _recommendedSamples.value = ranked
-        _discoverSamples.value = ranked
+      //  _discoverSamples.value = ranked
       } catch (e: Exception) {
         Log.e("MainViewModel", "Error loading recommendations: ${e.message}")
       }
@@ -178,8 +179,15 @@ open class MainViewModel(
                         sample.ownerId == currentUserId ||
                         (sample.ownerId in following)
                   }
+                val latestById = visibleSamples.associateBy { it.id }
+                // If we are showing recommendations, keep their ORDER but refresh their DATA
+                if (_recommendedSamples.value.isNotEmpty()) {
+                    _recommendedSamples.value =
+                        _recommendedSamples.value.map { old -> latestById[old.id] ?: old }
+                }
 
-              val existingIds = allSamplesCache.map { it.id }.toSet()
+
+                val existingIds = allSamplesCache.map { it.id }.toSet()
               allSamplesCache = visibleSamples
 
               val readySamples = visibleSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
@@ -195,7 +203,11 @@ open class MainViewModel(
               if (_isRefreshing.value) {
                 _isRefreshing.value = false
               }
-              viewModelScope.launch { loadRecommendations() }
+              //viewModelScope.launch { loadRecommendations() }
+              if (shouldComputeRecommendations) {
+                  shouldComputeRecommendations = false
+                  loadRecommendations()
+              }
             }
       } catch (e: Exception) {
         Log.e("MainViewModel", "Error loading samples", e)
@@ -321,9 +333,24 @@ open class MainViewModel(
       }
     }
   }
+    private fun updateSampleLikesLocally(sampleId: String, delta: Int) {
+        fun bump(list: List<Sample>) =
+            list.map { s -> if (s.id == sampleId) s.copy(likes = s.likes + delta) else s }
+
+        _discoverSamples.value = bump(_discoverSamples.value)
+        _followedSamples.value = bump(_followedSamples.value)
+
+        if (_recommendedSamples.value.isNotEmpty()) {
+            _recommendedSamples.value = bump(_recommendedSamples.value)
+        }
+
+        allSamplesCache = bump(allSamplesCache)
+    }
 
   override fun onLikeClick(sample: Sample, isLiked: Boolean) {
     if (_isAnonymous.value) return
+    val delta = if (isLiked) 1 else -1
+    updateSampleLikesLocally(sample.id, delta) // ✅ instant UI update
     viewModelScope.launch {
       try {
         val newState = actions?.onLikeClicked(sample, isLiked)
@@ -356,6 +383,7 @@ open class MainViewModel(
   fun refresh() {
     _isRefreshing.value = true
     // allSamplesCache = emptyList()
+    shouldComputeRecommendations = true
     loadSamplesFromFirebase()
   }
 
