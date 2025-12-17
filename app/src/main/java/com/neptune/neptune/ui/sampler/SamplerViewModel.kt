@@ -289,7 +289,7 @@ open class SamplerViewModel(
     _uiState.update { current -> current.copy(inputTempo = value ?: 0) }
   }
 
-  private var previewPlayer: MediaPlayer? = null
+  var previewPlayer: MediaPlayer? = null
 
   private val tapTimes = mutableListOf<Long>()
 
@@ -942,7 +942,7 @@ open class SamplerViewModel(
     PREVIEW
   }
 
-  internal fun processAudio(
+  internal open fun processAudio(
       currentAudioUri: Uri?,
       eqBands: List<Float>,
       reverbWet: Float,
