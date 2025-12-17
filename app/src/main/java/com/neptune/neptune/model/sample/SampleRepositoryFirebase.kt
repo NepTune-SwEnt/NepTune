@@ -6,7 +6,6 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import kotlin.String
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
@@ -68,7 +67,7 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
           if (snapshot != null && snapshot.exists()) {
             trySend(snapshot.toSampleOrNull())
           } else {
-            trySend(null) // Le document a été supprimé ou n'existe pas
+            trySend(null)
           }
         }
     awaitClose { listener.remove() }

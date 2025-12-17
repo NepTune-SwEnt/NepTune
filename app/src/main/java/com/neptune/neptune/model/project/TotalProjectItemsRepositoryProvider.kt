@@ -11,7 +11,6 @@ object TotalProjectItemsRepositoryProvider {
   private val _repository: TotalProjectItemsRepository by lazy {
     // Use the application context to create an instance of the local repository
     val localRepository = ProjectItemsRepositoryLocal(NepTuneApplication.appContext)
-    // TODO replace with the cloud repository when fully implemented
     val cloudRepository = ProjectItemsRepositoryVar()
     TotalProjectItemsRepositoryCompose(localRepository, cloudRepository)
   }
