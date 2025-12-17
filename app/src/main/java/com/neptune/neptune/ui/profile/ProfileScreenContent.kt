@@ -291,8 +291,6 @@ internal fun ProfileViewContent(
                             override val prefix = "sampleList"
                           }
                         },
-                        width = cardWidth,
-                        height = cardHeight,
                         showOwnerInfo = false)
                   }
                 }

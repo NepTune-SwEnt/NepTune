@@ -43,16 +43,9 @@ fun LazyListScope.sampleFeedItems(
     mediaPlayer: NeptuneMediaPlayer,
     likedSamples: Map<String, Boolean>,
     sampleResources: Map<String, SampleResourceState>,
-    onDownloadRequest: (Sample) -> Unit,
-    navigateToProfile: () -> Unit,
-    navigateToOtherUserProfile: (String) -> Unit,
-    testTagsForSample: (Sample) -> BaseSampleTestTags,
-    width: Dp,
-    height: Dp,
-    iconSize: Dp = 20.dp,
-    showOwnerInfo: Boolean = true,
     feedItemStyle: FeedItemStyle,
     feedCallbacks: FeedCallbacks,
+    showOwnerInfo: Boolean = true,
 ) {
   items(samples) { sample ->
     LaunchedEffect(sample.id, sample.storagePreviewSamplePath, sample.storageProcessedSamplePath) {
@@ -87,13 +80,12 @@ fun LazyListScope.sampleFeedItems(
         testTags = testTags,
         mediaPlayer = mediaPlayer,
         resourceState = resources,
+        showOwnerInfo = showOwnerInfo,
         sampleItemStyle =
             SampleItemStyle(
                 width = feedItemStyle.width,
                 height = feedItemStyle.height,
-                iconSize = feedItemStyle.iconSize),
-        iconSize = iconSize,
-        showOwnerInfo = showOwnerInfo)
+                iconSize = feedItemStyle.iconSize))
     Spacer(Modifier.height(12.dp))
   }
 }
