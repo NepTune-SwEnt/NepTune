@@ -79,12 +79,13 @@ class SelectMessagesViewModel(
         .onEach { previews ->
           previews.forEach { preview ->
             val existing = userMap[preview.profile.uid]
-            userMap[preview.profile.uid] =
-                UserMessagePreview(
-                    profile = existing?.profile ?: preview.profile,
-                    lastMessage = preview.lastMessage,
-                    lastTimestamp = preview.lastTimestamp,
-                    isOnline = existing?.isOnline ?: preview.isOnline)
+            if (existing == null) {
+              userMap[preview.profile.uid] = preview
+            } else {
+              userMap[preview.profile.uid] =
+                  existing.copy(
+                      lastMessage = preview.lastMessage, lastTimestamp = preview.lastTimestamp)
+            }
           }
           updateUsersState()
         }
@@ -111,6 +112,6 @@ class SelectMessagesViewModel(
         userMap.values
             .filter { !it.profile.isAnonymous } // Exclude anonymous
             .sortedByDescending { it.lastTimestamp?.toDate()?.time ?: 0L }
-            .map { it.copy() }
+            .toList()
   }
 }

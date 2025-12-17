@@ -1,8 +1,11 @@
 package com.neptune.neptune.ui.projectList
 
+import android.content.Context
+import android.net.ConnectivityManager
 import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.domain.model.MediaItem
 import com.neptune.neptune.domain.port.MediaRepository
@@ -54,9 +57,16 @@ class ProjectListViewModelTest {
   fun setUp() {
     Dispatchers.setMain(testDispatcher)
 
+    val mockContext = mockk<Context>(relaxed = true)
+    val mockConnectivityManager = mockk<ConnectivityManager>(relaxed = true)
+
     // Mock generic android dependencies that might be touched
     mockkStatic(Uri::class)
     every { Uri.fromFile(any()) } returns mockk()
+
+    every { mockContext.getSystemService(Context.CONNECTIVITY_SERVICE) } returns
+        mockConnectivityManager
+    NepTuneApplication.appContext = mockContext
 
     // Default: User logged in, Network Online
     every { auth.currentUser } returns firebaseUser
