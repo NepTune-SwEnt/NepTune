@@ -28,7 +28,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** Displays all samples posted by [ownerId] on profile screens. */
+/**
+ * Drives the list of samples displayed on a profile.
+ *
+ * Observes items owned by [ownerId], exposes like state, and brokers download/like actions to the
+ * shared feed infrastructure.
+ */
 class ProfileSamplesViewModel(
     private val ownerId: String,
     sampleRepo: SampleRepository = SampleRepositoryProvider.repository,
@@ -89,11 +94,13 @@ class ProfileSamplesViewModel(
     viewModelScope.launch {
       this@ProfileSamplesViewModel.sampleRepo.observeSamples().collectLatest { samples ->
         val filtered =
-            samples.filter { sample ->
-              sample.ownerId == ownerId &&
-                  (sample.storageProcessedSamplePath.isNotBlank() ||
-                      sample.storagePreviewSamplePath.isNotBlank())
-            }
+            samples
+                .filter { sample ->
+                  sample.ownerId == ownerId &&
+                      (sample.storageProcessedSamplePath.isNotBlank() ||
+                          sample.storagePreviewSamplePath.isNotBlank())
+                }
+                .sortedByDescending { it.creationTime }
         _samples.value = filtered
         refreshLikeStates(filtered, _likedSamples)
       }

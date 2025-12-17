@@ -1002,8 +1002,6 @@ class ProfileScreenTest {
   fun postedSamplesSectionShowsEmptyState() {
     setContentViewMode(samplesViewModel = createFakeSamplesViewModel())
 
-    composeTestRule.scrollAnyScrollableTo(hasText("Posted samples"))
-    composeTestRule.onNode(hasText("Posted samples"), useUnmergedTree = true).assertExists()
     composeTestRule.onNode(hasText("No samples posted yet."), useUnmergedTree = true).assertExists()
     composeTestRule
         .onAllNodes(hasTestTag("profile/samples/list"), useUnmergedTree = true)

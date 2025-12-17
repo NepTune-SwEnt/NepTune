@@ -233,4 +233,21 @@ class SelfProfileViewModelTest {
     viewModel.onTagDeletion("does-not-exist")
     assertEquals(s, viewModel.uiState.value)
   }
+
+  @Test
+  fun onTagAdditionRejectsNonAlphanumericCharacters() {
+    viewModel.onEditClick()
+
+    viewModel.onTagInputFieldChange("__ ____ __")
+    viewModel.onTagAddition()
+    var s = viewModel.uiState.value
+    assertTrue("Invalid tag should not be added", s.tags.isEmpty())
+    assertEquals("Only letters, numbers, and single spaces.", s.tagError)
+
+    viewModel.onTagInputFieldChange("rock-n-roll")
+    viewModel.onTagAddition()
+    s = viewModel.uiState.value
+    assertTrue("Invalid tag should not be added", s.tags.isEmpty())
+    assertEquals("Only letters, numbers, and single spaces.", s.tagError)
+  }
 }

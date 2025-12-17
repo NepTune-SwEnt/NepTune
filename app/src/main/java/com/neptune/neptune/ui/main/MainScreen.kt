@@ -559,7 +559,12 @@ fun MainTopAppBar(userAvatar: String?, navigateToProfile: () -> Unit, signedIn: 
 }
 
 /** Data class to group the state variables for MainContent. */
-data class SampleItemStyle(val width: Dp, val height: Dp = 166.dp, val iconSize: Dp = 16.dp)
+data class SampleItemStyle(
+    val width: Dp,
+    val height: Dp = 166.dp,
+    val iconSize: Dp = 16.dp,
+    val showOwnerInfo: Boolean = true
+)
 
 @Composable
 fun SampleItem(
@@ -574,11 +579,13 @@ fun SampleItem(
 
   Column(modifier = Modifier.width(sampleItemStyle.width)) {
     // Header (Avatar + Name)
-    SampleCardHeader(
-        avatarUrl = resourceState.ownerAvatarUrl,
-        userName = resourceState.ownerName,
-        onProfileClick = clickHandlers.onProfileClick,
-        testTags = testTags)
+    if (sampleItemStyle.showOwnerInfo) {
+      SampleCardHeader(
+          avatarUrl = resourceState.ownerAvatarUrl,
+          userName = resourceState.ownerName,
+          onProfileClick = clickHandlers.onProfileClick,
+          testTags = testTags)
+    }
 
     // Card (Image + Waveform + Title)
     SampleCard(
