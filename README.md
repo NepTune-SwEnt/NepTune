@@ -4,7 +4,7 @@ NepTune is an Android app and backend that makes capturing, editing, and sharing
 simple and social. It combines a lightweight sound-design toolset (resampling without pitch 
 distortion, filters, reverb, fades) with social features (sharing, subscriptions, favorites, stats).
 
-This project has been done for the CS-311 course at EPFL given by George Candea
+This project has been done for the CS-311 course at EPFL given by [George Candea](https://github.com/candea)
 
 ## Install the app
 
@@ -20,6 +20,12 @@ Key features
 - Export as WAV or as a portable project file
 - Social features: share samples, follow users, favorites, stats
 - Server-side sample processing & preview generation (Firebase Functions + FFmpeg)
+
+### UI
+[Link to our Figma design](https://www.figma.com/design/gxxZEMMnw0vSRHbdAfe2rc/NepTune?node-id=4-3&t=a46S21O4504wuBl3-1)
+
+### Structure and data diagram
+
 
 ## Build the project
 ### Setup
