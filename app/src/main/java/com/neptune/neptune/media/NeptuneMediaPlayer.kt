@@ -12,7 +12,8 @@ open class NeptuneMediaPlayer() {
   val context = NepTuneApplication.appContext
 
   private var mediaPlayer: MediaPlayer? = null
-  private var currentUri: Uri? = null
+  var currentUri: Uri? = null
+    private set
 
   private var onCompletionCallback: (() -> Unit)? = null
 
@@ -165,15 +166,6 @@ open class NeptuneMediaPlayer() {
     return mediaPlayer?.currentPosition ?: -1
   }
 
-  /**
-   * Get the URI of the currently loaded audio.
-   *
-   * @return The current URI, or null if no audio is loaded.
-   */
-  open fun getCurrentUri(): Uri? {
-    return currentUri
-  }
-
   fun setVolume(level: Float) {
     val v = level.coerceIn(0f, 1f)
     mediaPlayer?.setVolume(v, v)
@@ -186,6 +178,19 @@ open class NeptuneMediaPlayer() {
       mediaPlayer = null
       currentUri = null
     }
+    try {
+      mp.setVolume(0f, 0f)
+      if (mp.isPlaying) mp.stop()
+    } catch (e: Exception) {
+      Log.e("NeptuneMediaPlayer", "Error stopping media player at fade end", e)
+    }
+    try {
+      mp.release()
+    } catch (e: Exception) {
+      Log.e("NeptuneMediaPlayer", "Error releasing media player at fade end", e)
+    }
+    mediaPlayer = null
+    currentUri = null
   }
 
   open fun forceStopAndRelease() {

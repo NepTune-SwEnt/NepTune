@@ -3,6 +3,7 @@ package com.neptune.neptune.media
 import android.content.Context
 import android.media.MediaRecorder
 import android.media.MediaScannerConnection
+import android.util.Log
 import com.neptune.neptune.data.StoragePaths
 import java.io.File
 import java.io.IOException
@@ -60,20 +61,14 @@ class NeptuneRecorder(private val context: Context, private val paths: StoragePa
             outputFile = file
           } catch (e: IOException) {
             releaseSafely()
-            if (file.exists()) {
-              if (!file.delete()) {
-                throw IOException(
-                    "Failed to delete incomplete recording file: ${file.absolutePath}")
-              }
+            if (file.exists() && !file.delete()) {
+              throw IOException("Failed to delete incomplete recording file: ${file.absolutePath}")
             }
             throw e
           } catch (e: RuntimeException) {
             releaseSafely()
-            if (file.exists()) {
-              if (!file.delete()) {
-                throw IOException(
-                    "Failed to delete incomplete recording file: ${file.absolutePath}")
-              }
+            if (file.exists() && !file.delete()) {
+              throw IOException("Failed to delete incomplete recording file: ${file.absolutePath}")
             }
             throw IOException("Failed to start recorder", e)
           }
@@ -117,7 +112,9 @@ class NeptuneRecorder(private val context: Context, private val paths: StoragePa
   private fun releaseSafely() {
     try {
       recorder?.release()
-    } catch (_: Exception) {}
+    } catch (_: Exception) {
+      Log.e("NeptuneRecorder", "Failed to release recorder")
+    }
 
     recorder = null
     _isRecording = false

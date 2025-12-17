@@ -202,7 +202,7 @@ open class SamplerViewModel(
 
     val shouldResetFromEnd = currentState.playbackPosition >= 0.99f
     val isNearZero = currentState.playbackPosition < 0.01f
-    val isFirstPlay = mediaPlayer.getCurrentUri() != currentUri
+    val isFirstPlay = mediaPlayer.currentUri != currentUri
 
     val durationMillis = currentState.audioDurationMillis
     val currentUIPositionNorm = currentState.playbackPosition

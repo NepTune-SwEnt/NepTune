@@ -18,8 +18,6 @@ class FakeMediaPlayer : NeptuneMediaPlayer() {
 
   override fun isPlaying(): Boolean = isPlayingState
 
-  override fun getCurrentUri(): Uri? = fakeUri
-
   override fun getCurrentPosition(): Int = currentPositionMillis
 
   override fun getDuration(): Int = durationMillis

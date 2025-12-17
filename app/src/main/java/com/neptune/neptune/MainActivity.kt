@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -118,13 +119,13 @@ fun NeptuneApp(
 ) {
   val signInViewModel: SignInViewModel = viewModel()
   val searchViewModel: SearchViewModel = viewModel()
+  val mainViewModel: MainViewModel = viewModel()
+  val importViewModel: ImportViewModel = viewModel(factory = importAppRoot())
+
   val navigationActions = NavigationActions(navController)
   val navBackStackEntry by navController.currentBackStackEntryAsState()
   val currentRoute = navBackStackEntry?.destination?.route
-  val importViewModel: ImportViewModel = viewModel(factory = importAppRoot())
   val currentScreen = navigationActions.currentScreen(currentRoute ?: startDestination)
-
-  val mainViewModel: MainViewModel = viewModel()
 
   // Media Player values
   val mediaPlayer = remember { NeptuneMediaPlayer() }
@@ -143,230 +144,242 @@ fun NeptuneApp(
               navController = navController,
               startDestination = startDestination,
               modifier = Modifier.padding(innerPadding)) {
-                composable(Screen.Main.route) {
-                  MainScreen(
-                      navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
-                      navigateToProjectList = {
-                        navigationActions.navigateTo(Screen.ProjectList.createRoute("post"))
-                      },
-                      navigateToOtherUserProfile = { userId ->
-                        navigationActions.navigateTo(Screen.OtherUserProfile.createRoute(userId))
-                      },
-                      navigateToSampleList = { type ->
-                        navigationActions.navigateTo(Screen.Feed.createRoute(type))
-                      },
-                      mainViewModel = mainViewModel)
-                }
-                composable(Screen.Profile.route) {
-                  SelfProfileRoute(
-                      settings = { navigationActions.navigateTo(Screen.Settings) },
-                      goBack = { navigationActions.goBack() },
-                      onFollowersClick = {
-                        navigationActions.navigateTo(
-                            Screen.FollowList.createRoute(FollowListTab.FOLLOWERS))
-                      },
-                      onFollowingClick = {
-                        navigationActions.navigateTo(
-                            Screen.FollowList.createRoute(FollowListTab.FOLLOWING))
-                      },
-                  )
-                }
-                composable(
-                    route = Screen.Edit.route + "/{zipFilePath}",
-                    arguments =
-                        listOf(
-                            navArgument("zipFilePath") {
-                              type = NavType.StringType
-                              nullable = true
-                            })) { backStackEntry ->
-                      val zipFilePath = backStackEntry.arguments?.getString("zipFilePath")
-                      SamplerScreen(zipFilePath = zipFilePath)
-                    }
-
-                composable(Screen.Search.route) {
-                  SearchScreen(
-                      navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
-                      navigateToOtherUserProfile = { userId ->
-                        navigationActions.navigateTo(Screen.OtherUserProfile.createRoute(userId))
-                      },
-                      searchViewModel = searchViewModel)
-                }
-                composable(
-                    route = Screen.Post.route,
-                    arguments =
-                        listOf(
-                            navArgument("projectId") {
-                              type = NavType.StringType
-                              nullable = true
-                            })) { backStackEntry ->
-                      val projectId = backStackEntry.arguments?.getString("projectId")
-
-                      PostScreen(
-                          goBack = { navigationActions.goBack() },
-                          navigateToMainScreen = {
-                            mainViewModel.refresh()
-                            navigationActions.navigateTo(Screen.Main)
-                          },
-                          projectId = projectId)
-                    }
-                composable(Screen.ImportFile.route) {
-                  ImportScreen(vm = importViewModel, goBack = { navigationActions.goBack() })
-                }
-                composable(Screen.SignIn.route) {
-                  SignInScreen(
-                      signInViewModel = signInViewModel,
-                      navigateMain = {
-                        mainViewModel.refresh()
-                        navigationActions.navigateTo(Screen.Main)
-                      })
-                }
-                composable(
-                    route = Screen.ProjectList.route,
-                    arguments =
-                        listOf(
-                            navArgument("purpose") {
-                              type = NavType.StringType
-                              defaultValue = "edit"
-                            })) { backStackEntry ->
-                      val purpose = backStackEntry.arguments?.getString("purpose") ?: "edit"
-                      val db = remember {
-                        Room.databaseBuilder(
-                                NepTuneApplication.appContext, MediaDb::class.java, "media.db")
-                            .build()
-                      }
-                      val mediaRepo = remember { MediaRepositoryImpl(db.mediaDao()) }
-                      val getLibraryUseCase = remember { GetLibraryUseCase(mediaRepo) }
-                      val vm: ProjectListViewModel =
-                          viewModel(
-                              factory =
-                                  ProjectListViewModelFactory(
-                                      getLibraryUseCase = getLibraryUseCase,
-                                      mediaRepository = mediaRepo,
-                                  ))
-                      ProjectListScreen(
-                          projectListViewModel = vm,
-                          onProjectClick = { projectItem ->
-                            when (purpose) {
-                              "post" -> {
-                                navigationActions.navigateTo(
-                                    Screen.Post.createRoute(projectItem.uid))
-                              }
-                              else -> {
-                                val pathToSend = projectItem.projectFileLocalPath ?: projectItem.uid
-                                val encodedFilePath =
-                                    URLEncoder.encode(pathToSend, StandardCharsets.UTF_8.name())
-                                navigationActions.navigateTo(
-                                    Screen.Edit.route + "/$encodedFilePath")
-                              }
-                            }
-                          },
-                          importViewModel = importViewModel)
-                    }
-                composable(Screen.Settings.route) {
-                  SettingsScreen(
-                      goBack = { navigationActions.goBack() },
-                      goTheme = { navigationActions.navigateTo(Screen.SettingsTheme) },
-                      goAccount = { navigationActions.navigateTo(Screen.SettingsAccount) })
-                }
-                composable(Screen.SettingsTheme.route) {
-                  SettingsThemeScreen(
-                      settingsViewModel = settingsViewModel,
-                      goBack = { navigationActions.goBack() },
-                      goCustomTheme = { navigationActions.navigateTo(Screen.SettingsCustomTheme) })
-                }
-                composable(Screen.SettingsCustomTheme.route) {
-                  SettingsCustomThemeScreen(
-                      settingsViewModel = settingsViewModel,
-                      goBack = { navigationActions.goBack() })
-                }
-                composable(Screen.SettingsAccount.route) {
-                  SettingsAccountScreen(
-                      goBack = { navigationActions.goBack() },
-                      logout = {
-                        signInViewModel.signOut()
-                        navigationActions.navigateTo(Screen.SignIn)
-                      })
-                }
-                composable(
-                    route = Screen.OtherUserProfile.route,
-                    arguments = listOf(navArgument("userId") { type = NavType.StringType })) {
-                        backStackEntry ->
-                      val userId =
-                          backStackEntry.arguments?.getString("userId") ?: return@composable
-
-                      OtherUserProfileRoute(
-                          userId = userId,
-                          goBack = { navigationActions.goBack() },
-                      )
-                    }
-                composable(Screen.SelectMessages.route) {
-                  val firebaseUser by signInViewModel.currentUser.collectAsState()
-                  val currentUid = firebaseUser?.uid ?: return@composable // prevent crash
-
-                  SelectMessagesScreen(
-                      goBack = { navigationActions.goBack() },
-                      onSelectUser = { uid ->
-                        navigationActions.navigateTo(Screen.Messages.createRoute(uid))
-                      },
-                      currentUid = currentUid)
-                }
-                composable(
-                    route = Screen.Messages.route,
-                    arguments = listOf(navArgument("uid") { type = NavType.StringType })) {
-                        backStackEntry ->
-                      val otherUserId =
-                          backStackEntry.arguments?.getString("uid") ?: return@composable
-                      MessagesRoute(
-                          otherUserId = otherUserId,
-                          signInViewModel = signInViewModel,
-                          goBack = { navigationActions.goBack() })
-                    }
-                composable(
-                    route = Screen.Feed.route,
-                    arguments = listOf(navArgument("type") { type = NavType.StringType })) {
-                        backStackEntry ->
-                      val typeName = backStackEntry.arguments?.getString("type")
-                      val feedType =
-                          try {
-                            if (typeName != null) FeedType.valueOf(typeName) else FeedType.DISCOVER
-                          } catch (_: IllegalArgumentException) {
-                            FeedType.DISCOVER // default value
-                          }
-                      FeedScreen(
-                          mainViewModel = mainViewModel,
-                          initialType = feedType,
-                          goBack = { navigationActions.goBack() },
-                          navigateToProfile = { navigationActions.navigateTo(Screen.Profile) },
-                          navigateToOtherUserProfile = { userId ->
-                            navigationActions.navigateTo(
-                                Screen.OtherUserProfile.createRoute(userId))
-                          })
-                    }
-                composable(
-                    route = Screen.FollowList.route,
-                    arguments = listOf(navArgument("initialTab") { type = NavType.StringType })) {
-                        backStackEntry ->
-                      val tabName = backStackEntry.arguments?.getString("initialTab")
-                      val initialTab =
-                          try {
-                            if (tabName != null) {
-                              FollowListTab.valueOf(tabName)
-                            } else {
-                              // By default, show Followers tab
-                              FollowListTab.FOLLOWERS
-                            }
-                          } catch (_: IllegalArgumentException) {
-                            FollowListTab.FOLLOWERS
-                          }
-                      FollowListRoute(
-                          initialTab = initialTab,
-                          goBack = { navigationActions.goBack() },
-                          navigateToOtherUserProfile = { userId ->
-                            navigationActions.navigateTo(
-                                Screen.OtherUserProfile.createRoute(userId))
-                          })
-                    }
+                authGraph(signInViewModel, mainViewModel, navigationActions)
+                mainContentGraph(mainViewModel, searchViewModel, navigationActions)
+                profileGraph(navigationActions)
+                editorGraph(mainViewModel, importViewModel, navigationActions)
+                settingsGraph(settingsViewModel, signInViewModel, navigationActions)
+                messagingGraph(signInViewModel, navigationActions)
               }
         })
   }
+}
+
+// --- Navigation Graph Extensions ---
+
+private fun NavGraphBuilder.authGraph(
+    signInViewModel: SignInViewModel,
+    mainViewModel: MainViewModel,
+    nav: NavigationActions
+) {
+  composable(Screen.SignIn.route) {
+    SignInScreen(
+        signInViewModel = signInViewModel,
+        navigateMain = {
+          mainViewModel.refresh()
+          nav.navigateTo(Screen.Main)
+        })
+  }
+}
+
+private fun NavGraphBuilder.mainContentGraph(
+    mainViewModel: MainViewModel,
+    searchViewModel: SearchViewModel,
+    nav: NavigationActions
+) {
+  composable(Screen.Main.route) {
+    MainScreen(
+        navigateToProfile = { nav.navigateTo(Screen.Profile) },
+        navigateToProjectList = { nav.navigateTo(Screen.ProjectList.createRoute("post")) },
+        navigateToOtherUserProfile = { userId ->
+          nav.navigateTo(Screen.OtherUserProfile.createRoute(userId))
+        },
+        navigateToSampleList = { type -> nav.navigateTo(Screen.Feed.createRoute(type)) },
+        mainViewModel = mainViewModel)
+  }
+
+  composable(Screen.Search.route) {
+    SearchScreen(
+        navigateToProfile = { nav.navigateTo(Screen.Profile) },
+        navigateToOtherUserProfile = { userId ->
+          nav.navigateTo(Screen.OtherUserProfile.createRoute(userId))
+        },
+        searchViewModel = searchViewModel)
+  }
+
+  composable(
+      route = Screen.Feed.route,
+      arguments = listOf(navArgument("type") { type = NavType.StringType })) { backStackEntry ->
+        val typeName = backStackEntry.arguments?.getString("type")
+        val feedType =
+            try {
+              if (typeName != null) FeedType.valueOf(typeName) else FeedType.DISCOVER
+            } catch (_: IllegalArgumentException) {
+              FeedType.DISCOVER
+            }
+        FeedScreen(
+            mainViewModel = mainViewModel,
+            initialType = feedType,
+            goBack = { nav.goBack() },
+            navigateToProfile = { nav.navigateTo(Screen.Profile) },
+            navigateToOtherUserProfile = { userId ->
+              nav.navigateTo(Screen.OtherUserProfile.createRoute(userId))
+            })
+      }
+}
+
+private fun NavGraphBuilder.profileGraph(nav: NavigationActions) {
+  composable(Screen.Profile.route) {
+    SelfProfileRoute(
+        settings = { nav.navigateTo(Screen.Settings) },
+        goBack = { nav.goBack() },
+        onFollowersClick = {
+          nav.navigateTo(Screen.FollowList.createRoute(FollowListTab.FOLLOWERS))
+        },
+        onFollowingClick = {
+          nav.navigateTo(Screen.FollowList.createRoute(FollowListTab.FOLLOWING))
+        },
+    )
+  }
+
+  composable(
+      route = Screen.OtherUserProfile.route,
+      arguments = listOf(navArgument("userId") { type = NavType.StringType })) { backStackEntry ->
+        val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
+        OtherUserProfileRoute(userId = userId, goBack = { nav.goBack() })
+      }
+
+  composable(
+      route = Screen.FollowList.route,
+      arguments = listOf(navArgument("initialTab") { type = NavType.StringType })) { backStackEntry
+        ->
+        val tabName = backStackEntry.arguments?.getString("initialTab")
+        val initialTab =
+            try {
+              if (tabName != null) FollowListTab.valueOf(tabName) else FollowListTab.FOLLOWERS
+            } catch (_: IllegalArgumentException) {
+              FollowListTab.FOLLOWERS
+            }
+        FollowListRoute(
+            initialTab = initialTab,
+            goBack = { nav.goBack() },
+            navigateToOtherUserProfile = { userId ->
+              nav.navigateTo(Screen.OtherUserProfile.createRoute(userId))
+            })
+      }
+}
+
+private fun NavGraphBuilder.editorGraph(
+    mainViewModel: MainViewModel,
+    importViewModel: ImportViewModel,
+    nav: NavigationActions
+) {
+  composable(
+      route = Screen.Edit.route + "/{zipFilePath}",
+      arguments =
+          listOf(
+              navArgument("zipFilePath") {
+                type = NavType.StringType
+                nullable = true
+              })) { backStackEntry ->
+        val zipFilePath = backStackEntry.arguments?.getString("zipFilePath")
+        SamplerScreen(zipFilePath = zipFilePath)
+      }
+
+  composable(
+      route = Screen.Post.route,
+      arguments =
+          listOf(
+              navArgument("projectId") {
+                type = NavType.StringType
+                nullable = true
+              })) { backStackEntry ->
+        val projectId = backStackEntry.arguments?.getString("projectId")
+        PostScreen(
+            goBack = { nav.goBack() },
+            navigateToMainScreen = {
+              mainViewModel.refresh()
+              nav.navigateTo(Screen.Main)
+            },
+            projectId = projectId)
+      }
+
+  composable(Screen.ImportFile.route) {
+    ImportScreen(vm = importViewModel, goBack = { nav.goBack() })
+  }
+
+  composable(
+      route = Screen.ProjectList.route,
+      arguments =
+          listOf(
+              navArgument("purpose") {
+                type = NavType.StringType
+                defaultValue = "edit"
+              })) { backStackEntry ->
+        val purpose = backStackEntry.arguments?.getString("purpose") ?: "edit"
+        val db = remember {
+          Room.databaseBuilder(NepTuneApplication.appContext, MediaDb::class.java, "media.db")
+              .build()
+        }
+        val mediaRepo = remember { MediaRepositoryImpl(db.mediaDao()) }
+        val getLibraryUseCase = remember { GetLibraryUseCase(mediaRepo) }
+        val vm: ProjectListViewModel =
+            viewModel(
+                factory =
+                    ProjectListViewModelFactory(
+                        getLibraryUseCase = getLibraryUseCase, mediaRepository = mediaRepo))
+        ProjectListScreen(
+            projectListViewModel = vm,
+            onProjectClick = { projectItem ->
+              if (purpose == "post") {
+                nav.navigateTo(Screen.Post.createRoute(projectItem.uid))
+              } else {
+                val pathToSend = projectItem.projectFileLocalPath ?: projectItem.uid
+                val encodedFilePath = URLEncoder.encode(pathToSend, StandardCharsets.UTF_8.name())
+                nav.navigateTo(Screen.Edit.route + "/$encodedFilePath")
+              }
+            },
+            importViewModel = importViewModel)
+      }
+}
+
+private fun NavGraphBuilder.settingsGraph(
+    settingsViewModel: SettingsViewModel,
+    signInViewModel: SignInViewModel,
+    nav: NavigationActions
+) {
+  composable(Screen.Settings.route) {
+    SettingsScreen(
+        goBack = { nav.goBack() },
+        goTheme = { nav.navigateTo(Screen.SettingsTheme) },
+        goAccount = { nav.navigateTo(Screen.SettingsAccount) })
+  }
+  composable(Screen.SettingsTheme.route) {
+    SettingsThemeScreen(
+        settingsViewModel = settingsViewModel,
+        goBack = { nav.goBack() },
+        goCustomTheme = { nav.navigateTo(Screen.SettingsCustomTheme) })
+  }
+  composable(Screen.SettingsCustomTheme.route) {
+    SettingsCustomThemeScreen(settingsViewModel = settingsViewModel, goBack = { nav.goBack() })
+  }
+  composable(Screen.SettingsAccount.route) {
+    SettingsAccountScreen(
+        goBack = { nav.goBack() },
+        logout = {
+          signInViewModel.signOut()
+          nav.navigateTo(Screen.SignIn)
+        })
+  }
+}
+
+private fun NavGraphBuilder.messagingGraph(
+    signInViewModel: SignInViewModel,
+    nav: NavigationActions
+) {
+  composable(Screen.SelectMessages.route) {
+    val firebaseUser by signInViewModel.currentUser.collectAsState()
+    val currentUid = firebaseUser?.uid ?: return@composable // prevent crash
+    SelectMessagesScreen(
+        goBack = { nav.goBack() },
+        onSelectUser = { uid -> nav.navigateTo(Screen.Messages.createRoute(uid)) },
+        currentUid = currentUid)
+  }
+  composable(
+      route = Screen.Messages.route,
+      arguments = listOf(navArgument("uid") { type = NavType.StringType })) { backStackEntry ->
+        val otherUserId = backStackEntry.arguments?.getString("uid") ?: return@composable
+        MessagesRoute(
+            otherUserId = otherUserId, signInViewModel = signInViewModel, goBack = { nav.goBack() })
+      }
 }
