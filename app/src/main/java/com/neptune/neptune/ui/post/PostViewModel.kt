@@ -1,5 +1,6 @@
 package com.neptune.neptune.ui.post
 
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.util.Log
 import androidx.core.net.toUri
@@ -84,8 +85,12 @@ class PostViewModel(
               null
             }
         _localZipUri.value = rawPath.toUri()
-        val durationSeconds = storageService?.getProjectDuration(_localZipUri.value) ?: 0
-        // processed audio
+        val durationMillis =
+            if (!previewPath.isNullOrBlank()) {
+              extractDurationFromPath(previewPath)
+            } else {
+              0L
+            } // processed audio
         project.audioPreviewLocalPath
             ?.takeIf { it.isNotBlank() }
             ?.let { localPathString -> _processedAudioUri.value = localPathString.toUri() }
@@ -101,7 +106,7 @@ class PostViewModel(
                 name = project.name,
                 description = project.description,
                 tags = project.tags,
-                durationSeconds = durationSeconds,
+                durationMillis = durationMillis,
                 likes = 0,
                 usersLike = emptyList(),
                 comments = 0,
@@ -112,6 +117,20 @@ class PostViewModel(
       } catch (e: Exception) {
         Log.e("PostViewModel", "Error when downloading the project", e)
       }
+    }
+  }
+
+  private fun extractDurationFromPath(path: String): Long {
+    val retriever = MediaMetadataRetriever()
+    return try {
+      retriever.setDataSource(path)
+      val time = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+      time?.toLongOrNull() ?: 0L
+    } catch (e: Exception) {
+      Log.e("PostViewModel", "Failed to extract duration", e)
+      0L
+    } finally {
+      retriever.release()
     }
   }
 
@@ -235,7 +254,7 @@ data class PostUiState(
             id = "0",
             name = "",
             description = "",
-            durationSeconds = 0,
+            durationMillis = 0L,
             tags = emptyList(),
             likes = 0,
             usersLike = emptyList(),

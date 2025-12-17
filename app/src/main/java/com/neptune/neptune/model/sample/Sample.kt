@@ -6,7 +6,7 @@ data class Sample(
     val id: String,
     val name: String,
     val description: String,
-    val durationSeconds: Int,
+    val durationMillis: Long,
     val tags: List<String>,
     val likes: Int,
     val usersLike: List<String>,

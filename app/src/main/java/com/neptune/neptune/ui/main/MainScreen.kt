@@ -885,11 +885,11 @@ private fun SampleCardBoxContent(
                           fontWeight = FontWeight(400)))
 
               // compute duration
-              val minutes = sample.durationSeconds / 60
-              val seconds = sample.durationSeconds % 60
+              val seconds = sample.durationMillis / 1000
+              val millis = (sample.durationMillis % 1000) / 10
 
               Text(
-                  String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds),
+                  String.format(Locale.getDefault(), "%02d:%02d", seconds, millis),
                   color = NepTuneTheme.colors.onBackground,
                   modifier = Modifier.padding(start = 8.dp).testTag(testTags.SAMPLE_DURATION),
                   style =

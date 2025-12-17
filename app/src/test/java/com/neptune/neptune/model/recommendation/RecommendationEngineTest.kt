@@ -21,14 +21,14 @@ class RecommendationEngineTest {
       likes: Int = 0,
       downloads: Int = 0,
       creationTime: Long = 0L,
-      durationSeconds: Int = 0,
+      durationMillis: Long = 0L,
       comments: Int = 0
   ): Sample =
       Sample(
           id = id,
           name = name,
           description = "",
-          durationSeconds = durationSeconds,
+          durationMillis = durationMillis,
           tags = tags,
           likes = likes,
           usersLike = emptyList(),
