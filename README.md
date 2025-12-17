@@ -21,12 +21,6 @@ Key features
 - Social features: share samples, follow users, favorites, stats
 - Server-side sample processing & preview generation (Firebase Functions + FFmpeg)
 
-## Screenshots
-### Feed
-![Feed](docs/images/feed_screen.png)
-### Editor
-![Edit screen](docs/images/editor_screen.png)
-
 ## Build the project
 ### Setup
 1. Install JDK 11 and Android Studio.
