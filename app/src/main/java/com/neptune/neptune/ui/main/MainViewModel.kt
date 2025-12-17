@@ -160,7 +160,6 @@ open class MainViewModel(
               "#$index  id=${sample.id}  name=${sample.name}  score=${"%.4f".format(score)}")
         }
         _recommendedSamples.value = ranked
-        //  _discoverSamples.value = ranked
       } catch (e: Exception) {
         Log.e("MainViewModel", "Error loading recommendations: ${e.message}")
       }
@@ -209,7 +208,6 @@ open class MainViewModel(
               if (_isRefreshing.value) {
                 _isRefreshing.value = false
               }
-              // viewModelScope.launch { loadRecommendations() }
               if (shouldComputeRecommendations) {
                 shouldComputeRecommendations = false
                 loadRecommendations()
@@ -389,7 +387,6 @@ open class MainViewModel(
   /** Function to be called when a refresh is triggered. */
   fun refresh() {
     _isRefreshing.value = true
-    // allSamplesCache = emptyList()
     shouldComputeRecommendations = true
     loadSamplesFromFirebase()
   }
