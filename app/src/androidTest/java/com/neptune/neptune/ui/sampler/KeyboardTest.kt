@@ -45,16 +45,12 @@ class ScrollablePianoComposeTest {
       }
     }
 
-    // Vérifier le texte initial et l'icône
     composeTestRule.onNodeWithText("Open Keyboard").assertIsDisplayed()
 
-    // Cliquer sur le bouton
     composeTestRule.onNodeWithTag("ADSR_TEST_BUTTON").performClick()
 
-    // Compose recomposera automatiquement : vérifier le nouveau texte
     composeTestRule.onNodeWithText("Close Keyboard").assertIsDisplayed()
 
-    // Cliquer à nouveau pour rebasculer
     composeTestRule.onNodeWithTag("ADSR_TEST_BUTTON").performClick()
     composeTestRule.onNodeWithText("Open Keyboard").assertIsDisplayed()
   }
