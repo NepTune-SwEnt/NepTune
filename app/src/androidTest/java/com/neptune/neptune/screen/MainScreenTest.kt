@@ -4,13 +4,19 @@ import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.filterToOne
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasAnyChild
+import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
@@ -41,6 +47,8 @@ import io.mockk.runs
 import io.mockk.spyk
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Rule
@@ -108,8 +116,6 @@ class MainScreenTest {
 
   private lateinit var fakeSampleRepo: FakeSampleRepository
   private var navigateToOtherUserProfileCallback: ((String) -> Unit)? = null
-
-  private var navigateToMessagesCallback: (() -> Unit)? = null
 
   @Before
   fun setup() {
@@ -198,8 +204,56 @@ class MainScreenTest {
         .assertIsDisplayed()
   }
 
+  private fun cardMatcherForSampleName(sampleName: String): SemanticsMatcher =
+      hasTestTag(MainScreenTestTags.SAMPLE_CARD)
+          .and(hasAnyDescendant(hasText(sampleName, substring = true)))
+
+  private fun likesNodeForSample(composeTestRule: ComposeTestRule, sampleName: String) =
+      composeTestRule
+          .onAllNodesWithTag(MainScreenTestTags.SAMPLE_LIKES, useUnmergedTree = true)
+          .filterToOne(hasAnyAncestor(cardMatcherForSampleName(sampleName)))
+
+  // NEW TEST: liking updates like count immediately
   @Test
-  fun sampleCard_displaysActions() {
+  fun likingSampleUpdatesLikeCountImmediatelyWithoutRefresh() = runTest {
+    val base =
+        Sample(
+            id = "like-test",
+            name = "Like Test",
+            description = "desc",
+            durationSeconds = 10,
+            tags = emptyList(),
+            ownerId = "user1",
+            storagePreviewSamplePath = "not_blank",
+            storageProcessedSamplePath = "not_blank",
+            likes = 2,
+            usersLike = emptyList(),
+            comments = 0,
+            downloads = 0,
+            isPublic = true)
+
+    composeTestRule.runOnIdle { runBlocking { fakeSampleRepo.addSample(base) } }
+    composeTestRule.waitForIdle()
+
+    // Scroll until the card is on screen
+    composeTestRule
+        .onNodeWithTag(MainScreenTestTags.LAZY_COLUMN_SAMPLE_LIST)
+        .performScrollToNode(hasText("Like Test"))
+
+    // BEFORE: assert the likes text inside *that card's likes row*
+    likesNodeForSample(composeTestRule, "Like Test").assert(hasAnyDescendant(hasText("2")))
+
+    // Click like on *that same likes row*
+    likesNodeForSample(composeTestRule, "Like Test").performClick()
+
+    composeTestRule.waitForIdle()
+
+    // AFTER
+    likesNodeForSample(composeTestRule, "Like Test").assert(hasAnyDescendant(hasText("3")))
+  }
+
+  @Test
+  fun sampleCardDisplaysActions() {
     composeTestRule
         .onAllNodesWithTag(MainScreenTestTags.SAMPLE_LIKES, true)
         .onFirst()
