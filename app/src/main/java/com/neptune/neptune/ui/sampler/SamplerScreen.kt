@@ -1,11 +1,13 @@
 package com.neptune.neptune.ui.sampler
 
+import android.annotation.SuppressLint
 import android.graphics.Paint
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -14,6 +16,10 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -236,13 +242,18 @@ fun SamplerScreen(
                 viewModel = viewModel)
             Spacer(modifier = Modifier.height(16.dp))
 
-            ADSRTestButton(viewModel = viewModel)
+            var showPiano by remember { mutableStateOf(false) }
+
+            ADSRTestButton(onTogglePiano = { showPiano = !showPiano }, isPianoVisible = showPiano)
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            SamplerTabs(currentTab = uiState.currentTab, onTabSelected = viewModel::selectTab)
-
-            TabContent(currentTab = uiState.currentTab, uiState = uiState, viewModel = viewModel)
+            if (showPiano) {
+              ScrollablePiano(viewModel = viewModel)
+            } else {
+              SamplerTabs(currentTab = uiState.currentTab, onTabSelected = viewModel::selectTab)
+              TabContent(currentTab = uiState.currentTab, uiState = uiState, viewModel = viewModel)
+            }
           }
 
           // Bottom-left Help button
@@ -286,26 +297,142 @@ fun HelpButton(onClick: () -> Unit) {
 }
 
 @Composable
-fun ADSRTestButton(viewModel: SamplerViewModel, modifier: Modifier = Modifier) {
+fun ADSRTestButton(
+    onTogglePiano: () -> Unit,
+    isPianoVisible: Boolean,
+    modifier: Modifier = Modifier
+) {
+
+  val color =
+      if (isPianoVisible) NepTuneTheme.colors.accentPrimary else NepTuneTheme.colors.soundWave
+  val icon = if (isPianoVisible) Icons.Default.Close else Icons.Default.Piano
+  val text = if (isPianoVisible) "Close Keyboard" else "Open Keyboard"
+
   Surface(
       modifier =
-          modifier.testTag("ADSR_TEST_BUTTON").fillMaxWidth().height(30.dp).pointerInput(Unit) {
+          modifier.testTag("ADSR_TEST_BUTTON").fillMaxWidth().height(40.dp).clickable {
+            onTogglePiano()
+          },
+      color = color,
+      shape = RoundedCornerShape(12.dp),
+      tonalElevation = 2.dp,
+      shadowElevation = 4.dp) {
+        Row(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center) {
+              Icon(imageVector = icon, contentDescription = text, tint = Color.White)
+              Spacer(modifier = Modifier.width(8.dp))
+              Text(text = text, color = Color.White, style = MaterialTheme.typography.labelLarge)
+            }
+      }
+}
+
+@Composable
+fun ScrollablePiano(
+    viewModel: SamplerViewModel,
+    modifier: Modifier = Modifier,
+    listState: LazyListState = rememberLazyListState() // par défaut
+) {
+  val uiState by viewModel.uiState.collectAsState()
+  val baseOctave = uiState.inputPitchOctave
+  val startOctave = (baseOctave - 1).coerceAtLeast(1)
+  val endOctave = (baseOctave + 1).coerceAtMost(7)
+  val octaves = (startOctave..endOctave).toList()
+
+  LaunchedEffect(Unit) { listState.scrollToItem(1) }
+
+  LazyRow(state = listState, modifier = modifier.fillMaxWidth().height(200.dp)) {
+    items(octaves) { octave ->
+      PianoOctave(
+          viewModel = viewModel,
+          octave = octave,
+          modifier = Modifier.width(56.dp * 7).testTag("PianoOctave") // important pour test
+          )
+    }
+  }
+}
+
+private val BlackKeyLayout =
+    listOf(
+        BlackKey(semitone = 1, afterWhiteIndex = 0),
+        BlackKey(semitone = 3, afterWhiteIndex = 1),
+        BlackKey(semitone = 6, afterWhiteIndex = 3),
+        BlackKey(semitone = 8, afterWhiteIndex = 4),
+        BlackKey(semitone = 10, afterWhiteIndex = 5))
+
+data class BlackKey(val semitone: Int, val afterWhiteIndex: Int)
+
+@SuppressLint("UnusedBoxWithConstraintsScope")
+@Composable
+fun PianoOctave(viewModel: SamplerViewModel, octave: Int, modifier: Modifier = Modifier) {
+  val whiteKeys = listOf(0, 2, 4, 5, 7, 9, 11)
+
+  BoxWithConstraints(modifier = modifier.height(200.dp).testTag("PianoOctave")) {
+    val width = maxWidth
+    val whiteKeyWidth = width / whiteKeys.size
+    val blackKeyWidth = whiteKeyWidth * 0.6f
+
+    Row(Modifier.fillMaxSize()) {
+      whiteKeys.forEach { semitone ->
+        val globalSemitone = semitone + (octave - 4) * 12
+
+        PianoKey(
+            semitone = globalSemitone,
+            viewModel = viewModel,
+            isBlack = false,
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+            label = if (semitone == 0) "C$octave" else null)
+      }
+    }
+
+    BlackKeyLayout.forEach { key ->
+      val globalSemitone = key.semitone + (octave - 4) * 12
+
+      PianoKey(
+          semitone = globalSemitone,
+          viewModel = viewModel,
+          isBlack = true,
+          modifier =
+              Modifier.width(blackKeyWidth)
+                  .fillMaxHeight(0.65f)
+                  .offset(x = whiteKeyWidth * (key.afterWhiteIndex + 1) - blackKeyWidth / 2))
+    }
+  }
+}
+
+@Composable
+fun PianoKey(
+    semitone: Int,
+    viewModel: SamplerViewModel,
+    isBlack: Boolean,
+    modifier: Modifier = Modifier,
+    label: String? = null
+) {
+  Surface(
+      modifier =
+          modifier.pointerInput(semitone) {
             detectTapGestures(
                 onPress = {
-                  viewModel.startADSRSample()
+                  viewModel.startADSRSampleWithPitch(semitone)
                   tryAwaitRelease()
                   viewModel.stopADSRSample()
                 })
           },
-      color = NepTuneTheme.colors.soundWave,
-      shape = RoundedCornerShape(12.dp),
-      tonalElevation = 2.dp,
-      shadowElevation = 4.dp) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-          Icon(
-              imageVector = Icons.Default.Piano,
-              contentDescription = "Play ADSR",
-              tint = Color.White)
+      color = if (isBlack) Color.Black else Color.White,
+      border = if (!isBlack) BorderStroke(1.dp, Color.Black) else null,
+      shape =
+          RoundedCornerShape(
+              bottomStart = if (isBlack) 4.dp else 8.dp, bottomEnd = if (isBlack) 4.dp else 8.dp),
+      shadowElevation = if (isBlack) 6.dp else 2.dp) {
+        if (label != null) {
+          Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                color = Color.Black.copy(alpha = 0.6f),
+                modifier = Modifier.padding(bottom = 6.dp))
+          }
         }
       }
 }

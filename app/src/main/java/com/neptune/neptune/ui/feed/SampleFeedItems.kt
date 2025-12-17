@@ -12,8 +12,24 @@ import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
 import com.neptune.neptune.ui.main.SampleItem
+import com.neptune.neptune.ui.main.SampleItemStyle
 import com.neptune.neptune.ui.main.SampleResourceState
 import com.neptune.neptune.ui.main.onClickFunctions
+
+/** Data class to group navigation and action callbacks. */
+data class FeedCallbacks(
+    val onDownloadRequest: (Sample) -> Unit,
+    val navigateToProfile: () -> Unit,
+    val navigateToOtherUserProfile: (String) -> Unit
+)
+
+/** Data class to group UI dimensions and testing configuration. */
+data class FeedItemStyle(
+    val width: Dp,
+    val height: Dp,
+    val testTagsForSample: (Sample) -> BaseSampleTestTags,
+    val iconSize: Dp = 20.dp
+)
 
 /**
  * Shared LazyColumn item builder for feeds showing sample cards.
@@ -35,17 +51,19 @@ fun LazyListScope.sampleFeedItems(
     height: Dp,
     iconSize: Dp = 20.dp,
     showOwnerInfo: Boolean = true,
+    feedItemStyle: FeedItemStyle,
+    feedCallbacks: FeedCallbacks,
 ) {
   items(samples) { sample ->
-    LaunchedEffect(sample.id, sample.storagePreviewSamplePath) {
+    LaunchedEffect(sample.id, sample.storagePreviewSamplePath, sample.storageProcessedSamplePath) {
       controller.loadSampleResources(sample)
     }
     val resources = sampleResources[sample.id] ?: SampleResourceState()
-    val testTags = testTagsForSample(sample)
+    val testTags = feedItemStyle.testTagsForSample(sample)
     val isLiked = likedSamples[sample.id] == true
     val actions =
         onClickFunctions(
-            onDownloadClick = { onDownloadRequest(sample) },
+            onDownloadClick = { feedCallbacks.onDownloadRequest(sample) },
             onLikeClick = {
               val newIsLiked = !isLiked
               controller.onLikeClick(sample, newIsLiked)
@@ -55,22 +73,25 @@ fun LazyListScope.sampleFeedItems(
               val ownerId = sample.ownerId
               if (ownerId.isNotBlank()) {
                 if (controller.isCurrentUser(ownerId)) {
-                  navigateToProfile()
+                  feedCallbacks.navigateToProfile()
                 } else {
-                  navigateToOtherUserProfile(ownerId)
+                  feedCallbacks.navigateToOtherUserProfile(ownerId)
                 }
               }
             },
         )
     SampleItem(
         sample = sample,
-        width = width,
-        height = height,
         clickHandlers = actions,
         isLiked = likedSamples[sample.id] == true,
         testTags = testTags,
         mediaPlayer = mediaPlayer,
         resourceState = resources,
+        sampleItemStyle =
+            SampleItemStyle(
+                width = feedItemStyle.width,
+                height = feedItemStyle.height,
+                iconSize = feedItemStyle.iconSize),
         iconSize = iconSize,
         showOwnerInfo = showOwnerInfo)
     Spacer(Modifier.height(12.dp))

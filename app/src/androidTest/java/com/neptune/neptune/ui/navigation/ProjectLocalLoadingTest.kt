@@ -52,8 +52,6 @@ class FakeMediaPlayer : NeptuneMediaPlayer() {
 
   override fun isPlaying(): Boolean = isPlayingState
 
-  override fun getCurrentUri(): Uri? = fakeUri
-
   override fun getCurrentPosition(): Int = currentPositionMillis
 
   override fun getDuration(): Int = durationMillis
@@ -185,7 +183,7 @@ class SamplerViewModelTogglePlayTest {
       val state = viewModel.uiState.value
       assertTrue("Should be playing", state.isPlaying)
       assertEquals(0f, state.playbackPosition)
-      assertEquals(testUri, fakePlayer.getCurrentUri())
+      assertEquals(testUri, fakePlayer.fakeUri)
       assertTrue(fakePlayer.isPlaying())
     }
   }

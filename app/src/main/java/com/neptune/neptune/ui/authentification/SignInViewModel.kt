@@ -80,7 +80,7 @@ enum class SignInStatus {
  * Factory interface to abstract the creation of GetGoogleIdOption. This allows for easy mocking in
  * unit tests.
  */
-interface GoogleIdOptionFactory {
+fun interface GoogleIdOptionFactory {
   fun create(clientId: String): GetGoogleIdOption
 }
 

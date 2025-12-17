@@ -34,6 +34,7 @@ import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.main.SampleCommentManager
 import com.neptune.neptune.ui.main.SampleItem
+import com.neptune.neptune.ui.main.SampleItemStyle
 import com.neptune.neptune.ui.main.SampleResourceState
 import com.neptune.neptune.ui.main.onClickFunctions
 import com.neptune.neptune.ui.offline.OfflineBanner
@@ -66,8 +67,6 @@ fun FeedScreen(
   val isRefreshing by mainViewModel.isRefreshing.collectAsState()
   val pullRefreshState = rememberPullToRefreshState()
   val downloadProgress: Int? by mainViewModel.downloadProgress.collectAsState()
-  val roundShape = 50
-  val isOnline by mainViewModel.isOnline.collectAsState()
 
   PullToRefreshHandler(
       isRefreshing = isRefreshing,
@@ -76,54 +75,16 @@ fun FeedScreen(
 
   Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
-        topBar = {
-          NeptuneTopBar(
-              title = currentType.title,
-              goBack = goBack,
-              actions = {
-                OutlinedButton(
-                    onClick = { currentType = currentType.toggle() },
-                    border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground),
-                    shape = RoundedCornerShape(roundShape),
-                    colors =
-                        ButtonDefaults.outlinedButtonColors(
-                            contentColor = NepTuneTheme.colors.onBackground),
-                    modifier = Modifier.height(36.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp)) {
-                      Text(
-                          text = "See ${currentType.toggle().title}",
-                          style =
-                              TextStyle(
-                                  fontSize = 16.sp,
-                                  fontFamily = FontFamily(Font(R.font.markazi_text)),
-                                  fontWeight = FontWeight.Bold))
-                    }
-              },
-              divider = false)
-        },
+        topBar = { TopBar(currentType, goBack, onClick = { currentType = currentType.toggle() }) },
         containerColor = NepTuneTheme.colors.background) { paddingValues ->
-          Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            if (!isOnline) {
-              OfflineBanner()
-            }
-            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-              FeedContent(
-                  modifier = Modifier.nestedScroll(pullRefreshState.nestedScrollConnection),
-                  mainViewModel = mainViewModel,
-                  currentType = currentType,
-                  navigateToProfile = navigateToProfile,
-                  navigateToOtherUserProfile = navigateToOtherUserProfile,
-                  onDownloadRequest = { sample -> downloadPickerSample = sample })
-
-              if (isOnline) {
-                PullToRefreshContainer(
-                    state = pullRefreshState,
-                    modifier = Modifier.align(Alignment.TopCenter),
-                    containerColor = NepTuneTheme.colors.background,
-                    contentColor = NepTuneTheme.colors.onBackground)
-              }
-            }
-          }
+          FeedScaffold(
+              paddingValues,
+              mainViewModel,
+              pullRefreshState,
+              currentType,
+              navigateToProfile,
+              navigateToOtherUserProfile,
+              onDownloadRequest = { sample -> downloadPickerSample = sample })
         }
 
     SampleCommentManager(
@@ -157,6 +118,70 @@ fun FeedScreen(
   }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FeedScaffold(
+    paddingValues: PaddingValues,
+    mainViewModel: MainViewModel,
+    pullRefreshState: PullToRefreshState,
+    currentType: FeedType,
+    navigateToProfile: () -> Unit,
+    navigateToOtherUserProfile: (String) -> Unit,
+    onDownloadRequest: (Sample) -> Unit
+) {
+  val isOnline by mainViewModel.isOnline.collectAsState()
+  Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+    if (!isOnline) {
+      OfflineBanner()
+    }
+    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+      FeedContent(
+          modifier = Modifier.nestedScroll(pullRefreshState.nestedScrollConnection),
+          mainViewModel = mainViewModel,
+          currentType = currentType,
+          navigateToProfile = navigateToProfile,
+          navigateToOtherUserProfile = navigateToOtherUserProfile,
+          onDownloadRequest = onDownloadRequest)
+
+      if (isOnline) {
+        PullToRefreshContainer(
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            containerColor = NepTuneTheme.colors.background,
+            contentColor = NepTuneTheme.colors.onBackground)
+      }
+    }
+  }
+}
+
+@Composable
+private fun TopBar(currentType: FeedType, goBack: () -> Unit, onClick: () -> Unit = {}) {
+  val roundShape = 50
+  NeptuneTopBar(
+      title = currentType.title,
+      goBack = goBack,
+      actions = {
+        OutlinedButton(
+            onClick = onClick,
+            border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground),
+            shape = RoundedCornerShape(roundShape),
+            colors =
+                ButtonDefaults.outlinedButtonColors(
+                    contentColor = NepTuneTheme.colors.onBackground),
+            modifier = Modifier.height(36.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp)) {
+              Text(
+                  text = "See ${currentType.toggle().title}",
+                  style =
+                      TextStyle(
+                          fontSize = 16.sp,
+                          fontFamily = FontFamily(Font(R.font.markazi_text)),
+                          fontWeight = FontWeight.Bold))
+            }
+      },
+      divider = false)
+}
+
 @Composable
 private fun FeedContent(
     modifier: Modifier = Modifier,
@@ -187,10 +212,14 @@ private fun FeedContent(
       label = "ListTransition",
       animationSpec = tween(durationMillis = effectDuration),
       modifier = modifier.background(NepTuneTheme.colors.background)) { type ->
-        val (currentSamples, currentState) =
+        val (rawSamples, currentState) =
             when (type) {
               FeedType.DISCOVER -> discoverSamples to discoverListState
               FeedType.FOLLOWED -> followedSamples to followedListState
+            }
+        val currentSamples =
+            rawSamples.filter {
+              it.storageProcessedSamplePath.isNotBlank() || it.storagePreviewSamplePath.isNotBlank()
             }
         LazyColumn(
             state = currentState,
@@ -214,13 +243,12 @@ private fun FeedContent(
 
                 SampleItem(
                     sample = sample,
-                    width = width,
-                    height = height,
                     isLiked = likedSamples[sample.id] == true,
                     clickHandlers = clickHandlers,
                     resourceState = resources,
                     mediaPlayer = mediaPlayer,
-                    iconSize = 20.dp)
+                    sampleItemStyle =
+                        SampleItemStyle(width = width, height = height, iconSize = 20.dp))
               }
 
               item { Spacer(modifier = Modifier.height(20.dp)) }

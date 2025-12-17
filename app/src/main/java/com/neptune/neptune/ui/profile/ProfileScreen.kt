@@ -23,6 +23,26 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import com.google.firebase.auth.FirebaseAuth
+import com.neptune.neptune.R
+import com.neptune.neptune.data.rememberImagePickerLauncher
+import com.neptune.neptune.media.LocalMediaPlayer
+import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import com.neptune.neptune.model.sample.Sample
+import com.neptune.neptune.ui.BaseSampleTestTags
+import com.neptune.neptune.ui.feed.FeedCallbacks
+import com.neptune.neptune.ui.feed.FeedItemStyle
+import com.neptune.neptune.ui.feed.sampleFeedItems
+import com.neptune.neptune.ui.main.CommentDialog
+import com.neptune.neptune.ui.main.CommentDialogAction
+import com.neptune.neptune.ui.main.DownloadChoiceDialog
+import com.neptune.neptune.ui.main.DownloadProgressBar
+import com.neptune.neptune.ui.offline.OfflineBanner
+import com.neptune.neptune.ui.profile.ProfileScreenTestTags.DOWNLOAD_PROGRESS_BAR
 import com.neptune.neptune.ui.theme.NepTuneTheme
 
 /**

@@ -26,3 +26,4 @@ setGlobalOptions({maxInstances: 10});
 
 export {generateSamplePreview} from "./generateSamplePreview";
 export {followUser} from "./followUser";
+export {onMessageCreated} from "./onMessageCreated";

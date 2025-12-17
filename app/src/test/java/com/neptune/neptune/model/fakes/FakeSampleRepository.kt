@@ -132,6 +132,33 @@ class FakeSampleRepository(initialSamples: List<Sample> = emptyList()) : SampleR
     addComment(sampleId, authorId, authorName, text, Timestamp.now())
   }
 
+  override suspend fun deleteComment(sampleId: String, authorId: String, timestamp: Timestamp?) {
+    val flow = _commentsMap.getOrPut(sampleId) { MutableStateFlow(emptyList()) }
+    val currentComments = flow.value.toMutableList()
+    val beforeSize = currentComments.size
+
+    if (timestamp != null) {
+      currentComments.removeAll { it.authorId == authorId && it.timestamp == timestamp }
+    } else {
+      // remove the latest comment by this author
+      val index = currentComments.indexOfLast { it.authorId == authorId }
+      if (index >= 0) currentComments.removeAt(index)
+    }
+
+    val afterSize = currentComments.size
+    if (afterSize != beforeSize) {
+      flow.value = currentComments.toList()
+
+      // Update sample's comment count
+      val index = samples.indexOfFirst { it.id == sampleId }
+      if (index != -1) {
+        val sample = samples[index]
+        samples[index] = sample.copy(comments = currentComments.size)
+        _samples.value = samples.toList()
+      }
+    }
+  }
+
   // enable to give a custom Timestamp
   fun addComment(
       sampleId: String,

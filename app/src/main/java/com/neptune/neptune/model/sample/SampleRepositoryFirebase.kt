@@ -6,7 +6,6 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import kotlin.String
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
@@ -52,7 +51,14 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
             trySend(emptyList())
             return@addSnapshotListener
           }
-          trySend(snap?.documents?.mapNotNull { it.toSampleOrNull() }.orEmpty())
+          // sort the samples to stabilize and avoid unwanted UI results later on
+          val list =
+              snap
+                  ?.documents
+                  ?.mapNotNull { it.toSampleOrNull() }
+                  .orEmpty()
+                  .sortedByDescending { it.creationTime } // ✅ stable, like-proof
+          trySend(list)
         }
     awaitClose { reg.remove() }
   }
@@ -68,7 +74,7 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
           if (snapshot != null && snapshot.exists()) {
             trySend(snapshot.toSampleOrNull())
           } else {
-            trySend(null) // Le document a été supprimé ou n'existe pas
+            trySend(null)
           }
         }
     awaitClose { listener.remove() }
@@ -156,6 +162,44 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
     // Increment counter
     val currentCount = snapshot.getLong("comments") ?: 0L
     sampleDoc.update("comments", currentCount + 1).await()
+  }
+  /** Delete a comment identified by authorId and timestamp (if provided). */
+  override suspend fun deleteComment(sampleId: String, authorId: String, timestamp: Timestamp?) {
+    val sampleDoc = samples.document(sampleId)
+    val snapshot = sampleDoc.get().await()
+
+    check(snapshot.exists()) {
+      "SampleRepositoryFirebase.deleteComment: Sample with id=$sampleId doesn't exist"
+    }
+
+    val commentsCol = sampleDoc.collection("comments")
+    val docsToDelete =
+        if (timestamp != null) {
+          commentsCol
+              .whereEqualTo("authorId", authorId)
+              .whereEqualTo("timestamp", timestamp)
+              .get()
+              .await()
+              .documents
+        } else {
+          null
+        }
+
+    val deletedCount = docsToDelete?.size
+    if (deletedCount == 0) return
+
+    // Use a single WriteBatch to perform all deletes and the counter update in one network request
+    val batch = db.batch()
+    if (docsToDelete != null) {
+      for (doc in docsToDelete) {
+        batch.delete(doc.reference)
+      }
+    }
+
+    // Atomic decrement to avoid race conditions with concurrent comment additions
+    batch.update(sampleDoc, "comments", deletedCount?.toLong()?.let { FieldValue.increment(-it) })
+
+    batch.commit().await()
   }
   /** Observe the comment of a sample */
   override fun observeComments(sampleId: String): Flow<List<Comment>> = callbackFlow {

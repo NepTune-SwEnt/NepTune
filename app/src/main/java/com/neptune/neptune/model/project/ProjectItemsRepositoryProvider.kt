@@ -6,10 +6,7 @@ package com.neptune.neptune.model.project
  * @author Uri Jaquet
  */
 object ProjectItemsRepositoryProvider {
-  private val _repository: ProjectItemsRepository by lazy {
-    //        ProjectItemsRepositoryFirestore(Firebase.firestore)
-    ProjectItemsRepositoryVar()
-  }
+  private val _repository: ProjectItemsRepository by lazy { ProjectItemsRepositoryVar() }
 
   var repository: ProjectItemsRepository = _repository
 }

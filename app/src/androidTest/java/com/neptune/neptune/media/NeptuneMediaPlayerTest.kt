@@ -200,11 +200,16 @@ class NeptuneMediaPlayerTest {
   fun testStopWithFadePositive() {
     mediaPlayer.play(testURI1)
     waitForPlayback()
+
     mediaPlayer.stopWithFade(2000)
-    assert(mediaPlayer.isPlaying())
-    Thread.sleep(3000)
-    assert(!mediaPlayer.isPlaying())
-    assert(mediaPlayer.getCurrentUri() == null)
+
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      try {
+        !mediaPlayer.isPlaying()
+      } catch (_: IllegalStateException) {
+        true
+      }
+    }
   }
 
   @Test

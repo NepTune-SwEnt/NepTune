@@ -3,6 +3,7 @@ package com.neptune.neptune.ui.profile
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.storage.FirebaseStorage
 import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.R
@@ -54,6 +55,9 @@ class ProfileSamplesViewModel(
   val samples: StateFlow<List<Sample>> = _samples.asStateFlow()
   val downloadProgress = MutableStateFlow<Int?>(null)
 
+  private val _currentUserFlow = MutableStateFlow<FirebaseUser?>(auth?.currentUser)
+  val currentUser: StateFlow<FirebaseUser?> = _currentUserFlow.asStateFlow()
+
   private val _likedSamples = MutableStateFlow<Map<String, Boolean>>(emptyMap())
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples.asStateFlow()
 
@@ -91,10 +95,12 @@ class ProfileSamplesViewModel(
       this@ProfileSamplesViewModel.sampleRepo.observeSamples().collectLatest { samples ->
         val filtered =
             samples
-                .filter { sample ->
-                  sample.ownerId == ownerId && sample.storagePreviewSamplePath.isNotBlank()
-                }
-                .sortedByDescending { it.creationTime }
+              .filter { sample ->
+              sample.ownerId == ownerId &&
+                  (sample.storageProcessedSamplePath.isNotBlank() ||
+                      sample.storagePreviewSamplePath.isNotBlank())
+            }
+              .sortedByDescending { it.creationTime }
         _samples.value = filtered
         refreshLikeStates(filtered, _likedSamples)
       }

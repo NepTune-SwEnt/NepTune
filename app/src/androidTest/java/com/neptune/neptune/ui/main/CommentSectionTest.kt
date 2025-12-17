@@ -35,8 +35,9 @@ class CommentSectionTest {
           comments = comments,
           usernames = mapOf("user123" to "John Doe"),
           onDismiss = {},
-          onAddComment = { _, _ -> },
-          onProfileClicked = onProfileClickedMock)
+          commentDialogAction =
+              CommentDialogAction(
+                  onAddComment = { _, _ -> }, onProfileClicked = onProfileClickedMock))
     }
 
     composeTestRule.onNodeWithText("John Doe:").assertIsDisplayed()

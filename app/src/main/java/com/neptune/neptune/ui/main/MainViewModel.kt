@@ -68,7 +68,15 @@ open class MainViewModel(
         storageService = storageService,
         waveformExtractor = waveformExtractor),
     SampleFeedController {
+
+  @androidx.annotation.VisibleForTesting(otherwise = androidx.annotation.VisibleForTesting.PRIVATE)
+  internal fun setRecommendedSamplesForTest(list: List<Sample>) {
+    _recommendedSamples.value = list
+    _discoverSamples.value = list // if you want UI to render from reco
+  }
+
   private val _discoverSamples = MutableStateFlow<List<Sample>>(emptyList())
+  private var shouldComputeRecommendations = true
   val downloadProgress = MutableStateFlow<Int?>(null)
 
   override val actions: SampleUiActions? =
@@ -112,6 +120,10 @@ open class MainViewModel(
   val recommendedSamples: StateFlow<List<Sample>> = _recommendedSamples
   private var latestFollowing: List<String> = emptyList()
 
+  // Track the full sample object currently open in comments
+  private val _activeCommentSample = MutableStateFlow<Sample?>(null)
+  val activeCommentSample: StateFlow<Sample?> = _activeCommentSample.asStateFlow()
+
   init {
     if (useMockData) {
       // If we are testing we load mock data
@@ -136,7 +148,10 @@ open class MainViewModel(
           _recommendedSamples.value = emptyList()
           return@launch
         }
-        val candidates = allSamplesCache
+        val candidates =
+            allSamplesCache.filter { sample ->
+              sample.ownerId !in latestFollowing && sample.ownerId != auth.currentUser?.uid
+            }
         if (candidates.isEmpty()) {
           Log.d("RecoDebug", "No candidates (cache empty) – skipping ranking")
           _recommendedSamples.value = emptyList()
@@ -152,7 +167,6 @@ open class MainViewModel(
               "#$index  id=${sample.id}  name=${sample.name}  score=${"%.4f".format(score)}")
         }
         _recommendedSamples.value = ranked
-        _discoverSamples.value = ranked
       } catch (e: Exception) {
         Log.e("MainViewModel", "Error loading recommendations: ${e.message}")
       }
@@ -178,14 +192,27 @@ open class MainViewModel(
                         sample.ownerId == currentUserId ||
                         (sample.ownerId in following)
                   }
+              val latestById = visibleSamples.associateBy { it.id }
+              // If we are showing recommendations, keep their ORDER but refresh their DATA
+              if (_recommendedSamples.value.isNotEmpty()) {
+                _recommendedSamples.value =
+                    _recommendedSamples.value.map { old -> latestById[old.id] ?: old }
+              }
 
               val existingIds = allSamplesCache.map { it.id }.toSet()
               allSamplesCache = visibleSamples
 
-              val readySamples = visibleSamples.filter { it.storagePreviewSamplePath.isNotBlank() }
+              val readySamples =
+                  visibleSamples.filter {
+                    it.storageProcessedSamplePath.isNotBlank() ||
+                        it.storagePreviewSamplePath.isNotBlank()
+                  }
               updateLists(readySamples)
 
-              val pendingSamples = visibleSamples.filter { it.storagePreviewSamplePath.isBlank() }
+              val pendingSamples =
+                  visibleSamples.filter {
+                    it.storageProcessedSamplePath.isBlank() && it.storagePreviewSamplePath.isBlank()
+                  }
               pendingSamples.forEach { pendingSample -> watchPendingSample(pendingSample.id) }
 
               val newSamples = visibleSamples.filter { it.id !in existingIds }
@@ -195,7 +222,10 @@ open class MainViewModel(
               if (_isRefreshing.value) {
                 _isRefreshing.value = false
               }
-              viewModelScope.launch { loadRecommendations() }
+              if (shouldComputeRecommendations) {
+                shouldComputeRecommendations = false
+                loadRecommendations()
+              }
             }
       } catch (e: Exception) {
         Log.e("MainViewModel", "Error loading samples", e)
@@ -212,7 +242,9 @@ open class MainViewModel(
         sampleRepo
             .observeSample(sampleId)
             .first { updatedSample ->
-              updatedSample != null && updatedSample.storagePreviewSamplePath.isNotBlank()
+              updatedSample != null &&
+                  (updatedSample.storageProcessedSamplePath.isNotBlank() ||
+                      updatedSample.storagePreviewSamplePath.isNotBlank())
             }
             ?.let { finishedSample ->
               allSamplesCache =
@@ -258,7 +290,10 @@ open class MainViewModel(
     if (currentUser == null) {
       _userAvatar.value = null
       latestFollowing = emptyList()
-      updateLists(allSamplesCache.filter { it.storagePreviewSamplePath.isNotBlank() })
+      updateLists(
+          allSamplesCache.filter {
+            it.storageProcessedSamplePath.isNotBlank() || it.storagePreviewSamplePath.isNotBlank()
+          })
       return
     }
     viewModelScope.launch {
@@ -322,8 +357,24 @@ open class MainViewModel(
     }
   }
 
+  private fun updateSampleLikesLocally(sampleId: String, delta: Int) {
+    fun bump(list: List<Sample>) =
+        list.map { s -> if (s.id == sampleId) s.copy(likes = s.likes + delta) else s }
+
+    _discoverSamples.value = bump(_discoverSamples.value)
+    _followedSamples.value = bump(_followedSamples.value)
+
+    if (_recommendedSamples.value.isNotEmpty()) {
+      _recommendedSamples.value = bump(_recommendedSamples.value)
+    }
+
+    allSamplesCache = bump(allSamplesCache)
+  }
+
   override fun onLikeClick(sample: Sample, isLiked: Boolean) {
     if (_isAnonymous.value) return
+    val delta = if (isLiked) 1 else -1
+    updateSampleLikesLocally(sample.id, delta) // ✅ instant UI update
     viewModelScope.launch {
       try {
         val newState = actions?.onLikeClicked(sample, isLiked)
@@ -355,7 +406,7 @@ open class MainViewModel(
   /** Function to be called when a refresh is triggered. */
   fun refresh() {
     _isRefreshing.value = true
-    // allSamplesCache = emptyList()
+    shouldComputeRecommendations = true
     loadSamplesFromFirebase()
   }
 
@@ -367,10 +418,13 @@ open class MainViewModel(
 
   /** Function to open the comment section. */
   fun openCommentSection(sample: Sample) {
+    _activeCommentSample.value = sample
     onCommentClicked(sample)
   }
+
   /** Function to close the comment section. */
   fun closeCommentSection() {
+    _activeCommentSample.value = null
     resetCommentSampleId()
   }
 
