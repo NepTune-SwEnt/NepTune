@@ -84,6 +84,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -108,7 +109,7 @@ import java.util.Locale
 import kotlinx.coroutines.delay
 
 val TOP_BAR_HEIGHT = 90.dp
-val PROFILE_ICON_SIZE = 90.dp
+val PROFILE_ICON_SIZE = 57.dp
 
 object MainScreenTestTags : BaseSampleTestTags {
   override val prefix = "MainScreen"
@@ -454,19 +455,23 @@ private fun SampleSectionLazyRow(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainTopAppBar(userAvatar: String?, navigateToProfile: () -> Unit, signedIn: Boolean = true) {
-  val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-  val logoSize = screenWidth * 0.3f
   Column {
     CenterAlignedTopAppBar(
         modifier =
-            Modifier.fillMaxWidth().height(TOP_BAR_HEIGHT).testTag(MainScreenTestTags.TOP_BAR),
+            Modifier
+              .padding(0.dp)
+              .fillMaxWidth()
+              .height(TOP_BAR_HEIGHT)
+              .testTag(MainScreenTestTags.TOP_BAR),
         title = {
           // Keep the title constrained to the center area so the actions stay to the right
           Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Image(
                 painter = painterResource(id = R.drawable.neptune_logo),
                 contentDescription = "NepTune Logo",
-                modifier = Modifier.size(logoSize).testTag(MainScreenTestTags.TOP_BAR_LOGO),
+                modifier = Modifier
+                  .height(PROFILE_ICON_SIZE)
+                  .testTag(MainScreenTestTags.TOP_BAR_LOGO),
                 contentScale = ContentScale.Fit)
 
             // Profile Button
@@ -501,6 +506,12 @@ fun MainTopAppBar(userAvatar: String?, navigateToProfile: () -> Unit, signedIn: 
         thickness = 0.75.dp,
         color = NepTuneTheme.colors.onBackground)
   }
+}
+
+@Preview
+@Composable
+fun testTopBar() {
+  MainTopAppBar(userAvatar = null, navigateToProfile = {})
 }
 
 @Composable
