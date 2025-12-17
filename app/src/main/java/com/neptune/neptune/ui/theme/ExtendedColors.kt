@@ -21,7 +21,8 @@ data class ExtendedColors(
     val shadow: Color, // shadow color for elevated elements
     val animation: Color, // color used in animations
     val online: Color, // color indicating online status
-    val offline: Color // color indicating offline status
+    val offline: Color, // color indicating offline status
+    val error: Color, // color to indicate when they are an error
 )
 
 val DarkExtendedColors =
@@ -41,7 +42,8 @@ val DarkExtendedColors =
         shadow = ShadowColor,
         animation = DarkPurple,
         online = Green,
-        offline = Gray)
+        offline = Gray,
+        error = Red)
 
 val LightExtendedColors =
     ExtendedColors(
@@ -60,7 +62,8 @@ val LightExtendedColors =
         shadow = ShadowColor,
         animation = Purple,
         online = Green,
-        offline = Gray)
+        offline = Gray,
+        error = Red)
 
 val LocalExtendedColors = staticCompositionLocalOf {
   // default value
