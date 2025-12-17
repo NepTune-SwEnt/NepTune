@@ -76,7 +76,14 @@ fun FeedScreen(
     Scaffold(
         topBar = { TopBar(currentType, goBack, onClick = { currentType = currentType.toggle() }) },
         containerColor = NepTuneTheme.colors.background) { paddingValues ->
-          FeedScaffold(paddingValues, mainViewModel, pullRefreshState, currentType, navigateToProfile, onDownloadRequest = { sample -> downloadPickerSample = sample })
+          FeedScaffold(
+              paddingValues,
+              mainViewModel,
+              pullRefreshState,
+              currentType,
+              navigateToProfile,
+              navigateToOtherUserProfile,
+              onDownloadRequest = { sample -> downloadPickerSample = sample })
         }
 
     SampleCommentManager(
@@ -112,60 +119,66 @@ fun FeedScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FeedScaffold(paddingValues: PaddingValues, mainViewModel: MainViewModel , pullRefreshState: PullToRefreshState, currentType: FeedType, navigateToProfile: () -> Unit = {},
-                         navigateToOtherUserProfile: (String) -> Unit = {}, onDownloadRequest : (Sample) -> Unit
+private fun FeedScaffold(
+    paddingValues: PaddingValues,
+    mainViewModel: MainViewModel,
+    pullRefreshState: PullToRefreshState,
+    currentType: FeedType,
+    navigateToProfile: () -> Unit,
+    navigateToOtherUserProfile: (String) -> Unit,
+    onDownloadRequest: (Sample) -> Unit
 ) {
-    val isOnline by mainViewModel.isOnline.collectAsState()
-    Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-        if (!isOnline) {
-            OfflineBanner()
-        }
-        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            FeedContent(
-                modifier = Modifier.nestedScroll(pullRefreshState.nestedScrollConnection),
-                mainViewModel = mainViewModel,
-                currentType = currentType,
-                navigateToProfile = navigateToProfile,
-                navigateToOtherUserProfile = navigateToOtherUserProfile,
-                onDownloadRequest = onDownloadRequest)
-
-            if (isOnline) {
-                PullToRefreshContainer(
-                    state = pullRefreshState,
-                    modifier = Modifier.align(Alignment.TopCenter),
-                    containerColor = NepTuneTheme.colors.background,
-                    contentColor = NepTuneTheme.colors.onBackground)
-            }
-        }
+  val isOnline by mainViewModel.isOnline.collectAsState()
+  Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+    if (!isOnline) {
+      OfflineBanner()
     }
+    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+      FeedContent(
+          modifier = Modifier.nestedScroll(pullRefreshState.nestedScrollConnection),
+          mainViewModel = mainViewModel,
+          currentType = currentType,
+          navigateToProfile = navigateToProfile,
+          navigateToOtherUserProfile = navigateToOtherUserProfile,
+          onDownloadRequest = onDownloadRequest)
+
+      if (isOnline) {
+        PullToRefreshContainer(
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            containerColor = NepTuneTheme.colors.background,
+            contentColor = NepTuneTheme.colors.onBackground)
+      }
+    }
+  }
 }
 
 @Composable
-private fun TopBar(currentType : FeedType, goBack : () -> Unit, onClick : () -> Unit = {}) {
-    val roundShape = 50
-    NeptuneTopBar(
-        title = currentType.title,
-        goBack = goBack,
-        actions = {
-            OutlinedButton(
-                onClick = onClick,
-                border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground),
-                shape = RoundedCornerShape(roundShape),
-                colors =
-                    ButtonDefaults.outlinedButtonColors(
-                        contentColor = NepTuneTheme.colors.onBackground),
-                modifier = Modifier.height(36.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp)) {
-                Text(
-                    text = "See ${currentType.toggle().title}",
-                    style =
-                        TextStyle(
-                            fontSize = 16.sp,
-                            fontFamily = FontFamily(Font(R.font.markazi_text)),
-                            fontWeight = FontWeight.Bold))
+private fun TopBar(currentType: FeedType, goBack: () -> Unit, onClick: () -> Unit = {}) {
+  val roundShape = 50
+  NeptuneTopBar(
+      title = currentType.title,
+      goBack = goBack,
+      actions = {
+        OutlinedButton(
+            onClick = onClick,
+            border = BorderStroke(1.dp, NepTuneTheme.colors.onBackground),
+            shape = RoundedCornerShape(roundShape),
+            colors =
+                ButtonDefaults.outlinedButtonColors(
+                    contentColor = NepTuneTheme.colors.onBackground),
+            modifier = Modifier.height(36.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp)) {
+              Text(
+                  text = "See ${currentType.toggle().title}",
+                  style =
+                      TextStyle(
+                          fontSize = 16.sp,
+                          fontFamily = FontFamily(Font(R.font.markazi_text)),
+                          fontWeight = FontWeight.Bold))
             }
-        },
-        divider = false)
+      },
+      divider = false)
 }
 
 @Composable
