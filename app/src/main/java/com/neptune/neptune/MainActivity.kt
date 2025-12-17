@@ -369,22 +369,17 @@ private fun NavGraphBuilder.messagingGraph(
 ) {
   composable(Screen.SelectMessages.route) {
     val firebaseUser by signInViewModel.currentUser.collectAsState()
-      val currentUid = firebaseUser?.uid ?: return@composable // prevent crash
-      SelectMessagesScreen(
-          goBack = { nav.goBack() },
-          onSelectUser = { uid -> nav.navigateTo(Screen.Messages.createRoute(uid)) },
-          currentUid = currentUid)
-    }
-composable(
-route = Screen.Messages.route,
-arguments = listOf(navArgument("uid") { type = NavType.StringType })) {
-    backStackEntry ->
-    val otherUserId =
-        backStackEntry.arguments?.getString("uid") ?: return@composable
-    MessagesRoute(
-        otherUserId = otherUserId,
-        signInViewModel = signInViewModel,
-        goBack = { nav.goBack() })
+    val currentUid = firebaseUser?.uid ?: return@composable // prevent crash
+    SelectMessagesScreen(
+        goBack = { nav.goBack() },
+        onSelectUser = { uid -> nav.navigateTo(Screen.Messages.createRoute(uid)) },
+        currentUid = currentUid)
+  }
+  composable(
+      route = Screen.Messages.route,
+      arguments = listOf(navArgument("uid") { type = NavType.StringType })) { backStackEntry ->
+        val otherUserId = backStackEntry.arguments?.getString("uid") ?: return@composable
+        MessagesRoute(
+            otherUserId = otherUserId, signInViewModel = signInViewModel, goBack = { nav.goBack() })
+      }
 }
-}
-
