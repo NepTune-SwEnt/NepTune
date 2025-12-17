@@ -16,6 +16,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -305,7 +306,7 @@ fun ADSRTestButton(
   val color =
       if (isPianoVisible) NepTuneTheme.colors.accentPrimary else NepTuneTheme.colors.soundWave
   val icon = if (isPianoVisible) Icons.Default.Close else Icons.Default.Piano
-  val text = if (isPianoVisible) "Close Piano" else "Open Piano"
+  val text = if (isPianoVisible) "Close Keyboard" else "Open Keyboard"
 
   Surface(
       modifier =
@@ -328,15 +329,26 @@ fun ADSRTestButton(
 }
 
 @Composable
-fun ScrollablePiano(viewModel: SamplerViewModel, modifier: Modifier = Modifier) {
-  val octaves = (1..7).toList()
-  val listState = rememberLazyListState()
+fun ScrollablePiano(
+    viewModel: SamplerViewModel,
+    modifier: Modifier = Modifier,
+    listState: LazyListState = rememberLazyListState() // par défaut
+) {
+  val uiState by viewModel.uiState.collectAsState()
+  val baseOctave = uiState.inputPitchOctave
+  val startOctave = (baseOctave - 1).coerceAtLeast(1)
+  val endOctave = (baseOctave + 1).coerceAtMost(7)
+  val octaves = (startOctave..endOctave).toList()
 
-  LaunchedEffect(Unit) { listState.scrollToItem(3) }
+  LaunchedEffect(Unit) { listState.scrollToItem(1) }
 
   LazyRow(state = listState, modifier = modifier.fillMaxWidth().height(200.dp)) {
     items(octaves) { octave ->
-      PianoOctave(viewModel = viewModel, octave = octave, modifier = Modifier.width(56.dp * 7))
+      PianoOctave(
+          viewModel = viewModel,
+          octave = octave,
+          modifier = Modifier.width(56.dp * 7).testTag("PianoOctave") // important pour test
+          )
     }
   }
 }
@@ -356,7 +368,7 @@ data class BlackKey(val semitone: Int, val afterWhiteIndex: Int)
 fun PianoOctave(viewModel: SamplerViewModel, octave: Int, modifier: Modifier = Modifier) {
   val whiteKeys = listOf(0, 2, 4, 5, 7, 9, 11)
 
-  BoxWithConstraints(modifier = modifier.height(200.dp)) {
+  BoxWithConstraints(modifier = modifier.height(200.dp).testTag("PianoOctave")) {
     val width = maxWidth
     val whiteKeyWidth = width / whiteKeys.size
     val blackKeyWidth = whiteKeyWidth * 0.6f
