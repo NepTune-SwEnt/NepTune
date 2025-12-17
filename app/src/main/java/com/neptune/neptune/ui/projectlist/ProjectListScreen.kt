@@ -388,7 +388,7 @@ fun ProjectListItem(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically) {
           Row(
-              modifier = Modifier.padding(start = 5.dp),
+              modifier = Modifier.padding(start = 5.dp).weight(1f),
               verticalAlignment = Alignment.CenterVertically) {
                 IconButton(
                     onClick = {

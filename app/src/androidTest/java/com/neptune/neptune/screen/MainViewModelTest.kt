@@ -275,7 +275,7 @@ class MainViewModelTest {
           id = id,
           name = "n$id",
           description = "d$id",
-          durationSeconds = 1,
+          durationMillis = 1,
           tags = emptyList(),
           likes = likes,
           usersLike = emptyList(),

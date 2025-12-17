@@ -221,7 +221,7 @@ class MainScreenTest {
             id = "like-test",
             name = "Like Test",
             description = "desc",
-            durationSeconds = 10,
+            durationMillis = 10,
             tags = emptyList(),
             ownerId = "user1",
             storagePreviewSamplePath = "not_blank",
