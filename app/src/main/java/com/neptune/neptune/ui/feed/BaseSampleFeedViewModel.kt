@@ -37,7 +37,8 @@ abstract class BaseSampleFeedViewModel(
     protected val profileRepo: ProfileRepository,
     protected val auth: FirebaseAuth? = null,
     private val storageService: StorageService? = null,
-    private val waveformExtractor: AudioWaveformExtractor = WaveformExtractor()
+    private val waveformExtractor: AudioWaveformExtractor = WaveformExtractor(),
+    private val connectivityObserver: NetworkConnectivityObserver = NetworkConnectivityObserver()
 ) : ViewModel(), SampleFeedController {
   protected open val actions: SampleUiActions? = null
   protected val defaultName = "anonymous"
@@ -57,12 +58,10 @@ abstract class BaseSampleFeedViewModel(
   private val waveformCache = mutableMapOf<String, List<Float>>()
   private val timeout = 5000L
   open val isOnline: StateFlow<Boolean> =
-      NetworkConnectivityObserver()
-          .isOnline
-          .stateIn(
-              scope = viewModelScope,
-              started = SharingStarted.WhileSubscribed(timeout),
-              initialValue = true)
+      connectivityObserver.isOnline.stateIn(
+          scope = viewModelScope,
+          started = SharingStarted.WhileSubscribed(timeout),
+          initialValue = true)
   open val isUserLoggedIn: Boolean
     get() = auth?.currentUser != null
 
@@ -232,10 +231,7 @@ abstract class BaseSampleFeedViewModel(
   private suspend fun getSampleCoverUrl(storagePath: String): String? {
     if (storagePath.isBlank()) return null
     if (coverImageCache.containsKey(storagePath)) return coverImageCache[storagePath]
-    val url =
-        actions?.getDownloadUrl(storagePath)
-            ?: storageService?.getDownloadUrl(storagePath)
-            ?: return null
+    val url = storageService?.getDownloadUrl(storagePath) ?: return null
     coverImageCache[storagePath] = url
     return url
   }
@@ -245,10 +241,7 @@ abstract class BaseSampleFeedViewModel(
     if (storagePath.isBlank()) return null
     if (audioUrlCache.containsKey(storagePath)) return audioUrlCache[storagePath]
 
-    val url =
-        actions?.getDownloadUrl(storagePath)
-            ?: storageService?.getDownloadUrl(storagePath)
-            ?: return null
+    val url = storageService?.getDownloadUrl(storagePath) ?: return null
     audioUrlCache[storagePath] = url
     return url
   }

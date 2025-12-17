@@ -18,8 +18,7 @@ class ProjectItemsRepositoryVar : ProjectItemsRepository {
   }
 
   override suspend fun getProject(projectID: String): ProjectItem {
-    return projects.find { it.uid == projectID }
-        ?: throw Exception(NOT_FOUND)
+    return projects.find { it.uid == projectID } ?: throw Exception(NOT_FOUND)
   }
 
   override suspend fun addProject(project: ProjectItem) {

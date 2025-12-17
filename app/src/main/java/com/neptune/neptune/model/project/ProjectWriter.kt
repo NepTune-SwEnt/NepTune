@@ -55,7 +55,8 @@ class ProjectWriter {
     val success = tempZip.renameTo(targetZipFile)
     if (!success) {
       tempZip.copyTo(zipFile, overwrite = true)
-      if (!tempZip.delete()) Log.e("SamplerFileWriter", "Failed to delete temp ZIP: ${tempZip.path}")
+      if (!tempZip.delete())
+          Log.e("SamplerFileWriter", "Failed to delete temp ZIP: ${tempZip.path}")
     }
   }
 }
