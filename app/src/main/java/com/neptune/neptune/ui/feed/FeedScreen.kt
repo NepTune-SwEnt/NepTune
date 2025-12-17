@@ -34,6 +34,7 @@ import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.main.MainViewModel
 import com.neptune.neptune.ui.main.SampleCommentManager
 import com.neptune.neptune.ui.main.SampleItem
+import com.neptune.neptune.ui.main.SampleItemStyle
 import com.neptune.neptune.ui.main.SampleResourceState
 import com.neptune.neptune.ui.main.onClickFunctions
 import com.neptune.neptune.ui.offline.OfflineBanner
@@ -242,13 +243,12 @@ private fun FeedContent(
 
                 SampleItem(
                     sample = sample,
-                    width = width,
-                    height = height,
                     isLiked = likedSamples[sample.id] == true,
                     clickHandlers = clickHandlers,
                     resourceState = resources,
                     mediaPlayer = mediaPlayer,
-                    iconSize = 20.dp)
+                    sampleItemStyle =
+                        SampleItemStyle(width = width, height = height, iconSize = 20.dp))
               }
 
               item { Spacer(modifier = Modifier.height(20.dp)) }

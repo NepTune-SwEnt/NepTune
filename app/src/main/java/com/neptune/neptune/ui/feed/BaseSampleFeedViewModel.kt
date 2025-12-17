@@ -101,7 +101,7 @@ abstract class BaseSampleFeedViewModel(
         val sample =
             try {
               sampleRepo.getSample(sampleId)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
               null
             }
         val isOwner = sample?.ownerId?.let { isCurrentUser(it) } ?: false
@@ -110,7 +110,7 @@ abstract class BaseSampleFeedViewModel(
           // Re-observe to refresh local state
           observeCommentsForSample(sampleId)
         }
-      } catch (e: Exception) {
+      } catch (_: Exception) {
         // ignore or log
       }
     }
@@ -231,7 +231,10 @@ abstract class BaseSampleFeedViewModel(
   private suspend fun getSampleCoverUrl(storagePath: String): String? {
     if (storagePath.isBlank()) return null
     if (coverImageCache.containsKey(storagePath)) return coverImageCache[storagePath]
-    val url = storageService?.getDownloadUrl(storagePath) ?: return null
+    val url =
+        actions?.getDownloadUrl(storagePath)
+            ?: storageService?.getDownloadUrl(storagePath)
+            ?: return null
     coverImageCache[storagePath] = url
     return url
   }
@@ -241,7 +244,10 @@ abstract class BaseSampleFeedViewModel(
     if (storagePath.isBlank()) return null
     if (audioUrlCache.containsKey(storagePath)) return audioUrlCache[storagePath]
 
-    val url = storageService?.getDownloadUrl(storagePath) ?: return null
+    val url =
+        actions?.getDownloadUrl(storagePath)
+            ?: storageService?.getDownloadUrl(storagePath)
+            ?: return null
     audioUrlCache[storagePath] = url
     return url
   }
