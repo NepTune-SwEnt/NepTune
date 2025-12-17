@@ -84,7 +84,7 @@ class PostViewModel(
               null
             }
         _localZipUri.value = rawPath.toUri()
-        val durationSeconds = storageService?.getProjectDuration(_localZipUri.value) ?: 0
+        val durationMillis = storageService?.getProjectDuration(_localZipUri.value) ?: 0L
         // processed audio
         project.audioPreviewLocalPath
             ?.takeIf { it.isNotBlank() }
@@ -101,7 +101,7 @@ class PostViewModel(
                 name = project.name,
                 description = project.description,
                 tags = project.tags,
-                durationSeconds = durationSeconds,
+                durationMillis = durationMillis,
                 likes = 0,
                 usersLike = emptyList(),
                 comments = 0,
@@ -235,7 +235,7 @@ data class PostUiState(
             id = "0",
             name = "",
             description = "",
-            durationSeconds = 0,
+            durationMillis = 0L,
             tags = emptyList(),
             likes = 0,
             usersLike = emptyList(),

@@ -28,7 +28,7 @@ class RecommendationEngineTest {
           id = id,
           name = name,
           description = "",
-          durationSeconds = durationSeconds,
+          durationMilliSecond = durationSeconds,
           tags = tags,
           likes = likes,
           usersLike = emptyList(),

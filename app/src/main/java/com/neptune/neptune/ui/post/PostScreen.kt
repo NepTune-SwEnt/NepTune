@@ -76,6 +76,7 @@ import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.main.SampleWaveform
 import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.theme.NepTuneTheme
+import java.util.Locale
 
 object PostScreenTestTags {
   // General
@@ -267,10 +268,10 @@ fun PostScreen(
                                 }
 
                             // Duration text
-                            val durationSeconds = uiState.sample.durationSeconds
-                            val minutes = durationSeconds / 60
-                            val seconds = durationSeconds % 60
-                            val durationText = "%02d:%02d".format(minutes, seconds)
+                            val seconds = uiState.sample.durationMillis / 1000
+                            val millis = (uiState.sample.durationMillis % 1000) / 10
+                            val durationText =
+                                String.format(Locale.getDefault(), "%02d:%02d", seconds, millis)
                             Text(
                                 text = durationText,
                                 style =
@@ -491,7 +492,7 @@ fun ProjectListScreenPreview() {
                 id = "0",
                 name = "Grilled Banana",
                 description = "Be careful not to grill your bananas",
-                durationSeconds = 21,
+                durationMillis = 21,
                 tags = listOf("relax", "easy"),
                 likes = 123,
                 usersLike = emptyList(),

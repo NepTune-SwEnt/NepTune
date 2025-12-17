@@ -65,7 +65,7 @@ class SearchScreenTest {
             id = "s1",
             name = "Test Sample",
             description = "Desc",
-            durationSeconds = 60,
+            durationMilliSecond = 60,
             tags = emptyList(),
             likes = 0,
             usersLike = emptyList(),
