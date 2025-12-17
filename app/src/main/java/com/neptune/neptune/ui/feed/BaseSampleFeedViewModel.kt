@@ -37,7 +37,8 @@ abstract class BaseSampleFeedViewModel(
     protected val profileRepo: ProfileRepository,
     protected val auth: FirebaseAuth? = null,
     private val storageService: StorageService? = null,
-    private val waveformExtractor: AudioWaveformExtractor = WaveformExtractor()
+    private val waveformExtractor: AudioWaveformExtractor = WaveformExtractor(),
+    private val connectivityObserver: NetworkConnectivityObserver = NetworkConnectivityObserver()
 ) : ViewModel(), SampleFeedController {
   protected open val actions: SampleUiActions? = null
   protected val defaultName = "anonymous"
@@ -57,12 +58,10 @@ abstract class BaseSampleFeedViewModel(
   private val waveformCache = mutableMapOf<String, List<Float>>()
   private val timeout = 5000L
   open val isOnline: StateFlow<Boolean> =
-      NetworkConnectivityObserver()
-          .isOnline
-          .stateIn(
-              scope = viewModelScope,
-              started = SharingStarted.WhileSubscribed(timeout),
-              initialValue = true)
+      connectivityObserver.isOnline.stateIn(
+          scope = viewModelScope,
+          started = SharingStarted.WhileSubscribed(timeout),
+          initialValue = true)
   open val isUserLoggedIn: Boolean
     get() = auth?.currentUser != null
 
@@ -102,7 +101,7 @@ abstract class BaseSampleFeedViewModel(
         val sample =
             try {
               sampleRepo.getSample(sampleId)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
               null
             }
         val isOwner = sample?.ownerId?.let { isCurrentUser(it) } ?: false
@@ -111,7 +110,7 @@ abstract class BaseSampleFeedViewModel(
           // Re-observe to refresh local state
           observeCommentsForSample(sampleId)
         }
-      } catch (e: Exception) {
+      } catch (_: Exception) {
         // ignore or log
       }
     }

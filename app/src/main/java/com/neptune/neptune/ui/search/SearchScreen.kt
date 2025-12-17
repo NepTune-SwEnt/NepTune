@@ -59,8 +59,11 @@ import com.neptune.neptune.model.profile.Profile
 import com.neptune.neptune.model.sample.Comment
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.ui.BaseSampleTestTags
+import com.neptune.neptune.ui.feed.FeedCallbacks
+import com.neptune.neptune.ui.feed.FeedItemStyle
 import com.neptune.neptune.ui.feed.sampleFeedItems
 import com.neptune.neptune.ui.main.CommentDialog
+import com.neptune.neptune.ui.main.CommentDialogAction
 import com.neptune.neptune.ui.main.DownloadChoiceDialog
 import com.neptune.neptune.ui.main.DownloadProgressBar
 import com.neptune.neptune.ui.main.SampleResourceState
@@ -386,12 +389,14 @@ fun ScrollableColumnOfSamples(
             mediaPlayer = mediaPlayer,
             likedSamples = likedSamples,
             sampleResources = sampleResources,
-            onDownloadRequest = onDownloadRequest,
-            navigateToProfile = navigateToProfile,
-            navigateToOtherUserProfile = navigateToOtherUserProfile,
-            testTagsForSample = testTagsForSample,
-            width = width,
-            height = height)
+            feedCallbacks =
+                FeedCallbacks(
+                    onDownloadRequest = onDownloadRequest,
+                    navigateToProfile = navigateToProfile,
+                    navigateToOtherUserProfile = navigateToOtherUserProfile),
+            feedItemStyle =
+                FeedItemStyle(
+                    testTagsForSample = testTagsForSample, width = width, height = height))
       } // Comment Overlay
   if (activeCommentSampleId != null) {
     val usernames by searchViewModel.usernames.collectAsState()
@@ -400,11 +405,13 @@ fun ScrollableColumnOfSamples(
         comments = comments,
         usernames = usernames,
         onDismiss = { searchViewModel.resetCommentSampleId() },
-        onAddComment = { id, text -> searchViewModel.onAddComment(id, text) },
-        onDeleteComment = { sampleId, authorId, timestamp ->
-          searchViewModel.onDeleteComment(sampleId, authorId, timestamp)
-        },
         sampleOwnerId = samples.firstOrNull { it.id == activeCommentSampleId }?.ownerId,
-        currentUserId = searchViewModel.currentUserProfile.collectAsState().value?.uid)
+        currentUserId = searchViewModel.currentUserProfile.collectAsState().value?.uid,
+        commentDialogAction =
+            CommentDialogAction(
+                onAddComment = { id, text -> searchViewModel.onAddComment(id, text) },
+                onDeleteComment = { sampleId, authorId, timestamp ->
+                  searchViewModel.onDeleteComment(sampleId, authorId, timestamp)
+                }))
   }
 }

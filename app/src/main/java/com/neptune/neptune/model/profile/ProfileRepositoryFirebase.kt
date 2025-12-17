@@ -257,7 +257,7 @@ class ProfileRepositoryFirebase(
     // Transaction: if profile missing, create it with a free username
     return db.runTransaction<Profile> { tx ->
           val profile = profiles.document(uid)
-          val snap = tx.get(profile)
+          val snap = tx[profile]
           if (snap.exists()) {
             // Return the profile; if malformed, fail loudly
             snap.toProfileOrNull() ?: throw IllegalStateException("Corrupted profile for uid=$uid")
@@ -289,8 +289,7 @@ class ProfileRepositoryFirebase(
                     isAnonymous = auth.currentUser?.isAnonymous == true)
 
             // Persist exactly what we’re returning
-            tx.set(
-                profile,
+            tx[profile] =
                 mapOf(
                     "uid" to created.uid,
                     "username" to created.username,
@@ -303,7 +302,7 @@ class ProfileRepositoryFirebase(
                     "posts" to 0L,
                     "tags" to emptyList<String>(),
                     "isAnonymous" to (auth.currentUser?.isAnonymous == true),
-                    "tagsWeight" to emptyMap<String, Double>()))
+                    "tagsWeight" to emptyMap<String, Double>())
 
             created
           }
@@ -317,14 +316,14 @@ class ProfileRepositoryFirebase(
    */
   private fun claimFreeUsername(tx: Transaction, base: String, uid: String): String {
     val b = toUsernameBase(base).ifBlank { "user" }
-    if (!tx.get(usernames.document(b)).exists()) {
-      tx.set(usernames.document(b), mapOf("uid" to uid))
+    if (!tx[usernames.document(b)].exists()) {
+      tx[usernames.document(b)] = mapOf("uid" to uid)
       return b
     }
     for (n in 1000..9999) {
       val c = "$b$n"
-      if (!tx.get(usernames.document(c)).exists()) {
-        tx.set(usernames.document(c), mapOf("uid" to uid))
+      if (!tx[usernames.document(c)].exists()) {
+        tx[usernames.document(c)] = mapOf("uid" to uid)
         return c
       }
     }
@@ -376,7 +375,7 @@ class ProfileRepositoryFirebase(
           val profileRef = profiles.document(uid)
 
           // Reads all before any writes
-          val profileSnap = tx.get(profileRef)
+          val profileSnap = tx[profileRef]
           val oldUsername =
               profileSnap.getString("username")?.let { normalizeUsername(it) }.orEmpty()
 
@@ -384,10 +383,10 @@ class ProfileRepositoryFirebase(
           if (desired == oldUsername) return@runTransaction
 
           val newRef = usernames.document(desired)
-          val newDoc = tx.get(newRef) // read
+          val newDoc = tx[newRef] // read
 
           val oldRef = if (oldUsername.isNotBlank()) usernames.document(oldUsername) else null
-          val oldDoc = oldRef?.let { tx.get(it) } // read (if present)
+          val oldDoc = oldRef?.let { tx[it] } // read (if present)
 
           // Decide based on reads, still no writes so far
           if (newDoc.exists()) {
@@ -398,7 +397,7 @@ class ProfileRepositoryFirebase(
 
           // Writes only after all reads are done
           if (!newDoc.exists()) {
-            tx.set(newRef, mapOf("uid" to uid)) // create reservation
+            tx[newRef] = mapOf("uid" to uid) // create reservation
           }
 
           tx.update(profileRef, "username", desired) // update profile

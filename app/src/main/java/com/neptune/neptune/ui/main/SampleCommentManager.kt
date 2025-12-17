@@ -34,13 +34,15 @@ fun SampleCommentManager(mainViewModel: MainViewModel, onProfileClicked: (String
         comments = comments,
         usernames = usernames,
         onDismiss = { mainViewModel.closeCommentSection() },
-        onAddComment = { id, text -> mainViewModel.addComment(id, text) },
-        onDeleteComment = { sampleId, authorId, timestamp ->
-          mainViewModel.onDeleteComment(sampleId, authorId, timestamp)
-        },
-        isAnonymous = isAnonymous,
-        onProfileClicked = onProfileClicked,
         sampleOwnerId = sampleOwnerId,
-        currentUserId = currentUser?.uid)
+        currentUserId = currentUser?.uid,
+        commentDialogAction =
+            CommentDialogAction(
+                onAddComment = { id, text -> mainViewModel.addComment(id, text) },
+                onDeleteComment = { sampleId, authorId, timestamp ->
+                  mainViewModel.onDeleteComment(sampleId, authorId, timestamp)
+                },
+                isAnonymous = isAnonymous,
+                onProfileClicked = onProfileClicked))
   }
 }
