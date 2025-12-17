@@ -37,20 +37,12 @@ class ProjectWriter {
 
       if (zipFile.exists()) {
         ZipFile(zipFile).use { oldZip ->
-          oldZip.entries().asSequence().forEach { entry ->
-            if (entry.name != "config.json" && audioFiles.none { it.name == entry.name }) {
-              out.putNextEntry(ZipEntry(entry.name))
-              oldZip.getInputStream(entry).copyTo(out)
-              out.closeEntry()
-            }
-          }
+          oldZip.entries().asSequence().forEach { entry -> ifName(entry, audioFiles, out, oldZip) }
         }
       }
     }
-    if (targetZipFile.exists()) {
-      if (!targetZipFile.delete()) {
-        Log.e("SamplerFileWriter", "Failed to delete existing ZIP: ${targetZipFile.path}")
-      }
+    if (targetZipFile.exists() && !targetZipFile.delete()) {
+      Log.e("SamplerFileWriter", "Failed to delete existing ZIP: ${targetZipFile.path}")
     }
     val success = tempZip.renameTo(targetZipFile)
     if (!success) {
@@ -58,5 +50,13 @@ class ProjectWriter {
       if (!tempZip.delete())
           Log.e("SamplerFileWriter", "Failed to delete temp ZIP: ${tempZip.path}")
     }
+  }
+}
+
+private fun ifName(entry: ZipEntry, audioFiles: List<File>, out: ZipOutputStream, oldZip: ZipFile) {
+  if (entry.name != "config.json" && audioFiles.none { it.name == entry.name }) {
+    out.putNextEntry(ZipEntry(entry.name))
+    oldZip.getInputStream(entry).copyTo(out)
+    out.closeEntry()
   }
 }

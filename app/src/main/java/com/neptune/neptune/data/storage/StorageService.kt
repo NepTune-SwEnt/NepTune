@@ -66,9 +66,8 @@ open class StorageService(
   open suspend fun persistZipToDownloads(zipFile: File, outputDir: File): File {
     return withContext(ioDispatcher) {
       require(zipFile.isFile) { "zipFile must be a file: ${zipFile.path}" }
-
-      if (!checkZipContainsRequiredFiles(zipFile)) {
-        throw IllegalArgumentException("Archive missing required files in ${zipFile.name}")
+      require(checkZipContainsRequiredFiles(zipFile)) {
+        "Archive missing required files in ${zipFile.name}"
       }
 
       // Now extract files

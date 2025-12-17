@@ -213,9 +213,12 @@ fun MainScreen(
               .testTag(MainScreenTestTags.MAIN_SCREEN)) {
         MainScaffold(
             mainViewModel,
-            navigateToProjectList,
-            navigateToSampleList,
-            navigateToProfile,
+            mainScaffoldNavigation =
+                MainScaffoldNavigation(
+                    navigateToProjectList,
+                    navigateToSampleList,
+                    navigateToProfile,
+                ),
             { s -> onCommentClicked(s) },
             { o -> handleProfileNavigation(o) },
             isOnline,
@@ -223,13 +226,17 @@ fun MainScreen(
       }
 }
 
+private data class MainScaffoldNavigation(
+    val navigateToProjectList: () -> Unit,
+    val navigateToSampleList: (FeedType) -> Unit,
+    val navigateToProfile: () -> Unit
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainScaffold(
     mainViewModel: MainViewModel,
-    navigateToProjectList: () -> Unit,
-    navigateToSampleList: (FeedType) -> Unit,
-    navigateToProfile: () -> Unit,
+    mainScaffoldNavigation: MainScaffoldNavigation,
     onCommentClicked: (Sample) -> Unit,
     handleProfileNavigation: (String) -> Unit,
     isOnline: Boolean,
@@ -248,11 +255,14 @@ private fun MainScaffold(
   val isAnonymous by mainViewModel.isAnonymous.collectAsState()
   val recommendedSamples by mainViewModel.recommendedSamples.collectAsState()
   Scaffold(
-      topBar = { MainTopAppBar(userAvatar = userAvatar, navigateToProfile = navigateToProfile) },
+      topBar = {
+        MainTopAppBar(
+            userAvatar = userAvatar, navigateToProfile = mainScaffoldNavigation.navigateToProfile)
+      },
       floatingActionButton = {
         if (isUserLoggedIn && !isAnonymous) {
           FloatingActionButton(
-              onClick = navigateToProjectList,
+              onClick = mainScaffoldNavigation.navigateToProjectList,
               containerColor = NepTuneTheme.colors.postButton,
               contentColor = NepTuneTheme.colors.onBackground,
               shape = CircleShape,
@@ -288,7 +298,7 @@ private fun MainScaffold(
                 MainContentActions(
                     onCommentClicked = { onCommentClicked(it) },
                     handleProfileNavigation = { handleProfileNavigation(it) },
-                    navigateToSampleList = navigateToSampleList,
+                    navigateToSampleList = mainScaffoldNavigation.navigateToSampleList,
                     onDownloadRequest = { sample -> downloadPickerSample = sample }))
       },
       containerColor = NepTuneTheme.colors.background)
