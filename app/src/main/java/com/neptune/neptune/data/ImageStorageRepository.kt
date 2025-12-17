@@ -4,7 +4,7 @@ import android.net.Uri
 import com.neptune.neptune.NepTuneApplication
 import java.io.File
 import java.io.FileOutputStream
-import java.net.URL
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -13,9 +13,8 @@ import kotlinx.coroutines.withContext
  *
  * This class was made using AI assistance
  */
-class ImageStorageRepository() {
+class ImageStorageRepository(private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO) {
   val context = NepTuneApplication.appContext
-  private val ioDispatcher = Dispatchers.IO
 
   // A dedicated folder for our images in internal storage
   private val imagesDir = File(context.filesDir, "images").apply { mkdirs() }
@@ -33,20 +32,6 @@ class ImageStorageRepository() {
       try {
         val targetFile = File(imagesDir, targetFileName)
         context.contentResolver.openInputStream(sourceUri)?.use { inputStream ->
-          FileOutputStream(targetFile).use { outputStream -> inputStream.copyTo(outputStream) }
-        }
-        targetFile
-      } catch (_: Exception) {
-        null
-      }
-    }
-  }
-
-  suspend fun saveImageFromUrl(sourceUrl: String, targetFileName: String): File? {
-    return withContext(ioDispatcher) {
-      try {
-        val targetFile = File(imagesDir, targetFileName)
-        URL(sourceUrl).openStream().use { inputStream ->
           FileOutputStream(targetFile).use { outputStream -> inputStream.copyTo(outputStream) }
         }
         targetFile

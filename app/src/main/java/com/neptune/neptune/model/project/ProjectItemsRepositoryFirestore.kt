@@ -82,10 +82,8 @@ class ProjectItemsRepositoryFirestore(private val db: FirebaseFirestore) : Proje
   }
 
   override suspend fun editProject(projectID: String, newValue: ProjectItem) {
-    db.collection(PROJECT_ITEMS_COLLECTION_PATH)
-        .document(projectID)
-        .set(newValue.toSampleDocument(), SetOptions.merge())
-        .await()
+    db.collection(PROJECT_ITEMS_COLLECTION_PATH).document(projectID)[newValue.toSampleDocument()] =
+        SetOptions.merge()
   }
 
   override suspend fun deleteProject(projectID: String) {
@@ -104,12 +102,13 @@ class ProjectItemsRepositoryFirestore(private val db: FirebaseFirestore) : Proje
       val name = document.getString("name") ?: return null
       val description = document.getString("description") ?: return null
       val isFavorite = document.getBoolean("isFavorite") ?: return null
-      val tags = document.get("tags") as? List<String> ?: emptyList()
+      val tags = (document["tags"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
       val previewUrl = document.getString("previewUrl")
       val projectFileUri = document.getString("fileUrl")
       val lastUpdated = document.getTimestamp("lastUpdated") ?: return null
       val ownerId = document.getString("ownerId") ?: return null
-      val collaborators = document.get("collaborators") as? List<String> ?: emptyList()
+      val collaborators =
+          (document["collaborators"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
 
       ProjectItem(
           uid = uid,

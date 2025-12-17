@@ -7,18 +7,20 @@ import android.webkit.MimeTypeMap
 import com.neptune.neptune.NepTuneApplication
 import java.io.File
 import java.io.FileOutputStream
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
-private val DISPATCHER = Dispatchers.IO
 
 /**
  * Helper to copy a temporary preview Uri into the app's previews folder and return the saved URI
  * string. All file IO is performed on the IO dispatcher.
  */
-class PreviewStoreHelper(private val context: Context = NepTuneApplication.appContext) {
+class PreviewStoreHelper(
+    private val context: Context = NepTuneApplication.appContext,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
   suspend fun saveTempPreviewToPreviewsDir(itemId: String, tempPreviewUri: Uri?): String =
-      withContext(DISPATCHER) {
+      withContext(dispatcher) {
         if (tempPreviewUri == null) return@withContext ""
 
         try {

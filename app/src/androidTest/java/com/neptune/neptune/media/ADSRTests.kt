@@ -23,8 +23,6 @@ class FakeNeptuneMediaPlayer : NeptuneMediaPlayer() {
 
   override fun isPlaying(): Boolean = isPlayingState
 
-  override fun getCurrentUri(): Uri? = playedUri
-
   override fun forceStopAndRelease() {
     stopped = true
     released = true
