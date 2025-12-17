@@ -63,7 +63,7 @@ class SamplerViewModelADSRSampleTest {
     viewModel._uiState.value = viewModel._uiState.value.copy(originalAudioUri = testUri)
 
     // Call start
-    viewModel.startADSRSample()
+    viewModel.startADSRSampleWithPitch(0)
 
     // Verify mediaPlayer.play was called
     assertEquals(testUri, fakePlayer.playedUri)
