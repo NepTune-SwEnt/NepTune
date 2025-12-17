@@ -52,13 +52,14 @@ class SampleRepositoryFirebase(private val db: FirebaseFirestore) : SampleReposi
             trySend(emptyList())
             return@addSnapshotListener
           }
-            //sort the samples to stabilize and avoid unwanted UI results later on
-            val list =
-                snap?.documents
-                    ?.mapNotNull { it.toSampleOrNull() }
-                    .orEmpty()
-                    .sortedByDescending { it.creationTime }   // ✅ stable, like-proof
-            trySend(list)
+          // sort the samples to stabilize and avoid unwanted UI results later on
+          val list =
+              snap
+                  ?.documents
+                  ?.mapNotNull { it.toSampleOrNull() }
+                  .orEmpty()
+                  .sortedByDescending { it.creationTime } // ✅ stable, like-proof
+          trySend(list)
         }
     awaitClose { reg.remove() }
   }
