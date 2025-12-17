@@ -126,7 +126,7 @@ class ProfileSamplesViewModelTest {
         id = id,
         name = "Sample $id",
         description = "desc",
-        durationMilliSecond = 10,
+        durationMillis = 10,
         tags = emptyList(),
         likes = likes,
         usersLike = emptyList(),

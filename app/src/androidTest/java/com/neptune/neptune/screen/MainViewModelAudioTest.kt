@@ -194,7 +194,7 @@ class MainViewModelAudioTest {
         id = "id_${storagePath.hashCode()}",
         name = "Test Sample",
         description = "Desc",
-        durationMilliSecond = 10,
+        durationMillis = 10,
         tags = emptyList(),
         likes = 0,
         usersLike = emptyList(),

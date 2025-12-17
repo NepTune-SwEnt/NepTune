@@ -10,20 +10,19 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.rule.GrantPermissionRule
-import com.neptune.neptune.domain.model.MediaItem
+import com.neptune.neptune.media.NeptuneMediaPlayer
 import com.neptune.neptune.media.NeptuneRecorder
-import com.neptune.neptune.model.project.ProjectItemsRepositoryVarVar
-import com.neptune.neptune.model.project.TotalProjectItemsRepository
+import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.ui.picker.ImportScreenTestTags
 import com.neptune.neptune.ui.picker.ImportViewModel
 import com.neptune.neptune.ui.projectlist.ProjectListScreen
+import com.neptune.neptune.ui.projectlist.ProjectListUiState
 import com.neptune.neptune.ui.projectlist.ProjectListViewModel
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Rule
@@ -32,21 +31,39 @@ import org.junit.Test
 class ProjectListScreenImportTest {
 
   @get:Rule val composeRule = createComposeRule()
-  @get:Rule val permissionRule = GrantPermissionRule.grant(Manifest.permission.RECORD_AUDIO)
+  @get:Rule
+  val permissionRule: GrantPermissionRule? =
+      GrantPermissionRule.grant(Manifest.permission.RECORD_AUDIO)
 
   private lateinit var importViewModel: ImportViewModel
   private lateinit var projectListViewModel: ProjectListViewModel
-  private lateinit var projectListRepo: TotalProjectItemsRepository
-  private lateinit var libraryFlow: MutableStateFlow<List<MediaItem>>
+
+  private lateinit var uiStateFlow: MutableStateFlow<ProjectListUiState>
+  private lateinit var errorMessageFlow: MutableStateFlow<String?>
+  private lateinit var isOnlineFlow: MutableStateFlow<Boolean>
+
   private lateinit var recorder: NeptuneRecorder
+  private lateinit var mediaPlayer: NeptuneMediaPlayer
+  private val emptyStateText =
+      "Tap “Import audio” to create a .neptune project. \n (zip with config.json + audio)"
 
   @Before
   fun setup() {
     importViewModel = mockk(relaxed = true)
-    projectListRepo = ProjectItemsRepositoryVarVar()
-    projectListViewModel = ProjectListViewModel(projectListRepo)
-    libraryFlow = MutableStateFlow(emptyList())
-    every { importViewModel.library } returns libraryFlow as StateFlow<List<MediaItem>>
+    projectListViewModel = mockk(relaxed = true)
+    recorder = mockk(relaxed = true)
+    mediaPlayer = mockk(relaxed = true)
+
+    uiStateFlow = MutableStateFlow(ProjectListUiState(projects = emptyList(), isLoading = false))
+    errorMessageFlow = MutableStateFlow(null)
+    isOnlineFlow = MutableStateFlow(true)
+
+    every { projectListViewModel.uiState } returns uiStateFlow
+    every { projectListViewModel.isOnline } returns isOnlineFlow
+    every { projectListViewModel.isUserLoggedIn } returns true
+
+    every { importViewModel.errorMessage } returns errorMessageFlow
+    every { importViewModel.setOnImportFinished(any()) } returns Unit
   }
 
   private fun launchScreen(
@@ -75,7 +92,6 @@ class ProjectListScreenImportTest {
   @Test
   fun whenLibraryIsNonEmptyShowsListBranchImmediately() {
     // Start non-empty so the first composition goes straight to ProjectList branch
-    libraryFlow.value = listOf(mockk<MediaItem>(relaxed = true))
     launchScreen()
 
     // Empty-state texts should NOT be visible
@@ -91,14 +107,24 @@ class ProjectListScreenImportTest {
 
   @Test
   fun listBranchThenBackToEmptyRendersEmptyStateAgain() {
-    // Start non-empty -> list branch
-    libraryFlow.value = listOf(mockk<MediaItem>(relaxed = true))
+    val fakeProject =
+        mockk<ProjectItem>(relaxed = true) {
+          every { uid } returns "1"
+          every { name } returns "P1"
+          every { description } returns ""
+          every { tags } returns emptyList()
+        }
+    uiStateFlow.value = ProjectListUiState(projects = listOf(fakeProject))
+
     launchScreen()
+    composeRule.onNodeWithText(emptyStateText).assertIsNotDisplayed()
 
-    composeRule.onNodeWithTag(ImportScreenTestTags.EMPTY_LIST).assertIsNotDisplayed()
+    // WHEN - Liste vide
+    uiStateFlow.value = ProjectListUiState(projects = emptyList())
+    composeRule.waitForIdle()
 
-    // Flip to empty -> should recompose to empty branch
-    composeRule.runOnIdle { libraryFlow.value = emptyList() }
+    // THEN - Le texte vide doit s'afficher
+    composeRule.onNodeWithText(emptyStateText).assertIsDisplayed()
   }
 
   @Test
