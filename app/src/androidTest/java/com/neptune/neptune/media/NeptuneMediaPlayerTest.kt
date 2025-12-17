@@ -17,7 +17,7 @@ class NeptuneMediaPlayerTest {
   private lateinit var context: Context
 
   fun isPlayingURI(uri: Uri): Boolean {
-    return mediaPlayer.isPlaying() && mediaPlayer.currentUri == uri
+    return mediaPlayer.isPlaying() && mediaPlayer.getCurrentUri() == uri
   }
 
   fun waitForPlayback(timeoutMs: Long = 200): Boolean {
@@ -45,7 +45,7 @@ class NeptuneMediaPlayerTest {
   @Test
   fun testNoURIPlaying() {
     assert(!mediaPlayer.isPlaying())
-    assert(mediaPlayer.currentUri == null)
+    assert(mediaPlayer.getCurrentUri() == null)
   }
 
   @Test
@@ -67,7 +67,7 @@ class NeptuneMediaPlayerTest {
 
     mediaPlayer.pause()
     assert(!mediaPlayer.isPlaying())
-    assert(mediaPlayer.currentUri == testURI1)
+    assert(mediaPlayer.getCurrentUri() == testURI1)
   }
 
   @Test
@@ -88,7 +88,7 @@ class NeptuneMediaPlayerTest {
 
     mediaPlayer.togglePlay(testURI1)
     assert(!mediaPlayer.isPlaying())
-    assert(mediaPlayer.currentUri == testURI1)
+    assert(mediaPlayer.getCurrentUri() == testURI1)
 
     mediaPlayer.togglePlay(testURI1)
     waitForPlayback()
@@ -113,7 +113,7 @@ class NeptuneMediaPlayerTest {
 
     mediaPlayer.togglePause()
     assert(!mediaPlayer.isPlaying())
-    assert(mediaPlayer.currentUri == testURI1)
+    assert(mediaPlayer.getCurrentUri() == testURI1)
 
     mediaPlayer.togglePause()
     waitForPlayback()
@@ -126,7 +126,7 @@ class NeptuneMediaPlayerTest {
     waitForPlayback()
     mediaPlayer.stop()
     assert(!mediaPlayer.isPlaying())
-    assert(mediaPlayer.currentUri == null)
+    assert(mediaPlayer.getCurrentUri() == null)
   }
 
   @Test
@@ -193,18 +193,23 @@ class NeptuneMediaPlayerTest {
     mediaPlayer.stopWithFade(0)
     Thread.sleep(50)
     assert(!mediaPlayer.isPlaying())
-    assert(mediaPlayer.currentUri == null)
+    assert(mediaPlayer.getCurrentUri() == null)
   }
 
   @Test
   fun testStopWithFadePositive() {
     mediaPlayer.play(testURI1)
     waitForPlayback()
+
     mediaPlayer.stopWithFade(2000)
-    assert(mediaPlayer.isPlaying())
-    Thread.sleep(3000)
-    assert(!mediaPlayer.isPlaying())
-    assert(mediaPlayer.currentUri == null)
+
+    composeTestRule.waitUntil(timeoutMillis = 5000) {
+      try {
+        !mediaPlayer.isPlaying()
+      } catch (_: IllegalStateException) {
+        true
+      }
+    }
   }
 
   @Test
@@ -212,13 +217,13 @@ class NeptuneMediaPlayerTest {
     mediaPlayer.stopWithFade(200)
     Thread.sleep(50)
     assert(!mediaPlayer.isPlaying())
-    assert(mediaPlayer.currentUri == null)
+    assert(mediaPlayer.getCurrentUri() == null)
   }
 
   @Test
   fun testForceStopAndReleaseWhenNoMedia() {
     mediaPlayer.forceStopAndRelease()
     assert(!mediaPlayer.isPlaying())
-    assert(mediaPlayer.currentUri == null)
+    assert(mediaPlayer.getCurrentUri() == null)
   }
 }

@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -29,7 +30,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-// These tests were maid using AI assistance
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainDispatcherRule(val dispatcher: TestDispatcher = UnconfinedTestDispatcher()) :
     TestWatcher() {
@@ -56,7 +56,6 @@ class MainViewModelTest {
   private lateinit var mockStorageService: StorageService
 
   @Before
-  // This function was made using AI assistance
   fun setup() {
     mockAuth = mock()
     mockFirebaseUser = mock()
@@ -76,7 +75,7 @@ class MainViewModelTest {
             auth = mockAuth,
             storageService = mockStorageService)
   }
-  // --- NEW: helper fake actions we can assert on ---
+
   private class RecordingActions :
       SampleUiActions(
           repo = mock(),
@@ -101,7 +100,6 @@ class MainViewModelTest {
     }
   }
 
-  // --- NEW: Test VM that injects our fake actions ---
   private class TestMainViewModel(
       sampleRepo: FakeSampleRepository,
       profileRepo: FakeProfileRepository,
@@ -113,7 +111,7 @@ class MainViewModelTest {
           sampleRepo = sampleRepo,
           profileRepo = profileRepo,
           storageService = storageService,
-          useMockData = false, // IMPORTANT: keep actions enabled
+          useMockData = false,
           auth = auth) {
     override val actions: SampleUiActions = injectedActions
   }
@@ -146,7 +144,6 @@ class MainViewModelTest {
 
     vm.onDownloadZippedSample(sample)
 
-    // runTest will execute launched coroutines on the test scheduler
     Assert.assertEquals(1, actions.zippedCalls)
     Assert.assertTrue(actions.lastZippedSample == sample)
   }
@@ -267,5 +264,73 @@ class MainViewModelTest {
     Assert.assertNotNull(resources)
     Assert.assertFalse("isLoading should be false after an error", resources!!.isLoading)
     Assert.assertNull("The audio URL should not be defined", resources.audioUrl)
+  }
+
+  // -------------------------
+  // Helpers for NEW tests only
+  // -------------------------
+
+  private fun makeSample(id: String, likes: Int = 0): Sample =
+      Sample(
+          id = id,
+          name = "n$id",
+          description = "d$id",
+          durationSeconds = 1,
+          tags = emptyList(),
+          likes = likes,
+          usersLike = emptyList(),
+          comments = 0,
+          downloads = 0,
+          ownerId = "u$id",
+          isPublic = true,
+          storagePreviewSamplePath = "not_blank")
+
+  private fun emitSamples(fakeRepo: FakeSampleRepository, samples: List<Sample>) {
+    // Update FakeSampleRepository internal list + flow (test-only reflection).
+    val listField = FakeSampleRepository::class.java.getDeclaredField("samples")
+    listField.isAccessible = true
+    @Suppress("UNCHECKED_CAST") val backingList = listField.get(fakeRepo) as MutableList<Sample>
+    backingList.clear()
+    backingList.addAll(samples)
+
+    val flowField = FakeSampleRepository::class.java.getDeclaredField("_samples")
+    flowField.isAccessible = true
+    @Suppress("UNCHECKED_CAST") val flow = flowField.get(fakeRepo) as MutableStateFlow<List<Sample>>
+    flow.value = backingList.toList()
+  }
+
+  // ------------------------------------
+  // NEW TEST: recommended objects refresh
+  // ------------------------------------
+  @Test
+  fun observeSamplesRefreshesRecommendedObjectsWithoutReordering() = runTest {
+    // IMPORTANT: create a VM that actually observes sampleRepo.observeSamples()
+    val observingVm =
+        MainViewModel(
+            sampleRepo = fakeRepository,
+            profileRepo = fakeProfileRepository,
+            useMockData = false, // <-- must be false so loadSamplesFromFirebase() runs
+            auth = mockAuth,
+            storageService = mockStorageService)
+
+    val a1 = makeSample("A", likes = 1)
+    val b1 = makeSample("B", likes = 10)
+
+    // recommended is B then A
+    observingVm.setRecommendedSamplesForTest(listOf(b1, a1))
+
+    // initial snapshot
+    emitSamples(fakeRepository, listOf(a1, b1))
+    advanceUntilIdle()
+
+    // snapshot updates likes of B
+    val a2 = a1.copy(likes = 1)
+    val b2 = b1.copy(likes = 999)
+    emitSamples(fakeRepository, listOf(a2, b2))
+    advanceUntilIdle()
+
+    val rec = observingVm.recommendedSamples.value
+    Assert.assertEquals(listOf("B", "A"), rec.map { it.id }) // order stable
+    Assert.assertEquals(999, rec.first { it.id == "B" }.likes) // data refreshed
   }
 }

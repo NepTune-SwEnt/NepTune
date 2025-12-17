@@ -38,7 +38,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -48,7 +47,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -110,7 +108,8 @@ import java.util.Locale
 import kotlinx.coroutines.delay
 
 val TOP_BAR_HEIGHT = 90.dp
-val PROFILE_ICON_SIZE = 90.dp
+val PROFILE_ICON_SIZE = 57.dp
+val LOGO_HEIGHT = TOP_BAR_HEIGHT - 20.dp
 
 object MainScreenTestTags : BaseSampleTestTags {
   override val prefix = "MainScreen"
@@ -513,19 +512,19 @@ private fun SampleSectionLazyRow(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainTopAppBar(userAvatar: String?, navigateToProfile: () -> Unit, signedIn: Boolean = true) {
-  val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-  val logoSize = screenWidth * 0.3f
   Column {
-    CenterAlignedTopAppBar(
+    Box(
         modifier =
-            Modifier.fillMaxWidth().height(TOP_BAR_HEIGHT).testTag(MainScreenTestTags.TOP_BAR),
-        title = {
+            Modifier.padding(0.dp)
+                .fillMaxWidth()
+                .height(TOP_BAR_HEIGHT)
+                .testTag(MainScreenTestTags.TOP_BAR)) {
           // Keep the title constrained to the center area so the actions stay to the right
           Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Image(
                 painter = painterResource(id = R.drawable.neptune_logo),
                 contentDescription = "NepTune Logo",
-                modifier = Modifier.size(logoSize).testTag(MainScreenTestTags.TOP_BAR_LOGO),
+                modifier = Modifier.height(LOGO_HEIGHT).testTag(MainScreenTestTags.TOP_BAR_LOGO),
                 contentScale = ContentScale.Fit)
 
             // Profile Button
@@ -534,7 +533,7 @@ fun MainTopAppBar(userAvatar: String?, navigateToProfile: () -> Unit, signedIn: 
                   onClick = navigateToProfile,
                   modifier =
                       Modifier.align(Alignment.CenterEnd)
-                          .padding(horizontal = 5.dp)
+                          .padding(horizontal = (TOP_BAR_HEIGHT - PROFILE_ICON_SIZE) / 2)
                           .size(PROFILE_ICON_SIZE)
                           .testTag(NavigationTestTags.PROFILE_BUTTON)) {
                     AsyncImage(
@@ -551,10 +550,7 @@ fun MainTopAppBar(userAvatar: String?, navigateToProfile: () -> Unit, signedIn: 
                   }
             }
           }
-        },
-        colors =
-            TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = NepTuneTheme.colors.background))
+        }
     HorizontalDivider(
         modifier = Modifier.fillMaxWidth(),
         thickness = 0.75.dp,
