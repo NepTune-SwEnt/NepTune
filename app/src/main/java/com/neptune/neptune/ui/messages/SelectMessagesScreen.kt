@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
@@ -22,8 +23,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -96,7 +99,21 @@ fun SelectMessagesScreen(
         viewModel(factory = SelectMessagesViewModelFactory(currentUid))
 ) {
   val users by selectMessagesViewModel.users.collectAsState()
+  val listState = rememberLazyListState()
   val isOnline by remember { NetworkConnectivityObserver().isOnline }.collectAsState(initial = true)
+
+  val lastSeenTimestamp = remember { mutableStateOf<Long?>(null) }
+
+  // Scroll to top whenever last timestamp changes
+  LaunchedEffect(users) {
+    val newestTimestamp = users.firstOrNull()?.lastTimestamp?.toDate()?.time
+
+    if (newestTimestamp != null && newestTimestamp != lastSeenTimestamp.value) {
+      lastSeenTimestamp.value = newestTimestamp
+      listState.animateScrollToItem(0)
+    }
+  }
+
   Column(
       modifier =
           Modifier.fillMaxSize()
@@ -155,6 +172,7 @@ fun SelectMessagesScreen(
 
           // List of Users
           LazyColumn(
+              state = listState,
               modifier = Modifier.fillMaxSize().testTag(SelectMessagesScreenTestTags.USER_LIST),
               verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 items(users, key = { it.profile.uid }) { user ->

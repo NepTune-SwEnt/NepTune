@@ -116,7 +116,8 @@ fun SampleAppTheme(
               shadow = shadow,
               animation = animation,
               online = Green,
-              offline = Gray)
+              offline = Gray,
+              error = Red)
         }
         else -> if (darkTheme) DarkExtendedColors else LightExtendedColors
       }

@@ -40,7 +40,7 @@ import com.neptune.neptune.ui.follow.FollowListRoute
 import com.neptune.neptune.ui.follow.FollowListTab
 import com.neptune.neptune.ui.main.MainScreen
 import com.neptune.neptune.ui.main.MainViewModel
-import com.neptune.neptune.ui.messages.MessagesScreen
+import com.neptune.neptune.ui.messages.MessagesRoute
 import com.neptune.neptune.ui.messages.SelectMessagesScreen
 import com.neptune.neptune.ui.navigation.BottomNavigationMenu
 import com.neptune.neptune.ui.navigation.NavigationActions
@@ -369,18 +369,22 @@ private fun NavGraphBuilder.messagingGraph(
 ) {
   composable(Screen.SelectMessages.route) {
     val firebaseUser by signInViewModel.currentUser.collectAsState()
-    val currentUid = firebaseUser?.uid
-    if (currentUid != null) {
+      val currentUid = firebaseUser?.uid ?: return@composable // prevent crash
       SelectMessagesScreen(
           goBack = { nav.goBack() },
           onSelectUser = { uid -> nav.navigateTo(Screen.Messages.createRoute(uid)) },
           currentUid = currentUid)
     }
-  }
-  composable(
-      route = Screen.Messages.route,
-      arguments = listOf(navArgument("uid") { type = NavType.StringType })) { backStackEntry ->
-        val uid = backStackEntry.arguments?.getString("uid") ?: return@composable
-        MessagesScreen(uid = uid, goBack = { nav.goBack() })
-      }
+composable(
+route = Screen.Messages.route,
+arguments = listOf(navArgument("uid") { type = NavType.StringType })) {
+    backStackEntry ->
+    val otherUserId =
+        backStackEntry.arguments?.getString("uid") ?: return@composable
+    MessagesRoute(
+        otherUserId = otherUserId,
+        signInViewModel = signInViewModel,
+        goBack = { nav.goBack() })
 }
+}
+

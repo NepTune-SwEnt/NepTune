@@ -1,20 +1,31 @@
 package com.neptune.neptune.screen
 
-import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.google.firebase.auth.FirebaseUser
+import com.neptune.neptune.ui.authentification.SignInViewModel
+import com.neptune.neptune.ui.messages.MessagesRoute
 import com.neptune.neptune.ui.messages.MessagesScreen
 import com.neptune.neptune.ui.messages.MessagesScreenTestTags
 import com.neptune.neptune.ui.messages.MessagesViewModel
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -28,10 +39,20 @@ class MessagesScreenTest {
   @get:Rule val composeTestRule = createComposeRule()
 
   private fun setContent(
-      uid: String = "123",
+      otherUserId: String = "123",
+      currentUserId: String = "me",
       goBack: () -> Unit = {},
+      messagesViewModel: MessagesViewModel? = null
   ) {
-    composeTestRule.setContent { MessagesScreen(uid = uid, goBack = goBack) }
+    composeTestRule.setContent {
+      MessagesScreen(
+          otherUserId = otherUserId,
+          currentUserId = currentUserId,
+          goBack = goBack,
+          messagesViewModel =
+              messagesViewModel
+                  ?: MessagesViewModel(otherUserId = otherUserId, currentUserId = currentUserId))
+    }
   }
 
   @Test
@@ -54,6 +75,7 @@ class MessagesScreenTest {
     composeTestRule.onNodeWithTag(MessagesScreenTestTags.INPUT_BAR).assertIsDisplayed()
     composeTestRule.onNodeWithTag(MessagesScreenTestTags.INPUT_FIELD).assertIsDisplayed()
     composeTestRule.onNodeWithTag(MessagesScreenTestTags.SEND_BUTTON).assertIsDisplayed()
+    composeTestRule.onNodeWithTag(MessagesScreenTestTags.INPUT_COUNTER).assertIsDisplayed()
   }
 
   @Test
@@ -68,10 +90,15 @@ class MessagesScreenTest {
 
   @Test
   fun canWriteANewMessage() {
-    val testViewModel = MessagesViewModel(otherUserId = "21", initialMessages = emptyList())
+    val testViewModel = MessagesViewModel(otherUserId = "21", currentUserId = "me")
     // Set content with the test ViewModel
     composeTestRule.setContent {
-      MessagesScreen(uid = "21", goBack = {}, messagesViewModel = testViewModel, autoScroll = false)
+      MessagesScreen(
+          otherUserId = "21",
+          currentUserId = "me",
+          goBack = {},
+          messagesViewModel = testViewModel,
+          autoScroll = false)
     }
 
     // Write a message
@@ -87,18 +114,23 @@ class MessagesScreenTest {
     }
 
     composeTestRule
-        .onNodeWithText("Banana")
+        .onAllNodesWithText("Banana")
+        .onFirst()
         .assertExists("Message `Banana` not found after sending.")
   }
 
   /** Tests that bubbles appear when a new message is written */
   @Test
   fun messagesAddsBubble() {
-    val testViewModel = MessagesViewModel(otherUserId = "234", initialMessages = emptyList())
+    val testViewModel = MessagesViewModel(otherUserId = "234", currentUserId = "me")
     // Set content with the test ViewModel
     composeTestRule.setContent {
       MessagesScreen(
-          uid = "234", goBack = {}, messagesViewModel = testViewModel, autoScroll = false)
+          otherUserId = "234",
+          currentUserId = "me",
+          goBack = {},
+          messagesViewModel = testViewModel,
+          autoScroll = false)
     }
 
     // Write a message
@@ -124,76 +156,98 @@ class MessagesScreenTest {
     assertTrue(backClicked)
   }
 
-  /** Tests that u1 fake data loads correctly */
+  /** Tests that the character counter updates when typing */
   @Test
-  fun messagesScreenLoadsFakeDataForU1() {
-    composeTestRule.setContent { MessagesScreen(uid = "u1", goBack = {}) }
+  fun characterCounterUpdatesWhenTyping() {
+    setContent()
 
-    // Username
+    // Type text
+    composeTestRule.onNodeWithTag(MessagesScreenTestTags.INPUT_FIELD).performTextInput("Hello")
+
+    // Counter should update
     composeTestRule
-        .onNodeWithTag(MessagesScreenTestTags.USERNAME)
-        .assertIsDisplayed()
-        .assertTextContains("test1")
-
-    // Online indicator
-    composeTestRule.onNodeWithTag(MessagesScreenTestTags.ONLINE_INDICATOR).assertIsDisplayed()
-
-    // Messages
-    composeTestRule.waitUntil(5000) {
-      composeTestRule
-          .onAllNodesWithText("Byebye Sweetie Banana")
-          .fetchSemanticsNodes()
-          .isNotEmpty() &&
-          composeTestRule.onAllNodesWithText("Mikkaaaa").fetchSemanticsNodes().isNotEmpty()
-    }
-
-    composeTestRule.onNodeWithText("Byebye Sweetie Banana").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Mikkaaaa").assertIsDisplayed()
+        .onNodeWithTag(MessagesScreenTestTags.INPUT_COUNTER)
+        .assertExists()
+        .assertTextEquals("5 / 1000")
   }
 
-  /** Tests that u2 fake data loads correctly */
+  /** Tests that the text is limited to the max characters */
   @Test
-  fun messagesScreenLoadsFakeDataForU2() {
-    composeTestRule.setContent { MessagesScreen(uid = "u2", goBack = {}) }
+  fun textIsLimitedToMaxCharacters() {
+    setContent()
 
-    // Username
+    val longText = "a".repeat(1050)
+
+    composeTestRule.onNodeWithTag(MessagesScreenTestTags.INPUT_FIELD).performTextInput(longText)
+
+    // Counter should not exceed maxChars (200)
     composeTestRule
-        .onNodeWithTag(MessagesScreenTestTags.USERNAME)
-        .assertIsDisplayed()
-        .assertTextContains("test2")
-
-    // Online indicator
-    composeTestRule.onNodeWithTag(MessagesScreenTestTags.ONLINE_INDICATOR).assertIsDisplayed()
-
-    // Messages
-    composeTestRule.waitUntil(5000) {
-      composeTestRule.onAllNodesWithText("BLEH😝").fetchSemanticsNodes().size == 3
-    }
-
-    composeTestRule.onAllNodesWithText("BLEH😝").assertCountEquals(3)
+        .onNodeWithTag(MessagesScreenTestTags.INPUT_COUNTER)
+        .assertTextEquals("1000 / 1000")
   }
 
-  /** Tests that u3 fake data loads correctly */
+  /** Tests that messages Route with user correctly display MessageScreen */
   @Test
-  fun messagesScreenLoadsFakeDataForU3() {
-    composeTestRule.setContent { MessagesScreen(uid = "u3", goBack = {}) }
+  fun messagesRouteWithUserShowsMessagesScreen() {
+    val otherUserId = "other123"
+    val currentUserId = "me123"
 
-    // Username
-    composeTestRule
-        .onNodeWithTag(MessagesScreenTestTags.USERNAME)
-        .assertIsDisplayed()
-        .assertTextContains("test3")
+    val firebaseUser = mockk<FirebaseUser> { every { uid } returns currentUserId }
 
-    // Online indicator
-    composeTestRule.onNodeWithTag(MessagesScreenTestTags.ONLINE_INDICATOR).assertIsDisplayed()
+    val fakeSignInViewModel = mockk<SignInViewModel>()
+    every { fakeSignInViewModel.currentUser } returns MutableStateFlow(firebaseUser)
 
-    // Messages
-    composeTestRule.waitUntil(5000) {
-      composeTestRule.onAllNodesWithText("Banana").fetchSemanticsNodes().isNotEmpty() &&
-          composeTestRule.onAllNodesWithText("21").fetchSemanticsNodes().isNotEmpty()
+    composeTestRule.setContent {
+      MessagesRoute(otherUserId = otherUserId, signInViewModel = fakeSignInViewModel, goBack = {})
     }
 
-    composeTestRule.onNodeWithText("Banana").assertIsDisplayed()
-    composeTestRule.onNodeWithText("21").assertIsDisplayed()
+    composeTestRule.onNodeWithTag(MessagesScreenTestTags.MESSAGES_SCREEN).assertIsDisplayed()
+  }
+
+  /** Tests that messages Route without user doesn't display MessageScreen */
+  @Test
+  fun messagesRouteWithoutUserDoesNotShowScreen() {
+    val fakeSignInViewModel = mockk<SignInViewModel>()
+    every { fakeSignInViewModel.currentUser } returns MutableStateFlow(null)
+
+    composeTestRule.setContent {
+      MessagesRoute(otherUserId = "other", signInViewModel = fakeSignInViewModel, goBack = {})
+    }
+
+    composeTestRule.onNodeWithTag(MessagesScreenTestTags.MESSAGES_SCREEN).assertDoesNotExist()
+  }
+
+  /** Tests that messages Route correctly reads UID Argument */
+  @Test
+  fun messagesNavRouteReadsUidArgument() {
+    val otherUserId = "other123"
+    val currentUserId = "me123"
+
+    val firebaseUser = mockk<FirebaseUser> { every { uid } returns currentUserId }
+
+    val signInViewModel = mockk<SignInViewModel>()
+    every { signInViewModel.currentUser } returns MutableStateFlow(firebaseUser)
+
+    composeTestRule.setContent {
+      val navController = rememberNavController()
+
+      NavHost(navController = navController, startDestination = "messages/{uid}") {
+        composable(
+            route = "messages/{uid}",
+            arguments = listOf(navArgument("uid") { type = NavType.StringType })) { backStackEntry
+              ->
+              val otherUserIdFromNav =
+                  backStackEntry.arguments?.getString("uid") ?: return@composable
+
+              MessagesRoute(
+                  otherUserId = otherUserIdFromNav, signInViewModel = signInViewModel, goBack = {})
+            }
+      }
+
+      // Trigger navigation
+      LaunchedEffect(Unit) { navController.navigate("messages/$otherUserId") }
+    }
+
+    composeTestRule.onNodeWithTag(MessagesScreenTestTags.MESSAGES_SCREEN).assertIsDisplayed()
   }
 }

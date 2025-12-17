@@ -26,10 +26,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.google.firebase.Timestamp
 import com.neptune.neptune.R
+import com.neptune.neptune.ui.authentification.SignInViewModel
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import com.neptune.neptune.util.formatTime
 
@@ -47,28 +49,54 @@ object MessagesScreenTestTags {
   const val INPUT_BAR = "MessageInputBar"
   const val INPUT_FIELD = "MessageInputField"
   const val SEND_BUTTON = "SendButton"
+  const val INPUT_COUNTER = "InputCounter"
 }
 /**
  * Factory used to create a [MessagesViewModel] instance with a specific user ID. This has been
  * written with the help of LLMs.
  *
- * @param uid The ID of the user whose conversation should be loaded.
+ * @param currentUserId The ID of the user whose conversation should be loaded.
+ * @param otherUserId The ID of the persons who the user is talking to
  * @author Angéline Bignens
  */
-class MessagesViewModelFactory(private val uid: String) : ViewModelProvider.Factory {
+class MessagesViewModelFactory(private val otherUserId: String, private val currentUserId: String) :
+    ViewModelProvider.Factory {
   override fun <T : ViewModel> create(modelClass: Class<T>): T {
     if (modelClass.isAssignableFrom(MessagesViewModel::class.java)) {
-      @Suppress("UNCHECKED_CAST") return MessagesViewModel(uid) as T
+      @Suppress("UNCHECKED_CAST")
+      return MessagesViewModel(otherUserId = otherUserId, currentUserId = currentUserId) as T
     }
-    throw IllegalArgumentException("Unknown ViewModel class")
+    throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
   }
+}
+
+/**
+ * Composable route for the Messages screen.
+ *
+ * This function acts as a bridge between the navigation layer and the UI layer. It observes the
+ * currently signed-in user from [SignInViewModel] and only displays the [MessagesScreen] if a user
+ * is logged in.This has been written with the help of LLMs.
+ *
+ * @param otherUserId The ID of the user with whom the current user is having a conversation.
+ * @param signInViewModel The [SignInViewModel] that provides the currently authenticated user.
+ * @param goBack Lambda callback invoked to navigate back from the Messages screen.
+ * @see MessagesScreen
+ * @author Angéline Bignens
+ */
+@Composable
+fun MessagesRoute(otherUserId: String, signInViewModel: SignInViewModel, goBack: () -> Unit) {
+  val firebaseUser by signInViewModel.currentUser.collectAsState()
+  val currentUserId = firebaseUser?.uid ?: return
+
+  MessagesScreen(otherUserId = otherUserId, currentUserId = currentUserId, goBack = goBack)
 }
 
 /**
  * Composable function representing the Messages Screen. This has been written with the help of
  * LLMs.
  *
- * @param uid The ID of the user the conversation belongs to.
+ * @param currentUserId The ID of the user the conversation belongs to.
+ * @param otherUserId the ID of the user with the user is talking to.
  * @param goBack Callback used for navigating back.
  * @param messagesViewModel Injected ViewModel.
  * @param autoScroll AutoScroll parameter is always true. Can be optionally disabled while testing
@@ -76,16 +104,19 @@ class MessagesViewModelFactory(private val uid: String) : ViewModelProvider.Fact
  */
 @Composable
 fun MessagesScreen(
-    uid: String,
+    otherUserId: String,
+    currentUserId: String,
     goBack: () -> Unit,
-    messagesViewModel: MessagesViewModel = viewModel(factory = MessagesViewModelFactory(uid)),
+    messagesViewModel: MessagesViewModel =
+        viewModel(
+            factory =
+                MessagesViewModelFactory(otherUserId = otherUserId, currentUserId = currentUserId)),
     autoScroll: Boolean = true // false when testing
 ) {
-  val messages by messagesViewModel.messages.collectAsState()
+  val messages by messagesViewModel.messages.collectAsStateWithLifecycle()
   val otherUsername by messagesViewModel.otherUsername.collectAsState()
   val otherAvatar by messagesViewModel.otherAvatar.collectAsState()
   val isOnline by messagesViewModel.isOnline.collectAsState()
-  val currentUserId = messagesViewModel.currentUserId
   val listState = rememberLazyListState()
 
   // Scroll to latest message when list changes
@@ -188,7 +219,7 @@ fun MessageBubble(isMe: Boolean, text: String, timestamp: Timestamp?, testTag: S
       horizontalArrangement = alignment) {
         Column(horizontalAlignment = if (isMe) Alignment.End else Alignment.Start) {
           Text(
-              text = if (timestamp != null) "• " + formatTime(timestamp) else "",
+              text = if (timestamp != null) "• " + formatTime(timestamp) else "Sending...",
               color = NepTuneTheme.colors.onBackground,
               style =
                   TextStyle(
@@ -219,76 +250,99 @@ fun MessageBubble(isMe: Boolean, text: String, timestamp: Timestamp?, testTag: S
  * Bottom input bar used to write and send messages.
  *
  * @param onSend Callback triggered when the send button is pressed.
+ * @param maxChars Max characters when sending a text.
  */
 @Composable
-fun MessageInputBar(onSend: (String) -> Unit) {
+fun MessageInputBar(onSend: (String) -> Unit, maxChars: Int = 1000) {
   var text by remember { mutableStateOf("") }
 
-  Row(
-      modifier =
-          Modifier.fillMaxWidth()
-              .padding(horizontal = 12.dp, vertical = 10.dp)
-              .testTag(MessagesScreenTestTags.INPUT_BAR),
-      verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier =
-                Modifier.weight(1f)
-                    .height(57.dp)
-                    .background(
-                        color = NepTuneTheme.colors.searchBar, shape = RoundedCornerShape(10.dp)),
-            contentAlignment = Alignment.CenterStart) {
-              TextField(
-                  value = text,
-                  onValueChange = { text = it },
-                  placeholder = {
-                    Text(
-                        text = "Message...",
-                        color = NepTuneTheme.colors.onBackground.copy(alpha = 0.6f),
-                        style =
-                            TextStyle(
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight(500),
-                                fontFamily = FontFamily(Font(R.font.markazi_text))))
-                  },
-                  modifier = Modifier.fillMaxSize().testTag(MessagesScreenTestTags.INPUT_FIELD),
-                  colors =
-                      TextFieldDefaults.colors(
-                          focusedContainerColor = Color.Transparent,
-                          unfocusedContainerColor = Color.Transparent,
-                          focusedIndicatorColor = Color.Transparent,
-                          unfocusedIndicatorColor = Color.Transparent,
-                          cursorColor = NepTuneTheme.colors.onBackground,
-                          focusedTextColor = NepTuneTheme.colors.onBackground,
-                          unfocusedTextColor = NepTuneTheme.colors.onBackground),
-                  maxLines = 3,
-                  textStyle =
-                      TextStyle(
-                          fontSize = 24.sp,
-                          fontFamily = FontFamily(Font(R.font.markazi_text)),
-                          fontWeight = FontWeight(300),
-                          color = NepTuneTheme.colors.onBackground))
-            }
+  val minHeight = 57.dp
+  val maxHeight = 140.dp
 
-        Spacer(modifier = Modifier.width(10.dp))
-
-        IconButton(
-            onClick = {
-              if (text.isNotBlank()) {
-                onSend(text.trim())
-                text = ""
+  Column {
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+                .testTag(MessagesScreenTestTags.INPUT_BAR),
+        verticalAlignment = Alignment.Bottom) {
+          Box(
+              modifier =
+                  Modifier.weight(1f)
+                      .heightIn(minHeight, maxHeight)
+                      .background(
+                          color = NepTuneTheme.colors.searchBar, shape = RoundedCornerShape(10.dp)),
+              contentAlignment = Alignment.CenterStart) {
+                TextField(
+                    value = text,
+                    onValueChange = { newText ->
+                      text =
+                          if (newText.length <= maxChars) {
+                            newText
+                          } else {
+                            newText.take(maxChars) // Truncate if exceeding
+                          }
+                    },
+                    placeholder = {
+                      Text(
+                          text = "Message...",
+                          color = NepTuneTheme.colors.onBackground.copy(alpha = 0.6f),
+                          style =
+                              TextStyle(
+                                  fontSize = 24.sp,
+                                  fontWeight = FontWeight(500),
+                                  fontFamily = FontFamily(Font(R.font.markazi_text))))
+                    },
+                    modifier = Modifier.fillMaxWidth().testTag(MessagesScreenTestTags.INPUT_FIELD),
+                    colors =
+                        TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            cursorColor = NepTuneTheme.colors.onBackground,
+                            focusedTextColor = NepTuneTheme.colors.onBackground,
+                            unfocusedTextColor = NepTuneTheme.colors.onBackground),
+                    textStyle =
+                        TextStyle(
+                            fontSize = 24.sp,
+                            fontFamily = FontFamily(Font(R.font.markazi_text)),
+                            fontWeight = FontWeight(300),
+                            color = NepTuneTheme.colors.onBackground))
               }
-            },
-            modifier =
-                Modifier.testTag(MessagesScreenTestTags.SEND_BUTTON)
-                    .size(57.dp)
-                    .background(
-                        color = NepTuneTheme.colors.postButton,
-                        shape = RoundedCornerShape(16.dp))) {
-              Icon(
-                  painter = painterResource(id = R.drawable.messageicon),
-                  contentDescription = "Send",
-                  modifier = Modifier.size(30.dp),
-                  tint = NepTuneTheme.colors.onBackground)
-            }
-      }
+
+          Spacer(modifier = Modifier.width(10.dp))
+
+          IconButton(
+              onClick = {
+                if (text.isNotBlank()) {
+                  onSend(text.trim())
+                  text = ""
+                }
+              },
+              modifier =
+                  Modifier.testTag(MessagesScreenTestTags.SEND_BUTTON)
+                      .size(57.dp)
+                      .background(
+                          color = NepTuneTheme.colors.postButton,
+                          shape = RoundedCornerShape(16.dp))) {
+                Icon(
+                    painter = painterResource(id = R.drawable.messageicon),
+                    contentDescription = "Send",
+                    modifier = Modifier.size(30.dp),
+                    tint = NepTuneTheme.colors.onBackground)
+              }
+        }
+
+    // Character counter
+    Text(
+        text = "${text.length} / $maxChars",
+        color =
+            if (text.length == maxChars) NepTuneTheme.colors.error
+            else NepTuneTheme.colors.onBackground.copy(alpha = 0.6f),
+        style = TextStyle(fontSize = 14.sp, fontFamily = FontFamily(Font(R.font.markazi_text))),
+        modifier =
+            Modifier.padding(start = 16.dp, bottom = 4.dp)
+                .testTag(MessagesScreenTestTags.INPUT_COUNTER))
+  }
 }
