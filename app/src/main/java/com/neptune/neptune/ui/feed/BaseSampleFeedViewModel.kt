@@ -20,9 +20,11 @@ import com.neptune.neptune.util.WaveformExtractor
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -53,23 +55,16 @@ abstract class BaseSampleFeedViewModel(
   private val coverImageCache = mutableMapOf<String, String?>()
   private val audioUrlCache = mutableMapOf<String, String?>()
   private val waveformCache = mutableMapOf<String, List<Float>>()
-  private val _isOnline = MutableStateFlow(true)
-  val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+  private val timeout = 5000L
+  open val isOnline: StateFlow<Boolean> =
+      NetworkConnectivityObserver()
+          .isOnline
+          .stateIn(
+              scope = viewModelScope,
+              started = SharingStarted.WhileSubscribed(timeout),
+              initialValue = true)
   open val isUserLoggedIn: Boolean
     get() = auth?.currentUser != null
-
-  init {
-    // Initialisation unique du monitoring réseau
-    viewModelScope.launch {
-      try {
-        NetworkConnectivityObserver().isOnline.collectLatest { connected ->
-          _isOnline.value = connected
-        }
-      } catch (e: Exception) {
-        Log.e("BaseViewModel", "Error initializing connectivity observer", e)
-      }
-    }
-  }
 
   override fun onCommentClicked(sample: Sample) {
     observeCommentsForSample(sample.id)
@@ -87,10 +82,37 @@ abstract class BaseSampleFeedViewModel(
         val authorId = profile?.uid ?: "unknown"
         val authorName = profile?.username ?: defaultName
         val authorProfilePicUrl = profile?.avatarUrl ?: ""
-        sampleRepo.addComment(sampleId, authorId, authorName, authorProfilePicUrl, text.trim())
+        sampleRepo.addComment(sampleId, authorId, authorName, text.trim(), authorProfilePicUrl)
         observeCommentsForSample(sampleId)
       } catch (e: Exception) {
         Log.e("BaseSampleFeedViewModel", "Error adding comment: ${e.message}")
+      }
+    }
+  }
+
+  override fun onDeleteComment(
+      sampleId: String,
+      authorId: String,
+      timestamp: com.google.firebase.Timestamp?
+  ) {
+    viewModelScope.launch {
+      try {
+        // Authorization: only comment author or sample owner may delete
+        val currentUserId = auth?.currentUser?.uid
+        val sample =
+            try {
+              sampleRepo.getSample(sampleId)
+            } catch (e: Exception) {
+              null
+            }
+        val isOwner = sample?.ownerId?.let { isCurrentUser(it) } ?: false
+        if (currentUserId == authorId || isOwner) {
+          sampleRepo.deleteComment(sampleId, authorId, timestamp)
+          // Re-observe to refresh local state
+          observeCommentsForSample(sampleId)
+        }
+      } catch (e: Exception) {
+        // ignore or log
       }
     }
   }
@@ -138,9 +160,10 @@ abstract class BaseSampleFeedViewModel(
 
   /** Function to trigger loading */
   override fun loadSampleResources(sample: Sample) {
+    val effectivePath =
+        sample.storagePreviewSamplePath.ifBlank { sample.storageProcessedSamplePath }
     val currentResources = _sampleResources.value[sample.id]
-    if (currentResources != null &&
-        currentResources.loadedSamplePath == sample.storagePreviewSamplePath) {
+    if (currentResources != null && currentResources.loadedSamplePath == effectivePath) {
       return
     }
 
@@ -158,8 +181,7 @@ abstract class BaseSampleFeedViewModel(
         val coverUrl =
             if (sample.storageImagePath.isNotBlank()) getSampleCoverUrl(sample.storageImagePath)
             else null
-        val audioUrl =
-            if (sample.storagePreviewSamplePath.isNotBlank()) getSampleAudioUrl(sample) else null
+        val audioUrl = if (effectivePath.isNotBlank()) getSampleAudioUrl(sample) else null
         val waveform = getSampleWaveform(sample)
 
         _sampleResources.update { current ->
@@ -172,7 +194,7 @@ abstract class BaseSampleFeedViewModel(
                       audioUrl = audioUrl,
                       waveform = waveform,
                       isLoading = false,
-                      loadedSamplePath = sample.storagePreviewSamplePath))
+                      loadedSamplePath = effectivePath))
         }
       } catch (e: Exception) {
         Log.e("BaseSampleFeedViewModel", "Error loading sample resources: ${e.message}")
@@ -219,7 +241,7 @@ abstract class BaseSampleFeedViewModel(
   }
 
   private suspend fun getSampleAudioUrl(sample: Sample): String? {
-    val storagePath = sample.storagePreviewSamplePath
+    val storagePath = sample.storagePreviewSamplePath.ifBlank { sample.storageProcessedSamplePath }
     if (storagePath.isBlank()) return null
     if (audioUrlCache.containsKey(storagePath)) return audioUrlCache[storagePath]
 

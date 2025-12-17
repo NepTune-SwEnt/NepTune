@@ -485,23 +485,7 @@ fun EditMenu(
                 showChangeDescDialog = true
                 expanded = false
               })
-          if (!project.isStoredInCloud) {
-            DropdownMenuItem(
-                modifier = Modifier.testTag(ProjectListScreenTestTags.ADD_TO_CLOUD_BUTTON),
-                text = { Text("Add to Cloud") },
-                onClick = {
-                  projectListViewModel.addProjectToCloud(project.uid)
-                  expanded = false
-                })
-          } else {
-            DropdownMenuItem(
-                modifier = Modifier.testTag(ProjectListScreenTestTags.REMOVE_FROM_CLOUD_BUTTON),
-                text = { Text("Remove from Cloud") },
-                onClick = {
-                  projectListViewModel.removeProjectFromCloud(project.uid)
-                  expanded = false
-                })
-          }
+          // TODO Add/remove from cloud button to add when fully implemented
           DropdownMenuItem(
               modifier = Modifier.testTag(ProjectListScreenTestTags.DELETE_BUTTON),
               text = { Text("Delete") },
