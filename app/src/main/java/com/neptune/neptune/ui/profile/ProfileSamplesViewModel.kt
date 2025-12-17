@@ -95,12 +95,12 @@ class ProfileSamplesViewModel(
       this@ProfileSamplesViewModel.sampleRepo.observeSamples().collectLatest { samples ->
         val filtered =
             samples
-              .filter { sample ->
-              sample.ownerId == ownerId &&
-                  (sample.storageProcessedSamplePath.isNotBlank() ||
-                      sample.storagePreviewSamplePath.isNotBlank())
-            }
-              .sortedByDescending { it.creationTime }
+                .filter { sample ->
+                  sample.ownerId == ownerId &&
+                      (sample.storageProcessedSamplePath.isNotBlank() ||
+                          sample.storagePreviewSamplePath.isNotBlank())
+                }
+                .sortedByDescending { it.creationTime }
         _samples.value = filtered
         refreshLikeStates(filtered, _likedSamples)
       }
