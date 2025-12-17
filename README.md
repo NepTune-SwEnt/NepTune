@@ -31,7 +31,7 @@ Key features
      ```
 3. Open the project in Android Studio by selecting the repository root or `settings.gradle.kts`.
 4. Gradle will sync dependencies. If Android Studio asks to upgrade Gradle plugin or Kotlin plugin, prefer the versions defined by the project unless you have a specific reason.
-5. Ensure `app/google-services.json` is present (this repo already contains one at `app/google-services.json`). If you need to use a different Firebase project, replace that file with one from the Firebase console.
+5. Ensure `app/google-services.json` is present. If you need to use a different Firebase project, replace that file with one from the Firebase console.
 6. Native libraries: `app/libs/` contains `TarsosDSPKit-release.aar` which is included by the Gradle build. No extra steps required unless you replace the AAR.
 
 ### Firebase emulator
