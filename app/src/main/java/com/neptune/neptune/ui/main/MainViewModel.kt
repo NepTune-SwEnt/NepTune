@@ -20,6 +20,8 @@ import com.neptune.neptune.ui.feed.SampleFeedController
 import com.neptune.neptune.util.AudioWaveformExtractor
 import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -123,6 +125,7 @@ open class MainViewModel(
   // Track the full sample object currently open in comments
   private val _activeCommentSample = MutableStateFlow<Sample?>(null)
   val activeCommentSample: StateFlow<Sample?> = _activeCommentSample.asStateFlow()
+  private val likeJobs = mutableMapOf<String, Job>()
 
   init {
     if (useMockData) {
@@ -374,17 +377,21 @@ open class MainViewModel(
   override fun onLikeClick(sample: Sample, isLiked: Boolean) {
     if (_isAnonymous.value) return
     val delta = if (isLiked) 1 else -1
+    _likedSamples.value = _likedSamples.value + (sample.id to isLiked)
     updateSampleLikesLocally(sample.id, delta) // ✅ instant UI update
-    viewModelScope.launch {
-      try {
-        val newState = actions?.onLikeClicked(sample, isLiked)
-        if (newState != null) {
-          _likedSamples.value = _likedSamples.value + (sample.id to newState)
+    likeJobs[sample.id]?.cancel()
+    val job =
+        viewModelScope.launch {
+          try {
+            delay(1000)
+            actions?.onLikeClicked(sample, isLiked)
+          } catch (e: Exception) {
+            Log.e("MainViewModel", "Failed to toggle like: ${e.message}")
+          } finally {
+            likeJobs.remove(sample.id)
+          }
         }
-      } catch (e: Exception) {
-        Log.e("MainViewModel", "Failed to toggle like: ${e.message}")
-      }
-    }
+    likeJobs[sample.id] = job
   }
 
   fun refreshLikeStates() {
