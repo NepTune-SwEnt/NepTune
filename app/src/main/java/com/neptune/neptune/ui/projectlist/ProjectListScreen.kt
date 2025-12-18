@@ -85,6 +85,7 @@ import com.neptune.neptune.ui.picker.NameProjectDialog
 import com.neptune.neptune.ui.picker.sanitizeAndRename
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import java.io.File
+import android.os.Environment
 import kotlinx.coroutines.runBlocking
 
 object ProjectListScreenTestTags {
@@ -98,6 +99,7 @@ object ProjectListScreenTestTags {
   const val CHANGE_DESCRIPTION_BUTTON = "ChangeDescriptionButton"
   const val RENAME_BUTTON = "RenameButton"
   const val DELETE_BUTTON = "DeleteButton"
+  const val DOWNLOAD_BUTTON = "DownloadButton"
 }
 
 private const val SEARCHBAR_FONT_SIZE = 21
@@ -327,7 +329,7 @@ fun ProjectList(
       Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
         Text(
             text =
-                "Tap “Import audio” to create a .neptune project. \n (zip with config.json + audio)",
+                "Tap “Import audio” to create a project.",
             style =
                 TextStyle(
                     fontSize = 20.sp,
@@ -453,6 +455,7 @@ fun EditMenu(
   var showChangeDescDialog by remember { mutableStateOf(false) }
   var showDeleteDialog by remember { mutableStateOf(false) }
   val isOnline by projectListViewModel.isOnline.collectAsState()
+  val context = LocalContext.current
 
   if (showRenameDialog) {
     RenameProjectDialog(
@@ -530,6 +533,53 @@ fun EditMenu(
               onClick = {
                 showDeleteDialog = true
                 expanded = false
+              })
+          // Download preview file to app external Downloads folder (no special permission needed)
+          DropdownMenuItem(
+              modifier = Modifier.testTag(ProjectListScreenTestTags.DOWNLOAD_BUTTON),
+              text = { Text("Download Preview") },
+              onClick = {
+                expanded = false
+                val path = project.audioPreviewLocalPath
+                if (path.isNullOrBlank()) {
+                  Toast.makeText(context, "No preview available", Toast.LENGTH_SHORT).show()
+                  return@DropdownMenuItem
+                }
+                try {
+                  val downloadsDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+                  if (downloadsDir == null) {
+                    Toast.makeText(context, "Unable to access downloads folder", Toast.LENGTH_SHORT).show()
+                    return@DropdownMenuItem
+                  }
+                  if (!downloadsDir.exists()) downloadsDir.mkdirs()
+
+                  // Handle content:// URIs and file paths/file:// URIs
+                  if (path.startsWith("content:")) {
+                    val uri = path.toUri()
+                    val srcName = uri.lastPathSegment ?: "preview"
+                    val destFile = File(downloadsDir, srcName)
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                      destFile.outputStream().use { output -> input.copyTo(output) }
+                    }
+                    Toast.makeText(context, "Saved preview to ${destFile.absolutePath}", Toast.LENGTH_SHORT).show()
+                    return@DropdownMenuItem
+                  }
+
+                  // Otherwise assume it's a file path or file:// URI
+                  val cleanedPath = path.removePrefix("file:").removePrefix("file://")
+                  val srcFile = File(cleanedPath)
+                  if (!srcFile.exists()) {
+                    Toast.makeText(context, "Preview file not found", Toast.LENGTH_SHORT).show()
+                    return@DropdownMenuItem
+                  }
+
+                  val destFile = File(downloadsDir, srcFile.name)
+                  srcFile.copyTo(destFile, overwrite = true)
+                  Toast.makeText(context, "Saved preview to ${destFile.absolutePath}", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                  Log.e("ProjectListScreen", "Error downloading preview for ${project.uid}", e)
+                  Toast.makeText(context, "Failed to download preview", Toast.LENGTH_SHORT).show()
+                }
               })
         }
       }
