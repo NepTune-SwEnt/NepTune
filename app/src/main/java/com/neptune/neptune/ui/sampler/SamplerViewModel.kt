@@ -6,6 +6,7 @@ import android.media.MediaFormat
 import android.media.MediaPlayer
 import android.net.Uri
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.neptune.neptune.NepTuneApplication
@@ -37,7 +38,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.net.URI
 
 enum class SamplerTab {
   BASICS,
@@ -680,21 +680,18 @@ open class SamplerViewModel(
               Log.e("SamplerViewModel", "Audio extraction error: ${e.message}", e)
               _uiState.update {
                 it.copy(
-                  currentAudioUri = null,
-                  showInitialSetupDialog = false,
-                  projectLoadError = "Audio file extraction impossible"
-                )
+                    currentAudioUri = null,
+                    showInitialSetupDialog = false,
+                    projectLoadError = "Audio file extraction impossible")
               }
               return@launch
             }
 
-
         val projectsJsonRepo = ProjectItemsRepositoryLocal(context)
         val projectId = projectsJsonRepo.findProjectWithProjectFile(zipFilePath).uid
-        val projectPath: String? = projectsJsonRepo.getProject(projectId).audioPreviewLocalPath
-        val projectUri = if (projectPath == null) audioUri else Uri(projectPath)
+        val projectUri: Uri? = projectsJsonRepo.getProject(projectId).audioPreviewLocalPath?.toUri()
 
-        val sampleDuration = extractDurationFromUri(projectUri)
+        val sampleDuration = extractDurationFromUri(projectUri ?: audioUri)
 
         val paramMap = projectData.parameters.associate { it.type to it.value }
 
