@@ -116,7 +116,6 @@ object SamplerTestTags {
   const val CURVE_EDITOR_SCROLL_CONTAINER = "curveEditorScrollContainer"
   const val INIT_SETUP_CONTAINER = "initSetupContainer"
   const val INIT_TEMPO_SELECTOR = "initTempoSelector"
-  const val INIT_PITCH_SELECTOR = "initPitchSelector"
   const val INIT_CONFIRM_BUTTON = "initConfirmButton"
 
   const val TAP_TEMPO_BUTTON = "tapTempoButton"
@@ -1736,13 +1735,6 @@ fun InitialSetupDialog(viewModel: SamplerViewModel) {
                   tempo = uiState.inputTempo,
                   onTempoChange = viewModel::updateInputTempo,
                   onTapTempo = viewModel::tapTempo)
-
-              PitchSelectorField(
-                  pitchNote = uiState.inputPitchNote,
-                  pitchOctave = uiState.inputPitchOctave,
-                  onPitchUp = viewModel::increaseInputPitch,
-                  onPitchDown = viewModel::decreaseInputPitch,
-                  modifier = Modifier.testTag(SamplerTestTags.INIT_PITCH_SELECTOR))
             }
       },
       confirmButton = {
