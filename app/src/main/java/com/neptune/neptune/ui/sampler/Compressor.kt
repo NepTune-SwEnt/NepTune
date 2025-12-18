@@ -65,7 +65,7 @@ internal class Compressor(
       val x = input[i]
       // the audio sample level before compression
       val inputDb = ampToDb(x)
-      // compressed level we want based on threshold, ration, knee
+      // compressed level we want based on threshold, ratio, knee
       val outputDb = mapInputDbToOutputDb(inputDb)
       // required gain in dB to go from inputDb to outputDb (+makeup)
       val targetGainDb = (outputDb - inputDb) + makeUpDb

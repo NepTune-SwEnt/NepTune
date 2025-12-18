@@ -180,6 +180,25 @@ fun SamplerScreen(
     zipFilePath: String?,
 ) {
   val uiState by viewModel.uiState.collectAsState()
+  val transposeSemitones =
+      remember(
+          uiState.inputPitchNote,
+          uiState.inputPitchOctave,
+          uiState.pitchNote,
+          uiState.pitchOctave) {
+            viewModel.computeSemitoneShift(
+                uiState.inputPitchNote,
+                uiState.inputPitchOctave,
+                uiState.pitchNote,
+                uiState.pitchOctave)
+          }
+
+  val transposeText =
+      remember(transposeSemitones) {
+        val sign = if (transposeSemitones > 0) "+" else ""
+        "$sign$transposeSemitones st"
+      }
+
   val decodedZipPath = remember(zipFilePath) { getDecodedZipPath(zipFilePath) }
 
   // Local state to control visibility of the floating settings dialog
@@ -230,7 +249,7 @@ fun SamplerScreen(
                     Log.w("SamplerScreen", "No project path found for saving")
                   }
                 },
-                pitch = uiState.fullPitch,
+                pitch = transposeText,
                 tempo = uiState.tempo,
                 onPitchChange = viewModel::updatePitch,
                 onTempoChange = viewModel::updateTempo,
@@ -486,7 +505,6 @@ fun PlaybackAndWaveformControls(
               Spacer(modifier = Modifier.weight(1f))
 
               PitchTempoSelector(
-                  label = "Pitch",
                   value = pitch,
                   onIncrease = onIncreasePitch,
                   onDecrease = onDecreasePitch,
@@ -542,7 +560,7 @@ fun PlaybackAndWaveformControls(
 
 @Composable
 fun PitchTempoSelector(
-    label: String,
+    label: String = "",
     value: String,
     onIncrease: () -> Unit,
     onDecrease: () -> Unit,
