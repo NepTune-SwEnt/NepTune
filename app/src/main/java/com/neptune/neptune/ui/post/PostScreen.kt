@@ -271,7 +271,8 @@ fun PostScreen(
                             val seconds = uiState.sample.durationMillis / 1000
                             val millis = (uiState.sample.durationMillis % 1000) / 10
                             val durationText =
-                                String.format(Locale.getDefault(), "%02d:%02d", seconds, millis)
+                                String.format(Locale.getDefault(), "%02d.%02d", seconds, millis)
+                                    .plus(" sec")
                             Text(
                                 text = durationText,
                                 style =

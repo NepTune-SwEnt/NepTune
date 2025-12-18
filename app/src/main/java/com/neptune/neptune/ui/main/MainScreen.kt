@@ -889,7 +889,7 @@ private fun SampleCardBoxContent(
               val millis = (sample.durationMillis % 1000) / 10
 
               Text(
-                  String.format(Locale.getDefault(), "%02d:%02d", seconds, millis),
+                  String.format(Locale.getDefault(), "%02d.%02d", seconds, millis).plus(" sec"),
                   color = NepTuneTheme.colors.onBackground,
                   modifier = Modifier.padding(start = 8.dp).testTag(testTags.SAMPLE_DURATION),
                   style =
