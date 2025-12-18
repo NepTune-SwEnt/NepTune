@@ -6,7 +6,7 @@ import kotlinx.coroutines.*
 fun fadeOutAndRelease(
     mediaPlayer: MediaPlayer,
     releaseMillis: Long,
-    scope: CoroutineScope = CoroutineScope(Dispatchers.Main),
+    scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
     onFinished: (() -> Unit)? = null
 ) {
   if (releaseMillis <= 0L) {

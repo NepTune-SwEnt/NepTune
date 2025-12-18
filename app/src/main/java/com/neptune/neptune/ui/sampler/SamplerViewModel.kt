@@ -100,7 +100,8 @@ data class SamplerUiState(
     val timeSignature: String = "4/4",
     val previewPlaying: Boolean = false,
     val projectLoadError: String? = null,
-    val waveform: List<Float> = emptyList()
+    val waveform: List<Float> = emptyList(),
+    val isSaving: Boolean = false
 ) {
   val transposeLabel: String
     get() {
@@ -498,6 +499,64 @@ open class SamplerViewModel(
     }
   }
 
+  fun resetSampleAndSave(zipFilePath: String) {
+    viewModelScope.launch {
+      _uiState.update { state ->
+        state.copy(
+            // Playback
+            isPlaying = false,
+            previewPlaying = false,
+            playbackPosition = 0f,
+
+            // Tempo
+            tempo = state.inputTempo,
+            pitchNote = state.inputPitchNote,
+            pitchOctave = state.inputPitchOctave,
+
+            // ADSR
+            attack = 0.0f,
+            decay = 0.0f,
+            sustain = 1.0f,
+            release = 0.0f,
+
+            // EQ
+            eqBands = List(EQ_FREQUENCIES.size) { EQ_GAIN_DEFAULT },
+
+            // Reverb
+            reverbWet = 0.0f,
+            reverbSize = 0.0f,
+            reverbWidth = 0.0f,
+            reverbDepth = 0.0f,
+            reverbPredelay = 10.0f,
+
+            // Compressor
+            compThreshold = COMP_THRESHOLD_DEFAULT,
+            compRatio = 4,
+            compKnee = 0.0f,
+            compGain = 0.0f,
+            compAttack = 0.010f,
+            compDecay = 0.100f,
+
+            // Audio
+            currentAudioUri = state.originalAudioUri,
+            audioDurationMillis = state.audioDurationMillis,
+
+            // UI
+            currentTab = SamplerTab.BASICS,
+            projectLoadError = null)
+      }
+
+      stopPreview()
+
+      // Reprocess audio from original source
+      val processingJob = audioBuilding()
+      processingJob?.join()
+
+      // Save immediately
+      saveProjectData(zipFilePath)
+    }
+  }
+
   private suspend fun extractWaveformInternal(uri: Uri): List<Float> {
     return try {
       WaveformExtractor().extractWaveform(context, uri, samplesCount = 100)
@@ -741,46 +800,43 @@ open class SamplerViewModel(
 
   open fun saveProjectData(zipFilePath: String): Job {
     return viewModelScope.launch {
-      // Launch audio processing and wait for it to finish, then read the updated ui state
-      val processingJob = audioBuilding()
-      if (processingJob != null) {
-        processingJob.join()
-      }
-
-      val newAudioUri: Uri? = _uiState.value.currentAudioUri
-
-      if (newAudioUri != null) {
-        _uiState.update { it.copy(currentAudioUri = newAudioUri) }
-        val duration = extractDurationFromUri(newAudioUri)
-
-        if (duration > 0) {
-          _uiState.update { it.copy(audioDurationMillis = duration) }
-        }
-      }
-
-      saveProjectDataSync(zipFilePath)
-
-      // Kick off a background re-processing to ensure preview generation remains unchanged
-      audioBuilding()
+      _uiState.update { it.copy(isSaving = true) }
 
       try {
+        val processingJob = audioBuilding()
+        processingJob?.join()
+
+        val newAudioUri: Uri? = _uiState.value.currentAudioUri
+
+        if (newAudioUri != null) {
+          _uiState.update { it.copy(currentAudioUri = newAudioUri) }
+          val duration = extractDurationFromUri(newAudioUri)
+
+          if (duration > 0) {
+            _uiState.update { it.copy(audioDurationMillis = duration) }
+          }
+        }
+
+        saveProjectDataSync(zipFilePath)
+
+        audioBuilding()
+
         val projectsJsonRepo = ProjectItemsRepositoryLocal(context)
-        val projectId: String = projectsJsonRepo.findProjectWithProjectFile(zipFilePath).uid
+        val projectId = projectsJsonRepo.findProjectWithProjectFile(zipFilePath).uid
+
         val state = _uiState.value
         val previewUri = state.currentAudioUri ?: return@launch
 
-        // Delegate the actual copying to PreviewStoreHelper which performs IO on Dispatchers.IO
         val previewLocalPath =
             previewStoreHelper.saveTempPreviewToPreviewsDir(projectId, previewUri)
 
-        // Update project entry with the preview local path
         val project = projectsJsonRepo.findProjectWithProjectFile(zipFilePath)
         val updated = project.copy(audioPreviewLocalPath = previewLocalPath)
         projectsJsonRepo.editProject(project.uid, updated)
-
-        Log.i("SamplerViewModel", "Saved preview for project $projectId -> $previewLocalPath")
       } catch (e: Exception) {
         Log.w("SamplerViewModel", "Failed to save preview for project", e)
+      } finally {
+        _uiState.update { it.copy(isSaving = false) }
       }
     }
   }

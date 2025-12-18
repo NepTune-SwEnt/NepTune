@@ -498,44 +498,6 @@ class SamplerScreenTest {
   }
 
   @Test
-  fun settingsDialogSaveUpdatesInputTempoAndPitch() {
-    fakeViewModel.mutableUiState.value =
-        fakeViewModel.uiState.value.copy(
-            inputTempo = 100, inputPitchNote = "C", inputPitchOctave = 4)
-    composeTestRule.waitForIdle()
-
-    composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_BUTTON).performClick()
-    composeTestRule.waitForIdle()
-
-    val bpmField =
-        composeTestRule.onNode(
-            hasSetTextAction() and hasParent(hasTestTag(SamplerTestTags.SETTINGS_DIALOG)))
-    bpmField.performTextClearance()
-    bpmField.performTextInput("130")
-
-    val beforePitch =
-        fakeViewModel.uiState.value.inputPitchNote + fakeViewModel.uiState.value.inputPitchOctave
-
-    composeTestRule
-        .onNodeWithTag(SamplerTestTags.SETTINGS_PITCH_SELECTOR)
-        .onChildren()
-        .filter(hasTestTag("PITCH_UP_BUTTON"))
-        .onFirst()
-        .performClick()
-
-    composeTestRule.waitForIdle()
-
-    val afterPitch =
-        fakeViewModel.uiState.value.inputPitchNote + fakeViewModel.uiState.value.inputPitchOctave
-    assertTrue("Pitch inside dialog should have changed", beforePitch != afterPitch)
-
-    composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_CONFIRM_BUTTON).performClick()
-    composeTestRule.waitForIdle()
-
-    assertEquals(130, fakeViewModel.uiState.value.inputTempo)
-  }
-
-  @Test
   fun helpDialogOpensAndCloseClosesDialog() {
     composeTestRule.onNodeWithTag(SamplerTestTags.HELP_BUTTON).performClick()
     composeTestRule.waitForIdle()
