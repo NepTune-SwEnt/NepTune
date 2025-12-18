@@ -181,24 +181,24 @@ fun SamplerScreen(
     zipFilePath: String?,
 ) {
   val uiState by viewModel.uiState.collectAsState()
-    val transposeSemitones =
-        remember(
-            uiState.inputPitchNote,
-            uiState.inputPitchOctave,
-            uiState.pitchNote,
-            uiState.pitchOctave) {
+  val transposeSemitones =
+      remember(
+          uiState.inputPitchNote,
+          uiState.inputPitchOctave,
+          uiState.pitchNote,
+          uiState.pitchOctave) {
             viewModel.computeSemitoneShift(
                 uiState.inputPitchNote,
                 uiState.inputPitchOctave,
                 uiState.pitchNote,
                 uiState.pitchOctave)
-        }
+          }
 
-    val transposeText =
-        remember(transposeSemitones) {
-            val sign = if (transposeSemitones > 0) "+" else ""
-            "$sign$transposeSemitones st"
-        }
+  val transposeText =
+      remember(transposeSemitones) {
+        val sign = if (transposeSemitones > 0) "+" else ""
+        "$sign$transposeSemitones st"
+      }
 
   val decodedZipPath = remember(zipFilePath) { getDecodedZipPath(zipFilePath) }
 
@@ -971,6 +971,7 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
           Modifier.fillMaxWidth()
               .wrapContentHeight()
               .verticalScroll(rememberScrollState())
+              .padding(top = 8.dp)
               .testTag(SamplerTestTags.TAB_BASICS_CONTENT)) {
         ExpandableSection(
             title = "ADSR Envelope Controls",

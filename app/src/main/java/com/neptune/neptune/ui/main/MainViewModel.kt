@@ -20,6 +20,8 @@ import com.neptune.neptune.ui.feed.SampleFeedController
 import com.neptune.neptune.util.AudioWaveformExtractor
 import com.neptune.neptune.util.WaveformExtractor
 import java.io.File
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -123,6 +125,7 @@ open class MainViewModel(
   // Track the full sample object currently open in comments
   private val _activeCommentSample = MutableStateFlow<Sample?>(null)
   val activeCommentSample: StateFlow<Sample?> = _activeCommentSample.asStateFlow()
+  private val likeJobs = mutableMapOf<String, Job>()
 
   init {
     if (useMockData) {
@@ -138,12 +141,10 @@ open class MainViewModel(
   fun loadRecommendations(limit: Int = 50) {
     viewModelScope.launch {
       try {
-        Log.d("RecoDebug", "loadRecommendations() START, cacheSize=${allSamplesCache.size}")
         if (auth?.currentUser == null) return@launch
         val recoUser = profileRepo.getCurrentRecoUserProfile()
         if (recoUser == null) {
           // Fallback when no user or profile: just show latest samples
-          Log.d("RecoDebug", "No recoUser profile (null) – skipping recommendations")
 
           _recommendedSamples.value = emptyList()
           return@launch
@@ -153,7 +154,6 @@ open class MainViewModel(
               sample.ownerId !in latestFollowing && sample.ownerId != auth.currentUser?.uid
             }
         if (candidates.isEmpty()) {
-          Log.d("RecoDebug", "No candidates (cache empty) – skipping ranking")
           _recommendedSamples.value = emptyList()
           return@launch
         }
@@ -162,9 +162,6 @@ open class MainViewModel(
                 user = recoUser, candidates = candidates, limit = limit)
         ranked.forEachIndexed { index, sample ->
           val score = RecommendationEngine.scoreSample(sample, recoUser, System.currentTimeMillis())
-          Log.d(
-              "RecoDebug",
-              "#$index  id=${sample.id}  name=${sample.name}  score=${"%.4f".format(score)}")
         }
         _recommendedSamples.value = ranked
       } catch (e: Exception) {
@@ -374,17 +371,21 @@ open class MainViewModel(
   override fun onLikeClick(sample: Sample, isLiked: Boolean) {
     if (_isAnonymous.value) return
     val delta = if (isLiked) 1 else -1
+    _likedSamples.value = _likedSamples.value + (sample.id to isLiked)
     updateSampleLikesLocally(sample.id, delta) // ✅ instant UI update
-    viewModelScope.launch {
-      try {
-        val newState = actions?.onLikeClicked(sample, isLiked)
-        if (newState != null) {
-          _likedSamples.value = _likedSamples.value + (sample.id to newState)
+    likeJobs[sample.id]?.cancel()
+    val job =
+        viewModelScope.launch {
+          try {
+            delay(1000)
+            actions?.onLikeClicked(sample, isLiked)
+          } catch (e: Exception) {
+            Log.e("MainViewModel", "Failed to toggle like: ${e.message}")
+          } finally {
+            likeJobs.remove(sample.id)
+          }
         }
-      } catch (e: Exception) {
-        Log.e("MainViewModel", "Failed to toggle like: ${e.message}")
-      }
-    }
+    likeJobs[sample.id] = job
   }
 
   fun refreshLikeStates() {

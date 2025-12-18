@@ -1,6 +1,5 @@
 package com.neptune.neptune.domain.usecase
 
-import android.util.Log
 import com.neptune.neptune.NepTuneApplication.Companion.appContext
 import com.neptune.neptune.data.NeptunePackager
 import com.neptune.neptune.domain.model.MediaItem
@@ -52,13 +51,11 @@ open class ImportMediaUseCase(
         } catch (e: Exception) {
           // Ensure we attempt to delete the temporary local file on IO dispatcher
           val isLocalAudioDeleted = localAudio.delete()
-          Log.d("ImportMediaUseCase", "finalizeImport: $isLocalAudioDeleted")
           throw e
         }
 
     // Best-effort delete of the original file on IO dispatcher
     val isLocalAudioDeleted = localAudio.delete()
-    Log.d("ImportMediaUseCase", "finalizeImport: $isLocalAudioDeleted")
 
     val item =
         MediaItem(id = UUID.randomUUID().toString(), projectUri = projectZip.toURI().toString())

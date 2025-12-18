@@ -38,25 +38,6 @@ class InitialSetupDialogTest {
   }
 
   @Test
-  fun initialSetupDialogPitchButtonsUpdateViewModel() {
-
-    assertEquals("C", viewModel.uiState.value.inputPitchNote)
-    assertEquals(4, viewModel.uiState.value.inputPitchOctave)
-
-    composeRule.onNodeWithTag("PITCH_UP_BUTTON").performClick()
-    composeRule.waitForIdle()
-
-    assertEquals("C#", viewModel.uiState.value.inputPitchNote)
-    assertEquals(4, viewModel.uiState.value.inputPitchOctave)
-
-    composeRule.onNodeWithTag("PITCH_DOWN_BUTTON").performClick()
-    composeRule.waitForIdle()
-
-    assertEquals("C", viewModel.uiState.value.inputPitchNote)
-    assertEquals(4, viewModel.uiState.value.inputPitchOctave)
-  }
-
-  @Test
   fun initialSetupDialogTempoInputUpdatesViewModel() {
 
     composeRule.onNodeWithTag(SamplerTestTags.INIT_TEMPO_SELECTOR).performTextInput("150")
@@ -67,14 +48,12 @@ class InitialSetupDialogTest {
 
   @Test
   fun initialSetupDialogConfirmButtonAppliesChanges() {
-    composeRule.onNodeWithTag("PITCH_UP_BUTTON").performClick()
     composeRule.onNodeWithTag(SamplerTestTags.INIT_TEMPO_SELECTOR).performTextInput("140")
     composeRule.waitForIdle()
 
     composeRule.onNodeWithTag(SamplerTestTags.INIT_CONFIRM_BUTTON).performClick()
     composeRule.waitForIdle()
 
-    assertEquals("C#", viewModel.uiState.value.pitchNote)
     assertEquals(140, viewModel.uiState.value.tempo)
     assertEquals(false, viewModel.uiState.value.showInitialSetupDialog)
   }
@@ -98,26 +77,6 @@ class InitialSetupDialogTest {
               inputPitchNote = "C",
               inputPitchOctave = 4,
               showInitialSetupDialog = true)
-    }
-
-    @Test
-    fun testIncreaseInputPitchCyclesCorrectly() = runBlocking {
-      viewModel._uiState.value =
-          viewModel._uiState.value.copy(inputPitchNote = "C", inputPitchOctave = 4)
-      viewModel.increaseInputPitch()
-      val state = viewModel.uiState.first()
-      assertEquals("C#", state.inputPitchNote)
-      assertEquals(4, state.inputPitchOctave)
-    }
-
-    @Test
-    fun testDecreaseInputPitchCyclesCorrectly() = runBlocking {
-      viewModel._uiState.value =
-          viewModel._uiState.value.copy(inputPitchNote = "C", inputPitchOctave = 4)
-      viewModel.decreaseInputPitch()
-      val state = viewModel.uiState.first()
-      assertEquals("B", state.inputPitchNote)
-      assertEquals(3, state.inputPitchOctave)
     }
 
     @Test

@@ -103,14 +103,14 @@ data class SamplerUiState(
     val waveform: List<Float> = emptyList(),
     val isSaving: Boolean = false
 ) {
-    val transposeLabel: String
-        get() {
-            val semitones =
-                SamplerViewModel()
-                    .computeSemitoneShift(inputPitchNote, inputPitchOctave, pitchNote, pitchOctave)
-            val sign = if (semitones > 0) "+" else ""
-            return "$sign$semitones st"
-        }
+  val transposeLabel: String
+    get() {
+      val semitones =
+          SamplerViewModel()
+              .computeSemitoneShift(inputPitchNote, inputPitchOctave, pitchNote, pitchOctave)
+      val sign = if (semitones > 0) "+" else ""
+      return "$sign$semitones st"
+    }
 }
 
 open class SamplerViewModel(
@@ -687,7 +687,6 @@ open class SamplerViewModel(
             }
 
         val sampleDuration = extractDurationFromUri(audioUri)
-        Log.d("SamplerViewModel", "URI audio loaded: $audioUri")
 
         val paramMap = projectData.parameters.associate { it.type to it.value }
 

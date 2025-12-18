@@ -210,7 +210,6 @@ class SamplerScreenTest {
 
   @Before
   fun setup() {
-
     fakeViewModel = FakeSamplerViewModel()
     val factory = SamplerViewModelFactory(fakeViewModel)
 
@@ -254,6 +253,7 @@ class SamplerScreenTest {
         fakeViewModel.uiState.value.copy(
             eqBands = initialEqBands.toMutableList().apply { this[0] = 0.0f })
     composeTestRule.waitForIdle()
+
     val faderBoxInteraction =
         composeTestRule
             .onNodeWithTag(SamplerTestTags.FADER_60HZ_TAG)
@@ -312,24 +312,35 @@ class SamplerScreenTest {
 
   @Test
   fun pitchControlsMaxMinLimitsCallsIncreaseDecrease() {
+    // Instead of relying on fullPitch, assert via pitchNote/pitchOctave not changing at limits.
+
+    // Min clamp check (whatever your min is, you used C1 previously)
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(pitchNote = "C", pitchOctave = 1)
     composeTestRule.waitForIdle()
-    val initialPitch = fakeViewModel.uiState.value.fullPitch
+
+    val beforeMinNote = fakeViewModel.uiState.value.pitchNote
+    val beforeMinOct = fakeViewModel.uiState.value.pitchOctave
 
     clickPitchArrow("Decrease")
-    assertTrue("DecreasePitch should have been called.", fakeViewModel.isDecreasePitchCalled)
-    assertEquals(initialPitch, fakeViewModel.uiState.value.fullPitch)
 
+    assertTrue("DecreasePitch should have been called.", fakeViewModel.isDecreasePitchCalled)
+    assertEquals(beforeMinNote, fakeViewModel.uiState.value.pitchNote)
+    assertEquals(beforeMinOct, fakeViewModel.uiState.value.pitchOctave)
+
+    // Max clamp check (you used B7 previously)
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(pitchNote = "B", pitchOctave = 7)
     composeTestRule.waitForIdle()
-    val finalPitch = fakeViewModel.uiState.value.fullPitch
+
+    val beforeMaxNote = fakeViewModel.uiState.value.pitchNote
+    val beforeMaxOct = fakeViewModel.uiState.value.pitchOctave
 
     clickPitchArrow("Increase")
 
     assertTrue("IncreasePitch should have been called.", fakeViewModel.isIncreasePitchCalled)
-    assertEquals(finalPitch, fakeViewModel.uiState.value.fullPitch)
+    assertEquals(beforeMaxNote, fakeViewModel.uiState.value.pitchNote)
+    assertEquals(beforeMaxOct, fakeViewModel.uiState.value.pitchOctave)
   }
 
   @Test
@@ -352,6 +363,7 @@ class SamplerScreenTest {
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(currentTab = SamplerTab.COMP)
     composeTestRule.waitForIdle()
+
     fakeViewModel.isCompThresholdUpdated = false
     swipeKnobByTag(SamplerTestTags.KNOB_COMP_THRESHOLD)
     assertTrue("updateCompThreshold should be true", fakeViewModel.isCompThresholdUpdated)
@@ -388,6 +400,7 @@ class SamplerScreenTest {
             hasSetTextAction() and hasParent(hasTestTag(SamplerTestTags.INPUT_COMP_RATIO)))
     ratioFieldNode.performTextClearance()
     ratioFieldNode.performTextInput("10")
+
     assertEquals(10, fakeViewModel.uiState.value.compRatio)
     assertTrue("updateCompRatio should be true", fakeViewModel.isCompRatioUpdated)
   }
@@ -403,11 +416,12 @@ class SamplerScreenTest {
 
   @Test
   fun increasePitchWrapsToNextOctave() {
-
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(pitchNote = "B", pitchOctave = 4)
     composeTestRule.waitForIdle()
+
     fakeViewModel.increasePitch()
+
     assertEquals("C", fakeViewModel.uiState.value.pitchNote)
     assertEquals(5, fakeViewModel.uiState.value.pitchOctave)
     assertTrue("IncreasePitch should have been called.", fakeViewModel.isIncreasePitchCalled)
@@ -418,7 +432,9 @@ class SamplerScreenTest {
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(pitchNote = "C", pitchOctave = 5)
     composeTestRule.waitForIdle()
+
     fakeViewModel.decreasePitch()
+
     assertEquals("B", fakeViewModel.uiState.value.pitchNote)
     assertEquals(4, fakeViewModel.uiState.value.pitchOctave)
     assertTrue("DecreasePitch should have been called.", fakeViewModel.isDecreasePitchCalled)
@@ -426,87 +442,80 @@ class SamplerScreenTest {
 
   @Test
   fun labelsAndTimelineAndBeatLinesAreCorrect() {
-    // Ensure basics tab opened so waveform is visible
+    // Set a known pitch mapping so transpose is deterministic:
+    // inputPitch = C4, currentPitch = C4 => 0 st
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(
-            currentTab = SamplerTab.BASICS, tempo = 120, timeSignature = "4/4")
+            currentTab = SamplerTab.BASICS,
+            tempo = 120,
+            timeSignature = "4/4",
+            inputPitchNote = "C",
+            inputPitchOctave = 4,
+            pitchNote = "C",
+            pitchOctave = 4)
     composeTestRule.waitForIdle()
 
-    // Open playback section to reveal pitch and tempo selectors
-    // The section may already be visible; ensure the ADSR section is open so layout stabilizes
+    // Ensure layout stable
     openSection("ADSR Envelope Controls")
     composeTestRule.waitForIdle()
 
-    // Check that Pitch label is displayed inside the Pitch selector
+    // Pitch selector should show transpose text (derived), not a "Pitch" label.
     composeTestRule.onNodeWithTag(SamplerTestTags.PITCH_SELECTOR).assertIsDisplayed()
-    composeTestRule.onNodeWithText("Pitch").assertIsDisplayed()
+    composeTestRule.onNodeWithText("0 st").assertIsDisplayed()
 
     // Tempo selector shows tempo as label text
     composeTestRule.onNodeWithTag(SamplerTestTags.TEMPO_SELECTOR).assertIsDisplayed()
     composeTestRule.onNodeWithText("${fakeViewModel.uiState.value.tempo}").assertIsDisplayed()
 
-    // Time display should format time correctly for known playback/duration
+    // Time display should be visible
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(audioDurationMillis = 4000, playbackPosition = 0.5f)
     composeTestRule.waitForIdle()
-
-    // Expecting 50% of 4s => 2.00 elapsed => formatted as 02.xx; milliseconds portion is in 10ms
-    // units
     composeTestRule.onNodeWithTag(SamplerTestTags.TIME_DISPLAY).assertIsDisplayed()
 
-    // Check beat info node contains expected prefix
+    // Beat info node contains expected prefix
     val beatNode = composeTestRule.onNodeWithTag("waveform_beat_info")
     beatNode.assertExists()
-    // Extract semantics text and check contents
     val beatSemantics = beatNode.fetchSemanticsNode()
     val beatTextList = beatSemantics.config[SemanticsProperties.Text]
     val beatCombined = beatTextList.joinToString("") { it.text }
     assertTrue("Beat info must contain 'beats:' prefix", beatCombined.contains("beats:"))
 
-    // Timeline labels are not direct nodes (drawn on Canvas). As a basic smoke check, ensure
-    // the waveform display container exists and beat info is non-empty
     composeTestRule.onNodeWithTag(SamplerTestTags.WAVEFORM_DISPLAY).assertIsDisplayed()
   }
 
   @Test
   fun settingsDialogOpensAndCancelClosesDialog() {
-    // Open the dialog via the Settings FAB
     composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
-    // The dialog should be visible
     composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_DIALOG).assertIsDisplayed()
 
-    // Clicking Cancel should close the dialog
     composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_CANCEL_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
-    // The dialog should no longer exist
     composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_DIALOG).assertDoesNotExist()
   }
 
   @Test
   fun settingsDialogSaveUpdatesInputTempoAndPitch() {
-    // Prepare a known state
     fakeViewModel.mutableUiState.value =
         fakeViewModel.uiState.value.copy(
             inputTempo = 100, inputPitchNote = "C", inputPitchOctave = 4)
     composeTestRule.waitForIdle()
 
-    // Open the dialog
     composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
-    // Find the BPM field inside the dialog and enter a new value
     val bpmField =
         composeTestRule.onNode(
             hasSetTextAction() and hasParent(hasTestTag(SamplerTestTags.SETTINGS_DIALOG)))
     bpmField.performTextClearance()
     bpmField.performTextInput("130")
 
-    // Click the pitch selector's up arrow inside the dialog
     val beforePitch =
         fakeViewModel.uiState.value.inputPitchNote + fakeViewModel.uiState.value.inputPitchOctave
+
     composeTestRule
         .onNodeWithTag(SamplerTestTags.SETTINGS_PITCH_SELECTOR)
         .onChildren()
@@ -518,60 +527,46 @@ class SamplerScreenTest {
 
     val afterPitch =
         fakeViewModel.uiState.value.inputPitchNote + fakeViewModel.uiState.value.inputPitchOctave
-    // Verify that the pitch in the viewModel changed locally
     assertTrue("Pitch inside dialog should have changed", beforePitch != afterPitch)
 
-    // Confirm (Save & Close)
     composeTestRule.onNodeWithTag(SamplerTestTags.SETTINGS_CONFIRM_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
-    // Verify that inputTempo has been updated in the viewModel
     assertEquals(130, fakeViewModel.uiState.value.inputTempo)
   }
 
   @Test
   fun helpDialogOpensAndCloseClosesDialog() {
-    // Open the help dialog via the Help FAB
     composeTestRule.onNodeWithTag(SamplerTestTags.HELP_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
-    // The dialog should be visible
     composeTestRule.onNodeWithTag(SamplerTestTags.HELP_DIALOG).assertIsDisplayed()
 
-    // Click the Close button (uses string resource)
     val closeText = composeTestRule.activity.getString(com.neptune.neptune.R.string.close)
     composeTestRule.onNodeWithText(closeText).performClick()
     composeTestRule.waitForIdle()
 
-    // The dialog should no longer exist
     composeTestRule.onNodeWithTag(SamplerTestTags.HELP_DIALOG).assertDoesNotExist()
   }
 
   @Test
   fun helpDialogNavigationButtonsWork() {
-    // Open the help dialog
     composeTestRule.onNodeWithTag(SamplerTestTags.HELP_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
-    // Initially, left nav is disabled (first page), right nav enabled
     composeTestRule.onNodeWithTag(SamplerTestTags.HELP_NAV_LEFT).assertIsNotEnabled()
     composeTestRule.onNodeWithTag(SamplerTestTags.HELP_NAV_RIGHT).assertIsEnabled()
 
-    // Click next
     composeTestRule.onNodeWithTag(SamplerTestTags.HELP_NAV_RIGHT).performClick()
     composeTestRule.waitForIdle()
 
-    // Now left should be enabled (we moved forward)
     composeTestRule.onNodeWithTag(SamplerTestTags.HELP_NAV_LEFT).assertIsEnabled()
 
-    // Click previous to return
     composeTestRule.onNodeWithTag(SamplerTestTags.HELP_NAV_LEFT).performClick()
     composeTestRule.waitForIdle()
 
-    // Back to initial state
     composeTestRule.onNodeWithTag(SamplerTestTags.HELP_NAV_LEFT).assertIsNotEnabled()
 
-    // Close dialog to clean up
     val closeText = composeTestRule.activity.getString(com.neptune.neptune.R.string.close)
     composeTestRule.onNodeWithText(closeText).performClick()
     composeTestRule.waitForIdle()
@@ -579,31 +574,24 @@ class SamplerScreenTest {
 
   @Test
   fun helpDialogSwipeChangesPages() {
-    // Open the help dialog
     composeTestRule.onNodeWithTag(SamplerTestTags.HELP_BUTTON).performClick()
     composeTestRule.waitForIdle()
 
-    // Perform a left swipe gesture on the dialog surface to go to the next page
     val dialogNode = composeTestRule.onNodeWithTag(SamplerTestTags.HELP_DIALOG)
     dialogNode.performTouchInput {
-      // swipe left by a significant amount
       swipe(start = center, end = center + Offset(x = -300f, y = 0f), durationMillis = 200)
     }
     composeTestRule.waitForIdle()
 
-    // After swipe, left nav should be enabled
     composeTestRule.onNodeWithTag(SamplerTestTags.HELP_NAV_LEFT).assertIsEnabled()
 
-    // Swipe right to go back
     dialogNode.performTouchInput {
       swipe(start = center, end = center + Offset(x = 300f, y = 0f), durationMillis = 200)
     }
     composeTestRule.waitForIdle()
 
-    // Back to first page: left nav disabled
     composeTestRule.onNodeWithTag(SamplerTestTags.HELP_NAV_LEFT).assertIsNotEnabled()
 
-    // Close dialog
     val closeText = composeTestRule.activity.getString(com.neptune.neptune.R.string.close)
     composeTestRule.onNodeWithText(closeText).performClick()
     composeTestRule.waitForIdle()
