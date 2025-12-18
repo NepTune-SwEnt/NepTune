@@ -89,7 +89,6 @@ open class MainViewModel(
             sampleRepo,
             storageService,
             downloadsFolder,
-            NepTuneApplication.appContext,
             downloadProgress = downloadProgress)
       }
 

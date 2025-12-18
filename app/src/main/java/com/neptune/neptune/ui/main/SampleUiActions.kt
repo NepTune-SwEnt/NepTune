@@ -1,6 +1,5 @@
 package com.neptune.neptune.ui.main
 
-import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -17,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
@@ -31,7 +31,9 @@ import kotlin.jvm.Throws
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import okhttp3.internal.wait
 
 object SampleUiActionsTestTags {
   val DOWNLOAD_ZIP_BTN = "download_zip_btn"
@@ -52,11 +54,11 @@ open class SampleUiActions(
     private val repo: SampleRepository,
     private val storageService: StorageService,
     private val downloadsFolder: File,
-    private val context: Context,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val downloadProgress: MutableStateFlow<Int?> = MutableStateFlow(0),
     private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository
 ) {
+  val context = NepTuneApplication.appContext
   val downloadBusy = MutableStateFlow(false)
   val downloadError = MutableStateFlow<String?>(null)
 
@@ -68,8 +70,12 @@ open class SampleUiActions(
     downloadProgress.value = 0
 
     // Ensure previews directory exists before any file operations that write previews
-    val previewsDir = File(context.filesDir, "previews")
-    withContext(ioDispatcher) {
+    // Read filesDir on the Main dispatcher to avoid any thread-related differences in path
+    val filesDir = File("/data/data/com.neptune.neptune/files")
+    val repoJSON = withContext(Dispatchers.Main) { ProjectItemsRepositoryLocal(context) }
+
+    val previewsDir = File(filesDir, "previews")
+    withContext(Dispatchers.Main) {
       if (!previewsDir.exists()) {
         val created = previewsDir.mkdirs()
         if (!created && !previewsDir.exists()) {
@@ -80,37 +86,40 @@ open class SampleUiActions(
 
     try {
       val zip =
-          withContext(ioDispatcher) {
-            storageService.downloadZippedSample(sample, context) { percent ->
-              downloadProgress.value = percent
-            }
-          }
+        storageService.downloadZippedSample(sample, context) { percent ->
+          downloadProgress.value = percent
+        }
       Log.d("SampleUiActions", "Downloaded zip: $zip")
-      val repoJSON = ProjectItemsRepositoryLocal(context)
       val newUid = repoJSON.getNewId()
-      val processedAudioFile = File(File(context.filesDir, "previews"), "$newUid.wav")
-      withContext(ioDispatcher) {
-        Log.d("SampleUiActions", "Downloading processed audio: ${sample.storageProcessedSamplePath}")
-        storageService.downloadFileByPath(sample.storageProcessedSamplePath, processedAudioFile) {}
-        val newFile = storageService.persistZipToDownloads(zip, File(context.filesDir, "projects"))
-        repoJSON.addProject(ProjectItem(
-          uid = newUid,
-          name = sample.name,
-          description = sample.description,
-          audioPreviewLocalPath = processedAudioFile.toString(),
-          projectFileLocalPath = newFile.toURI().toString(),
-          ownerId = null,
-          collaborators = listOf()
-        ))
-        Log.d("SampleUiActions", "Downloaded zip: $newFile")
-      }
+      val processedAudioFile = File("/data/data/com.neptune.neptune/files/previews", "$newUid.wav")
+      Log.d("SampleUiActions", "Downloading processed audio: ${processedAudioFile.path}")
+      Log.d("SampleUiActions", "Downloading processed audio: ${sample.storageProcessedSamplePath}")
+      storageService.downloadFileByPath(
+        sample.storageProcessedSamplePath,
+        processedAudioFile
+      ) {}
+      Log.d("SampleUiActions", "Downloaded processed audio: ${processedAudioFile.path}")
+      val newFile = storageService.persistZipToDownloads(zip, File(filesDir, "projects"))
+      Log.d("SampleUiActions", "Downloaded zip: $newFile")
+      repoJSON.addProject(ProjectItem(
+        uid = newUid,
+        name = sample.name,
+        description = sample.description,
+        audioPreviewLocalPath = processedAudioFile.toString(),
+        projectFileLocalPath = newFile.toURI().toString(),
+        ownerId = null,
+        collaborators = listOf()
+      ))
+      Log.d("SampleUiActions", "Downloaded zip: $newFile")
       repo.increaseDownloadCount(sample.id)
 
       // record download interaction
       profileRepo.recordTagInteraction(tags = sample.tags, likeDelta = 0, downloadDelta = 1)
     } catch (e: SecurityException) {
+      Log.e("SampleActions", "Storage permission required", e)
       downloadError.value = "Storage permission required: ${e.message}"
     } catch (e: IOException) {
+      Log.e("SampleActions", "File error", e)
       downloadError.value = "File error: ${e.message}"
     } catch (e: Exception) {
       downloadError.value = "Download failed: ${e.message}"
@@ -242,11 +251,16 @@ fun DownloadChoiceDialog(
 fun DownloadProgressBar(downloadProgress: Int, testTag: String) {
   Box(
       modifier =
-          Modifier.fillMaxSize().background(NepTuneTheme.colors.background.copy(alpha = 0.6f)),
+          Modifier
+            .fillMaxSize()
+            .background(NepTuneTheme.colors.background.copy(alpha = 0.6f)),
       contentAlignment = Alignment.Center) {
         LinearProgressIndicator(
             progress = { downloadProgress / 100f },
-            modifier = Modifier.padding(16.dp).fillMaxWidth(0.5f).testTag(testTag),
+            modifier = Modifier
+              .padding(16.dp)
+              .fillMaxWidth(0.5f)
+              .testTag(testTag),
             color = NepTuneTheme.colors.onBackground,
             trackColor = NepTuneTheme.colors.background,
             strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,

@@ -84,7 +84,6 @@ class ProfileSamplesViewModel(
             storageService = storageService,
             profileRepo = profileRepo,
             downloadsFolder = downloadsFolder,
-            context = NepTuneApplication.appContext,
             ioDispatcher = downloadDispatcher,
             downloadProgress = downloadProgress)
       }

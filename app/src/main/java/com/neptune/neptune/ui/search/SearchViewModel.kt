@@ -213,7 +213,6 @@ open class SearchViewModel(
             sampleRepo,
             storageService,
             downloadsFolder,
-            NepTuneApplication.appContext,
             downloadProgress = downloadProgress)
       }
 
