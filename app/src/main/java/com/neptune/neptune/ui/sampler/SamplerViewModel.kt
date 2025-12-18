@@ -103,8 +103,14 @@ data class SamplerUiState(
     val waveform: List<Float> = emptyList(),
     val isSaving: Boolean = false
 ) {
-  val fullPitch: String
-    get() = "$pitchNote$pitchOctave"
+    val transposeLabel: String
+        get() {
+            val semitones =
+                SamplerViewModel()
+                    .computeSemitoneShift(inputPitchNote, inputPitchOctave, pitchNote, pitchOctave)
+            val sign = if (semitones > 0) "+" else ""
+            return "$sign$semitones st"
+        }
 }
 
 open class SamplerViewModel(
@@ -504,6 +510,8 @@ open class SamplerViewModel(
 
             // Tempo
             tempo = state.inputTempo,
+            pitchNote = state.inputPitchNote,
+            pitchOctave = state.inputPitchOctave,
 
             // ADSR
             attack = 0.0f,
