@@ -150,7 +150,7 @@ class StorageServiceTest {
                 storageImagePath = "",
                 storagePreviewSamplePath = "",
                 description = "",
-                durationSeconds = 0,
+                durationMillis = 0,
                 tags = emptyList(),
                 likes = 0,
                 usersLike = emptyList(),

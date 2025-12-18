@@ -55,7 +55,7 @@ class PostScreenTest {
                         id = "1",
                         name = "Test Sample",
                         description = "Sample description",
-                        durationSeconds = 12,
+                        durationMillis = 12,
                         tags = listOf("tag1", "tag2"),
                         likes = 10,
                         usersLike = emptyList(),

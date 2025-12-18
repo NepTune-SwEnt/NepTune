@@ -93,24 +93,14 @@ class FollowListViewModelTest {
 
         advanceUntilIdle()
 
-        // Initial load (followers tab active) populates only followers
-        val afterFollowersLoad = viewModel.uiState.value
-        assertEquals(5, afterFollowersLoad.followers.size)
-        assertEquals(0, afterFollowersLoad.following.size)
-        assertTrue(afterFollowersLoad.followers.first { it.uid == "u3" }.isFollowedByCurrentUser)
-        assertFalse(afterFollowersLoad.isLoadingFollowers)
-        assertFalse(afterFollowersLoad.isLoadingFollowing)
+        val state = viewModel.uiState.value
 
-        // Switch to following tab and refresh to load that list
-        viewModel.selectTab(FollowListTab.FOLLOWING)
-        viewModel.refresh()
-        advanceUntilIdle()
+        assertEquals(5, state.followers.size)
+        assertTrue(state.followers.first { it.uid == "u3" }.isFollowedByCurrentUser)
 
-        val afterFollowingLoad = viewModel.uiState.value
-        assertEquals(4, afterFollowingLoad.following.size)
-        assertEquals(5, afterFollowingLoad.followers.size)
-        assertFalse(afterFollowingLoad.isLoadingFollowers)
-        assertFalse(afterFollowingLoad.isLoadingFollowing)
+        assertEquals(4, state.following.size)
+        assertFalse(state.isLoadingFollowers)
+        assertFalse(state.isLoadingFollowing)
       }
 
   @Test
@@ -290,11 +280,12 @@ class FollowListViewModelTest {
         val viewModel =
             FollowListViewModel(
                 repo = ThrowingFollowersRepository(), initialTab = FollowListTab.FOLLOWERS)
-
         advanceUntilIdle()
-
         val state = viewModel.uiState.value
-        assertEquals("followers boom", state.errorMessage)
+        val msg = state.errorMessage
+        assertTrue(
+            msg == "followers boom" || msg == "following boom",
+            "Expected error to be 'followers boom' or 'following boom' but was '$msg'")
         assertFalse(state.isLoadingFollowers)
         assertTrue(state.followers.isEmpty())
       }
@@ -354,5 +345,9 @@ private class ThrowingFollowersRepository(
 ) : ProfileRepository by delegate {
   override suspend fun getFollowersIds(uid: String): List<String> {
     throw RuntimeException("followers boom")
+  }
+
+  override suspend fun getFollowingIds(uid: String): List<String> {
+    throw RuntimeException("following boom")
   }
 }

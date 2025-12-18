@@ -42,13 +42,16 @@ import com.neptune.neptune.util.AudioUtils
 import java.io.File
 import java.net.URI
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 private const val MEDIA_DB = "media.db"
 private var onImportFinished = {}
+const val MAX_AUDIO_DURATION_MS = 60_000L
 
 /**
  * ViewModel for the ImportScreen. This has been written with the help of LLMs.
@@ -62,27 +65,34 @@ class ImportViewModel(
   val library: StateFlow<List<MediaItem>> =
       getLibrary().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
+  private val _errorMessage = MutableStateFlow<String?>(null)
+  val errorMessage = _errorMessage.asStateFlow()
+
+  fun clearError() {
+    _errorMessage.value = null
+  }
+
   // Accept either SAF/content URIs (string) or file:// URIs: for file URIs call the recorded-file
   // overload
   fun importFromSaf(uriString: String) =
       viewModelScope.launch {
-        val parsed =
-            try {
-              URI(uriString)
-            } catch (_: Exception) {
-              null
-            }
-        if (parsed != null && parsed.scheme == "file") {
-          // use File overload
-          try {
+        try {
+          val parsed =
+              try {
+                URI(uriString)
+              } catch (_: Exception) {
+                null
+              }
+          if (parsed != null && parsed.scheme == "file") {
             val f = File(parsed)
             importMedia(f)
-          } catch (_: Exception) {
-            // fallback to string-based import in case of any issue
+          } else {
             importMedia(uriString)
           }
-        } else {
-          importMedia(uriString)
+        } catch (e: IllegalArgumentException) {
+          _errorMessage.value = e.message ?: "File too long (the maximum is 1 minute)."
+        } catch (_: Exception) {
+          _errorMessage.value = ""
         }
       }
   /** Takes the recorded file (M4A), converts it to WAV, then imports it. */

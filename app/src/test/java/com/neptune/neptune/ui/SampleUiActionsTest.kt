@@ -36,7 +36,7 @@ class SampleUiActionsTest {
           id = "sampleId",
           name = "Test Sample",
           description = "desc",
-          durationSeconds = 10,
+          durationMillis = 10,
           tags = listOf("lofi"),
           likes = 0,
           comments = 0,

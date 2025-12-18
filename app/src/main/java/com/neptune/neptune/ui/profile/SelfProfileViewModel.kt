@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 
 private const val MAX_TAGS = 10
 private const val MAX_TAG_LEN = 20
-private val TAG_REGEX = Regex("^[A-Za-z0-9 _-]+$")
+private val TAG_REGEX = Regex("^[A-Za-z0-9]+( [A-Za-z0-9]+)*$")
 
 private fun normalizeTag(s: String) = s.trim().lowercase().replace(Regex("\\s+"), " ")
 
@@ -274,7 +274,7 @@ class SelfProfileViewModel(
     if (_uiState.value.mode != ProfileMode.EDIT) return
 
     val s = _uiState.value
-    val tag = s.inputTag.trim()
+    val tag = normalizeTag(s.inputTag)
 
     when {
       tag.isEmpty() -> return
@@ -283,7 +283,7 @@ class SelfProfileViewModel(
         return
       }
       !TAG_REGEX.matches(tag) -> {
-        _uiState.value = s.copy(tagError = "Only letters, numbers, spaces, - and _.")
+        _uiState.value = s.copy(tagError = "Only letters, numbers, and single spaces.")
         return
       }
       s.tags.size >= MAX_TAGS -> {
@@ -296,17 +296,15 @@ class SelfProfileViewModel(
       }
     }
 
-    val normalized = normalizeTag(tag)
-
-    _uiState.value = s.copy(tags = s.tags + normalized, inputTag = "", tagError = null)
+    _uiState.value = s.copy(tags = s.tags + tag, inputTag = "", tagError = null)
 
     viewModelScope.launch {
       try {
-        repo.addNewTag(normalized)
+        repo.addNewTag(tag)
       } catch (t: Throwable) {
         _uiState.value =
             _uiState.value.copy(
-                tags = _uiState.value.tags.filterNot { it == normalized },
+                tags = _uiState.value.tags.filterNot { it == tag },
                 tagError = t.message ?: "Couldn't add tag.")
       }
     }

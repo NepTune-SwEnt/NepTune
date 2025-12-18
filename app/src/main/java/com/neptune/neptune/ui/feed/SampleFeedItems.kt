@@ -28,7 +28,8 @@ data class FeedItemStyle(
     val width: Dp,
     val height: Dp,
     val testTagsForSample: (Sample) -> BaseSampleTestTags,
-    val iconSize: Dp = 20.dp
+    val iconSize: Dp = 20.dp,
+    val showOwnerInfo: Boolean = true
 )
 
 /**
@@ -45,6 +46,7 @@ fun LazyListScope.sampleFeedItems(
     sampleResources: Map<String, SampleResourceState>,
     feedItemStyle: FeedItemStyle,
     feedCallbacks: FeedCallbacks,
+    showOwnerInfo: Boolean = true,
 ) {
   items(samples) { sample ->
     LaunchedEffect(sample.id, sample.storagePreviewSamplePath, sample.storageProcessedSamplePath) {
@@ -83,7 +85,8 @@ fun LazyListScope.sampleFeedItems(
             SampleItemStyle(
                 width = feedItemStyle.width,
                 height = feedItemStyle.height,
-                iconSize = feedItemStyle.iconSize))
+                iconSize = feedItemStyle.iconSize,
+                showOwnerInfo = showOwnerInfo))
     Spacer(Modifier.height(12.dp))
   }
 }

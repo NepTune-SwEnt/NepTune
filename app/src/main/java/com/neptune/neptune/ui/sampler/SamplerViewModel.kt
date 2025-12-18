@@ -622,7 +622,6 @@ open class SamplerViewModel(
             }
 
         val sampleDuration = extractDurationFromUri(audioUri)
-        Log.d("SamplerViewModel", "URI audio loaded: $audioUri")
 
         val paramMap = projectData.parameters.associate { it.type to it.value }
 

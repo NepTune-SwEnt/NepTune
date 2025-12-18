@@ -39,10 +39,8 @@ class FollowListViewModel(
 
   fun refresh() {
     if (_uiState.value.isCurrentUserAnonymous) return
-    when (_uiState.value.activeTab) {
-      FollowListTab.FOLLOWERS -> loadFollowers()
-      FollowListTab.FOLLOWING -> loadFollowing()
-    }
+    loadFollowers()
+    loadFollowing()
   }
 
   private fun currentList(isFollowers: Boolean): List<FollowListUserItem> =

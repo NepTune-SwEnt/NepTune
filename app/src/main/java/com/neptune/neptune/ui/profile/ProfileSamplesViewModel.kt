@@ -20,6 +20,8 @@ import com.neptune.neptune.util.DownloadDirectoryProvider
 import java.io.File
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,7 +30,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** Displays all samples posted by [ownerId] on profile screens. */
+/**
+ * Drives the list of samples displayed on a profile.
+ *
+ * Observes items owned by [ownerId], exposes like state, and brokers download/like actions to the
+ * shared feed infrastructure.
+ */
 class ProfileSamplesViewModel(
     private val ownerId: String,
     sampleRepo: SampleRepository = SampleRepositoryProvider.repository,
@@ -57,6 +64,7 @@ class ProfileSamplesViewModel(
   val likedSamples: StateFlow<Map<String, Boolean>> = _likedSamples.asStateFlow()
 
   private val downloadDispatcher: CoroutineDispatcher = explicitIoDispatcher ?: Dispatchers.IO
+  private val likeJobs = mutableMapOf<String, Job>()
 
   override val actions: SampleUiActions? =
       if (!enableActions) {
@@ -89,11 +97,13 @@ class ProfileSamplesViewModel(
     viewModelScope.launch {
       this@ProfileSamplesViewModel.sampleRepo.observeSamples().collectLatest { samples ->
         val filtered =
-            samples.filter { sample ->
-              sample.ownerId == ownerId &&
-                  (sample.storageProcessedSamplePath.isNotBlank() ||
-                      sample.storagePreviewSamplePath.isNotBlank())
-            }
+            samples
+                .filter { sample ->
+                  sample.ownerId == ownerId &&
+                      (sample.storageProcessedSamplePath.isNotBlank() ||
+                          sample.storagePreviewSamplePath.isNotBlank())
+                }
+                .sortedByDescending { it.creationTime }
         _samples.value = filtered
         refreshLikeStates(filtered, _likedSamples)
       }
@@ -123,16 +133,28 @@ class ProfileSamplesViewModel(
   }
 
   override fun onLikeClick(sample: Sample, isLiked: Boolean) {
-    viewModelScope.launch {
-      this@ProfileSamplesViewModel.sampleRepo.toggleLike(sample.id, isLiked)
-      val delta = if (isLiked) 1 else -1
-      profileRepo.updateLikeCount(sample.ownerId, delta)
-      _samples.update { list ->
-        list.map { current ->
-          if (current.id == sample.id) current.copy(likes = current.likes + delta) else current
-        }
+    val currentUser = auth?.currentUser
+    if (currentUser == null || currentUser.isAnonymous) return
+    val delta = if (isLiked) 1 else -1
+    _samples.update { list ->
+      list.map { current ->
+        if (current.id == sample.id) current.copy(likes = current.likes + delta) else current
       }
-      _likedSamples.update { it + (sample.id to isLiked) }
     }
+    _likedSamples.update { map -> map.toMutableMap().apply { this[sample.id] = isLiked } }
+    likeJobs[sample.id]?.cancel()
+    val job =
+        viewModelScope.launch {
+          try {
+            delay(1000)
+            this@ProfileSamplesViewModel.sampleRepo.toggleLike(sample.id, isLiked)
+            profileRepo.updateLikeCount(sample.ownerId, delta)
+          } catch (e: Exception) {
+            Log.e("MainViewModel", "Failed to toggle like: ${e.message}")
+          } finally {
+            likeJobs.remove(sample.id)
+          }
+        }
+    likeJobs[sample.id] = job
   }
 }

@@ -559,7 +559,12 @@ fun MainTopAppBar(userAvatar: String?, navigateToProfile: () -> Unit, signedIn: 
 }
 
 /** Data class to group the state variables for MainContent. */
-data class SampleItemStyle(val width: Dp, val height: Dp = 166.dp, val iconSize: Dp = 16.dp)
+data class SampleItemStyle(
+    val width: Dp,
+    val height: Dp = 166.dp,
+    val iconSize: Dp = 16.dp,
+    val showOwnerInfo: Boolean = true
+)
 
 @Composable
 fun SampleItem(
@@ -574,11 +579,13 @@ fun SampleItem(
 
   Column(modifier = Modifier.width(sampleItemStyle.width)) {
     // Header (Avatar + Name)
-    SampleCardHeader(
-        avatarUrl = resourceState.ownerAvatarUrl,
-        userName = resourceState.ownerName,
-        onProfileClick = clickHandlers.onProfileClick,
-        testTags = testTags)
+    if (sampleItemStyle.showOwnerInfo) {
+      SampleCardHeader(
+          avatarUrl = resourceState.ownerAvatarUrl,
+          userName = resourceState.ownerName,
+          onProfileClick = clickHandlers.onProfileClick,
+          testTags = testTags)
+    }
 
     // Card (Image + Waveform + Title)
     SampleCard(
@@ -878,11 +885,11 @@ private fun SampleCardBoxContent(
                           fontWeight = FontWeight(400)))
 
               // compute duration
-              val minutes = sample.durationSeconds / 60
-              val seconds = sample.durationSeconds % 60
+              val seconds = sample.durationMillis / 1000
+              val millis = (sample.durationMillis % 1000) / 10
 
               Text(
-                  String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds),
+                  String.format(Locale.getDefault(), "%02d:%02d", seconds, millis),
                   color = NepTuneTheme.colors.onBackground,
                   modifier = Modifier.padding(start = 8.dp).testTag(testTags.SAMPLE_DURATION),
                   style =
