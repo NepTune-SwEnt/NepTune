@@ -11,7 +11,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.SetOptions
 import com.neptune.neptune.MainActivity
 import com.neptune.neptune.model.sample.Sample
@@ -22,6 +21,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+
 // run with firebase emulators:start --only firestore,auth
 // written with help from ChatGPT
 @RunWith(AndroidJUnit4::class)
@@ -73,12 +73,8 @@ class LikeAndMessageE2ETest {
     val db = FirebaseFirestore.getInstance()
     runCatching { db.useEmulator(host, 8080) }
 
-    // IMPORTANT: settings MUST be set before Firestore is used anywhere
-    db.firestoreSettings = FirebaseFirestoreSettings.Builder().setPersistenceEnabled(false).build()
-
     runCatching { auth.signOut() }
 
-    // Fake creds, emulator only
     val email = "ci-user@test.local"
     val password = "password123"
 
