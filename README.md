@@ -21,7 +21,7 @@ Key features
 - Social features: share samples, follow users, favorites, stats
 - Server-side sample processing & preview generation (Firebase Functions + FFmpeg)
 
-### UI
+### UI/UX
 [Link to our Figma design](https://www.figma.com/design/gxxZEMMnw0vSRHbdAfe2rc/NepTune?node-id=4-3&t=a46S21O4504wuBl3-1)
 
 ### Structure and data diagram
