@@ -44,13 +44,20 @@ class ProfileSamplesViewModelTest {
         val sample = testSample(likes = 0)
         val sampleRepo = FakeSampleRepository(listOf(sample))
         val profileRepo = FakeProfileRepository()
+        val mockUser = mock<com.google.firebase.auth.FirebaseUser>()
+        whenever(mockUser.isAnonymous).thenReturn(false)
+        whenever(mockUser.uid).thenReturn("current-user-id")
+        whenever(mockUser.isAnonymous).thenReturn(false)
+
+        val mockAuth = mock<com.google.firebase.auth.FirebaseAuth>()
+        whenever(mockAuth.currentUser).thenReturn(mockUser)
 
         val viewModel =
             ProfileSamplesViewModel(
                 ownerId = sample.ownerId,
                 sampleRepo = sampleRepo,
                 profileRepo = profileRepo,
-                auth = null,
+                auth = mockAuth,
                 enableActions = false)
 
         advanceUntilIdle()
