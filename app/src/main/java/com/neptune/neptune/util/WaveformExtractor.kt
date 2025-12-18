@@ -1,9 +1,6 @@
 package com.neptune.neptune.util
 
 import android.content.Context
-import android.media.MediaCodec
-import android.media.MediaExtractor
-import android.media.MediaFormat
 import android.net.Uri
 import android.util.Log
 import kotlin.math.abs
@@ -40,106 +37,50 @@ open class WaveformExtractor(private val ioDispatcher: CoroutineDispatcher = Dis
    */
   override suspend fun extractWaveform(context: Context, uri: Uri, samplesCount: Int): List<Float> =
       withContext(ioDispatcher) {
-        val extractor = MediaExtractor()
         try {
-          extractor.setDataSource(context, uri, null)
-        } catch (e: Exception) {
-          Log.e("WaveformExtractor", "Failed to set data source", e)
-          return@withContext emptyList()
-        }
+          val decoded = AudioUtils.decodeAudioToPCM(uri) ?: return@withContext emptyList()
 
-        var trackIndex = -1
-        for (i in 0 until extractor.trackCount) {
-          val format = extractor.getTrackFormat(i)
-          val mime = format.getString(MediaFormat.KEY_MIME)
-          if (mime?.startsWith("audio/") == true) {
-            trackIndex = i
-            extractor.selectTrack(i)
-            break
+          val pcm = decoded.first
+          val channelCount = decoded.third
+
+          if (pcm.isEmpty() || samplesCount <= 0) {
+            return@withContext emptyList()
           }
-        }
 
-        if (trackIndex == -1) {
-          extractor.release()
-          return@withContext emptyList()
-        }
+          val totalFrames = pcm.size / channelCount
+          if (totalFrames <= 0) {
+            return@withContext emptyList()
+          }
 
-        val format = extractor.getTrackFormat(trackIndex)
-        val mime = format.getString(MediaFormat.KEY_MIME) ?: return@withContext emptyList()
+          val framesPerBucket = totalFrames / samplesCount.toFloat()
 
-        val codec = MediaCodec.createDecoderByType(mime)
-        codec.configure(format, null, null, 0)
-        codec.start()
+          val buckets = FloatArray(samplesCount)
+          val bucketHits = IntArray(samplesCount)
 
-        val decodedSamples = mutableListOf<Float>()
-        val bufferInfo = MediaCodec.BufferInfo()
-        var isEOS = false
+          for (frameIndex in 0 until totalFrames) {
+            val bucketIndex = (frameIndex / framesPerBucket).toInt().coerceIn(0, samplesCount - 1)
 
-        try {
-          while (!isEOS) {
-            val inputIndex = codec.dequeueInputBuffer(5000)
-            if (inputIndex >= 0) {
-              val inputBuffer = codec.getInputBuffer(inputIndex)
-              val sampleSize = extractor.readSampleData(inputBuffer!!, 0)
-              if (sampleSize < 0) {
-                codec.queueInputBuffer(inputIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
-                isEOS = true
-              } else {
-                codec.queueInputBuffer(inputIndex, 0, sampleSize, extractor.sampleTime, 0)
-                extractor.advance()
-              }
+            var frameSum = 0f
+            for (ch in 0 until channelCount) {
+              val sample = pcm[frameIndex * channelCount + ch]
+              frameSum += kotlin.math.abs(sample)
             }
 
-            var outputIndex = codec.dequeueOutputBuffer(bufferInfo, 5000)
-            while (outputIndex >= 0) {
-              val outputBuffer = codec.getOutputBuffer(outputIndex)
-              if (outputBuffer != null && bufferInfo.size > 0) {
-                val shortBuffer = outputBuffer.asShortBuffer()
+            val frameAmp = frameSum / channelCount
+            buckets[bucketIndex] += frameAmp
+            bucketHits[bucketIndex]++
+          }
 
-                var sum = 0.0
-                var count = 0
-
-                while (shortBuffer.hasRemaining()) {
-                  val sample = shortBuffer.get()
-                  sum += abs(sample.toInt())
-                  count++
-                }
-
-                if (count > 0) {
-                  val avg = sum / count
-                  decodedSamples.add((avg / Short.MAX_VALUE).toFloat().coerceIn(0f, 1f))
-                }
-              }
-              codec.releaseOutputBuffer(outputIndex, false)
-              outputIndex = codec.dequeueOutputBuffer(bufferInfo, 0)
+          return@withContext buckets.mapIndexed { i, sum ->
+            if (bucketHits[i] > 0) {
+              (sum / bucketHits[i]).coerceIn(0f, 1f)
+            } else {
+              0f
             }
           }
         } catch (e: Exception) {
-          Log.e("WaveformExtractor", "Error decoding", e)
-        } finally {
-          try {
-            codec.stop()
-            codec.release()
-            extractor.release()
-          } catch (e: Exception) {
-            Log.e("WaveformExtractor", "Error releasing resources", e)
-          }
+          Log.e("WaveformExtractor", "Error extracting waveform", e)
+          emptyList()
         }
-
-        return@withContext resample(decodedSamples, samplesCount)
       }
-
-  private fun resample(samples: List<Float>, targetCount: Int): List<Float> {
-    if (samples.isEmpty()) return emptyList()
-    if (samples.size <= targetCount) return samples
-
-    val result = mutableListOf<Float>()
-    val step = samples.size / targetCount.toFloat()
-
-    for (i in 0 until targetCount) {
-      val index = (i * step).toInt().coerceIn(samples.indices)
-      result.add(samples[index])
-    }
-    return result
-  }
 }
