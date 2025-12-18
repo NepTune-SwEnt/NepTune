@@ -10,13 +10,18 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -129,6 +134,27 @@ fun NeptuneApp(
 
   // Media Player values
   val mediaPlayer = remember { NeptuneMediaPlayer() }
+  val lifecycleOwner = LocalLifecycleOwner.current
+
+  DisposableEffect(lifecycleOwner) {
+    val observer = LifecycleEventObserver { _, event ->
+      if (event == Lifecycle.Event.ON_STOP) {
+        mediaPlayer.stopWithFade(300L)
+      }
+    }
+
+    lifecycleOwner.lifecycle.addObserver(observer)
+
+    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+  }
+
+  DisposableEffect(navController) {
+    val listener =
+        NavController.OnDestinationChangedListener { _, _, _ -> mediaPlayer.stopWithFade(300L) }
+    navController.addOnDestinationChangedListener(listener)
+
+    onDispose { navController.removeOnDestinationChangedListener(listener) }
+  }
 
   CompositionLocalProvider(LocalMediaPlayer provides mediaPlayer) {
     Scaffold(
