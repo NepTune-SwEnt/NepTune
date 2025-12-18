@@ -1,8 +1,10 @@
 package com.neptune.neptune.e2e
 
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.neptune.neptune.MainActivity
@@ -10,82 +12,66 @@ import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.ui.authentification.SignInScreenTags
 import com.neptune.neptune.ui.messages.MessagesScreenTestTags
 import com.neptune.neptune.ui.navigation.NavigationTestTags
-import com.neptune.neptune.ui.profile.ProfileScreenTestTags
-import com.neptune.neptune.ui.search.SearchScreenTestTags
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-private const val otherUser = "otherUser"
 private const val mailSender = "sender@test.com"
 private const val mailReceiver = "receiver@test.com"
 private const val password = "password123"
+private const val otherUser = "testbuddy"
 
 @RunWith(AndroidJUnit4::class)
 class SendMessageE2ETest {
 
-  @get:Rule val composeTestRule = createAndroidComposeRule<MainActivity>()
+  @get:Rule val composeTestRule = createEmptyComposeRule()
 
   private fun setupFirebaseEmulators() {
     val auth = FirebaseAuth.getInstance()
-    runCatching { auth.useEmulator("10.0.2.2", 9099) }
-    runCatching { FirebaseFirestore.getInstance().useEmulator("10.0.2.2", 8080) }
+    val db = FirebaseFirestore.getInstance()
+    val host = "10.0.2.2"
+
+    // Configure emulators before the app starts accessing Firebase
+    runCatching { auth.useEmulator(host, 9099) }
+    runCatching { db.useEmulator(host, 8080) }
+
     if (auth.currentUser != null) {
       auth.signOut()
     }
   }
 
   private fun seedReceiverUser() {
-    // Create the receiver user account
-    composeTestRule.onNodeWithTag(SignInScreenTags.TOGGLE_REGISTER).performClick()
-    composeTestRule.onNodeWithTag(SignInScreenTags.EMAIL_FIELD).performTextInput(mailReceiver)
-    composeTestRule.onNodeWithTag(SignInScreenTags.PASSWORD_FIELD).performTextInput(password)
-    composeTestRule
-        .onNodeWithTag(SignInScreenTags.CONFIRM_PASSWORD_FIELD)
-        .performTextInput(password)
-    composeTestRule.onNodeWithTag(SignInScreenTags.SUBMIT_EMAIL).performClick()
+    val auth = FirebaseAuth.getInstance()
 
-    composeTestRule.waitUntil(timeoutMillis = 10000) {
-      composeTestRule
-          .onAllNodesWithTag(NavigationTestTags.PROFILE_BUTTON)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
+    // 1. Create the receiver account (Backend only)
+    val createJson = auth.createUserWithEmailAndPassword(mailReceiver, password)
+    Tasks.await(createJson, 5, TimeUnit.SECONDS)
 
+    // 2. Necessary pause for Auth token propagation to Firestore to avoid PERMISSION_DENIED
+    Thread.sleep(1000)
+
+    // 3. Create profile via Repository to ensure valid format and business logic
     val repo = ProfileRepositoryProvider.repository
-
-    runBlocking { repo.ensureProfile(suggestedUsernameBase = otherUser, name = otherUser) }
-
-    // Go to profile and set username
-    composeTestRule.onNodeWithTag(NavigationTestTags.PROFILE_BUTTON).performClick()
-    // logout
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(ProfileScreenTestTags.SETTINGS_BUTTON)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
+    runBlocking {
+      repo.ensureProfile(suggestedUsernameBase = otherUser, name = "Receiver Test")
+      repo.updateBio("Profile seeded via E2E test")
     }
-    composeTestRule.onNodeWithTag(ProfileScreenTestTags.SETTINGS_BUTTON).performClick()
-    composeTestRule.onNodeWithText("Account").performClick()
-    composeTestRule.onNodeWithText("Log Out").performClick()
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(SignInScreenTags.TOGGLE_REGISTER)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
+
+    auth.signOut()
   }
 
   @Test
   fun sendMessageToUserFlow() {
-    // --- SETUP ---
+    // --- INITIALIZATION ---
     setupFirebaseEmulators()
     seedReceiverUser()
 
-    composeTestRule.waitForIdle()
+    // --- ACTIVITY LAUNCH ---
+    ActivityScenario.launch(MainActivity::class.java)
 
-    // --- REGISTER SENDER ---
+    // --- SENDER REGISTRATION ---
     composeTestRule.onNodeWithTag(SignInScreenTags.TOGGLE_REGISTER).performClick()
     composeTestRule.onNodeWithTag(SignInScreenTags.EMAIL_FIELD).performTextInput(mailSender)
     composeTestRule.onNodeWithTag(SignInScreenTags.PASSWORD_FIELD).performTextInput(password)
@@ -94,61 +80,25 @@ class SendMessageE2ETest {
         .performTextInput(password)
     composeTestRule.onNodeWithTag(SignInScreenTags.SUBMIT_EMAIL).performClick()
 
-    // Wait for app load (Navigation bar visible)
+    // --- WAIT FOR NAVIGATION BAR ---
     composeTestRule.waitUntil(timeoutMillis = 15000) {
       composeTestRule
-          .onAllNodesWithTag(NavigationTestTags.SEARCH_TAB)
+          .onAllNodesWithTag(NavigationTestTags.MESSAGE_BUTTON)
           .fetchSemanticsNodes()
           .isNotEmpty()
     }
 
-    // --- SEARCH AND FOLLOW USER ---
-
-    composeTestRule.onNodeWithTag(NavigationTestTags.SEARCH_TAB).performClick()
-
-    val seeUsersNode = composeTestRule.onAllNodesWithText("See Users")
-    if (seeUsersNode.fetchSemanticsNodes().isNotEmpty()) {
-      seeUsersNode.onFirst().performClick()
-    }
-
-    // Search for the username
-    composeTestRule
-        .onNodeWithTag(SearchScreenTestTags.SEARCH_BAR)
-        .onChildren()
-        .filter(hasSetTextAction())
-        .onFirst()
-        .performTextInput(otherUser)
-
-    // Wait for the result to appear and click it
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithContentDescription("User Avatar")
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-    composeTestRule.onAllNodesWithContentDescription("User Avatar").onFirst().performClick()
-
-    // Click Follow on the user's profile
-    composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule
-          .onAllNodesWithTag(ProfileScreenTestTags.FOLLOW_BUTTON)
-          .fetchSemanticsNodes()
-          .isNotEmpty()
-    }
-    composeTestRule.onNodeWithTag(ProfileScreenTestTags.FOLLOW_BUTTON).performClick()
-
-    // --- NAVIGATE TO MESSAGES ---
     composeTestRule.onNodeWithTag(NavigationTestTags.MESSAGE_BUTTON).performClick()
 
     // --- USER SELECTION ---
     composeTestRule.waitUntil(timeoutMillis = 5000) {
-      composeTestRule.onAllNodesWithContentDescription("User").fetchSemanticsNodes().isNotEmpty()
+      composeTestRule.onAllNodesWithContentDescription("Avatar").fetchSemanticsNodes().isNotEmpty()
     }
 
-    composeTestRule.onAllNodesWithContentDescription("User").onFirst().performClick()
+    composeTestRule.onAllNodesWithContentDescription("Avatar").onFirst().performClick()
 
-    // --- ENVOI MESSAGE ---
-    val messageToSend = "Hello from E2E Test!"
+    // --- MESSAGE SENDING ---
+    val messageToSend = "Hello from E2E test!"
 
     composeTestRule.waitUntil(timeoutMillis = 5000) {
       composeTestRule
@@ -157,7 +107,14 @@ class SendMessageE2ETest {
           .isNotEmpty()
     }
 
-    composeTestRule.onNodeWithTag(MessagesScreenTestTags.INPUT_BAR).performTextInput(messageToSend)
+    // Targeting the child of the container that accepts text input
+    composeTestRule
+        .onNodeWithTag(MessagesScreenTestTags.INPUT_BAR)
+        .onChildren()
+        .filter(hasSetTextAction())
+        .onFirst()
+        .performTextInput(messageToSend)
+
     composeTestRule.onNodeWithTag(MessagesScreenTestTags.SEND_BUTTON).performClick()
 
     // --- VERIFICATION ---
