@@ -64,5 +64,24 @@ service cloud.firestore {
       // Never allow updates-in-place (we create or delete)
       allow update: if false;
     }
+
+
+
+  	// Messages collection (conversations)
+ 		match /messages/{conversationId} {
+      // Any signed-in user can read/write conversations
+  		allow read: if signedIn();
+
+      // Only allow Cloud Functions to write the preview data (lastMessage, lastTimestamp)
+      allow write: if false; // Disable direct writes from clients
+
+			// Messages subcollection
+      match /messages/{messageId} {
+				allow read, write: if signedIn();
+      }
+    }
   }
+
 }
+
+
