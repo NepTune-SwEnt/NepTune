@@ -750,8 +750,13 @@ fun WaveformDisplay(
           val contentWidth = width - (2 * paddingPx)
 
           val barWidth = 2.dp.toPx()
-          val numBars = 50
-          val gapWidth = (contentWidth - (numBars * barWidth)) / (numBars - 1).coerceAtLeast(1)
+          val barCount = waveform.size.coerceAtLeast(1)
+          val gapWidth =
+              if (barCount > 1) {
+                (contentWidth - (barCount * barWidth)) / (barCount - 1)
+              } else {
+                0f
+              }
 
           // Draw timeline ticks and second labels at the top
           val totalSeconds = (audioDurationMillis / 1000L).coerceAtLeast(1L).toInt()
