@@ -18,7 +18,6 @@ class ProjectItemsRepositoryLocal(context: Context) : ProjectItemsRepository {
   private val projectsFile = File(context.filesDir, "projects.json")
   private val gson = Gson()
   private val mutex = Mutex()
-  private val appContext = context.applicationContext
 
   init {
     if (!projectsFile.exists()) {
@@ -87,23 +86,19 @@ class ProjectItemsRepositoryLocal(context: Context) : ProjectItemsRepository {
                 removed.audioPreviewLocalPath,
                 removed.imagePreviewLocalPath)
 
-        Log.d("ProjectItemsRepositoryLocal", "Deleting files: $pathsToDelete")
         pathsToDelete.forEach { path ->
           try {
             val file = File(path.removePrefix("file:"))
             if (file.exists()) {
-              Log.d("ProjectItemsRepositoryLocal", "Deleting file: $file")
               val deleted = file.delete()
-              if (deleted) {
-                Log.d("ProjectItemsRepositoryLocal", "Deleted file: $path")
-              } else {
-                Log.d("ProjectItemsRepositoryLocal", "Failed to delete file: $path")
+              if (!deleted) {
+                Log.e("ProjectItemsRepositoryLocal", "Failed to delete file: $path")
               }
             } else {
-              Log.d("ProjectItemsRepositoryLocal", "Failed to delete file: $path, does not exist")
+              Log.e("ProjectItemsRepositoryLocal", "Failed to delete file: $path, does not exist")
             }
           } catch (_: Exception) {
-            Log.d("ProjectItemsRepositoryLocal", "Failed to delete file: $path")
+            Log.e("ProjectItemsRepositoryLocal", "Failed to delete file: $path")
           }
         }
       }
