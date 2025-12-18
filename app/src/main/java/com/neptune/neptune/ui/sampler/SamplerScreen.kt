@@ -122,6 +122,8 @@ object SamplerTestTags {
   const val TAP_TEMPO_BUTTON = "tapTempoButton"
   const val PREVIEW_PLAY_BUTTON = "previewPlayButton"
 
+  const val SETTINGS_RESET_SAMPLE_BUTTON = "settingsResetSampleButton"
+
   // Settings-related test tags
   const val SETTINGS_BUTTON = "settingsButton"
   const val SETTINGS_DIALOG = "settingsDialog"
@@ -266,7 +268,8 @@ fun SamplerScreen(
 
   // Show a simple settings dialog when settings button is pressed
   if (showSettingsDialog) {
-    SettingsDialog(viewModel = viewModel, onClose = { showSettingsDialog = false })
+    SettingsDialog(
+        viewModel = viewModel, zipFilePath = zipFilePath, onClose = { showSettingsDialog = false })
   }
 
   // Help dialog - multi-tab explanatory dialog
@@ -476,11 +479,11 @@ fun PlaybackAndWaveformControls(
                     tint = NepTuneTheme.colors.accentPrimary,
                     modifier = Modifier.size(32.dp))
               }
-              IconButton(onClick = onSave) {
+              IconButton(onClick = onSave, enabled = !uiState.isSaving) {
                 Icon(
                     imageVector = Icons.Default.Save,
                     contentDescription = "Save",
-                    tint = NepTuneTheme.colors.accentPrimary,
+                    tint = if (uiState.isSaving) Color.Gray else NepTuneTheme.colors.accentPrimary,
                     modifier = Modifier.size(32.dp))
               }
               Spacer(modifier = Modifier.weight(1f))
@@ -951,7 +954,6 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
           Modifier.fillMaxWidth()
               .wrapContentHeight()
               .verticalScroll(rememberScrollState())
-              .padding(top = 8.dp)
               .testTag(SamplerTestTags.TAB_BASICS_CONTENT)) {
         ExpandableSection(
             title = "ADSR Envelope Controls",
@@ -1017,8 +1019,6 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
                     }
               }
             }
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         ExpandableSection(
             title = "Reverb Controls",
@@ -1287,12 +1287,12 @@ fun ADSRCurveEditor(
       }
 }
 
-
 private const val MIN_ANGLE = -135f
 private const val MAX_ANGLE = 135f
 private const val DEAD_ZONE_START = -90f
 private const val DEAD_ZONE_END = 90f
 private const val ACTIVE_RANGE = DEAD_ZONE_END - DEAD_ZONE_START
+
 @Composable
 fun UniversalKnob(
     label: String,
@@ -1326,31 +1326,30 @@ fun UniversalKnob(
                 .pointerInput(Unit) {
                   detectDragGestures(
                       onDrag = { change, _ ->
-                          val centerX = size.width / 2f
-                          val centerY = size.height / 2f
+                        val centerX = size.width / 2f
+                        val centerY = size.height / 2f
 
-                          var angleRad =
-                              atan2(change.position.y - centerY, change.position.x - centerX)
-                          angleRad += (PI / 2).toFloat()
+                        var angleRad =
+                            atan2(change.position.y - centerY, change.position.x - centerX)
+                        angleRad += (PI / 2).toFloat()
 
-                          var angleDeg = Math.toDegrees(angleRad.toDouble()).toFloat()
+                        var angleDeg = Math.toDegrees(angleRad.toDouble()).toFloat()
 
-                          // wrap angle
-                          if (angleDeg < MIN_ANGLE) angleDeg += 360f
-                          if (angleDeg > MAX_ANGLE) angleDeg -= 360f
+                        // wrap angle
+                        if (angleDeg < MIN_ANGLE) angleDeg += 360f
+                        if (angleDeg > MAX_ANGLE) angleDeg -= 360f
 
-                          val newValue =
-                              when {
-                                  angleDeg <= DEAD_ZONE_START -> minValue
-                                  angleDeg >= DEAD_ZONE_END -> maxValue
-                                  else -> {
-                                      val normalized =
-                                          (angleDeg - DEAD_ZONE_START) / ACTIVE_RANGE
-                                      minValue + normalized * (maxValue - minValue)
-                                  }
+                        val newValue =
+                            when {
+                              angleDeg <= DEAD_ZONE_START -> minValue
+                              angleDeg >= DEAD_ZONE_END -> maxValue
+                              else -> {
+                                val normalized = (angleDeg - DEAD_ZONE_START) / ACTIVE_RANGE
+                                minValue + normalized * (maxValue - minValue)
                               }
+                            }
 
-                          onValueChange(newValue.coerceIn(minValue, maxValue))
+                        onValueChange(newValue.coerceIn(minValue, maxValue))
                       })
                 },
         contentAlignment = Alignment.Center) {
@@ -1879,7 +1878,7 @@ fun RatioInputField(
 }
 
 @Composable
-fun SettingsDialog(viewModel: SamplerViewModel, onClose: () -> Unit) {
+fun SettingsDialog(viewModel: SamplerViewModel, zipFilePath: String?, onClose: () -> Unit) {
   var bpmText by remember { mutableStateOf("") }
   val uiState by viewModel.uiState.collectAsState()
   val context = NepTuneApplication.appContext
@@ -1914,15 +1913,27 @@ fun SettingsDialog(viewModel: SamplerViewModel, onClose: () -> Unit) {
                 modifier = Modifier.weight(1f))
           }
 
-          Spacer(modifier = Modifier.height(12.dp))
+          Spacer(modifier = Modifier.height(18.dp))
 
-          // Allow changing the initial note (note + octave)
-          PitchSelectorField(
-              pitchNote = uiState.inputPitchNote,
-              pitchOctave = uiState.inputPitchOctave,
-              onPitchUp = viewModel::increaseInputPitch,
-              onPitchDown = viewModel::decreaseInputPitch,
-              modifier = Modifier.testTag(SamplerTestTags.SETTINGS_PITCH_SELECTOR))
+          val canReset = zipFilePath != null
+
+          Button(
+              onClick = {
+                zipFilePath?.let {
+                  viewModel.resetSampleAndSave(it)
+                  onClose()
+                }
+              },
+              enabled = canReset,
+              modifier =
+                  Modifier.fillMaxWidth().testTag(SamplerTestTags.SETTINGS_RESET_SAMPLE_BUTTON)) {
+                Icon(
+                    imageVector = Icons.Default.RestartAlt,
+                    contentDescription = "Reset sample",
+                    modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Reset sample")
+              }
         }
       },
       confirmButton = {
