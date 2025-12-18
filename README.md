@@ -26,6 +26,7 @@ Key features
 
 ### Structure and data diagram
 
+![Structure diagram](docs/images/Structure%20diagram.png)
 
 ## Build the project
 ### Setup
