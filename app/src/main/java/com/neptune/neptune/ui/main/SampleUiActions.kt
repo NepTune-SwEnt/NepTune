@@ -76,11 +76,12 @@ open class SampleUiActions(
               downloadProgress.value = percent
             }
           }
-
+      Log.d("SampleUiActions", "Downloaded zip: $zip")
       val repoJSON = ProjectItemsRepositoryLocal(context)
       val newUid = repoJSON.getNewId()
       val processedAudioFile = File(File(context.filesDir, "previews"), "$newUid.wav")
       withContext(ioDispatcher) {
+        Log.d("SampleUiActions", "Downloading processed audio: ${sample.storageProcessedSamplePath}")
         storageService.downloadFileByPath(sample.storageProcessedSamplePath, processedAudioFile) {}
         val newFile = storageService.persistZipToDownloads(zip, File(context.filesDir, "projects"))
         repoJSON.addProject(ProjectItem(
@@ -92,6 +93,7 @@ open class SampleUiActions(
           ownerId = null,
           collaborators = listOf()
         ))
+        Log.d("SampleUiActions", "Downloaded zip: $newFile")
       }
       repo.increaseDownloadCount(sample.id)
 
