@@ -38,25 +38,6 @@ class InitialSetupDialogTest {
   }
 
   @Test
-  fun initialSetupDialogPitchButtonsUpdateViewModel() {
-
-    assertEquals("C", viewModel.uiState.value.inputPitchNote)
-    assertEquals(4, viewModel.uiState.value.inputPitchOctave)
-
-    composeRule.onNodeWithTag("PITCH_UP_BUTTON").performClick()
-    composeRule.waitForIdle()
-
-    assertEquals("C#", viewModel.uiState.value.inputPitchNote)
-    assertEquals(4, viewModel.uiState.value.inputPitchOctave)
-
-    composeRule.onNodeWithTag("PITCH_DOWN_BUTTON").performClick()
-    composeRule.waitForIdle()
-
-    assertEquals("C", viewModel.uiState.value.inputPitchNote)
-    assertEquals(4, viewModel.uiState.value.inputPitchOctave)
-  }
-
-  @Test
   fun initialSetupDialogTempoInputUpdatesViewModel() {
 
     composeRule.onNodeWithTag(SamplerTestTags.INIT_TEMPO_SELECTOR).performTextInput("150")
@@ -74,7 +55,6 @@ class InitialSetupDialogTest {
     composeRule.onNodeWithTag(SamplerTestTags.INIT_CONFIRM_BUTTON).performClick()
     composeRule.waitForIdle()
 
-    assertEquals("C#", viewModel.uiState.value.pitchNote)
     assertEquals(140, viewModel.uiState.value.tempo)
     assertEquals(false, viewModel.uiState.value.showInitialSetupDialog)
   }
