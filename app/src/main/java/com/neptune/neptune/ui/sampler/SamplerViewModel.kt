@@ -45,6 +45,8 @@ enum class SamplerTab {
   COMP,
 }
 
+const val DEFAULT_TEMPO = 110
+
 private val NOTE_ORDER = listOf("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
 
 private val EQ_FREQUENCIES = listOf(60, 120, 250, 500, 1000, 2500, 5000, 10000)
@@ -71,7 +73,7 @@ data class SamplerUiState(
     val isPlaying: Boolean = false,
     val currentTab: SamplerTab = SamplerTab.BASICS,
     val pitch: String = "C",
-    val tempo: Int = 110,
+    val tempo: Int = DEFAULT_TEMPO,
     val pitchNote: String = "C",
     val pitchOctave: Int = 4,
     val attack: Float = 0.0f,
@@ -95,7 +97,7 @@ data class SamplerUiState(
     val currentAudioUri: Uri? = null,
     val audioDurationMillis: Int = 4000,
     val showInitialSetupDialog: Boolean = false,
-    val inputTempo: Int = 110,
+    val inputTempo: Int = DEFAULT_TEMPO,
     val inputPitchNote: String = "C",
     val inputPitchOctave: Int = 4,
     val timeSignature: String = "4/4",
@@ -510,7 +512,8 @@ open class SamplerViewModel(
             playbackPosition = 0f,
 
             // Tempo
-            tempo = state.inputTempo,
+            inputTempo = DEFAULT_TEMPO,
+            tempo = DEFAULT_TEMPO,
             pitchNote = state.inputPitchNote,
             pitchOctave = state.inputPitchOctave,
 
@@ -787,6 +790,7 @@ open class SamplerViewModel(
                     paramMap["compAttack"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compAttack,
                 compDecay = paramMap["compDecay"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compDecay,
                 eqBands = newEqBands.toList(),
+                inputTempo = paramMap["inputTempo"]?.roundToInt()?.coerceIn(50, 200) ?: DEFAULT_TEMPO,
                 tempo = tempoValue.roundToInt().coerceIn(50, 200),
                 pitchNote = loadedPitchNote,
                 pitchOctave = loadedPitchOctave,
@@ -890,6 +894,7 @@ open class SamplerViewModel(
               ParameterMetadata("reverbWidth", state.reverbWidth, audioFile.name),
               ParameterMetadata("compGain", state.compGain, audioFile.name),
               ParameterMetadata("compThreshold", state.compThreshold, audioFile.name),
+              ParameterMetadata("inputTempo", state.inputTempo.toFloat(), "global"),
               ParameterMetadata("tempo", state.tempo.toFloat(), "global"),
               ParameterMetadata(
                   "pitch",

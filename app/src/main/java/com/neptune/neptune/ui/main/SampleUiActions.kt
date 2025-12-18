@@ -17,11 +17,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import com.neptune.neptune.data.storage.StorageService
+import com.neptune.neptune.domain.usecase.ViewModelAudioPreviewGenerator
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
+import com.neptune.neptune.model.project.ProjectItem
+import com.neptune.neptune.model.project.ProjectItemsRepositoryLocal
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
+import com.neptune.neptune.ui.sampler.SamplerViewModel
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import java.io.File
 import java.io.IOException
@@ -71,7 +76,23 @@ open class SampleUiActions(
               downloadProgress.value = percent
             }
           }
-      withContext(ioDispatcher) { storageService.persistZipToDownloads(zip, downloadsFolder) }
+
+      val repoJSON = ProjectItemsRepositoryLocal(context)
+      val newUid = repoJSON.getNewId()
+      val processedAudioFile = File(File(context.filesDir, "previews"), "$newUid.wav")
+      withContext(ioDispatcher) {
+        storageService.downloadFileByPath(sample.storageProcessedSamplePath, processedAudioFile) {}
+        val newFile = storageService.persistZipToDownloads(zip, File(context.filesDir, "projects"))
+        repoJSON.addProject(ProjectItem(
+          uid = newUid,
+          name = sample.name,
+          description = sample.description,
+          audioPreviewLocalPath = processedAudioFile.toString(),
+          projectFileLocalPath = newFile.toURI().toString(),
+          ownerId = null,
+          collaborators = listOf()
+        ))
+      }
       repo.increaseDownloadCount(sample.id)
 
       // record download interaction
