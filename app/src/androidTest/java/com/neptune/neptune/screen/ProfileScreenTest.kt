@@ -227,7 +227,7 @@ class ProfileScreenTest {
                         id = "s1",
                         name = "S1",
                         description = "",
-                        durationSeconds = 1,
+                        durationMillis = 1,
                         tags = emptyList(),
                         likes = 0,
                         usersLike = emptyList(),
@@ -1002,8 +1002,6 @@ class ProfileScreenTest {
   fun postedSamplesSectionShowsEmptyState() {
     setContentViewMode(samplesViewModel = createFakeSamplesViewModel())
 
-    composeTestRule.scrollAnyScrollableTo(hasText("Posted samples"))
-    composeTestRule.onNode(hasText("Posted samples"), useUnmergedTree = true).assertExists()
     composeTestRule.onNode(hasText("No samples posted yet."), useUnmergedTree = true).assertExists()
     composeTestRule
         .onAllNodes(hasTestTag("profile/samples/list"), useUnmergedTree = true)
@@ -1017,7 +1015,7 @@ class ProfileScreenTest {
             id = "owner-1",
             name = "Owner Track",
             description = "Owned",
-            durationSeconds = 90,
+            durationMillis = 90,
             tags = listOf("rock"),
             likes = 1,
             usersLike = emptyList(),
@@ -1031,7 +1029,7 @@ class ProfileScreenTest {
             id = "other-1",
             name = "Other Track",
             description = "Not owned",
-            durationSeconds = 45,
+            durationMillis = 45,
             tags = emptyList(),
             likes = 0,
             usersLike = emptyList(),

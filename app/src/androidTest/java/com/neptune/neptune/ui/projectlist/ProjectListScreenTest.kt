@@ -103,8 +103,14 @@ class ProjectListScreenTest {
   // Call at the start of each test to set the Compose content exactly once for that test
   private fun setContentOnce() {
     importViewModel = mockk(relaxed = true)
+
     libraryFlow = MutableStateFlow(emptyList())
     every { importViewModel.library } returns libraryFlow as StateFlow<List<MediaItem>>
+
+    val errorMessageFlow = MutableStateFlow<String?>(null)
+    every { importViewModel.errorMessage } returns errorMessageFlow
+    every { importViewModel.setOnImportFinished(any()) } returns Unit
+
     composeTestRule.setContent {
       ProjectListScreen(
           projectListViewModel = projectListViewModel,

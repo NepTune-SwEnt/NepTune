@@ -72,6 +72,30 @@ class ProfileSamplesViewModelTest {
       }
 
   @Test
+  fun samplesAreSortedByCreationTimeDescending() =
+      runTest(dispatcher) {
+        val newest = testSample(id = "sample-new", creationTime = 3_000L)
+        val middle = testSample(id = "sample-mid", creationTime = 2_000L)
+        val oldest = testSample(id = "sample-old", creationTime = 1_000L)
+
+        val sampleRepo = FakeSampleRepository(listOf(oldest, newest, middle))
+        val profileRepo = FakeProfileRepository()
+
+        val viewModel =
+            ProfileSamplesViewModel(
+                ownerId = newest.ownerId,
+                sampleRepo = sampleRepo,
+                profileRepo = profileRepo,
+                auth = null,
+                enableActions = false)
+
+        advanceUntilIdle()
+
+        val orderedIds = viewModel.samples.first().map { it.id }
+        assertEquals(listOf(newest.id, middle.id, oldest.id), orderedIds)
+      }
+
+  @Test
   fun onDownloadSampleDelegatesToActionsAndUpdatesDownloads() =
       runTest(dispatcher) {
         val sample = testSample(downloads = 0)
@@ -120,13 +144,14 @@ class ProfileSamplesViewModelTest {
       id: String = "sample-1",
       likes: Int = 0,
       downloads: Int = 0,
-      ownerId: String = "owner"
+      ownerId: String = "owner",
+      creationTime: Long = 0
   ): Sample {
     return Sample(
         id = id,
         name = "Sample $id",
         description = "desc",
-        durationSeconds = 10,
+        durationMillis = 10,
         tags = emptyList(),
         likes = likes,
         usersLike = emptyList(),
@@ -136,6 +161,7 @@ class ProfileSamplesViewModelTest {
         ownerId = ownerId,
         storageZipPath = "zip/$id.zip",
         storageImagePath = "image/$id.jpg",
-        storagePreviewSamplePath = "preview/$id.mp3")
+        storagePreviewSamplePath = "preview/$id.mp3",
+        creationTime = creationTime)
   }
 }

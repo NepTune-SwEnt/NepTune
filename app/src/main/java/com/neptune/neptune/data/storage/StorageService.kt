@@ -241,7 +241,7 @@ open class StorageService(
    * This function is temporally using the duration of the audio without his effects. It should be
    * improved in the future to calculate with the effects applied.
    */
-  suspend fun getProjectDuration(zipUri: Uri?): Int {
+  suspend fun getProjectDuration(zipUri: Uri?): Long {
     if (zipUri == null) return 0
 
     return withContext(ioDispatcher) {
@@ -257,7 +257,7 @@ open class StorageService(
 
         val durationFromMeta = firstAudio?.durationSeconds ?: 0f
         if (durationFromMeta > 0.1f) {
-          return@withContext durationFromMeta.toInt()
+          return@withContext durationFromMeta.toLong()
         }
 
         Log.w(
@@ -323,14 +323,13 @@ open class StorageService(
   ): File = downloadToFile(storagePath, outFile, onProgress)
 
   /** Helper to retrieve the duration of an audio file (mp3/wav) via MediaMetadataRetriever */
-  private suspend fun getAudioDuration(context: Context, audioUri: Uri): Int {
+  private suspend fun getAudioDuration(context: Context, audioUri: Uri): Long {
     return withContext(ioDispatcher) {
       val retriever = MediaMetadataRetriever()
       try {
         retriever.setDataSource(context, audioUri)
         val time = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
-        val timeInMs = time?.toLongOrNull() ?: 0L
-        (timeInMs / 1000).toInt()
+        time?.toLongOrNull() ?: 0L
       } catch (e: Exception) {
         Log.e("StorageService", "Failed to retrieve audio duration", e)
         0

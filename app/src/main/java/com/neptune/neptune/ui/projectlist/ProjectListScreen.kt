@@ -80,6 +80,7 @@ import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.TotalProjectItemsRepositoryProvider
 import com.neptune.neptune.ui.offline.OfflineBanner
 import com.neptune.neptune.ui.picker.ImportViewModel
+import com.neptune.neptune.ui.picker.MAX_AUDIO_DURATION_MS
 import com.neptune.neptune.ui.picker.NameProjectDialog
 import com.neptune.neptune.ui.picker.sanitizeAndRename
 import com.neptune.neptune.ui.theme.NepTuneTheme
@@ -97,8 +98,6 @@ object ProjectListScreenTestTags {
   const val CHANGE_DESCRIPTION_BUTTON = "ChangeDescriptionButton"
   const val RENAME_BUTTON = "RenameButton"
   const val DELETE_BUTTON = "DeleteButton"
-  const val ADD_TO_CLOUD_BUTTON = "AddToCloudButton"
-  const val REMOVE_FROM_CLOUD_BUTTON = "RemoveFromCloudButton"
 }
 
 private const val SEARCHBAR_FONT_SIZE = 21
@@ -160,6 +159,33 @@ fun ProjectListScreen(
   var showNameDialog by remember { mutableStateOf(false) }
   var proposedFileToImport by remember { mutableStateOf<File?>(null) }
   var projectName by remember { mutableStateOf("") }
+
+  LaunchedEffect(isRecording) {
+    if (isRecording) {
+      kotlinx.coroutines.delay(MAX_AUDIO_DURATION_MS) // 1 minute
+      com.neptune.neptune.ui.picker.performToggleRecord(
+          isRecording = true,
+          actualRecorder = actualRecorder,
+          hasAudioPermission = hasAudioPermission,
+          requestPermission = {}, // is already recording so no need to request
+          onRecordedFile = { recorded ->
+            proposedFileToImport = recorded
+            projectName = recorded.nameWithoutExtension
+            showNameDialog = true
+          },
+          updateIsRecording = { isRecording = it })
+      Toast.makeText(context, "Time limit reached (1 min)", Toast.LENGTH_SHORT).show()
+    }
+  }
+
+  val importError by importViewModel.errorMessage.collectAsState()
+
+  LaunchedEffect(importError) {
+    importError?.let { msg ->
+      Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+      importViewModel.clearError()
+    }
+  }
 
   LaunchedEffect(testRecordedFile) {
     testRecordedFile?.let {
@@ -297,6 +323,18 @@ fun ProjectList(
               mediaPlayer = mediaPlayer)
         }
       }
+    } else {
+      Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+        Text(
+            text =
+                "Tap “Import audio” to create a .neptune project. \n (zip with config.json + audio)",
+            style =
+                TextStyle(
+                    fontSize = 20.sp,
+                    fontFamily = FontFamily(Font(R.font.markazi_text)),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    color = NepTuneTheme.colors.onBackground.copy(alpha = 0.7f)))
+      }
     }
   }
 }
@@ -350,7 +388,7 @@ fun ProjectListItem(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically) {
           Row(
-              modifier = Modifier.padding(start = 5.dp),
+              modifier = Modifier.padding(start = 5.dp).weight(1f),
               verticalAlignment = Alignment.CenterVertically) {
                 IconButton(
                     onClick = {

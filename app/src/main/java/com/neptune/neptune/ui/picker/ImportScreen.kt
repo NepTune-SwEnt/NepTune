@@ -55,6 +55,7 @@ import com.neptune.neptune.data.StoragePaths
 import com.neptune.neptune.media.NeptuneRecorder
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import java.io.File
+import kotlinx.coroutines.delay
 
 object ImportScreenTestTags {
   const val IMPORT_SCREEN = "ImportScreen"
@@ -96,6 +97,7 @@ fun ImportScreen(
 
   val actualRecorder = recorder ?: remember { NeptuneRecorder(context, StoragePaths(context)) }
   var isRecording by remember { mutableStateOf(actualRecorder.isRecording) }
+
   var hasAudioPermission by remember { mutableStateOf(false) }
 
   // Dialog state for naming the recorded project
@@ -110,6 +112,24 @@ fun ImportScreen(
       proposedFileToImport = it
       projectName = it.nameWithoutExtension
       showNameDialog = true
+    }
+  }
+  // Auto-stop recording after max duration
+  LaunchedEffect(isRecording) {
+    if (isRecording) {
+      delay(MAX_AUDIO_DURATION_MS) // wait 60 seconds
+      performToggleRecord(
+          isRecording = true,
+          actualRecorder = actualRecorder,
+          hasAudioPermission = hasAudioPermission,
+          requestPermission = {}, // already have permission if recording
+          onRecordedFile = { recorded ->
+            proposedFileToImport = recorded
+            projectName = recorded.nameWithoutExtension
+            showNameDialog = true
+          },
+          updateIsRecording = { isRecording = it })
+      Toast.makeText(context, "Time limit reached (1 min)", Toast.LENGTH_SHORT).show()
     }
   }
 

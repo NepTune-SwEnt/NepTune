@@ -44,7 +44,7 @@ data class ProjectItem(
         id = uid,
         name = name,
         description = description,
-        durationSeconds = 0,
+        durationMillis = 0,
         tags = tags,
         likes = 0,
         usersLike = emptyList(),

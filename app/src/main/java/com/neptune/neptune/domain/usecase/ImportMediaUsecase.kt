@@ -8,6 +8,7 @@ import com.neptune.neptune.domain.port.FileImporter
 import com.neptune.neptune.domain.port.MediaRepository
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepositoryLocal
+import com.neptune.neptune.ui.picker.MAX_AUDIO_DURATION_MS
 import java.io.File
 import java.net.URI
 import java.util.UUID
@@ -32,6 +33,9 @@ open class ImportMediaUseCase(
   }
 
   private suspend fun invokeImplementation(probe: FileImporter.ImportedFile): MediaItem {
+    if (probe.durationMs != null && probe.durationMs > MAX_AUDIO_DURATION_MS) {
+      throw IllegalArgumentException("Audio too long. Max duration is 1 minute.")
+    }
     val localAudio = File(URI(probe.localUri.toString()))
     return finalizeImport(localAudio, probe.durationMs)
   }
