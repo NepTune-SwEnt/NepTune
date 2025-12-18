@@ -214,7 +214,7 @@ fun DownloadChoiceDialog(
             onClick = onDownloadZip,
             modifier = Modifier.testTag(SampleUiActionsTestTags.DOWNLOAD_ZIP_BTN),
         ) {
-          Text("Download ZIP")
+          Text("Download Project")
         }
       },
       dismissButton = {
