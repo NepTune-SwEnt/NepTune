@@ -71,7 +71,6 @@ open class StorageService(
       }
 
       // Now extract files
-      Log.d("StorageService", "Extracting zip to $outputDir")
       val outFile = File(outputDir, zipFile.name)
       FileInputStream(zipFile).use { input ->
         FileOutputStream(outFile).use { output -> input.copyTo(output) }

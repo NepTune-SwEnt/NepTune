@@ -48,52 +48,51 @@ open class WaveformExtractor(private val ioDispatcher: CoroutineDispatcher = Dis
    *   list if processing fails.
    */
   override suspend fun extractWaveform(context: Context, uri: Uri, samplesCount: Int): List<Float> =
-    (0..samplesCount).map { 0f }
-//    withContext(ioDispatcher) {
-//        try {
-//          val decoded = AudioUtils.decodeAudioToPCM(uri) ?: return@withContext emptyList()
-//
-//          val pcm = decoded.first
-//          val channelCount = decoded.third
-//
-//          if (pcm.isEmpty() || samplesCount <= 0) {
-//            return@withContext emptyList()
-//          }
-//
-//          val totalFrames = pcm.size / channelCount
-//          if (totalFrames <= 0) {
-//            return@withContext emptyList()
-//          }
-//
-//          val framesPerBucket = totalFrames / samplesCount.toFloat()
-//
-//          val buckets = FloatArray(samplesCount)
-//          val bucketHits = IntArray(samplesCount)
-//
-//          for (frameIndex in 0 until totalFrames) {
-//            val bucketIndex = (frameIndex / framesPerBucket).toInt().coerceIn(0, samplesCount - 1)
-//
-//            var frameSum = 0f
-//            for (ch in 0 until channelCount) {
-//              val sample = pcm[frameIndex * channelCount + ch]
-//              frameSum += kotlin.math.abs(sample)
-//            }
-//
-//            val frameAmp = frameSum / channelCount
-//            buckets[bucketIndex] += frameAmp
-//            bucketHits[bucketIndex]++
-//          }
-//
-//          return@withContext buckets.mapIndexed { i, sum ->
-//            if (bucketHits[i] > 0) {
-//              (sum / bucketHits[i]).coerceIn(0f, 1f)
-//            } else {
-//              0f
-//            }
-//          }
-//        } catch (e: Exception) {
-//          Log.e("WaveformExtractor", "Error extracting waveform", e)
-//          emptyList()
-//        }
-//      }
+      withContext(ioDispatcher) {
+        try {
+          val decoded = AudioUtils.decodeAudioToPCM(uri) ?: return@withContext emptyList()
+
+          val pcm = decoded.first
+          val channelCount = decoded.third
+
+          if (pcm.isEmpty() || samplesCount <= 0) {
+            return@withContext emptyList()
+          }
+
+          val totalFrames = pcm.size / channelCount
+          if (totalFrames <= 0) {
+            return@withContext emptyList()
+          }
+
+          val framesPerBucket = totalFrames / samplesCount.toFloat()
+
+          val buckets = FloatArray(samplesCount)
+          val bucketHits = IntArray(samplesCount)
+
+          for (frameIndex in 0 until totalFrames) {
+            val bucketIndex = (frameIndex / framesPerBucket).toInt().coerceIn(0, samplesCount - 1)
+
+            var frameSum = 0f
+            for (ch in 0 until channelCount) {
+              val sample = pcm[frameIndex * channelCount + ch]
+              frameSum += kotlin.math.abs(sample)
+            }
+
+            val frameAmp = frameSum / channelCount
+            buckets[bucketIndex] += frameAmp
+            bucketHits[bucketIndex]++
+          }
+
+          return@withContext buckets.mapIndexed { i, sum ->
+            if (bucketHits[i] > 0) {
+              (sum / bucketHits[i]).coerceIn(0f, 1f)
+            } else {
+              0f
+            }
+          }
+        } catch (e: Exception) {
+          Log.e("WaveformExtractor", "Error extracting waveform", e)
+          emptyList()
+        }
+      }
 }
