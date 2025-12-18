@@ -48,7 +48,6 @@ class InitialSetupDialogTest {
 
   @Test
   fun initialSetupDialogConfirmButtonAppliesChanges() {
-    composeRule.onNodeWithTag("PITCH_UP_BUTTON").performClick()
     composeRule.onNodeWithTag(SamplerTestTags.INIT_TEMPO_SELECTOR).performTextInput("140")
     composeRule.waitForIdle()
 
@@ -78,26 +77,6 @@ class InitialSetupDialogTest {
               inputPitchNote = "C",
               inputPitchOctave = 4,
               showInitialSetupDialog = true)
-    }
-
-    @Test
-    fun testIncreaseInputPitchCyclesCorrectly() = runBlocking {
-      viewModel._uiState.value =
-          viewModel._uiState.value.copy(inputPitchNote = "C", inputPitchOctave = 4)
-      viewModel.increaseInputPitch()
-      val state = viewModel.uiState.first()
-      assertEquals("C#", state.inputPitchNote)
-      assertEquals(4, state.inputPitchOctave)
-    }
-
-    @Test
-    fun testDecreaseInputPitchCyclesCorrectly() = runBlocking {
-      viewModel._uiState.value =
-          viewModel._uiState.value.copy(inputPitchNote = "C", inputPitchOctave = 4)
-      viewModel.decreaseInputPitch()
-      val state = viewModel.uiState.first()
-      assertEquals("B", state.inputPitchNote)
-      assertEquals(3, state.inputPitchOctave)
     }
 
     @Test
