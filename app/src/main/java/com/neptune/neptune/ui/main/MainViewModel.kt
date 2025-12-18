@@ -141,12 +141,10 @@ open class MainViewModel(
   fun loadRecommendations(limit: Int = 50) {
     viewModelScope.launch {
       try {
-        Log.d("RecoDebug", "loadRecommendations() START, cacheSize=${allSamplesCache.size}")
         if (auth?.currentUser == null) return@launch
         val recoUser = profileRepo.getCurrentRecoUserProfile()
         if (recoUser == null) {
           // Fallback when no user or profile: just show latest samples
-          Log.d("RecoDebug", "No recoUser profile (null) – skipping recommendations")
 
           _recommendedSamples.value = emptyList()
           return@launch
@@ -156,7 +154,6 @@ open class MainViewModel(
               sample.ownerId !in latestFollowing && sample.ownerId != auth.currentUser?.uid
             }
         if (candidates.isEmpty()) {
-          Log.d("RecoDebug", "No candidates (cache empty) – skipping ranking")
           _recommendedSamples.value = emptyList()
           return@launch
         }
@@ -165,9 +162,6 @@ open class MainViewModel(
                 user = recoUser, candidates = candidates, limit = limit)
         ranked.forEachIndexed { index, sample ->
           val score = RecommendationEngine.scoreSample(sample, recoUser, System.currentTimeMillis())
-          Log.d(
-              "RecoDebug",
-              "#$index  id=${sample.id}  name=${sample.name}  score=${"%.4f".format(score)}")
         }
         _recommendedSamples.value = ranked
       } catch (e: Exception) {
