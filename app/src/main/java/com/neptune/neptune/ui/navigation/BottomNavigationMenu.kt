@@ -40,7 +40,8 @@ sealed class Tab(
     val testTag: String,
     val iconSize: Dp = DEFAULT_ICON_SIZE
 ) {
-
+  // Credits:
+  // https://www.svgrepo.com/svg/529773/planet-3
   object Main : Tab("Home", R.drawable.home_planet, Screen.Main, NavigationTestTags.MAIN_TAB)
 
   object ProjectList :

@@ -4,7 +4,7 @@ NepTune is an Android app and backend that makes capturing, editing, and sharing
 simple and social. It combines a lightweight sound-design toolset (resampling without pitch 
 distortion, filters, reverb, fades) with social features (sharing, subscriptions, favorites, stats).
 
-This project has been done for the CS-311 course at EPFL given by George Candea
+This project has been done for the CS-311 course at EPFL given by [George Candea](https://github.com/candea)
 
 ## Install the app
 
@@ -21,6 +21,13 @@ Key features
 - Social features: share samples, follow users, favorites, stats
 - Server-side sample processing & preview generation (Firebase Functions + FFmpeg)
 
+### UI/UX
+[Link to our Figma design](https://www.figma.com/design/gxxZEMMnw0vSRHbdAfe2rc/NepTune?node-id=4-3&t=a46S21O4504wuBl3-1)
+
+### Structure and data diagram
+
+![Structure diagram](docs/images/Structure%20diagram.png)
+
 ## Build the project
 ### Setup
 1. Install JDK 11 and Android Studio.
@@ -31,7 +38,7 @@ Key features
      ```
 3. Open the project in Android Studio by selecting the repository root or `settings.gradle.kts`.
 4. Gradle will sync dependencies. If Android Studio asks to upgrade Gradle plugin or Kotlin plugin, prefer the versions defined by the project unless you have a specific reason.
-5. Ensure `app/google-services.json` is present (this repo already contains one at `app/google-services.json`). If you need to use a different Firebase project, replace that file with one from the Firebase console.
+5. Ensure `app/google-services.json` is present. If you need to use a different Firebase project, replace that file with one from the Firebase console.
 6. Native libraries: `app/libs/` contains `TarsosDSPKit-release.aar` which is included by the Gradle build. No extra steps required unless you replace the AAR.
 
 ### Firebase emulator
