@@ -17,16 +17,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import com.neptune.neptune.data.storage.StorageService
-import com.neptune.neptune.domain.usecase.ViewModelAudioPreviewGenerator
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
 import com.neptune.neptune.model.project.ProjectItem
 import com.neptune.neptune.model.project.ProjectItemsRepositoryLocal
 import com.neptune.neptune.model.sample.Sample
 import com.neptune.neptune.model.sample.SampleRepository
-import com.neptune.neptune.ui.sampler.SamplerViewModel
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import java.io.File
 import java.io.IOException
@@ -69,6 +66,18 @@ open class SampleUiActions(
     downloadBusy.value = true
     downloadError.value = null
     downloadProgress.value = 0
+
+    // Ensure previews directory exists before any file operations that write previews
+    val previewsDir = File(context.filesDir, "previews")
+    withContext(ioDispatcher) {
+      if (!previewsDir.exists()) {
+        val created = previewsDir.mkdirs()
+        if (!created && !previewsDir.exists()) {
+          throw IOException("Failed to create previews directory: ${previewsDir.absolutePath}")
+        }
+      }
+    }
+
     try {
       val zip =
           withContext(ioDispatcher) {
