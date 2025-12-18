@@ -1,6 +1,5 @@
 package com.neptune.neptune.ui.main
 
-import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -17,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.data.storage.StorageService
 import com.neptune.neptune.model.profile.ProfileRepository
 import com.neptune.neptune.model.profile.ProfileRepositoryProvider
@@ -52,11 +52,11 @@ open class SampleUiActions(
     private val repo: SampleRepository,
     private val storageService: StorageService,
     private val downloadsFolder: File,
-    private val context: Context,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val downloadProgress: MutableStateFlow<Int?> = MutableStateFlow(0),
     private val profileRepo: ProfileRepository = ProfileRepositoryProvider.repository
 ) {
+  val context = NepTuneApplication.appContext
   val downloadBusy = MutableStateFlow(false)
   val downloadError = MutableStateFlow<String?>(null)
 
@@ -66,46 +66,43 @@ open class SampleUiActions(
     downloadBusy.value = true
     downloadError.value = null
     downloadProgress.value = 0
-
-    // Ensure previews directory exists before any file operations that write previews
-    val previewsDir = File(context.filesDir, "previews")
-    withContext(ioDispatcher) {
-      if (!previewsDir.exists()) {
-        val created = previewsDir.mkdirs()
-        if (!created && !previewsDir.exists()) {
-          throw IOException("Failed to create previews directory: ${previewsDir.absolutePath}")
-        }
-      }
-    }
-
     try {
       val zip =
-          withContext(ioDispatcher) {
-            storageService.downloadZippedSample(sample, context) { percent ->
-              downloadProgress.value = percent
-            }
+        withContext(ioDispatcher) {
+          storageService.downloadZippedSample(sample, context) { percent ->
+            downloadProgress.value = percent
           }
-      withContext(ioDispatcher) { storageService.persistZipToDownloads(zip, downloadsFolder) }
-
-      val repoJSON = ProjectItemsRepositoryLocal(context)
-      val newUid = repoJSON.getNewId()
-      val processedAudioFile = File(File(context.filesDir, "previews"), "$newUid.wav")
-
-      withContext(ioDispatcher) {
-        Log.d("SampleUiActions", "Downloading processed audio: ${sample.storageProcessedSamplePath}")
-        storageService.downloadFileByPath(sample.storageProcessedSamplePath, processedAudioFile) {}
-        val newFile = storageService.persistZipToDownloads(zip, File(context.filesDir, "projects"))
-        repoJSON.addProject(ProjectItem(
-          uid = newUid,
-          name = sample.name,
-          description = sample.description,
-          audioPreviewLocalPath = processedAudioFile.toString(),
-          projectFileLocalPath = newFile.toURI().toString(),
-          ownerId = null,
-          collaborators = listOf()
-        ))
-        Log.d("SampleUiActions", "Downloaded zip: $newFile")
+        }
+      // Use the canonical filesDir so that symlinks like /data/user/0/... are resolved to
+      // the actual data directory (/data/data/...) when needed.
+      val previewsDir = File(context.filesDir.canonicalFile, "previews")
+      val projectsDir = File(context.filesDir.canonicalFile, "projects")
+      Log.d("SampleUiActions", "projectsDir: ${projectsDir.canonicalPath}")
+      if (!projectsDir.exists()) {
+        projectsDir.mkdirs()
+        Log.d("SampleUiActions", "projectsDir created: ${projectsDir.canonicalPath}")
       }
+      val outputFile = withContext(ioDispatcher) {
+        storageService.persistZipToDownloads(zip, projectsDir)
+      }
+      val processedPath = sample.storageProcessedSamplePath
+
+      val repoJSON = ProjectItemsRepositoryLocal(NepTuneApplication.appContext)
+      val newUid = repoJSON.getNewId()
+      val previewFile = File(previewsDir, "$newUid.wav")
+      withContext(ioDispatcher) {
+        storageService.downloadFileByPath(processedPath, previewFile) { percent ->
+          downloadProgress.value = percent
+        }
+      }
+      Log.d("SampleUiActions", "outputFile: ${outputFile.canonicalPath}")
+      repoJSON.addProject(ProjectItem(
+        uid = newUid,
+        name = sample.name,
+        description = sample.description,
+        audioPreviewLocalPath = previewFile.canonicalPath,
+        projectFileLocalPath = outputFile.canonicalPath
+      ))
       repo.increaseDownloadCount(sample.id)
 
       // record download interaction
