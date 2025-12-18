@@ -751,7 +751,10 @@ open class SamplerViewModel(
             }
 
             val loadedPitchNote = NOTE_ORDER[pitchValue.roundToInt() % NOTE_ORDER.size]
-            val loadedPitchOctave = 4
+            // pitchValue stores NOTE_INDEX + (octave * NOTE_ORDER.size)
+            // Reconstruct note index and octave from the stored semitone-like value.
+            val pitchInt = pitchValue.roundToInt()
+            val loadedPitchOctave = (pitchInt / NOTE_ORDER.size).coerceIn(minOctave, maxOctave)
 
             current.copy(
                 attack = paramMap["attack"]?.coerceIn(0f, ADSR_MAX_TIME) ?: current.attack,
