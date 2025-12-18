@@ -101,7 +101,8 @@ data class SamplerUiState(
     val previewPlaying: Boolean = false,
     val projectLoadError: String? = null,
     val waveform: List<Float> = emptyList(),
-    val isSaving: Boolean = false
+    val isSaving: Boolean = false,
+    val waveformReloadKey: Int = 0
 ) {
   val transposeLabel: String
     get() {
@@ -823,6 +824,10 @@ open class SamplerViewModel(
         saveProjectDataSync(zipFilePath)
 
         audioBuilding()
+
+          _uiState.update {
+              it.copy(waveformReloadKey = it.waveformReloadKey + 1)
+          }
 
         val projectsJsonRepo = ProjectItemsRepositoryLocal(context)
         val projectId = projectsJsonRepo.findProjectWithProjectFile(zipFilePath).uid

@@ -651,11 +651,11 @@ fun WaveformDisplay(
   val latestOnPositionChange = rememberUpdatedState(onPositionChange)
   val currentUri = uiState.currentAudioUri
 
-  LaunchedEffect(currentUri) {
-    if (currentUri != null) {
-      viewModel.loadWaveform(currentUri)
+    LaunchedEffect(currentUri, uiState.waveformReloadKey) {
+        if (currentUri != null) {
+            viewModel.loadWaveform(currentUri)
+        }
     }
-  }
   val waveform = uiState.waveform
 
   val playbackPositionAnimatable = remember { Animatable(playbackPosition) }
