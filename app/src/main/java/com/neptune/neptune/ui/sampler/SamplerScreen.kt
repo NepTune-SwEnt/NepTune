@@ -609,7 +609,12 @@ fun PitchTempoSelector(
             tonalElevation = 8.dp,
             modifier = Modifier.padding(16.dp)) {
               Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(type, style = MaterialTheme.typography.titleMedium, color = NepTuneTheme.colors.smallText)
+                Text(
+                  type,
+                  style = MaterialTheme.typography.titleLarge,
+                  color = NepTuneTheme.colors.smallText)
+                Spacer(modifier = Modifier.height(8.dp))
+
 
                 // Show the current value centered and prominent
                 val currentDisplay = if (label.isNotEmpty()) label else value
@@ -623,11 +628,9 @@ fun PitchTempoSelector(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Spacer(modifier = Modifier.height(8.dp))
-                Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                   Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Add", color = NepTuneTheme.colors.smallText)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row {
+                    Column {
                       listOf(1, 2, 5).forEach { step ->
                         Button(
                             onClick = {
@@ -641,9 +644,7 @@ fun PitchTempoSelector(
                   }
 
                   Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Subtract", color = NepTuneTheme.colors.smallText)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row {
+                    Column {
                       listOf(1, 2, 5).forEach { step ->
                         Button(
                             onClick = {
