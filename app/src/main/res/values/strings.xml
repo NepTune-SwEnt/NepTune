@@ -16,7 +16,7 @@
 
     <string name="help_overview_text">The sampler allows previewing audio, adjusting pitch and tempo, editing ADSR envelope, reverb, EQ and compression. Use the tabs to switch sections.</string>
 
-    <string name="help_controls_text">On the top of the sampler lay the control bar:\n- Play / Pause: preview the sample\n- Save: persist project data\n- Pitch selectors: change the note\n- BPM selector: change the beat per minute\n- Time signature selector: change the beat display on the timeline</string>
+    <string name="help_controls_text">On the top of the sampler lay the control bar:\n- Play / Pause: preview the sample\n- Save: persist project data\n- Pitch selectors: change the pitch\n- BPM selector: change the beat per minute\n- Time signature selector: change the beat display on the timeline</string>
 
     <string name="help_adsr_text">Use the ADSR editor to shape how a note evolves over time: Attack sets how quickly the sound reaches full volume, Decay is the time to falls at the Sustain level, Sustain is the steady level while the note is held, and Release is the time to fade after release.</string>
 
