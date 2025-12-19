@@ -639,9 +639,9 @@ fun PitchTempoSelector(
                                 Column {
                                   listOf(1, 2, 5).forEach { step ->
                                     Button(
-                                        onClick = { onModify(step) },
+                                        onClick = { onModify(-step) },
                                         modifier = Modifier.padding(end = 6.dp)) {
-                                          Text("+$step")
+                                          Text("-$step")
                                         }
                                   }
                                 }
@@ -651,9 +651,9 @@ fun PitchTempoSelector(
                                 Column {
                                   listOf(1, 2, 5).forEach { step ->
                                     Button(
-                                        onClick = { onModify(-step) },
+                                        onClick = { onModify(step) },
                                         modifier = Modifier.padding(end = 6.dp)) {
-                                          Text("-$step")
+                                          Text("+$step")
                                         }
                                   }
                                 }
