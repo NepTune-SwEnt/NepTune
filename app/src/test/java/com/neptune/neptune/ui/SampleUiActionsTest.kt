@@ -63,7 +63,6 @@ class SampleUiActionsTest {
         repo = sampleRepo,
         storageService = storageService,
         downloadsFolder = downloadsFolder,
-        context = context,
         ioDispatcher = dispatcher,
         profileRepo = profileRepo,
         downloadProgress = downloadProgress,
