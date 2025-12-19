@@ -8,7 +8,7 @@
     <!-- Sampler help / tutorial strings -->
     <string name="sampler_help_title">Sampler Help</string>
     <string name="tab_overview">Overview</string>
-    <string name="tab_controls">Controls</string>
+    <string name="tab_controls">Top Controls</string>
     <string name="tab_adsr">ADSR</string>
     <string name="tab_reverb">Reverb</string>
     <string name="tab_equalizer">Equalizer</string>

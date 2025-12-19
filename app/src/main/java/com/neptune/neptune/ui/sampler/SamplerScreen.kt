@@ -525,9 +525,11 @@ fun PlaybackAndWaveformControls(
                     }
                   },
                   modifier =
-                      Modifier.border(
+                      Modifier
+                        .width(85.dp)
+                        .border(
                               2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
-                          .testTag(SamplerTestTags.PITCH_SELECTOR))
+                        .testTag(SamplerTestTags.PITCH_SELECTOR))
               Spacer(modifier = Modifier.width(8.dp))
 
               // Tempo selector also uses onModify and will call onTempoChange with adjusted tempo
@@ -537,9 +539,11 @@ fun PlaybackAndWaveformControls(
                   type = "Tempo",
                   onModify = { delta -> onTempoChange((tempo + delta).coerceIn(20, 400)) },
                   modifier =
-                      Modifier.border(
+                      Modifier
+                        .width(70.dp)
+                        .border(
                               2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
-                          .testTag(SamplerTestTags.TEMPO_SELECTOR))
+                        .testTag(SamplerTestTags.TEMPO_SELECTOR))
               Spacer(modifier = Modifier.width(8.dp))
 
               // Time signature dropdown placed next to tempo
@@ -597,8 +601,6 @@ fun PitchTempoSelector(
                 fontSize = 16.sp,
                 modifier = Modifier.padding(start = 4.dp))
           }
-
-          Spacer(modifier = Modifier.width(6.dp))
         }
 
     if (showDialog) {
@@ -607,7 +609,7 @@ fun PitchTempoSelector(
             shape = RoundedCornerShape(12.dp),
             color = NepTuneTheme.colors.background,
             tonalElevation = 8.dp,
-            modifier = Modifier.padding(16.dp)) {
+            modifier = Modifier.widthIn(min = 150.dp, max = 200.dp).padding(16.dp)) {
               Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                   type,
