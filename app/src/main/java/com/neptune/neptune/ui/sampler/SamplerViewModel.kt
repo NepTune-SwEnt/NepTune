@@ -574,7 +574,7 @@ open class SamplerViewModel(
   var adsrPlaying = false
 
   open fun startADSRSampleWithPitch(semitoneOffset: Int) {
-    val baseUri = _uiState.value.originalAudioUri ?: return
+    val baseUri = _uiState.value.currentAudioUri ?: return
     if (adsrPlaying) return
 
     adsrPlaying = true
@@ -585,12 +585,12 @@ open class SamplerViewModel(
               withContext(dispatcherProvider.default) {
                 processAudio(
                     currentAudioUri = baseUri,
-                    eqBands = _uiState.value.eqBands,
-                    reverbWet = _uiState.value.reverbWet,
-                    reverbSize = _uiState.value.reverbSize,
-                    reverbWidth = _uiState.value.reverbWidth,
-                    reverbDepth = _uiState.value.reverbDepth,
-                    reverbPredelay = _uiState.value.reverbPredelay,
+                    eqBands = List(EQ_FREQUENCIES.size) { EQ_GAIN_DEFAULT },
+                    reverbWet = 0.0f,
+                    reverbSize = 0.0f,
+                    reverbWidth = 0.0f,
+                    reverbDepth = 0.0f,
+                    reverbPredelay = 10.0f,
                     semitones = semitoneOffset,
                     tempoRatio = 1.0,
                     audioProcessor = audioProcessor,
