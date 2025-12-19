@@ -16,6 +16,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -330,8 +331,7 @@ fun ADSRTestButton(
     modifier: Modifier = Modifier
 ) {
 
-  val color =
-      if (isPianoVisible) NepTuneTheme.colors.accentPrimary else NepTuneTheme.colors.soundWave
+  val color = NepTuneTheme.colors.accentPrimary
   val icon = if (isPianoVisible) Icons.Default.Close else Icons.Default.Piano
   val text = if (isPianoVisible) "Close Keyboard" else "Open Keyboard"
 
@@ -436,17 +436,26 @@ fun PianoKey(
     modifier: Modifier = Modifier,
     label: String? = null
 ) {
+  val isPressed = remember { mutableStateOf(false) }
+  val baseColor = if (isBlack) Color.Black else Color.White
+  val pressedColor = if (isBlack) Color(0xFF333333) else Color(0xFFEEEEEE)
+  val surfaceColor = if (isPressed.value) pressedColor else baseColor
+
   Surface(
       modifier =
           modifier.pointerInput(semitone) {
             detectTapGestures(
                 onPress = {
+                  // mark pressed to update UI
+                  isPressed.value = true
                   viewModel.startADSRSampleWithPitch(semitone)
                   tryAwaitRelease()
+                  // released
+                  isPressed.value = false
                   viewModel.stopADSRSample()
                 })
           },
-      color = if (isBlack) Color.Black else Color.White,
+      color = surfaceColor,
       border = if (!isBlack) BorderStroke(1.dp, Color.Black) else null,
       shape =
           RoundedCornerShape(
@@ -589,18 +598,14 @@ fun PitchTempoSelector(
 ) {
   var showDialog by remember { mutableStateOf(false) }
 
-  Box(modifier = modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+  Box(modifier = modifier.clickable { showDialog = true }.padding(horizontal = 8.dp, vertical = 4.dp)) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.clickable { showDialog = true }.padding(horizontal = 8.dp, vertical = 4.dp)) {
-          Text(text = label, color = NepTuneTheme.colors.smallText, fontSize = 16.sp)
-          if (value.isNotEmpty()) {
-            Text(
-                text = value,
-                color = NepTuneTheme.colors.smallText,
-                fontSize = 16.sp,
-                modifier = Modifier.padding(start = 4.dp))
-          }
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+          Text(
+            text = if (value.isNotEmpty()) "$label $value" else label,
+            color = NepTuneTheme.colors.smallText,
+            fontSize = 16.sp)
         }
 
     if (showDialog) {
