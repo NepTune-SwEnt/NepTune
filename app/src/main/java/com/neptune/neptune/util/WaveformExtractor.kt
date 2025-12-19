@@ -11,6 +11,7 @@ import kotlinx.coroutines.withContext
 // Define the interface for testing
 interface AudioWaveformExtractor {
   suspend fun extractWaveform(context: Context, uri: Uri, samplesCount: Int = 100): List<Float>
+
   suspend fun safeExtractWaveform(context: Context, uri: Uri, samplesCount: Int): List<Float>
 }
 
@@ -25,7 +26,11 @@ open class WaveformExtractor(private val ioDispatcher: CoroutineDispatcher = Dis
 
   private val waveformSemaphore = kotlinx.coroutines.sync.Semaphore(2)
 
-  override suspend fun safeExtractWaveform(context: Context, uri: Uri, samplesCount: Int): List<Float> {
+  override suspend fun safeExtractWaveform(
+      context: Context,
+      uri: Uri,
+      samplesCount: Int
+  ): List<Float> {
     waveformSemaphore.acquire()
     return try {
       extractWaveform(context, uri, samplesCount)

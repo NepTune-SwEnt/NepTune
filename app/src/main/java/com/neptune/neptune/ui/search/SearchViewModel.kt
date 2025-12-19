@@ -210,10 +210,7 @@ open class SearchViewModel(
                 NepTuneApplication.appContext, explicitDownloadsFolder)
 
         SampleUiActions(
-            sampleRepo,
-            storageService,
-            downloadsFolder,
-            downloadProgress = downloadProgress)
+            sampleRepo, storageService, downloadsFolder, downloadProgress = downloadProgress)
       }
 
   override fun onCleared() {

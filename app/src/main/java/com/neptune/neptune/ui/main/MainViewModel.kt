@@ -86,10 +86,7 @@ open class MainViewModel(
         null
       } else {
         SampleUiActions(
-            sampleRepo,
-            storageService,
-            downloadsFolder,
-            downloadProgress = downloadProgress)
+            sampleRepo, storageService, downloadsFolder, downloadProgress = downloadProgress)
       }
 
   val discoverSamples: MutableStateFlow<List<Sample>> = _discoverSamples

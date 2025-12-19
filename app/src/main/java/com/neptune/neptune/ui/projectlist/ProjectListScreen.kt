@@ -2,6 +2,7 @@ package com.neptune.neptune.ui.projectlist
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Environment
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -85,8 +86,6 @@ import com.neptune.neptune.ui.picker.NameProjectDialog
 import com.neptune.neptune.ui.picker.sanitizeAndRename
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import java.io.File
-import android.os.Environment
-import androidx.compose.material.icons.filled.Pause
 import kotlinx.coroutines.runBlocking
 
 object ProjectListScreenTestTags {
@@ -328,8 +327,7 @@ fun ProjectList(
     } else {
       Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
         Text(
-            text =
-                "Tap “Import audio” to create a project.",
+            text = "Tap “Import audio” to create a project.",
             style =
                 TextStyle(
                     fontSize = 20.sp,
@@ -539,10 +537,12 @@ fun EditMenu(
                   return@DropdownMenuItem
                 }
                 try {
-                  val downloadsDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)?.canonicalFile
+                  val downloadsDir =
+                      context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)?.canonicalFile
                   Log.d("ProjectListScreen", "downloadsDir: ${downloadsDir?.canonicalPath}")
                   if (downloadsDir == null) {
-                    Toast.makeText(context, "Unable to access downloads folder", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Unable to access downloads folder", Toast.LENGTH_SHORT)
+                        .show()
                     return@DropdownMenuItem
                   }
                   if (!downloadsDir.exists()) downloadsDir.mkdirs()
@@ -555,7 +555,8 @@ fun EditMenu(
                     context.contentResolver.openInputStream(uri)?.use { input ->
                       destFile.outputStream().use { output -> input.copyTo(output) }
                     }
-                    Toast.makeText(context, "Saved audio to downloads folder", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Saved audio to downloads folder", Toast.LENGTH_SHORT)
+                        .show()
                     return@DropdownMenuItem
                   }
 
@@ -569,19 +570,20 @@ fun EditMenu(
 
                   val destFile = File(downloadsDir, srcFile.name)
                   srcFile.copyTo(destFile, overwrite = true)
-                  Toast.makeText(context, "Saved audio to the downloads folder", Toast.LENGTH_SHORT).show()
+                  Toast.makeText(context, "Saved audio to the downloads folder", Toast.LENGTH_SHORT)
+                      .show()
                 } catch (e: Exception) {
                   Log.e("ProjectListScreen", "Error downloading preview for ${project.uid}", e)
                   Toast.makeText(context, "Failed to download preview", Toast.LENGTH_SHORT).show()
                 }
               })
           DropdownMenuItem(
-            modifier = Modifier.testTag(ProjectListScreenTestTags.DELETE_BUTTON),
-            text = { Text("Delete") },
-            onClick = {
-              showDeleteDialog = true
-              expanded = false
-            })
+              modifier = Modifier.testTag(ProjectListScreenTestTags.DELETE_BUTTON),
+              text = { Text("Delete") },
+              onClick = {
+                showDeleteDialog = true
+                expanded = false
+              })
         }
       }
     }

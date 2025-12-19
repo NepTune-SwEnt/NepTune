@@ -56,7 +56,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -65,10 +64,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neptune.neptune.NepTuneApplication
 import com.neptune.neptune.R
 import com.neptune.neptune.media.LocalMediaPlayer
-import com.neptune.neptune.ui.picker.ImportViewModel
-import com.neptune.neptune.ui.picker.importAppRoot
-import com.neptune.neptune.ui.projectlist.ProjectListScreen
-import com.neptune.neptune.ui.projectlist.ProjectListViewModel
 import com.neptune.neptune.ui.sampler.SamplerTestTags.CURVE_EDITOR_SCROLL_CONTAINER
 import com.neptune.neptune.ui.sampler.SamplerTestTags.FADER_60HZ_TAG
 import com.neptune.neptune.ui.sampler.SamplerTestTags.PREVIEW_PLAY_BUTTON
@@ -526,7 +521,8 @@ fun PlaybackAndWaveformControls(
                   value = pitch,
                   type = "Pitch",
                   onModify = { delta ->
-                    // Apply pitch change by calling the single-step increase/decrease multiple times
+                    // Apply pitch change by calling the single-step increase/decrease multiple
+                    // times
                     if (delta > 0) {
                       repeat(delta) { onIncreasePitch() }
                     } else if (delta < 0) {
@@ -534,11 +530,10 @@ fun PlaybackAndWaveformControls(
                     }
                   },
                   modifier =
-                      Modifier
-                        .width(85.dp)
-                        .border(
+                      Modifier.width(85.dp)
+                          .border(
                               2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
-                        .testTag(SamplerTestTags.PITCH_SELECTOR))
+                          .testTag(SamplerTestTags.PITCH_SELECTOR))
               Spacer(modifier = Modifier.width(8.dp))
 
               // Tempo selector also uses onModify and will call onTempoChange with adjusted tempo
@@ -548,11 +543,10 @@ fun PlaybackAndWaveformControls(
                   type = "Tempo",
                   onModify = { delta -> onTempoChange((tempo + delta).coerceIn(20, 400)) },
                   modifier =
-                      Modifier
-                        .width(70.dp)
-                        .border(
+                      Modifier.width(70.dp)
+                          .border(
                               2.dp, NepTuneTheme.colors.accentPrimary, MaterialTheme.shapes.small)
-                        .testTag(SamplerTestTags.TEMPO_SELECTOR))
+                          .testTag(SamplerTestTags.TEMPO_SELECTOR))
               Spacer(modifier = Modifier.width(8.dp))
 
               // Time signature dropdown placed next to tempo
@@ -598,82 +592,85 @@ fun PitchTempoSelector(
 ) {
   var showDialog by remember { mutableStateOf(false) }
 
-  Box(modifier = modifier.clickable { showDialog = true }.padding(horizontal = 8.dp, vertical = 4.dp)) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
-          Text(
-            text = if (value.isNotEmpty()) "$label $value" else label,
-            color = NepTuneTheme.colors.smallText,
-            fontSize = 16.sp)
-        }
-
-    if (showDialog) {
-      Dialog(onDismissRequest = { showDialog = false }) {
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = NepTuneTheme.colors.background,
-            tonalElevation = 8.dp,
-            modifier = Modifier.widthIn(min = 150.dp, max = 200.dp).padding(16.dp)) {
-              Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                  type,
-                  style = MaterialTheme.typography.titleLarge,
-                  color = NepTuneTheme.colors.smallText)
-                Spacer(modifier = Modifier.height(8.dp))
-
-
-                // Show the current value centered and prominent
-                val currentDisplay = if (label.isNotEmpty()) label else value
-                Text(
-                    text = currentDisplay,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = NepTuneTheme.colors.accentPrimary,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center)
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                  Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Column {
-                      listOf(1, 2, 5).forEach { step ->
-                        Button(
-                            onClick = {
-                              onModify(step)
-                            },
-                            modifier = Modifier.padding(end = 6.dp)) {
-                          Text("+$step")
-                        }
-                      }
-                    }
-                  }
-
-                  Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Column {
-                      listOf(1, 2, 5).forEach { step ->
-                        Button(
-                            onClick = {
-                              onModify(-step)
-                            },
-                            modifier = Modifier.padding(end = 6.dp)) {
-                          Text("-$step")
-                        }
-                      }
-                    }
-                  }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                  TextButton(onClick = { showDialog = false }) { Text("Cancel") }
-                }
-              }
+  Box(
+      modifier =
+          modifier.clickable { showDialog = true }.padding(horizontal = 8.dp, vertical = 4.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+              Text(
+                  text = if (value.isNotEmpty()) "$label $value" else label,
+                  color = NepTuneTheme.colors.smallText,
+                  fontSize = 16.sp)
             }
+
+        if (showDialog) {
+          Dialog(onDismissRequest = { showDialog = false }) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = NepTuneTheme.colors.background,
+                tonalElevation = 8.dp,
+                modifier = Modifier.widthIn(min = 150.dp, max = 200.dp).padding(16.dp)) {
+                  Column(
+                      modifier = Modifier.padding(12.dp),
+                      horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            type,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = NepTuneTheme.colors.smallText)
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Show the current value centered and prominent
+                        val currentDisplay = if (label.isNotEmpty()) label else value
+                        Text(
+                            text = currentDisplay,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = NepTuneTheme.colors.accentPrimary,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center)
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()) {
+                              Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Column {
+                                  listOf(1, 2, 5).forEach { step ->
+                                    Button(
+                                        onClick = { onModify(step) },
+                                        modifier = Modifier.padding(end = 6.dp)) {
+                                          Text("+$step")
+                                        }
+                                  }
+                                }
+                              }
+
+                              Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Column {
+                                  listOf(1, 2, 5).forEach { step ->
+                                    Button(
+                                        onClick = { onModify(-step) },
+                                        modifier = Modifier.padding(end = 6.dp)) {
+                                          Text("-$step")
+                                        }
+                                  }
+                                }
+                              }
+                            }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End) {
+                              TextButton(onClick = { showDialog = false }) { Text("Cancel") }
+                            }
+                      }
+                }
+          }
+        }
       }
-    }
-  }
 }
 
 @Composable
@@ -691,11 +688,11 @@ fun WaveformDisplay(
   val latestOnPositionChange = rememberUpdatedState(onPositionChange)
   val currentUri = uiState.currentAudioUri
 
-    LaunchedEffect(currentUri, uiState.waveformReloadKey) {
-        if (currentUri != null) {
-            viewModel.loadWaveform(currentUri)
-        }
+  LaunchedEffect(currentUri, uiState.waveformReloadKey) {
+    if (currentUri != null) {
+      viewModel.loadWaveform(currentUri)
     }
+  }
   val waveform = uiState.waveform
 
   val playbackPositionAnimatable = remember { Animatable(playbackPosition) }
@@ -2180,34 +2177,34 @@ private fun HelpTabText(titleStringResource: Int, textStringResource: Int) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimeSignatureSelector(
-  selected: String,
-  onSelect: (String) -> Unit,
-  modifier: Modifier = Modifier
+    selected: String,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
   var expanded by remember { mutableStateOf(false) }
   val options = listOf("4/4", "3/4", "2/4", "6/8", "5/4")
 
   Box(modifier = modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
     Row(
-      verticalAlignment = Alignment.CenterVertically,
-      modifier =
-        Modifier.clickable { expanded = true }.padding(horizontal = 8.dp, vertical = 4.dp)) {
-      Text(text = "Time", color = NepTuneTheme.colors.smallText, fontSize = 16.sp)
-      Text(
-        text = selected,
-        color = NepTuneTheme.colors.smallText,
-        fontSize = 16.sp,
-        modifier = Modifier.padding(start = 6.dp))
-    }
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier.clickable { expanded = true }.padding(horizontal = 8.dp, vertical = 4.dp)) {
+          Text(text = "Time", color = NepTuneTheme.colors.smallText, fontSize = 16.sp)
+          Text(
+              text = selected,
+              color = NepTuneTheme.colors.smallText,
+              fontSize = 16.sp,
+              modifier = Modifier.padding(start = 6.dp))
+        }
 
     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
       options.forEach { opt ->
         DropdownMenuItem(
-          text = { Text(opt) },
-          onClick = {
-            onSelect(opt)
-            expanded = false
-          })
+            text = { Text(opt) },
+            onClick = {
+              onSelect(opt)
+              expanded = false
+            })
       }
     }
   }

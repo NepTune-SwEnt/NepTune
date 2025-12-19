@@ -791,7 +791,8 @@ open class SamplerViewModel(
                     paramMap["compAttack"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compAttack,
                 compDecay = paramMap["compDecay"]?.coerceIn(0f, COMP_TIME_MAX) ?: current.compDecay,
                 eqBands = newEqBands.toList(),
-                inputTempo = paramMap["inputTempo"]?.roundToInt()?.coerceIn(50, 200) ?: DEFAULT_TEMPO,
+                inputTempo =
+                    paramMap["inputTempo"]?.roundToInt()?.coerceIn(50, 200) ?: DEFAULT_TEMPO,
                 tempo = tempoValue.roundToInt().coerceIn(50, 200),
                 pitchNote = loadedPitchNote,
                 pitchOctave = loadedPitchOctave,
@@ -834,9 +835,7 @@ open class SamplerViewModel(
 
         audioBuilding()
 
-          _uiState.update {
-              it.copy(waveformReloadKey = it.waveformReloadKey + 1)
-          }
+        _uiState.update { it.copy(waveformReloadKey = it.waveformReloadKey + 1) }
 
         val projectsJsonRepo = ProjectItemsRepositoryLocal(context)
         val projectId = projectsJsonRepo.findProjectWithProjectFile(zipFilePath).uid

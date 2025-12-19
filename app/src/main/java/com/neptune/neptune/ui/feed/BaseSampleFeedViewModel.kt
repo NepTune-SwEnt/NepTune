@@ -262,11 +262,8 @@ abstract class BaseSampleFeedViewModel(
 
     return try {
       val waveform =
-        waveformExtractor.safeExtractWaveform(
-          context = NepTuneApplication.appContext,
-          uri = audioUrl.toUri(),
-          samplesCount = 100
-        )
+          waveformExtractor.safeExtractWaveform(
+              context = NepTuneApplication.appContext, uri = audioUrl.toUri(), samplesCount = 100)
       if (waveform.isNotEmpty()) {
         waveformCache[sample.id] = waveform
       }

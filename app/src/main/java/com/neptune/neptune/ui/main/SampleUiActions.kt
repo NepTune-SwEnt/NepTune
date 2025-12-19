@@ -68,11 +68,11 @@ open class SampleUiActions(
     downloadProgress.value = 0
     try {
       val zip =
-        withContext(ioDispatcher) {
-          storageService.downloadZippedSample(sample, context) { percent ->
-            downloadProgress.value = percent/2
+          withContext(ioDispatcher) {
+            storageService.downloadZippedSample(sample, context) { percent ->
+              downloadProgress.value = percent / 2
+            }
           }
-        }
       // Use the canonical filesDir so that symlinks like /data/user/0/... are resolved to
       // the actual data directory (/data/data/...) when needed.
       val previewsDir = File(context.filesDir.canonicalFile, "previews")
@@ -82,9 +82,8 @@ open class SampleUiActions(
         projectsDir.mkdirs()
         Log.d("SampleUiActions", "projectsDir created: ${projectsDir.canonicalPath}")
       }
-      val outputFile = withContext(ioDispatcher) {
-        storageService.persistZipToDownloads(zip, projectsDir)
-      }
+      val outputFile =
+          withContext(ioDispatcher) { storageService.persistZipToDownloads(zip, projectsDir) }
       val processedPath = sample.storageProcessedSamplePath
 
       val repoJSON = ProjectItemsRepositoryLocal(NepTuneApplication.appContext)
@@ -92,17 +91,17 @@ open class SampleUiActions(
       val previewFile = File(previewsDir, "$newUid.wav")
       withContext(ioDispatcher) {
         storageService.downloadFileByPath(processedPath, previewFile) { percent ->
-          downloadProgress.value = percent/2 + 50
+          downloadProgress.value = percent / 2 + 50
         }
       }
       Log.d("SampleUiActions", "outputFile: ${outputFile.canonicalPath}")
-      repoJSON.addProject(ProjectItem(
-        uid = newUid,
-        name = sample.name,
-        description = sample.description,
-        audioPreviewLocalPath = previewFile.canonicalPath,
-        projectFileLocalPath = outputFile.canonicalPath
-      ))
+      repoJSON.addProject(
+          ProjectItem(
+              uid = newUid,
+              name = sample.name,
+              description = sample.description,
+              audioPreviewLocalPath = previewFile.canonicalPath,
+              projectFileLocalPath = outputFile.canonicalPath))
       repo.increaseDownloadCount(sample.id)
 
       // record download interaction
