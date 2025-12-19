@@ -976,7 +976,6 @@ fun BasicsTabContent(uiState: SamplerUiState, viewModel: SamplerViewModel) {
           Modifier.fillMaxWidth()
               .wrapContentHeight()
               .verticalScroll(rememberScrollState())
-              .padding(top = 8.dp)
               .testTag(SamplerTestTags.TAB_BASICS_CONTENT)) {
         ExpandableSection(
             title = "ADSR Envelope Controls",

@@ -555,7 +555,7 @@ fun EditMenu(
                     context.contentResolver.openInputStream(uri)?.use { input ->
                       destFile.outputStream().use { output -> input.copyTo(output) }
                     }
-                    Toast.makeText(context, "Saved preview to downloads folder", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Saved audio to downloads folder", Toast.LENGTH_SHORT).show()
                     return@DropdownMenuItem
                   }
 
@@ -569,7 +569,7 @@ fun EditMenu(
 
                   val destFile = File(downloadsDir, srcFile.name)
                   srcFile.copyTo(destFile, overwrite = true)
-                  Toast.makeText(context, "Saved preview to Downloads folder", Toast.LENGTH_SHORT).show()
+                  Toast.makeText(context, "Saved audio to the downloads folder", Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
                   Log.e("ProjectListScreen", "Error downloading preview for ${project.uid}", e)
                   Toast.makeText(context, "Failed to download preview", Toast.LENGTH_SHORT).show()
