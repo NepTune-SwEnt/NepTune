@@ -86,6 +86,7 @@ import com.neptune.neptune.ui.picker.sanitizeAndRename
 import com.neptune.neptune.ui.theme.NepTuneTheme
 import java.io.File
 import android.os.Environment
+import androidx.compose.material.icons.filled.Pause
 import kotlinx.coroutines.runBlocking
 
 object ProjectListScreenTestTags {
@@ -302,7 +303,6 @@ fun ProjectList(
     onProjectClick: (ProjectItem) -> Unit = {},
     mediaPlayer: NeptuneMediaPlayer = LocalMediaPlayer.current,
 ) {
-
   val lineColor = NepTuneTheme.colors.onBackground
   Column(
       modifier =
@@ -413,7 +413,7 @@ fun ProjectListItem(
                     modifier = Modifier.testTag("play_${project.uid}"),
                     content = {
                       Icon(
-                          Icons.Default.PlayArrow,
+                          Icons.Filled.PlayArrow,
                           contentDescription = "Play",
                           tint = NepTuneTheme.colors.onBackground,
                           modifier = Modifier.size(26.dp))
@@ -527,17 +527,10 @@ fun EditMenu(
                 expanded = false
               })
           // TODO Add/remove from cloud button to add when fully implemented
-          DropdownMenuItem(
-              modifier = Modifier.testTag(ProjectListScreenTestTags.DELETE_BUTTON),
-              text = { Text("Delete") },
-              onClick = {
-                showDeleteDialog = true
-                expanded = false
-              })
           // Download preview file to app external Downloads folder (no special permission needed)
           DropdownMenuItem(
               modifier = Modifier.testTag(ProjectListScreenTestTags.DOWNLOAD_BUTTON),
-              text = { Text("Download Preview") },
+              text = { Text("Download Audio") },
               onClick = {
                 expanded = false
                 val path = project.audioPreviewLocalPath
@@ -546,7 +539,8 @@ fun EditMenu(
                   return@DropdownMenuItem
                 }
                 try {
-                  val downloadsDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+                  val downloadsDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)?.canonicalFile
+                  Log.d("ProjectListScreen", "downloadsDir: ${downloadsDir?.canonicalPath}")
                   if (downloadsDir == null) {
                     Toast.makeText(context, "Unable to access downloads folder", Toast.LENGTH_SHORT).show()
                     return@DropdownMenuItem
@@ -556,12 +550,12 @@ fun EditMenu(
                   // Handle content:// URIs and file paths/file:// URIs
                   if (path.startsWith("content:")) {
                     val uri = path.toUri()
-                    val srcName = uri.lastPathSegment ?: "preview"
+                    val srcName = uri.lastPathSegment ?: "audio.wav"
                     val destFile = File(downloadsDir, srcName)
                     context.contentResolver.openInputStream(uri)?.use { input ->
                       destFile.outputStream().use { output -> input.copyTo(output) }
                     }
-                    Toast.makeText(context, "Saved preview to ${destFile.absolutePath}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Saved preview to downloads folder", Toast.LENGTH_SHORT).show()
                     return@DropdownMenuItem
                   }
 
@@ -575,12 +569,19 @@ fun EditMenu(
 
                   val destFile = File(downloadsDir, srcFile.name)
                   srcFile.copyTo(destFile, overwrite = true)
-                  Toast.makeText(context, "Saved preview to ${destFile.absolutePath}", Toast.LENGTH_SHORT).show()
+                  Toast.makeText(context, "Saved preview to Downloads folder", Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
                   Log.e("ProjectListScreen", "Error downloading preview for ${project.uid}", e)
                   Toast.makeText(context, "Failed to download preview", Toast.LENGTH_SHORT).show()
                 }
               })
+          DropdownMenuItem(
+            modifier = Modifier.testTag(ProjectListScreenTestTags.DELETE_BUTTON),
+            text = { Text("Delete") },
+            onClick = {
+              showDeleteDialog = true
+              expanded = false
+            })
         }
       }
     }

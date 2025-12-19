@@ -70,7 +70,7 @@ open class SampleUiActions(
       val zip =
         withContext(ioDispatcher) {
           storageService.downloadZippedSample(sample, context) { percent ->
-            downloadProgress.value = percent
+            downloadProgress.value = percent/2
           }
         }
       // Use the canonical filesDir so that symlinks like /data/user/0/... are resolved to
@@ -92,7 +92,7 @@ open class SampleUiActions(
       val previewFile = File(previewsDir, "$newUid.wav")
       withContext(ioDispatcher) {
         storageService.downloadFileByPath(processedPath, previewFile) { percent ->
-          downloadProgress.value = percent
+          downloadProgress.value = percent/2 + 50
         }
       }
       Log.d("SampleUiActions", "outputFile: ${outputFile.canonicalPath}")
